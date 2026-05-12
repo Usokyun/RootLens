@@ -1,0 +1,103 @@
+{
+  "adapter": {
+    "name": "tep",
+    "produces_root_cause": false
+  },
+  "anomaly_type": "process_fault",
+  "case_id": "tep_0001",
+  "case_label": "tep_0001",
+  "confidence": 0.75,
+  "dataset": "tep",
+  "graph_dataset_id": "tep-kg",
+  "human_feedback": null,
+  "kg_analysis": {
+    "consistency_score": null,
+    "correction_candidates": [],
+    "inconsistent_fields": [],
+    "linked_entities": [],
+    "top_k_paths": []
+  },
+  "location": "reactor",
+  "morphology": null,
+  "normalized_evidence": {},
+  "object": "process",
+  "observations": [
+    {
+      "confidence": 0.75,
+      "facet": "object",
+      "linked_entity_hints": [
+        "process"
+      ],
+      "name": "process",
+      "obs_id": "obs_tep_0001_object_process",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.75,
+      "facet": "anomaly_type",
+      "linked_entity_hints": [
+        "process_fault"
+      ],
+      "name": "process_fault",
+      "obs_id": "obs_tep_0001_anomaly_type_process_fault",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.75,
+      "facet": "location",
+      "linked_entity_hints": [
+        "reactor"
+      ],
+      "name": "reactor",
+      "obs_id": "obs_tep_0001_location_reactor",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.75,
+      "facet": "variable",
+      "linked_entity_hints": [
+        "XMEAS_1"
+      ],
+      "metadata": {
+        "rank": 1
+      },
+      "name": "XMEAS_1",
+      "obs_id": "obs_tep_0001_variable_xmeas_1",
+      "raw_evidence_refs": [],
+      "value": 0.42,
+      "value_type": "contribution"
+    },
+    {
+      "confidence": 0.75,
+      "facet": "severity",
+      "linked_entity_hints": [
+        "severity"
+      ],
+      "name": "severity",
+      "obs_id": "obs_tep_0001_severity_severity",
+      "raw_evidence_refs": [],
+      "value": 0.6,
+      "value_type": "float"
+    }
+  ],
+  "raw_evidence": {
+    "description": "观测到的 process anomaly evidence only：adapter/manual demo annotation 记录 anomaly_type、process location 和 observed variable signals；不包含 root-cause label。",
+    "extra": {
+      "analysis_boundary": "KGTracePipeline computes linking/consistency/corrections/candidate RCA paths at runtime.",
+      "demo_scope": "adapters/manual demo annotations provide observed anomaly evidence only；不提供 root-cause label"
+    },
+    "heatmap_path": null,
+    "image_region": null,
+    "log_events": [],
+    "variable_contributions": {
+      "XMEAS_1": 0.42
+    },
+    "variables": [
+      "XMEAS_1"
+    ]
+  },
+  "severity": 0.6,
+  "source": "time_series",
+  "summary": "观测到的 process anomaly evidence only：adapter/manual demo annotation 记录 anomaly_type、process location 和 observed variable signals；不包含 root-cause label。",
+  "timestamp": "2026-05-12T11:17:29Z"
+}

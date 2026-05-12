@@ -1,0 +1,132 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Visualization System
+      - heading "RootLens" [level=1] [ref=e9]
+      - paragraph [ref=e10]: 聚焦导入数据、统一图谱、Evidence 审查与 RCA 分析四段主链路。
+    - generic [ref=e12]:
+      - generic [ref=e13] [cursor=pointer]:
+        - img [ref=e15]
+        - generic [ref=e17]: 系统入口
+      - generic [ref=e18] [cursor=pointer]:
+        - img [ref=e20]
+        - generic [ref=e23]: 图谱可视化
+      - generic [ref=e24] [cursor=pointer]:
+        - img [ref=e26]
+        - generic [ref=e28]: Evidence 审查
+      - generic [ref=e29] [cursor=pointer]:
+        - img [ref=e31]
+        - generic [ref=e33]: RCA 分析
+    - generic [ref=e35]:
+      - generic [ref=e36]: Current Scope
+      - generic [ref=e37]: 当前仓库正在落地前端本地导入、本地图谱归一化、本地 Evidence 会话与浏览器端 RCA 推理，不提供后端服务。
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - button [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Phase 1 / Local Runtime Landing
+          - heading "Evidence 审查" [level=2] [ref=e406]
+          - paragraph [ref=e48]: 统一 Evidence contract 浏览、facet 筛选与本地 draft case 对照。
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]: Session
+          - generic [ref=e52]: 本地导入
+        - generic [ref=e53]:
+          - generic [ref=e54]: Mode
+          - generic [ref=e55]: graphs only
+        - generic [ref=e56]:
+          - generic [ref=e57]: Datasets
+          - generic [ref=e58]: "1"
+        - generic [ref=e59]:
+          - generic [ref=e60]: Cases
+          - generic [ref=e61]: "0"
+    - main [ref=e62]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Main Flow
+            - generic [ref=e68]: 导入数据 -> 构建图谱 -> Evidence -> RCA 可视化
+          - generic [ref=e69]:
+            - generic [ref=e71]: 本地导入
+            - generic [ref=e73]: graphs only
+            - generic [ref=e75]: 1 dataset
+            - generic [ref=e77]: 0 case
+            - generic [ref=e366]: 1 warning
+        - generic [ref=e78]:
+          - button "01 导入数据 上传 runtime、nodes/edges 或 evidence 文件。 导入结果已写入浏览器 localStorage，可刷新恢复。 待补齐 进入" [ref=e407] [cursor=pointer]:
+            - generic [ref=e80]: "01"
+            - generic [ref=e81]:
+              - generic [ref=e82]: 导入数据
+              - paragraph [ref=e83]: 上传 runtime、nodes/edges 或 evidence 文件。
+              - paragraph [ref=e84]: 导入结果已写入浏览器 localStorage，可刷新恢复。
+            - generic [ref=e85]:
+              - generic [ref=e86]: 待补齐
+              - generic [ref=e87]: 进入
+          - button "02 构建图谱 统一节点/边格式并进入图谱可视化。 1 个 dataset 已就绪，可直接检查图谱结构。 已就绪 进入" [ref=e368] [cursor=pointer]:
+            - generic [ref=e89]: "02"
+            - generic [ref=e90]:
+              - generic [ref=e91]: 构建图谱
+              - paragraph [ref=e92]: 统一节点/边格式并进入图谱可视化。
+              - paragraph [ref=e93]: 1 个 dataset 已就绪，可直接检查图谱结构。
+            - generic [ref=e94]:
+              - generic [ref=e95]: 已就绪
+              - generic [ref=e96]: 进入
+          - button "03 导入 Evidence 将 observation 组装成可回放的 runtime case。 继续导入 evidence*.json 或 case*.json 生成 runtime。 当前页面 当前工作台" [ref=e408] [cursor=pointer]:
+            - generic [ref=e98]: "03"
+            - generic [ref=e99]:
+              - generic [ref=e100]: 导入 Evidence
+              - paragraph [ref=e101]: 将 observation 组装成可回放的 runtime case。
+              - paragraph [ref=e102]: 继续导入 evidence*.json 或 case*.json 生成 runtime。
+            - generic [ref=e103]:
+              - generic [ref=e104]: 当前页面
+              - generic [ref=e105]: 当前工作台
+          - button "04 RCA 分析 浏览 route1 / route2，并执行本地 what-if。 当前只有图谱，缺少 runtime case，无法执行 RCA。 待补齐 进入" [ref=e370] [cursor=pointer]:
+            - generic [ref=e107]: "04"
+            - generic [ref=e108]:
+              - generic [ref=e109]: RCA 分析
+              - paragraph [ref=e110]: 浏览 route1 / route2，并执行本地 what-if。
+              - paragraph [ref=e111]: 当前只有图谱，缺少 runtime case，无法执行 RCA。
+            - generic [ref=e112]:
+              - generic [ref=e113]: 待补齐
+              - generic [ref=e114]: 进入
+      - generic [ref=e409]:
+        - generic [ref=e411]:
+          - generic [ref=e412]:
+            - generic [ref=e413]:
+              - generic [ref=e415]: Unified Evidence
+              - generic [ref=e417]: Contract Driven
+              - generic [ref=e419]: Traceable Runtime
+            - heading "Evidence 审查" [level=2] [ref=e420]
+            - paragraph [ref=e421]: 当前页面直接消费浏览器会话里的统一 Evidence contract。每个 case 都带 observation、 linked hints 和 raw refs，本地导入后无需后端即可做证据审查，并与 RCA 页的 draft case 保持同步。
+          - generic [ref=e422]:
+            - generic [ref=e423]:
+              - generic [ref=e424]: 当前 Bundle
+              - generic [ref=e425]: 加载中
+            - generic [ref=e426]:
+              - generic [ref=e427]: Case Count
+              - generic [ref=e428]: "0"
+            - generic [ref=e429]:
+              - generic [ref=e430]: 当前会话
+              - generic [ref=e431]: 本地导入
+            - generic [ref=e432]:
+              - generic [ref=e433]: 活跃图快照
+              - generic [ref=e434]: 未选择 case
+            - generic [ref=e435]:
+              - generic [ref=e436]: 会话摘要
+              - generic [ref=e437]: 图谱导入：1 dataset(s), 0 case(s)
+        - generic [ref=e439]:
+          - generic [ref=e440]:
+            - generic [ref=e442]: Evidence Unavailable
+            - generic [ref=e444]: 本地导入
+          - heading "当前会话只有图谱，没有 runtime case" [level=3] [ref=e445]
+          - paragraph [ref=e446]: Evidence 工作台消费的是 runtime case。你当前已经有统一图谱，但还没有导入 evidence/case 文件，所以这里只能先等待 case 生成。
+          - alert [ref=e447]:
+            - img [ref=e449]
+          - generic [ref=e451]:
+            - generic [ref=e452]: 回到系统入口后选择“追加 Evidence”，导入 evidence*.json 或 case*.json。
+            - generic [ref=e453]: 如果只想检查图结构，图谱工作台仍然可用。
+          - generic [ref=e454]:
+            - button "去追加 Evidence" [ref=e456] [cursor=pointer]
+            - button "查看图谱" [ref=e458] [cursor=pointer]

@@ -1,0 +1,94 @@
+{
+  "adapter": {
+    "name": "mvtec",
+    "produces_root_cause": false
+  },
+  "anomaly_type": "scratch",
+  "case_id": "mvtec_0001",
+  "case_label": "mvtec_0001",
+  "confidence": 0.8,
+  "dataset": "mvtec",
+  "graph_dataset_id": "mvtec-project",
+  "human_feedback": null,
+  "kg_analysis": {
+    "consistency_score": null,
+    "correction_candidates": [],
+    "inconsistent_fields": [],
+    "linked_entities": [],
+    "top_k_paths": []
+  },
+  "location": "surface",
+  "morphology": "linear",
+  "normalized_evidence": {},
+  "object": "bottle",
+  "observations": [
+    {
+      "confidence": 0.8,
+      "facet": "object",
+      "linked_entity_hints": [
+        "bottle"
+      ],
+      "name": "bottle",
+      "obs_id": "obs_mvtec_0001_object_bottle",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.8,
+      "facet": "anomaly_type",
+      "linked_entity_hints": [
+        "scratch"
+      ],
+      "name": "scratch",
+      "obs_id": "obs_mvtec_0001_anomaly_type_scratch",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.8,
+      "facet": "location",
+      "linked_entity_hints": [
+        "surface"
+      ],
+      "name": "surface",
+      "obs_id": "obs_mvtec_0001_location_surface",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.8,
+      "facet": "morphology",
+      "linked_entity_hints": [
+        "linear"
+      ],
+      "name": "linear",
+      "obs_id": "obs_mvtec_0001_morphology_linear",
+      "raw_evidence_refs": []
+    },
+    {
+      "confidence": 0.8,
+      "facet": "severity",
+      "linked_entity_hints": [
+        "severity"
+      ],
+      "name": "severity",
+      "obs_id": "obs_mvtec_0001_severity_severity",
+      "raw_evidence_refs": [],
+      "value": 0.4,
+      "value_type": "float"
+    }
+  ],
+  "raw_evidence": {
+    "description": "观测到的 visual anomaly evidence only：manual demo annotation 记录 object、anomaly_type、location 和 morphology；不包含 root-cause label。",
+    "extra": {
+      "analysis_boundary": "KGTracePipeline computes linking/consistency/corrections/candidate RCA paths at runtime.",
+      "demo_scope": "adapters/manual demo annotations provide observed anomaly evidence only；不是 MVTec factory root-cause label"
+    },
+    "heatmap_path": null,
+    "image_region": "mask_region_001",
+    "log_events": [],
+    "variable_contributions": {},
+    "variables": []
+  },
+  "severity": 0.4,
+  "source": "image",
+  "summary": "观测到的 visual anomaly evidence only：manual demo annotation 记录 object、anomaly_type、location 和 morphology；不包含 root-cause label。",
+  "timestamp": "2026-05-12T11:17:29Z"
+}

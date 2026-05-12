@@ -1,0 +1,262 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Visualization System
+      - heading "RootLens" [level=1] [ref=e9]
+      - paragraph [ref=e10]: 聚焦导入数据、统一图谱、Evidence 审查与 RCA 分析四段主链路。
+    - generic [ref=e12]:
+      - generic [ref=e13] [cursor=pointer]:
+        - img [ref=e15]
+        - generic [ref=e17]: 系统入口
+      - generic [ref=e18] [cursor=pointer]:
+        - img [ref=e20]
+        - generic [ref=e23]: 图谱可视化
+      - generic [ref=e24] [cursor=pointer]:
+        - img [ref=e26]
+        - generic [ref=e28]: Evidence 审查
+      - generic [ref=e29] [cursor=pointer]:
+        - img [ref=e31]
+        - generic [ref=e33]: RCA 分析
+    - generic [ref=e35]:
+      - generic [ref=e36]: Current Scope
+      - generic [ref=e37]: 当前仓库正在落地前端本地导入、本地图谱归一化、本地 Evidence 会话与浏览器端 RCA 推理，不提供后端服务。
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - button [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Phase 1 / Local Runtime Landing
+          - heading "系统入口" [level=2] [ref=e47]
+          - paragraph [ref=e48]: 导入本地文件，构建浏览器会话，并驱动后续图谱、Evidence 与 RCA 可视化。
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]: Session
+          - generic [ref=e52]: 内置示例
+        - generic [ref=e53]:
+          - generic [ref=e54]: Mode
+          - generic [ref=e55]: demo replay
+        - generic [ref=e56]:
+          - generic [ref=e57]: Datasets
+          - generic [ref=e58]: demo
+        - generic [ref=e59]:
+          - generic [ref=e60]: Cases
+          - generic [ref=e61]: demo
+    - main [ref=e62]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Main Flow
+            - generic [ref=e68]: 导入数据 -> 构建图谱 -> Evidence -> RCA 可视化
+          - generic [ref=e69]:
+            - generic [ref=e71]: 内置示例
+            - generic [ref=e73]: demo replay
+            - generic [ref=e75]: demo graph
+            - generic [ref=e77]: demo case
+        - generic [ref=e78]:
+          - button "01 导入数据 上传 runtime、nodes/edges 或 evidence 文件。 当前使用内置示例，可直接体验完整链路。 当前页面 当前工作台" [ref=e340] [cursor=pointer]:
+            - generic [ref=e80]: "01"
+            - generic [ref=e81]:
+              - generic [ref=e82]: 导入数据
+              - paragraph [ref=e83]: 上传 runtime、nodes/edges 或 evidence 文件。
+              - paragraph [ref=e84]: 当前使用内置示例，可直接体验完整链路。
+            - generic [ref=e85]:
+              - generic [ref=e86]: 当前页面
+              - generic [ref=e87]: 当前工作台
+          - button "02 构建图谱 统一节点/边格式并进入图谱可视化。 内置统一图谱已就绪。 已就绪 进入" [ref=e341] [cursor=pointer]:
+            - generic [ref=e89]: "02"
+            - generic [ref=e90]:
+              - generic [ref=e91]: 构建图谱
+              - paragraph [ref=e92]: 统一节点/边格式并进入图谱可视化。
+              - paragraph [ref=e93]: 内置统一图谱已就绪。
+            - generic [ref=e94]:
+              - generic [ref=e95]: 已就绪
+              - generic [ref=e96]: 进入
+          - button "03 导入 Evidence 将 observation 组装成可回放的 runtime case。 内置 Evidence 已就绪。 已就绪 进入" [ref=e342] [cursor=pointer]:
+            - generic [ref=e98]: "03"
+            - generic [ref=e99]:
+              - generic [ref=e100]: 导入 Evidence
+              - paragraph [ref=e101]: 将 observation 组装成可回放的 runtime case。
+              - paragraph [ref=e102]: 内置 Evidence 已就绪。
+            - generic [ref=e103]:
+              - generic [ref=e104]: 已就绪
+              - generic [ref=e105]: 进入
+          - button "04 RCA 分析 浏览 route1 / route2，并执行本地 what-if。 路线 1 / 路线 2 已可用，可直接进入 RCA 工作台。 已就绪 进入" [ref=e106] [cursor=pointer]:
+            - generic [ref=e107]: "04"
+            - generic [ref=e108]:
+              - generic [ref=e109]: RCA 分析
+              - paragraph [ref=e110]: 浏览 route1 / route2，并执行本地 what-if。
+              - paragraph [ref=e111]: 路线 1 / 路线 2 已可用，可直接进入 RCA 工作台。
+            - generic [ref=e112]:
+              - generic [ref=e113]: 已就绪
+              - generic [ref=e114]: 进入
+      - generic [ref=e115]:
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - generic [ref=e121]: Frontend Only
+              - generic [ref=e123]: Graph Build
+              - generic [ref=e125]: Evidence Runtime
+              - generic [ref=e127]: RCA Visualization
+            - heading "RootLens 可视化系统入口" [level=2] [ref=e128]
+            - paragraph [ref=e129]: 当前系统只保留主链路：导入数据、构建统一图谱、导入 Evidence、执行 RCA 分析。 全部过程都在浏览器本地完成，不依赖后端。
+          - generic [ref=e130]:
+            - generic [ref=e131]:
+              - generic [ref=e132]: 当前数据源
+              - generic [ref=e133]: 内置示例
+            - generic [ref=e134]:
+              - generic [ref=e135]: 当前模式
+              - generic [ref=e136]: demo replay
+            - generic [ref=e137]:
+              - generic [ref=e138]: Datasets / Cases
+              - generic [ref=e139]: demo / demo
+            - generic [ref=e140]:
+              - generic [ref=e141]: 最近更新时间
+              - generic [ref=e142]: 2026-05-12T07:44:25.559Z
+            - generic [ref=e143]:
+              - generic [ref=e144]: 最近摘要
+              - generic [ref=e145]: 使用内置示例数据
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - button "导入图谱" [ref=e151] [cursor=pointer]
+            - button "追加 Evidence" [ref=e153] [cursor=pointer]
+            - button "直接回放" [ref=e155] [cursor=pointer]
+            - button "切回内置示例" [active] [ref=e157] [cursor=pointer]
+            - button "图谱可视化" [ref=e159] [cursor=pointer]
+            - button "Evidence 审查" [ref=e161] [cursor=pointer]
+            - button "RCA 分析" [ref=e163] [cursor=pointer]
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - generic [ref=e166]: 建议下一步
+              - generic [ref=e167]: 进入 RCA 分析
+              - paragraph [ref=e168]: 当前会话已具备 case，可直接对比 route1 / route2 并执行 what-if。
+            - button "进入 RCA 分析" [ref=e169] [cursor=pointer]
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - generic [ref=e173]: 阶段化导入
+            - generic [ref=e175]:
+              - article [ref=e176]:
+                - generic [ref=e178]: 1. 直接回放
+                - paragraph [ref=e179]: "`rootlens-runtime.json` + `unified-graphs.json` 一起导入，直接恢复完整图谱与 RCA 结果。"
+                - generic [ref=e180]:
+                  - generic [ref=e181]: rootlens-runtime.json
+                  - generic [ref=e182]: unified-graphs.json
+                - generic [ref=e183]:
+                  - paragraph [ref=e184]: 适合第一次进入系统时快速恢复完整链路。
+                  - button "导入完整会话" [ref=e185] [cursor=pointer]
+              - article [ref=e186]:
+                - generic [ref=e188]: 2. 本地构建图谱
+                - paragraph [ref=e189]: "TEP 使用 `nodes.jsonl` + `edges.jsonl`，MVTec 使用 `nodes.csv` + `edges.csv` + 可选 reference 文件，浏览器本地生成统一图谱。"
+                - generic [ref=e190]:
+                  - generic [ref=e191]: unified-graphs.json
+                  - generic [ref=e192]: nodes.jsonl
+                  - generic [ref=e193]: edges.jsonl
+                  - generic [ref=e194]: nodes.csv
+                  - generic [ref=e195]: edges.csv
+                - generic [ref=e196]:
+                  - paragraph [ref=e197]: 导入后会替换当前图谱，并决定后续 Evidence 与 RCA 的分析基础。
+                  - button "导入图谱文件" [ref=e198] [cursor=pointer]
+              - article [ref=e199]:
+                - generic [ref=e201]: 3. 追加 Evidence
+                - paragraph [ref=e202]: "在已有图谱基础上导入 `evidence*.json` 或 `case*.json`，浏览器本地组装 runtime case；重复导入时会按 `case_id` 增量新增或覆盖已有 case。"
+                - generic [ref=e203]:
+                  - generic [ref=e204]: evidence*.json
+                  - generic [ref=e205]: case*.json
+                - generic [ref=e206]:
+                  - paragraph [ref=e207]: 适合图谱已就绪后持续追加新的 case，直接驱动后续 RCA 分析。
+                  - button "导入 Evidence / case" [ref=e208] [cursor=pointer]
+              - article [ref=e209]:
+                - generic [ref=e211]: 4. 恢复导出结果
+                - paragraph [ref=e212]: "支持导入 `rootlens-session-export.v1` 或 `rootlens-analysis-workspace-export.v1`，恢复导出的完整会话或 analyst workspace。"
+                - generic [ref=e213]:
+                  - generic [ref=e214]: rootlens-session-export.v1
+                  - generic [ref=e215]: rootlens-analysis-workspace-export.v1
+                - generic [ref=e216]:
+                  - paragraph [ref=e217]: bundle 会恢复 graphs/runtime/workspace/focus；workspace export 会把草稿、反馈和共享焦点恢复到当前会话。
+                  - button "导入 Bundle / Workspace" [ref=e218] [cursor=pointer]
+          - generic [ref=e219]:
+            - generic [ref=e221]: 当前链路状态
+            - generic [ref=e223]:
+              - generic [ref=e224]:
+                - generic [ref=e225]: Session
+                - strong [ref=e226]: 内置示例
+              - generic [ref=e227]:
+                - generic [ref=e228]: Mode
+                - strong [ref=e229]: demo replay
+              - generic [ref=e230]:
+                - generic [ref=e231]: Datasets
+                - strong [ref=e232]: demo
+              - generic [ref=e233]:
+                - generic [ref=e234]: Cases
+                - strong [ref=e235]: demo
+              - generic [ref=e236]:
+                - generic [ref=e237]: Warnings
+                - strong [ref=e238]: "0"
+              - generic [ref=e239]:
+                - generic [ref=e240]: Recent Import
+                - strong [ref=e241]: none
+              - generic [ref=e242]:
+                - generic [ref=e243]: 当前会话内容
+                - generic [ref=e244]:
+                  - generic [ref=e245]:
+                    - generic [ref=e246]: 统一图谱
+                    - strong [ref=e247]: demo graph
+                  - generic [ref=e248]:
+                    - generic [ref=e249]: Runtime Case
+                    - strong [ref=e250]: demo case
+                  - generic [ref=e251]:
+                    - generic [ref=e252]: Workspace
+                    - strong [ref=e253]: empty
+                  - generic [ref=e254]:
+                    - generic [ref=e255]: Shared Focus
+                    - strong [ref=e256]: empty
+        - alert [ref=e343]:
+          - img [ref=e345]
+        - generic [ref=e257]:
+          - generic [ref=e258]:
+            - generic [ref=e259]:
+              - generic [ref=e260]: 已选择文件
+              - generic [ref=e261]: 最近动作
+            - generic [ref=e263]:
+              - img [ref=e265]
+              - generic [ref=e267]: 尚未选择本地文件
+          - generic [ref=e268]:
+            - generic [ref=e270]: 本次导入结果
+            - generic [ref=e347]:
+              - img [ref=e349]
+              - generic [ref=e351]: 尚未执行本地导入
+        - generic [ref=e303]:
+          - generic [ref=e305]: 会话导出
+          - generic [ref=e307]:
+            - article [ref=e308]:
+              - generic [ref=e309]:
+                - generic [ref=e310]: 导出统一图谱
+                - generic [ref=e311]: ready
+              - paragraph [ref=e312]: "导出当前会话实际在用的 `unified-graphs.json`，可用于后续重放或共享图谱结构。"
+              - generic [ref=e313]:
+                - paragraph [ref=e314]: 适用于 graphs-only、graphs+evidence 与 demo 模式。
+                - button "导出图谱" [ref=e315] [cursor=pointer]
+            - article [ref=e316]:
+              - generic [ref=e317]:
+                - generic [ref=e318]: 导出 Runtime
+                - generic [ref=e319]: ready
+              - paragraph [ref=e320]: "导出当前 case 集合和推理结果，生成 `rootlens-runtime.json` 用于完整回放。"
+              - generic [ref=e321]:
+                - paragraph [ref=e322]: 当 Evidence 已生成 runtime case 时可用。
+                - button "导出 Runtime" [ref=e323] [cursor=pointer]
+            - article [ref=e324]:
+              - generic [ref=e325]:
+                - generic [ref=e326]: 导出 Analyst Workspace
+                - generic [ref=e327]: empty
+              - paragraph [ref=e328]: 导出当前会话的 draft case、人工反馈与共享分析焦点，便于保留分析过程。
+              - generic [ref=e329]:
+                - paragraph [ref=e330]: 适用于 what-if、接受/驳回和跨页联动状态备份。
+                - button "导出 Workspace" [disabled] [ref=e331]
+            - article [ref=e332]:
+              - generic [ref=e333]:
+                - generic [ref=e334]: 导出完整会话 Bundle
+                - generic [ref=e335]: full
+              - paragraph [ref=e336]: 一次导出 session meta、graphs、runtime、workspace 与 focus，便于迁移或归档。
+              - generic [ref=e337]:
+                - paragraph [ref=e338]: 适用于演示归档、问题复现和离线交接。
+                - button "导出 Bundle" [ref=e339] [cursor=pointer]

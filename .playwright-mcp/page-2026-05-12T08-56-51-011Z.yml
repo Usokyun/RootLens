@@ -1,0 +1,938 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Visualization System
+      - heading "RootLens" [level=1] [ref=e9]
+      - paragraph [ref=e10]: 聚焦导入数据、统一图谱、Evidence 审查与 RCA 分析四段主链路。
+    - generic [ref=e12]:
+      - generic [ref=e13] [cursor=pointer]:
+        - img [ref=e15]
+        - generic [ref=e17]: 系统入口
+      - generic [ref=e18] [cursor=pointer]:
+        - img [ref=e20]
+        - generic [ref=e23]: 图谱可视化
+      - generic [ref=e24] [cursor=pointer]:
+        - img [ref=e26]
+        - generic [ref=e28]: Evidence 审查
+      - generic [ref=e29] [cursor=pointer]:
+        - img [ref=e31]
+        - generic [ref=e33]: RCA 分析
+    - generic [ref=e35]:
+      - generic [ref=e36]: Current Scope
+      - generic [ref=e37]: 当前仓库正在落地前端本地导入、本地图谱归一化、本地 Evidence 会话与浏览器端 RCA 推理，不提供后端服务。
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - button [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Phase 1 / Local Runtime Landing
+          - heading "RCA 分析" [level=2] [ref=e368]
+          - paragraph [ref=e48]: 路线 1 / 路线 2 对比、what-if 回放、人工反馈与 cross-route signals。
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]: Session
+          - generic [ref=e52]: 本地导入
+        - generic [ref=e53]:
+          - generic [ref=e54]: Mode
+          - generic [ref=e55]: graphs + evidence
+        - generic [ref=e56]:
+          - generic [ref=e57]: Datasets
+          - generic [ref=e58]: "1"
+        - generic [ref=e59]:
+          - generic [ref=e60]: Cases
+          - generic [ref=e61]: "1"
+    - main [ref=e62]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Main Flow
+            - generic [ref=e68]: 导入数据 -> 构建图谱 -> Evidence -> RCA 可视化
+          - generic [ref=e69]:
+            - generic [ref=e71]: 本地导入
+            - generic [ref=e73]: graphs + evidence
+            - generic [ref=e75]: 1 dataset
+            - generic [ref=e77]: 1 case
+            - generic [ref=e79]: 1 warning
+        - generic [ref=e80]:
+          - button "01 导入数据 上传 runtime、nodes/edges 或 evidence 文件。 导入结果已写入浏览器 localStorage，可刷新恢复。 待补齐 进入" [ref=e369] [cursor=pointer]:
+            - generic [ref=e82]: "01"
+            - generic [ref=e83]:
+              - generic [ref=e84]: 导入数据
+              - paragraph [ref=e85]: 上传 runtime、nodes/edges 或 evidence 文件。
+              - paragraph [ref=e86]: 导入结果已写入浏览器 localStorage，可刷新恢复。
+            - generic [ref=e87]:
+              - generic [ref=e88]: 待补齐
+              - generic [ref=e89]: 进入
+          - button "02 构建图谱 统一节点/边格式并进入图谱可视化。 1 个 dataset 已就绪，可直接检查图谱结构。 已就绪 进入" [ref=e90] [cursor=pointer]:
+            - generic [ref=e91]: "02"
+            - generic [ref=e92]:
+              - generic [ref=e93]: 构建图谱
+              - paragraph [ref=e94]: 统一节点/边格式并进入图谱可视化。
+              - paragraph [ref=e95]: 1 个 dataset 已就绪，可直接检查图谱结构。
+            - generic [ref=e96]:
+              - generic [ref=e97]: 已就绪
+              - generic [ref=e98]: 进入
+          - button "03 导入 Evidence 将 observation 组装成可回放的 runtime case。 1 个 case 已生成，可直接做证据审查。 已就绪 进入" [ref=e341] [cursor=pointer]:
+            - generic [ref=e100]: "03"
+            - generic [ref=e101]:
+              - generic [ref=e102]: 导入 Evidence
+              - paragraph [ref=e103]: 将 observation 组装成可回放的 runtime case。
+              - paragraph [ref=e104]: 1 个 case 已生成，可直接做证据审查。
+            - generic [ref=e105]:
+              - generic [ref=e106]: 已就绪
+              - generic [ref=e107]: 进入
+          - button "04 RCA 分析 浏览 route1 / route2，并执行本地 what-if。 路线 1 / 路线 2 已可用，可直接进入 RCA 工作台。 当前页面 当前工作台" [ref=e370] [cursor=pointer]:
+            - generic [ref=e109]: "04"
+            - generic [ref=e110]:
+              - generic [ref=e111]: RCA 分析
+              - paragraph [ref=e112]: 浏览 route1 / route2，并执行本地 what-if。
+              - paragraph [ref=e113]: 路线 1 / 路线 2 已可用，可直接进入 RCA 工作台。
+            - generic [ref=e114]:
+              - generic [ref=e115]: 当前页面
+              - generic [ref=e116]: 当前工作台
+      - generic [ref=e371]:
+        - generic [ref=e373]:
+          - generic [ref=e374]:
+            - generic [ref=e375]:
+              - generic [ref=e377]: Route 1
+              - generic [ref=e379]: Route 2
+              - generic [ref=e381]: Cross Route Signals
+            - heading "RCA 分析" [level=2] [ref=e382]
+            - paragraph [ref=e383]: "这里开始消费 `AnalysisResult` contract。路线 1 保留 entity linking、consistency 和 path ranking；路线 2 保留 TEP 的 Root-KGD 输出结构，并由浏览器本地运行时生成候选排序、what-if 回放与人工反馈。"
+          - generic [ref=e384]:
+            - generic [ref=e385]:
+              - generic [ref=e386]: Case Count
+              - generic [ref=e387]: "1"
+            - generic [ref=e388]:
+              - generic [ref=e389]: 当前会话
+              - generic [ref=e390]: 本地导入
+            - generic [ref=e391]:
+              - generic [ref=e392]: Route 1 Ready
+              - generic [ref=e393]: "Yes"
+            - generic [ref=e394]:
+              - generic [ref=e395]: Route 2 Ready
+              - generic [ref=e396]: "Yes"
+            - generic [ref=e397]:
+              - generic [ref=e398]: 会话摘要
+              - generic [ref=e399]: Evidence 追加：1 dataset(s), 1 case(s)
+        - generic [ref=e402]:
+          - generic [ref=e403]:
+            - generic [ref=e404]: Case
+            - generic [ref=e406] [cursor=pointer]:
+              - radio "TEP Fault 06 / Stream 1 A-feed loss" [checked]
+              - generic [ref=e407]: TEP Fault 06 / Stream 1 A-feed loss
+          - generic [ref=e408]:
+            - generic [ref=e409]: Runtime Notes
+            - generic [ref=e410]: RBC top channels show depleted A-feed flow and actuator-side response around stream 1.
+        - generic [ref=e411]:
+          - generic [ref=e412]:
+            - generic [ref=e413]: Graph Snapshot
+            - generic [ref=e414]: Imported TEP RCA Graph
+          - generic [ref=e415]:
+            - generic [ref=e416]: Dataset
+            - generic [ref=e417]: tep
+          - generic [ref=e418]:
+            - generic [ref=e419]: Route 1 Paths
+            - generic [ref=e420]: "10"
+          - generic [ref=e421]:
+            - generic [ref=e422]: Route 2 Candidates
+            - generic [ref=e423]: "8"
+        - generic [ref=e424]:
+          - generic [ref=e426]: Analyst Workspace
+          - generic [ref=e427]:
+            - generic [ref=e428]:
+              - generic [ref=e429]:
+                - generic [ref=e430]: Case Mode
+                - strong [ref=e431]: base
+              - generic [ref=e432]:
+                - generic [ref=e433]: Feedback Items
+                - strong [ref=e434]: "1"
+              - generic [ref=e435]:
+                - generic [ref=e436]: Accepted
+                - strong [ref=e437]: "1"
+              - generic [ref=e438]:
+                - generic [ref=e439]: Rejected
+                - strong [ref=e440]: "0"
+              - generic [ref=e441]:
+                - generic [ref=e442]: Noted
+                - strong [ref=e443]: "1"
+            - generic [ref=e445]:
+              - generic [ref=e447]: route2-candidate
+              - generic [ref=e449]: reasoning
+              - generic [ref=e451]: Stream 1 A-feed loss disturbance
+            - paragraph [ref=e452]: 当前 case 的 what-if 草稿和人工反馈都保存在浏览器本地，会在刷新页面后自动恢复。
+        - generic [ref=e453]:
+          - generic [ref=e454]:
+            - generic [ref=e455]: Feedback Summary
+            - generic [ref=e457]:
+              - generic [ref=e459]: accepted 1
+              - generic [ref=e461]: rejected 0
+              - generic [ref=e463]: noted 1
+          - article [ref=e466]:
+            - generic [ref=e467]:
+              - generic [ref=e468]:
+                - generic [ref=e469]:
+                  - generic [ref=e471]: Route 2 Candidate
+                  - generic [ref=e473]: 已接受
+                  - generic [ref=e475]: 已备注
+                - strong [ref=e476]: "#1 Stream 1 A-feed loss disturbance"
+                - paragraph [ref=e477]: FaultAnchor / root_cause_anchor
+              - button "定位候选" [ref=e478] [cursor=pointer]
+            - generic [ref=e479]: 最近更新 2026/5/12 15:43:47
+            - paragraph [ref=e480]: fixture analyst note
+        - generic [ref=e481]:
+          - generic [ref=e482]:
+            - generic [ref=e483]: What-if Replay
+            - generic [ref=e485]:
+              - generic [ref=e487]: base
+              - generic [ref=e489]: Imported TEP RCA Graph
+          - generic [ref=e491]:
+            - generic [ref=e492]:
+              - generic [ref=e493]: Observation
+              - generic "obs_tep_001 · xmeas_1" [ref=e494] [cursor=pointer]:
+                - textbox "选择一个 observation 进行 what-if 重算"
+                - generic [ref=e495]: obs_tep_001 · xmeas_1
+                - img [ref=e498]
+            - generic [ref=e500]:
+              - textbox "variable name" [ref=e502]: xmeas_1
+              - generic [ref=e503]:
+                - spinbutton "contribution" [ref=e504]: "0.820"
+                - generic [ref=e506]:
+                  - button [ref=e507] [cursor=pointer]:
+                    - img [ref=e508]
+                  - button [ref=e510] [cursor=pointer]:
+                    - img [ref=e511]
+              - generic "decrease" [ref=e513] [cursor=pointer]:
+                - textbox "direction"
+                - generic [ref=e514]: decrease
+                - img [ref=e517]
+              - generic [ref=e519]:
+                - spinbutton "confidence" [ref=e520]: "0.950"
+                - generic [ref=e522]:
+                  - button [ref=e523] [cursor=pointer]:
+                    - img [ref=e524]
+                  - button [ref=e526] [cursor=pointer]:
+                    - img [ref=e527]
+            - textbox "linked entity hints，按换行 / 逗号 / 分号分隔" [ref=e530]: variable:xmeas_1 stream:stream_1_a_feed
+            - generic [ref=e531]:
+              - generic [ref=e532]: What-if Diff
+              - generic [ref=e533]:
+                - img [ref=e535]
+                - generic [ref=e537]: 当前 observation 还没有待应用的改动。
+            - generic [ref=e538]:
+              - button "应用变更并重算" [disabled] [ref=e539]
+              - button "恢复原始 case" [disabled] [ref=e540]
+        - generic [ref=e541]:
+          - generic [ref=e542]:
+            - generic [ref=e543]:
+              - generic [ref=e544]: Route 1 / Clue Organization
+              - generic [ref=e546]: enabled
+            - generic [ref=e547]:
+              - generic [ref=e548]:
+                - generic [ref=e549]:
+                  - generic [ref=e550]: Consistency
+                  - strong [ref=e551]: "1.00"
+                - generic [ref=e552]:
+                  - generic [ref=e553]: Linked Entities
+                  - strong [ref=e554]: "2"
+                - generic [ref=e555]:
+                  - generic [ref=e556]: Corrections
+                  - strong [ref=e557]: "0"
+                - generic [ref=e558]:
+                  - generic [ref=e559]: Paths
+                  - strong [ref=e560]: "10"
+              - generic [ref=e561]:
+                - heading "Linked Entities" [level=3] [ref=e562]
+                - table [ref=e564]:
+                  - rowgroup [ref=e565]:
+                    - row "Field Mention Selected Match Score" [ref=e566]:
+                      - columnheader "Field" [ref=e567]
+                      - columnheader "Mention" [ref=e568]
+                      - columnheader "Selected" [ref=e569]
+                      - columnheader "Match" [ref=e570]
+                      - columnheader "Score" [ref=e571]
+                  - rowgroup [ref=e572]:
+                    - row "variable xmeas_1 XMEAS_1 (A 进料流量) variable:xmeas_1 exact 0.99" [ref=e573]:
+                      - cell "variable" [ref=e574]
+                      - cell "xmeas_1" [ref=e575]
+                      - cell "XMEAS_1 (A 进料流量) variable:xmeas_1" [ref=e576]:
+                        - generic [ref=e577]: XMEAS_1 (A 进料流量)
+                        - code [ref=e578]: variable:xmeas_1
+                      - cell "exact" [ref=e579]
+                      - cell "0.99" [ref=e580]
+                    - row "variable xmv_3 XMEAS_3 (E 进料流量) variable:xmeas_3 fuzzy 0.63" [ref=e581]:
+                      - cell "variable" [ref=e582]
+                      - cell "xmv_3" [ref=e583]
+                      - cell "XMEAS_3 (E 进料流量) variable:xmeas_3" [ref=e584]:
+                        - generic [ref=e585]: XMEAS_3 (E 进料流量)
+                        - code [ref=e586]: variable:xmeas_3
+                      - cell "fuzzy" [ref=e587]
+                      - cell "0.63" [ref=e588]
+              - generic [ref=e589]:
+                - heading "Correction Candidates" [level=3] [ref=e590]
+                - generic [ref=e591]:
+                  - img [ref=e593]
+                  - generic [ref=e595]: 当前 case 没有 route1 修正候选
+              - generic [ref=e596]:
+                - heading "Ranked Paths" [level=3] [ref=e597]
+                - generic [ref=e598]:
+                  - generic [ref=e599]:
+                    - generic [ref=e600]:
+                      - generic [ref=e601]:
+                        - strong [ref=e602]: Stream 1 A-feed loss disturbance
+                        - paragraph [ref=e603]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream 1 A-feed loss disturbance
+                      - generic [ref=e604]:
+                        - generic [ref=e606]: score 0.62
+                        - generic [ref=e608]: evidence 0.50
+                    - generic [ref=e609]:
+                      - button "在图中查看" [ref=e610] [cursor=pointer]
+                      - button "查看证据" [ref=e611] [cursor=pointer]
+                    - generic [ref=e612]:
+                      - generic [ref=e613]: 未标注
+                      - generic [ref=e614]:
+                        - button "接受" [ref=e616] [cursor=pointer]
+                        - button "驳回" [ref=e618] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e620]
+                    - button "obs_tep_001" [ref=e622] [cursor=pointer]
+                    - generic [ref=e623]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_26c6a0f01dd5886a\", \"source\": \"faultanchor:stream_1_a_feed_loss\", \"target\": \"stream:stream_1_a_feed\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+                  - generic [ref=e624]:
+                    - generic [ref=e625]:
+                      - generic [ref=e626]:
+                        - strong [ref=e627]: Reactor kinetics disturbance
+                        - paragraph [ref=e628]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor kinetics disturbance
+                      - generic [ref=e629]:
+                        - generic [ref=e631]: score 0.59
+                        - generic [ref=e633]: evidence 0.50
+                    - generic [ref=e634]:
+                      - button "在图中查看" [ref=e635] [cursor=pointer]
+                      - button "查看证据" [ref=e636] [cursor=pointer]
+                    - generic [ref=e637]:
+                      - generic [ref=e638]: 未标注
+                      - generic [ref=e639]:
+                        - button "接受" [ref=e641] [cursor=pointer]
+                        - button "驳回" [ref=e643] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e645]
+                    - button "obs_tep_001" [ref=e647] [cursor=pointer]
+                    - generic [ref=e648]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_37544d6ae56f0210\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_30f7013325fc489b\", \"source\": \"faultanchor:reactor_kinetics\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"CAUSES\", \"confidence\": 0.96 } ]"
+                  - generic [ref=e649]:
+                    - generic [ref=e650]:
+                      - generic [ref=e651]:
+                        - strong [ref=e652]: Reactor kinetics disturbance
+                        - paragraph [ref=e653]: XMEAS_3 (E 进料流量) -> Stream_3_E_Feed (E 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor kinetics disturbance
+                      - generic [ref=e654]:
+                        - generic [ref=e656]: score 0.59
+                        - generic [ref=e658]: evidence 0.50
+                    - generic [ref=e659]:
+                      - button "在图中查看" [ref=e660] [cursor=pointer]
+                      - button "查看证据" [ref=e661] [cursor=pointer]
+                    - generic [ref=e662]:
+                      - generic [ref=e663]: 未标注
+                      - generic [ref=e664]:
+                        - button "接受" [ref=e666] [cursor=pointer]
+                        - button "驳回" [ref=e668] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e670]
+                    - button "obs_tep_002" [ref=e672] [cursor=pointer]
+                    - generic [ref=e673]: "[ { \"edge_id\": \"semantic_lift_edge_6abf6da3b36fc503\", \"source\": \"stream:stream_3_e_feed\", \"target\": \"variable:xmeas_3\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_547fbd3bfada2ac6\", \"source\": \"stream:stream_3_e_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_30f7013325fc489b\", \"source\": \"faultanchor:reactor_kinetics\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"CAUSES\", \"confidence\": 0.96 } ]"
+                  - generic [ref=e674]:
+                    - generic [ref=e675]:
+                      - generic [ref=e676]:
+                        - strong [ref=e677]: Stream 4 A/C-ratio disturbance
+                        - paragraph [ref=e678]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Component_A (组分 A) -> Stream 4 A/C-ratio disturbance
+                      - generic [ref=e679]:
+                        - generic [ref=e681]: score 0.59
+                        - generic [ref=e683]: evidence 0.50
+                    - generic [ref=e684]:
+                      - button "在图中查看" [ref=e685] [cursor=pointer]
+                      - button "查看证据" [ref=e686] [cursor=pointer]
+                    - generic [ref=e687]:
+                      - generic [ref=e688]: 未标注
+                      - generic [ref=e689]:
+                        - button "接受" [ref=e691] [cursor=pointer]
+                        - button "驳回" [ref=e693] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e695]
+                    - button "obs_tep_001" [ref=e697] [cursor=pointer]
+                    - generic [ref=e698]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_ada8237ce8860267\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"component:component_a\", \"relation\": \"HAS_COMPONENT\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_cb504cf314efcfa0\", \"source\": \"faultanchor:stream_4_ac_ratio\", \"target\": \"component:component_a\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+                  - generic [ref=e699]:
+                    - generic [ref=e700]:
+                      - generic [ref=e701]:
+                        - strong [ref=e702]: Stream 4 A/B/C composition disturbance
+                        - paragraph [ref=e703]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Component_A (组分 A) -> Stream 4 A/B/C composition disturbance
+                      - generic [ref=e704]:
+                        - generic [ref=e706]: score 0.59
+                        - generic [ref=e708]: evidence 0.50
+                    - generic [ref=e709]:
+                      - button "在图中查看" [ref=e710] [cursor=pointer]
+                      - button "查看证据" [ref=e711] [cursor=pointer]
+                    - generic [ref=e712]:
+                      - generic [ref=e713]: 未标注
+                      - generic [ref=e714]:
+                        - button "接受" [ref=e716] [cursor=pointer]
+                        - button "驳回" [ref=e718] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e720]
+                    - button "obs_tep_001" [ref=e722] [cursor=pointer]
+                    - generic [ref=e723]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_ada8237ce8860267\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"component:component_a\", \"relation\": \"HAS_COMPONENT\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_706602ce38769bb4\", \"source\": \"faultanchor:stream_4_abc_composition\", \"target\": \"component:component_a\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+                  - generic [ref=e724]:
+                    - generic [ref=e725]:
+                      - generic [ref=e726]:
+                        - strong [ref=e727]: Reactor coolant valve stiction
+                        - paragraph [ref=e728]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor (反应器) -> Reactor coolant valve stiction
+                      - generic [ref=e729]:
+                        - generic [ref=e731]: score 0.57
+                        - generic [ref=e733]: evidence 0.50
+                    - generic [ref=e734]:
+                      - button "在图中查看" [ref=e735] [cursor=pointer]
+                      - button "查看证据" [ref=e736] [cursor=pointer]
+                    - generic [ref=e737]:
+                      - generic [ref=e738]: 未标注
+                      - generic [ref=e739]:
+                        - button "接受" [ref=e741] [cursor=pointer]
+                        - button "驳回" [ref=e743] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e745]
+                    - button "obs_tep_001" [ref=e747] [cursor=pointer]
+                    - generic [ref=e748]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_37544d6ae56f0210\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_a81a157b91905f29\", \"source\": \"stream:stream_6_reactor_feed\", \"target\": \"equipment:reactor\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_9c4066d3c3297af4\", \"source\": \"faultanchor:reactor_coolant_valve_stiction\", \"target\": \"equipment:reactor\", \"relation\": \"CAUSES\", \"confidence\": 0.96 } ]"
+                  - generic [ref=e749]:
+                    - generic [ref=e750]:
+                      - generic [ref=e751]:
+                        - strong [ref=e752]: Reactor coolant valve stiction
+                        - paragraph [ref=e753]: XMEAS_3 (E 进料流量) -> Stream_3_E_Feed (E 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor (反应器) -> Reactor coolant valve stiction
+                      - generic [ref=e754]:
+                        - generic [ref=e756]: score 0.57
+                        - generic [ref=e758]: evidence 0.50
+                    - generic [ref=e759]:
+                      - button "在图中查看" [ref=e760] [cursor=pointer]
+                      - button "查看证据" [ref=e761] [cursor=pointer]
+                    - generic [ref=e762]:
+                      - generic [ref=e763]: 未标注
+                      - generic [ref=e764]:
+                        - button "接受" [ref=e766] [cursor=pointer]
+                        - button "驳回" [ref=e768] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e770]
+                    - button "obs_tep_002" [ref=e772] [cursor=pointer]
+                    - generic [ref=e773]: "[ { \"edge_id\": \"semantic_lift_edge_6abf6da3b36fc503\", \"source\": \"stream:stream_3_e_feed\", \"target\": \"variable:xmeas_3\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_547fbd3bfada2ac6\", \"source\": \"stream:stream_3_e_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_a81a157b91905f29\", \"source\": \"stream:stream_6_reactor_feed\", \"target\": \"equipment:reactor\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_9c4066d3c3297af4\", \"source\": \"faultanchor:reactor_coolant_valve_stiction\", \"target\": \"equipment:reactor\", \"relation\": \"CAUSES\", \"confidence\": 0.96 } ]"
+                  - generic [ref=e774]:
+                    - generic [ref=e775]:
+                      - generic [ref=e776]:
+                        - strong [ref=e777]: Stream 4 B-composition disturbance
+                        - paragraph [ref=e778]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_4_ABC_Feed (A/B/C 混合进料流股) -> Stream 4 B-composition disturbance
+                      - generic [ref=e779]:
+                        - generic [ref=e781]: score 0.56
+                        - generic [ref=e783]: evidence 0.50
+                    - generic [ref=e784]:
+                      - button "在图中查看" [ref=e785] [cursor=pointer]
+                      - button "查看证据" [ref=e786] [cursor=pointer]
+                    - generic [ref=e787]:
+                      - generic [ref=e788]: 未标注
+                      - generic [ref=e789]:
+                        - button "接受" [ref=e791] [cursor=pointer]
+                        - button "驳回" [ref=e793] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e795]
+                    - button "obs_tep_001" [ref=e797] [cursor=pointer]
+                    - generic [ref=e798]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_37544d6ae56f0210\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_f61236e4b0fb9b9f\", \"source\": \"stream:stream_4_abc_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_78e17298c4e859cb\", \"source\": \"faultanchor:stream_4_b_composition\", \"target\": \"stream:stream_4_abc_feed\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+                  - generic [ref=e799]:
+                    - generic [ref=e800]:
+                      - generic [ref=e801]:
+                        - strong [ref=e802]: Reactor cooling inlet temperature disturbance
+                        - paragraph [ref=e803]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor (反应器) -> Reactor cooling inlet temperature disturbance
+                      - generic [ref=e804]:
+                        - generic [ref=e806]: score 0.56
+                        - generic [ref=e808]: evidence 0.50
+                    - generic [ref=e809]:
+                      - button "在图中查看" [ref=e810] [cursor=pointer]
+                      - button "查看证据" [ref=e811] [cursor=pointer]
+                    - generic [ref=e812]:
+                      - generic [ref=e813]: 未标注
+                      - generic [ref=e814]:
+                        - button "接受" [ref=e816] [cursor=pointer]
+                        - button "驳回" [ref=e818] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e820]
+                    - button "obs_tep_001" [ref=e822] [cursor=pointer]
+                    - generic [ref=e823]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_37544d6ae56f0210\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_a81a157b91905f29\", \"source\": \"stream:stream_6_reactor_feed\", \"target\": \"equipment:reactor\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_2fcdd786aac29186\", \"source\": \"faultanchor:reactor_cooling_inlet_temperature\", \"target\": \"equipment:reactor\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+                  - generic [ref=e824]:
+                    - generic [ref=e825]:
+                      - generic [ref=e826]:
+                        - strong [ref=e827]: Reactor heat-transfer disturbance
+                        - paragraph [ref=e828]: XMEAS_1 (A 进料流量) -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Reactor (反应器) -> Reactor heat-transfer disturbance
+                      - generic [ref=e829]:
+                        - generic [ref=e831]: score 0.56
+                        - generic [ref=e833]: evidence 0.50
+                    - generic [ref=e834]:
+                      - button "在图中查看" [ref=e835] [cursor=pointer]
+                      - button "查看证据" [ref=e836] [cursor=pointer]
+                    - generic [ref=e837]:
+                      - generic [ref=e838]: 未标注
+                      - generic [ref=e839]:
+                        - button "接受" [ref=e841] [cursor=pointer]
+                        - button "驳回" [ref=e843] [cursor=pointer]
+                    - textbox "记录该路径的人工判断、上下文或驳回理由；失焦后自动保存。" [ref=e845]
+                    - button "obs_tep_001" [ref=e847] [cursor=pointer]
+                    - generic [ref=e848]: "[ { \"edge_id\": \"semantic_lift_edge_100fc2c4a0dcbc8e\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"variable:xmeas_1\", \"relation\": \"OBSERVED_BY\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_37544d6ae56f0210\", \"source\": \"stream:stream_1_a_feed\", \"target\": \"stream:stream_6_reactor_feed\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"semantic_lift_edge_a81a157b91905f29\", \"source\": \"stream:stream_6_reactor_feed\", \"target\": \"equipment:reactor\", \"relation\": \"FLOWS_TO\", \"confidence\": 0.82 }, { \"edge_id\": \"fault_anchor_edge_0aa99ae69ef5369f\", \"source\": \"faultanchor:reactor_heat_transfer\", \"target\": \"equipment:reactor\", \"relation\": \"CAUSES\", \"confidence\": 0.95 } ]"
+          - generic [ref=e849]:
+            - generic [ref=e850]:
+              - generic [ref=e851]: Route 2 / Process Fault Analysis
+              - generic [ref=e853]: enabled
+            - generic [ref=e854]:
+              - generic [ref=e855]:
+                - heading "Fault Signature" [level=3] [ref=e856]
+                - generic [ref=e857]:
+                  - generic [ref=e858]:
+                    - generic [ref=e859]: "#1"
+                    - generic [ref=e860]:
+                      - strong [ref=e861]: XMEAS_1 (A 进料流量)
+                      - code [ref=e862]: variable:xmeas_1
+                    - generic [ref=e863]: "0.82"
+                  - generic [ref=e864]:
+                    - generic [ref=e865]: "#2"
+                    - generic [ref=e866]:
+                      - strong [ref=e867]: XMEAS_3 (E 进料流量)
+                      - code [ref=e868]: variable:xmeas_3
+                    - generic [ref=e869]: "0.61"
+              - generic [ref=e870]:
+                - heading "Ranked Candidates" [level=3] [ref=e871]
+                - generic [ref=e872]:
+                  - generic [ref=e873]:
+                    - generic [ref=e874]:
+                      - generic [ref=e875]:
+                        - strong [ref=e876]: "#1 Stream 1 A-feed loss disturbance"
+                        - paragraph [ref=e877]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e878]:
+                        - generic [ref=e880]: root 0.21
+                        - generic [ref=e882]: rank 0.33
+                    - generic [ref=e883]:
+                      - button "高亮候选" [ref=e884] [cursor=pointer]
+                      - button "查看证据" [ref=e885] [cursor=pointer]
+                    - generic [ref=e886]:
+                      - generic [ref=e887]: 已接受
+                      - generic [ref=e888]: 已备注
+                      - generic [ref=e889]:
+                        - button "接受" [ref=e891] [cursor=pointer]
+                        - button "驳回" [ref=e893] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e895]: fixture analyst note
+                    - generic [ref=e896]:
+                      - generic [ref=e897]:
+                        - generic [ref=e898]: Seed
+                        - strong [ref=e899]: variable:xmeas_1
+                      - generic [ref=e900]:
+                        - generic [ref=e901]: Coverage
+                        - strong [ref=e902]: "0.21"
+                      - generic [ref=e903]:
+                        - generic [ref=e904]: Entropy
+                        - strong [ref=e905]: "0.71"
+                      - generic [ref=e906]:
+                        - generic [ref=e907]: Adjustment
+                        - strong [ref=e908]: "0.12"
+                    - generic [ref=e909]:
+                      - generic [ref=e910]: Top Affected Variables
+                      - generic [ref=e911]:
+                        - generic [ref=e912]: XMEAS_1 (A 进料流量) / 0.24
+                        - generic [ref=e913]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e914]:
+                      - generic [ref=e915]: Support Evidence
+                      - generic [ref=e916]:
+                        - button "obs_tep_001" [ref=e917] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e918] [cursor=pointer]
+                    - generic [ref=e919]:
+                      - generic [ref=e920]: Support Paths
+                      - generic [ref=e921]:
+                        - generic [ref=e922]: Stream 1 A-feed loss disturbance -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e923]: Stream 1 A-feed loss disturbance -> Stream_1_A_Feed (A 进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e924]:
+                    - generic [ref=e925]:
+                      - generic [ref=e926]:
+                        - strong [ref=e927]: "#2 Reactor kinetics disturbance"
+                        - paragraph [ref=e928]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e929]:
+                        - generic [ref=e931]: root 0.17
+                        - generic [ref=e933]: rank 0.29
+                    - generic [ref=e934]:
+                      - button "高亮候选" [ref=e935] [cursor=pointer]
+                      - button "查看证据" [ref=e936] [cursor=pointer]
+                    - generic [ref=e937]:
+                      - generic [ref=e938]: 未标注
+                      - generic [ref=e939]:
+                        - button "接受" [ref=e941] [cursor=pointer]
+                        - button "驳回" [ref=e943] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e945]
+                    - generic [ref=e946]:
+                      - generic [ref=e947]:
+                        - generic [ref=e948]: Seed
+                        - strong [ref=e949]: variable:xmeas_1
+                      - generic [ref=e950]:
+                        - generic [ref=e951]: Coverage
+                        - strong [ref=e952]: "0.17"
+                      - generic [ref=e953]:
+                        - generic [ref=e954]: Entropy
+                        - strong [ref=e955]: "0.98"
+                      - generic [ref=e956]:
+                        - generic [ref=e957]: Adjustment
+                        - strong [ref=e958]: "0.12"
+                    - generic [ref=e959]:
+                      - generic [ref=e960]: Top Affected Variables
+                      - generic [ref=e961]:
+                        - generic [ref=e962]: XMEAS_1 (A 进料流量) / 0.14
+                        - generic [ref=e963]: XMEAS_3 (E 进料流量) / 0.10
+                    - generic [ref=e964]:
+                      - generic [ref=e965]: Support Evidence
+                      - generic [ref=e966]:
+                        - button "obs_tep_001" [ref=e967] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e968] [cursor=pointer]
+                    - generic [ref=e969]:
+                      - generic [ref=e970]: Support Paths
+                      - generic [ref=e971]:
+                        - generic [ref=e972]: Reactor kinetics disturbance -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e973]: Reactor kinetics disturbance -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e974]:
+                    - generic [ref=e975]:
+                      - generic [ref=e976]:
+                        - strong [ref=e977]: "#3 Stream 4 A/C-ratio disturbance"
+                        - paragraph [ref=e978]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e979]:
+                        - generic [ref=e981]: root 0.14
+                        - generic [ref=e983]: rank 0.26
+                    - generic [ref=e984]:
+                      - button "高亮候选" [ref=e985] [cursor=pointer]
+                      - button "查看证据" [ref=e986] [cursor=pointer]
+                    - generic [ref=e987]:
+                      - generic [ref=e988]: 未标注
+                      - generic [ref=e989]:
+                        - button "接受" [ref=e991] [cursor=pointer]
+                        - button "驳回" [ref=e993] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e995]
+                    - generic [ref=e996]:
+                      - generic [ref=e997]:
+                        - generic [ref=e998]: Seed
+                        - strong [ref=e999]: variable:xmeas_1
+                      - generic [ref=e1000]:
+                        - generic [ref=e1001]: Coverage
+                        - strong [ref=e1002]: "0.14"
+                      - generic [ref=e1003]:
+                        - generic [ref=e1004]: Entropy
+                        - strong [ref=e1005]: "0.88"
+                      - generic [ref=e1006]:
+                        - generic [ref=e1007]: Adjustment
+                        - strong [ref=e1008]: "0.12"
+                    - generic [ref=e1009]:
+                      - generic [ref=e1010]: Top Affected Variables
+                      - generic [ref=e1011]:
+                        - generic [ref=e1012]: XMEAS_1 (A 进料流量) / 0.14
+                        - generic [ref=e1013]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1014]:
+                      - generic [ref=e1015]: Support Evidence
+                      - generic [ref=e1016]:
+                        - button "obs_tep_001" [ref=e1017] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1018] [cursor=pointer]
+                    - generic [ref=e1019]:
+                      - generic [ref=e1020]: Support Paths
+                      - generic [ref=e1021]:
+                        - generic [ref=e1022]: Stream 4 A/C-ratio disturbance -> Component_A (组分 A) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1023]: Stream 4 A/C-ratio disturbance -> Stream_4_ABC_Feed (A/B/C 混合进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e1024]:
+                    - generic [ref=e1025]:
+                      - generic [ref=e1026]:
+                        - strong [ref=e1027]: "#4 Stream 4 A/B/C composition disturbance"
+                        - paragraph [ref=e1028]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e1029]:
+                        - generic [ref=e1031]: root 0.14
+                        - generic [ref=e1033]: rank 0.26
+                    - generic [ref=e1034]:
+                      - button "高亮候选" [ref=e1035] [cursor=pointer]
+                      - button "查看证据" [ref=e1036] [cursor=pointer]
+                    - generic [ref=e1037]:
+                      - generic [ref=e1038]: 未标注
+                      - generic [ref=e1039]:
+                        - button "接受" [ref=e1041] [cursor=pointer]
+                        - button "驳回" [ref=e1043] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e1045]
+                    - generic [ref=e1046]:
+                      - generic [ref=e1047]:
+                        - generic [ref=e1048]: Seed
+                        - strong [ref=e1049]: variable:xmeas_1
+                      - generic [ref=e1050]:
+                        - generic [ref=e1051]: Coverage
+                        - strong [ref=e1052]: "0.14"
+                      - generic [ref=e1053]:
+                        - generic [ref=e1054]: Entropy
+                        - strong [ref=e1055]: "0.88"
+                      - generic [ref=e1056]:
+                        - generic [ref=e1057]: Adjustment
+                        - strong [ref=e1058]: "0.12"
+                    - generic [ref=e1059]:
+                      - generic [ref=e1060]: Top Affected Variables
+                      - generic [ref=e1061]:
+                        - generic [ref=e1062]: XMEAS_1 (A 进料流量) / 0.14
+                        - generic [ref=e1063]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1064]:
+                      - generic [ref=e1065]: Support Evidence
+                      - generic [ref=e1066]:
+                        - button "obs_tep_001" [ref=e1067] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1068] [cursor=pointer]
+                    - generic [ref=e1069]:
+                      - generic [ref=e1070]: Support Paths
+                      - generic [ref=e1071]:
+                        - generic [ref=e1072]: Stream 4 A/B/C composition disturbance -> Component_A (组分 A) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1073]: Stream 4 A/B/C composition disturbance -> Stream_4_ABC_Feed (A/B/C 混合进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e1074]:
+                    - generic [ref=e1075]:
+                      - generic [ref=e1076]:
+                        - strong [ref=e1077]: "#5 Reactor coolant valve stiction"
+                        - paragraph [ref=e1078]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e1079]:
+                        - generic [ref=e1081]: root 0.09
+                        - generic [ref=e1083]: rank 0.21
+                    - generic [ref=e1084]:
+                      - button "高亮候选" [ref=e1085] [cursor=pointer]
+                      - button "查看证据" [ref=e1086] [cursor=pointer]
+                    - generic [ref=e1087]:
+                      - generic [ref=e1088]: 未标注
+                      - generic [ref=e1089]:
+                        - button "接受" [ref=e1091] [cursor=pointer]
+                        - button "驳回" [ref=e1093] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e1095]
+                    - generic [ref=e1096]:
+                      - generic [ref=e1097]:
+                        - generic [ref=e1098]: Seed
+                        - strong [ref=e1099]: variable:xmeas_1
+                      - generic [ref=e1100]:
+                        - generic [ref=e1101]: Coverage
+                        - strong [ref=e1102]: "0.09"
+                      - generic [ref=e1103]:
+                        - generic [ref=e1104]: Entropy
+                        - strong [ref=e1105]: "0.98"
+                      - generic [ref=e1106]:
+                        - generic [ref=e1107]: Adjustment
+                        - strong [ref=e1108]: "0.12"
+                    - generic [ref=e1109]:
+                      - generic [ref=e1110]: Top Affected Variables
+                      - generic [ref=e1111]:
+                        - generic [ref=e1112]: XMEAS_1 (A 进料流量) / 0.08
+                        - generic [ref=e1113]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1114]:
+                      - generic [ref=e1115]: Support Evidence
+                      - generic [ref=e1116]:
+                        - button "obs_tep_001" [ref=e1117] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1118] [cursor=pointer]
+                    - generic [ref=e1119]:
+                      - generic [ref=e1120]: Support Paths
+                      - generic [ref=e1121]:
+                        - generic [ref=e1122]: Reactor coolant valve stiction -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1123]: Reactor coolant valve stiction -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e1124]:
+                    - generic [ref=e1125]:
+                      - generic [ref=e1126]:
+                        - strong [ref=e1127]: "#6 Stream 4 B-composition disturbance"
+                        - paragraph [ref=e1128]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e1129]:
+                        - generic [ref=e1131]: root 0.09
+                        - generic [ref=e1133]: rank 0.21
+                    - generic [ref=e1134]:
+                      - button "高亮候选" [ref=e1135] [cursor=pointer]
+                      - button "查看证据" [ref=e1136] [cursor=pointer]
+                    - generic [ref=e1137]:
+                      - generic [ref=e1138]: 未标注
+                      - generic [ref=e1139]:
+                        - button "接受" [ref=e1141] [cursor=pointer]
+                        - button "驳回" [ref=e1143] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e1145]
+                    - generic [ref=e1146]:
+                      - generic [ref=e1147]:
+                        - generic [ref=e1148]: Seed
+                        - strong [ref=e1149]: variable:xmeas_1
+                      - generic [ref=e1150]:
+                        - generic [ref=e1151]: Coverage
+                        - strong [ref=e1152]: "0.09"
+                      - generic [ref=e1153]:
+                        - generic [ref=e1154]: Entropy
+                        - strong [ref=e1155]: "0.98"
+                      - generic [ref=e1156]:
+                        - generic [ref=e1157]: Adjustment
+                        - strong [ref=e1158]: "0.12"
+                    - generic [ref=e1159]:
+                      - generic [ref=e1160]: Top Affected Variables
+                      - generic [ref=e1161]:
+                        - generic [ref=e1162]: XMEAS_1 (A 进料流量) / 0.08
+                        - generic [ref=e1163]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1164]:
+                      - generic [ref=e1165]: Support Evidence
+                      - generic [ref=e1166]:
+                        - button "obs_tep_001" [ref=e1167] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1168] [cursor=pointer]
+                    - generic [ref=e1169]:
+                      - generic [ref=e1170]: Support Paths
+                      - generic [ref=e1171]:
+                        - generic [ref=e1172]: Stream 4 B-composition disturbance -> Stream_4_ABC_Feed (A/B/C 混合进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1173]: Stream 4 B-composition disturbance -> Stream_4_ABC_Feed (A/B/C 混合进料流股) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e1174]:
+                    - generic [ref=e1175]:
+                      - generic [ref=e1176]:
+                        - strong [ref=e1177]: "#7 Reactor cooling inlet temperature disturbance"
+                        - paragraph [ref=e1178]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e1179]:
+                        - generic [ref=e1181]: root 0.09
+                        - generic [ref=e1183]: rank 0.21
+                    - generic [ref=e1184]:
+                      - button "高亮候选" [ref=e1185] [cursor=pointer]
+                      - button "查看证据" [ref=e1186] [cursor=pointer]
+                    - generic [ref=e1187]:
+                      - generic [ref=e1188]: 未标注
+                      - generic [ref=e1189]:
+                        - button "接受" [ref=e1191] [cursor=pointer]
+                        - button "驳回" [ref=e1193] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e1195]
+                    - generic [ref=e1196]:
+                      - generic [ref=e1197]:
+                        - generic [ref=e1198]: Seed
+                        - strong [ref=e1199]: variable:xmeas_1
+                      - generic [ref=e1200]:
+                        - generic [ref=e1201]: Coverage
+                        - strong [ref=e1202]: "0.09"
+                      - generic [ref=e1203]:
+                        - generic [ref=e1204]: Entropy
+                        - strong [ref=e1205]: "0.98"
+                      - generic [ref=e1206]:
+                        - generic [ref=e1207]: Adjustment
+                        - strong [ref=e1208]: "0.12"
+                    - generic [ref=e1209]:
+                      - generic [ref=e1210]: Top Affected Variables
+                      - generic [ref=e1211]:
+                        - generic [ref=e1212]: XMEAS_1 (A 进料流量) / 0.08
+                        - generic [ref=e1213]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1214]:
+                      - generic [ref=e1215]: Support Evidence
+                      - generic [ref=e1216]:
+                        - button "obs_tep_001" [ref=e1217] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1218] [cursor=pointer]
+                    - generic [ref=e1219]:
+                      - generic [ref=e1220]: Support Paths
+                      - generic [ref=e1221]:
+                        - generic [ref=e1222]: Reactor cooling inlet temperature disturbance -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1223]: Reactor cooling inlet temperature disturbance -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+                  - generic [ref=e1224]:
+                    - generic [ref=e1225]:
+                      - generic [ref=e1226]:
+                        - strong [ref=e1227]: "#8 Reactor heat-transfer disturbance"
+                        - paragraph [ref=e1228]: FaultAnchor / root_cause_anchor
+                      - generic [ref=e1229]:
+                        - generic [ref=e1231]: root 0.09
+                        - generic [ref=e1233]: rank 0.21
+                    - generic [ref=e1234]:
+                      - button "高亮候选" [ref=e1235] [cursor=pointer]
+                      - button "查看证据" [ref=e1236] [cursor=pointer]
+                    - generic [ref=e1237]:
+                      - generic [ref=e1238]: 未标注
+                      - generic [ref=e1239]:
+                        - button "接受" [ref=e1241] [cursor=pointer]
+                        - button "驳回" [ref=e1243] [cursor=pointer]
+                    - textbox "记录该候选的接受依据、排除原因或后续跟进建议；失焦后自动保存。" [ref=e1245]
+                    - generic [ref=e1246]:
+                      - generic [ref=e1247]:
+                        - generic [ref=e1248]: Seed
+                        - strong [ref=e1249]: variable:xmeas_1
+                      - generic [ref=e1250]:
+                        - generic [ref=e1251]: Coverage
+                        - strong [ref=e1252]: "0.09"
+                      - generic [ref=e1253]:
+                        - generic [ref=e1254]: Entropy
+                        - strong [ref=e1255]: "0.98"
+                      - generic [ref=e1256]:
+                        - generic [ref=e1257]: Adjustment
+                        - strong [ref=e1258]: "0.12"
+                    - generic [ref=e1259]:
+                      - generic [ref=e1260]: Top Affected Variables
+                      - generic [ref=e1261]:
+                        - generic [ref=e1262]: XMEAS_1 (A 进料流量) / 0.08
+                        - generic [ref=e1263]: XMEAS_3 (E 进料流量) / 0.06
+                    - generic [ref=e1264]:
+                      - generic [ref=e1265]: Support Evidence
+                      - generic [ref=e1266]:
+                        - button "obs_tep_001" [ref=e1267] [cursor=pointer]
+                        - button "obs_tep_002" [ref=e1268] [cursor=pointer]
+                    - generic [ref=e1269]:
+                      - generic [ref=e1270]: Support Paths
+                      - generic [ref=e1271]:
+                        - generic [ref=e1272]: Reactor heat-transfer disturbance -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_1_A_Feed (A 进料流股) -> XMEAS_1 (A 进料流量)
+                        - generic [ref=e1273]: Reactor heat-transfer disturbance -> Reactor (反应器) -> Stream_6_Reactor_Feed (反应器入口总进料) -> Stream_3_E_Feed (E 进料流股) -> XMEAS_3 (E 进料流量)
+        - generic [ref=e1274]:
+          - generic [ref=e1276]: Cross Route Signals & Notes
+          - generic [ref=e1278]:
+            - generic [ref=e1279]:
+              - heading "Cross Route Signals" [level=3] [ref=e1280]
+              - generic [ref=e1281]:
+                - generic [ref=e1282]:
+                  - strong [ref=e1283]: Stream 1 A-feed loss disturbance
+                  - paragraph [ref=e1284]: faultanchor:stream_1_a_feed_loss
+                  - generic [ref=e1285]:
+                    - button "联动图谱" [ref=e1286] [cursor=pointer]
+                    - button "联动证据" [ref=e1287] [cursor=pointer]
+                  - generic [ref=e1288]:
+                    - generic [ref=e1289]: route2 rank 1
+                    - generic [ref=e1290]: variable:xmeas_1->faultanchor:stream_1_a_feed_loss
+                - generic [ref=e1291]:
+                  - strong [ref=e1292]: Reactor kinetics disturbance
+                  - paragraph [ref=e1293]: faultanchor:reactor_kinetics
+                  - generic [ref=e1294]:
+                    - button "联动图谱" [ref=e1295] [cursor=pointer]
+                    - button "联动证据" [ref=e1296] [cursor=pointer]
+                  - generic [ref=e1297]:
+                    - generic [ref=e1298]: route2 rank 2
+                    - generic [ref=e1299]: variable:xmeas_1->faultanchor:reactor_kinetics
+                    - generic [ref=e1300]: variable:xmeas_3->faultanchor:reactor_kinetics
+                - generic [ref=e1301]:
+                  - strong [ref=e1302]: Stream 4 A/C-ratio disturbance
+                  - paragraph [ref=e1303]: faultanchor:stream_4_ac_ratio
+                  - generic [ref=e1304]:
+                    - button "联动图谱" [ref=e1305] [cursor=pointer]
+                    - button "联动证据" [ref=e1306] [cursor=pointer]
+                  - generic [ref=e1307]:
+                    - generic [ref=e1308]: route2 rank 3
+                    - generic [ref=e1309]: variable:xmeas_1->faultanchor:stream_4_ac_ratio
+                - generic [ref=e1310]:
+                  - strong [ref=e1311]: Stream 4 A/B/C composition disturbance
+                  - paragraph [ref=e1312]: faultanchor:stream_4_abc_composition
+                  - generic [ref=e1313]:
+                    - button "联动图谱" [ref=e1314] [cursor=pointer]
+                    - button "联动证据" [ref=e1315] [cursor=pointer]
+                  - generic [ref=e1316]:
+                    - generic [ref=e1317]: route2 rank 4
+                    - generic [ref=e1318]: variable:xmeas_1->faultanchor:stream_4_abc_composition
+                - generic [ref=e1319]:
+                  - strong [ref=e1320]: Reactor coolant valve stiction
+                  - paragraph [ref=e1321]: faultanchor:reactor_coolant_valve_stiction
+                  - generic [ref=e1322]:
+                    - button "联动图谱" [ref=e1323] [cursor=pointer]
+                    - button "联动证据" [ref=e1324] [cursor=pointer]
+                  - generic [ref=e1325]:
+                    - generic [ref=e1326]: route2 rank 5
+                    - generic [ref=e1327]: variable:xmeas_1->faultanchor:reactor_coolant_valve_stiction
+                    - generic [ref=e1328]: variable:xmeas_3->faultanchor:reactor_coolant_valve_stiction
+                - generic [ref=e1329]:
+                  - strong [ref=e1330]: Stream 4 B-composition disturbance
+                  - paragraph [ref=e1331]: faultanchor:stream_4_b_composition
+                  - generic [ref=e1332]:
+                    - button "联动图谱" [ref=e1333] [cursor=pointer]
+                    - button "联动证据" [ref=e1334] [cursor=pointer]
+                  - generic [ref=e1335]:
+                    - generic [ref=e1336]: route2 rank 6
+                    - generic [ref=e1337]: variable:xmeas_1->faultanchor:stream_4_b_composition
+                - generic [ref=e1338]:
+                  - strong [ref=e1339]: Reactor cooling inlet temperature disturbance
+                  - paragraph [ref=e1340]: faultanchor:reactor_cooling_inlet_temperature
+                  - generic [ref=e1341]:
+                    - button "联动图谱" [ref=e1342] [cursor=pointer]
+                    - button "联动证据" [ref=e1343] [cursor=pointer]
+                  - generic [ref=e1344]:
+                    - generic [ref=e1345]: route2 rank 7
+                    - generic [ref=e1346]: variable:xmeas_1->faultanchor:reactor_cooling_inlet_temperature
+                - generic [ref=e1347]:
+                  - strong [ref=e1348]: Reactor heat-transfer disturbance
+                  - paragraph [ref=e1349]: faultanchor:reactor_heat_transfer
+                  - generic [ref=e1350]:
+                    - button "联动图谱" [ref=e1351] [cursor=pointer]
+                    - button "联动证据" [ref=e1352] [cursor=pointer]
+                  - generic [ref=e1353]:
+                    - generic [ref=e1354]: route2 rank 8
+                    - generic [ref=e1355]: variable:xmeas_1->faultanchor:reactor_heat_transfer
+            - generic [ref=e1356]:
+              - heading "Runtime Notes" [level=3] [ref=e1357]
+              - generic [ref=e1358]:
+                - generic [ref=e1359]: 当前结果由浏览器本地推理引擎生成，不依赖后端 API。
+                - generic [ref=e1360]: 路线 2 为前端本地启发式版本，用于浏览器端候选排序与路径解释。

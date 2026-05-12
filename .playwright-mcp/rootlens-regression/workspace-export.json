@@ -1,0 +1,54 @@
+{
+  "schema_version": "rootlens-analysis-workspace-export.v1",
+  "exported_at": "2026-05-12T07:43:47.477Z",
+  "session_meta": {
+    "source": "import",
+    "updatedAt": "2026-05-12T07:43:47.478Z",
+    "summary": "workspace regression fixture"
+  },
+  "analysis_workspace": {
+    "schema_version": "analysis-workspace.v1",
+    "session_scope": "fixture:scope",
+    "updated_at": "2026-05-12T07:43:47.478Z",
+    "cases": [
+      {
+        "case_id": "tep_fault_06_stream_1_a_feed_loss",
+        "draft_case": null,
+        "feedback_items": [
+          {
+            "feedback_id": "route2-candidate:faultanchor:stream_1_a_feed_loss",
+            "target_kind": "route2-candidate",
+            "target_id": "faultanchor:stream_1_a_feed_loss",
+            "verdict": "accepted",
+            "note": "fixture analyst note",
+            "updated_at": "2026-05-12T07:43:47.478Z"
+          }
+        ]
+      }
+    ]
+  },
+  "analysis_focus": {
+    "schema_version": "analysis-focus.v1",
+    "session_scope": "fixture:scope",
+    "updated_at": "2026-05-12T07:43:47.478Z",
+    "active_case_id": "tep_fault_06_stream_1_a_feed_loss",
+    "active_dataset_id": "tep-kg",
+    "selected_observation_id": "obs_tep_001",
+    "selected_route1_path_ids": [],
+    "selected_route2_candidate_ids": [
+      "faultanchor:stream_1_a_feed_loss"
+    ],
+    "highlighted_node_ids": [
+      "variable:xmeas_1",
+      "variable:manipulated_variable_3_a_feed"
+    ],
+    "highlighted_edge_ids": [],
+    "highlighted_obs_ids": [
+      "obs_tep_001",
+      "obs_tep_002"
+    ],
+    "focus_kind": "route2-candidate",
+    "focus_label": "Stream 1 A-feed loss disturbance",
+    "source_view": "reasoning"
+  }
+}

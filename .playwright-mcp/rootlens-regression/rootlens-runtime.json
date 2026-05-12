@@ -1,0 +1,1168 @@
+{
+  "schema_version": "rootlens-runtime.v1",
+  "generated_at": "2026-05-12T07:43:08.080Z",
+  "generator": "scripts/build-unified-graphs.mjs",
+  "cases": [
+    {
+      "case_id": "tep_fault_06_stream_1_a_feed_loss",
+      "case_label": "TEP Fault 06 / Stream 1 A-feed loss",
+      "dataset": "tep",
+      "source": "time_series",
+      "summary": "使用真实 RCA Graph 节点构造的时序案例，RBC 贡献集中在 XMEAS_1 与 XMV_3，A 进料流与 A 进料阀共同指向 Stream 1 A-feed loss。",
+      "graph_snapshot": {
+        "dataset_id": "tep-kg",
+        "label": "TEP_KG RCA Graph",
+        "graph_kind": "rca-graph",
+        "description": "TEP_KG 最终用于 Root-KGD 与前端可视化的 RCA Graph，来自 data/processed/rca/nodes.jsonl 与 edges.jsonl。"
+      },
+      "evidence": {
+        "case_id": "tep_fault_06_stream_1_a_feed_loss",
+        "case_label": "TEP Fault 06 / Stream 1 A-feed loss",
+        "dataset": "tep",
+        "source": "time_series",
+        "timestamp": "2026-05-11T01:12:00.000Z",
+        "summary": "RBC top channels show depleted A-feed flow and actuator-side response around stream 1.",
+        "graph_dataset_id": "tep-kg",
+        "observations": [
+          {
+            "obs_id": "obs_tep_001",
+            "facet": "variable",
+            "variable_name": "xmeas_1",
+            "contribution": 0.82,
+            "direction": "decrease",
+            "confidence": 0.95,
+            "linked_entity_hints": [
+              "variable:xmeas_1",
+              "stream:stream_1_a_feed"
+            ],
+            "raw_evidence_refs": [
+              {
+                "ref_id": "nodes.jsonl:47:graph_node",
+                "label": "nodes.jsonl:47",
+                "role": "graph_node",
+                "file_path": "/Users/bytedance/my_project/TEP_KG/data/processed/rca/nodes.jsonl",
+                "line": 47
+              },
+              {
+                "ref_id": "edges.jsonl:58:graph_edge",
+                "label": "edges.jsonl:58",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/TEP_KG/data/processed/rca/edges.jsonl",
+                "line": 58
+              }
+            ],
+            "time_window": {
+              "start": "2026-05-11T01:10:00.000Z",
+              "end": "2026-05-11T01:14:00.000Z"
+            },
+            "attributes": {
+              "channel_rank": 1,
+              "variable_role": "sensor",
+              "tep_channel": "xmeas_1"
+            }
+          },
+          {
+            "obs_id": "obs_tep_002",
+            "facet": "variable",
+            "variable_name": "xmv_3",
+            "contribution": 0.61,
+            "direction": "increase",
+            "confidence": 0.91,
+            "linked_entity_hints": [
+              "variable:manipulated_variable_3_a_feed",
+              "stream:stream_1_a_feed"
+            ],
+            "raw_evidence_refs": [
+              {
+                "ref_id": "nodes.jsonl:40:graph_node",
+                "label": "nodes.jsonl:40",
+                "role": "graph_node",
+                "file_path": "/Users/bytedance/my_project/TEP_KG/data/processed/rca/nodes.jsonl",
+                "line": 40
+              },
+              {
+                "ref_id": "edges.jsonl:80:graph_edge",
+                "label": "edges.jsonl:80",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/TEP_KG/data/processed/rca/edges.jsonl",
+                "line": 80
+              }
+            ],
+            "time_window": {
+              "start": "2026-05-11T01:10:00.000Z",
+              "end": "2026-05-11T01:14:00.000Z"
+            },
+            "attributes": {
+              "channel_rank": 2,
+              "variable_role": "actuator",
+              "tep_channel": "xmv_3"
+            }
+          }
+        ]
+      },
+      "analysis": {
+        "case_id": "tep_fault_06_stream_1_a_feed_loss",
+        "timestamp": "2026-05-11T01:12:00.000Z",
+        "graph_dataset_id": "tep-kg",
+        "route1": {
+          "linked_entities": [
+            {
+              "link_id": "link_tep_001",
+              "field": "variable",
+              "mention": "xmeas_1",
+              "selected_entity_id": "variable:xmeas_1",
+              "selected_entity_name": "XMEAS_1 (A 进料流量)",
+              "score": 0.99,
+              "match_type": "exact",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "variable:xmeas_1",
+                  "entity_name": "XMEAS_1 (A 进料流量)",
+                  "entity_type": "Variable",
+                  "score": 0.99
+                },
+                {
+                  "entity_id": "stream:stream_1_a_feed",
+                  "entity_name": "Stream_1_A_Feed (A 进料流股)",
+                  "entity_type": "Stream",
+                  "score": 0.52
+                }
+              ],
+              "obs_id": "obs_tep_001",
+              "facet": "variable"
+            },
+            {
+              "link_id": "link_tep_002",
+              "field": "variable",
+              "mention": "xmv_3",
+              "selected_entity_id": "variable:manipulated_variable_3_a_feed",
+              "selected_entity_name": "Manipulated Variable 3: A Feed",
+              "score": 0.93,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "variable:manipulated_variable_3_a_feed",
+                  "entity_name": "Manipulated Variable 3: A Feed",
+                  "entity_type": "Variable",
+                  "score": 0.93
+                },
+                {
+                  "entity_id": "stream:stream_1_a_feed",
+                  "entity_name": "Stream_1_A_Feed (A 进料流股)",
+                  "entity_type": "Stream",
+                  "score": 0.41
+                }
+              ],
+              "obs_id": "obs_tep_002",
+              "facet": "variable"
+            }
+          ],
+          "consistency_score": 0.93,
+          "inconsistent_fields": [],
+          "consistency_checks": [
+            {
+              "source_field": "variable",
+              "target_field": "process_stream",
+              "source_entity_id": "variable:xmeas_1",
+              "target_entity_id": "stream:stream_1_a_feed",
+              "relations": [
+                "OBSERVED_BY"
+              ],
+              "passed": true,
+              "matched_relation": "OBSERVED_BY"
+            },
+            {
+              "source_field": "variable",
+              "target_field": "process_stream",
+              "source_entity_id": "variable:manipulated_variable_3_a_feed",
+              "target_entity_id": "stream:stream_1_a_feed",
+              "relations": [
+                "ACTS_ON"
+              ],
+              "passed": true,
+              "matched_relation": "ACTS_ON"
+            }
+          ],
+          "correction_candidates": [],
+          "ranked_paths": [
+            {
+              "path_id": "path_tep_001",
+              "source_entity_id": "variable:xmeas_1",
+              "target_entity_id": "faultanchor:stream_1_a_feed_loss",
+              "target_entity_name": "Stream 1 A-feed loss disturbance",
+              "nodes": [
+                "variable:xmeas_1",
+                "stream:stream_1_a_feed",
+                "faultanchor:stream_1_a_feed_loss"
+              ],
+              "node_names": [
+                "XMEAS_1 (A 进料流量)",
+                "Stream_1_A_Feed (A 进料流股)",
+                "Stream 1 A-feed loss disturbance"
+              ],
+              "relations": [
+                "OBSERVED_BY",
+                "CAUSES"
+              ],
+              "score": 0.91,
+              "confidence": 0.89,
+              "evidence_match": 0.95,
+              "length": 2,
+              "source_edges": [
+                {
+                  "edge_id": "semantic_lift_edge_100fc2c4a0dcbc8e",
+                  "source": "stream:stream_1_a_feed",
+                  "target": "variable:xmeas_1",
+                  "relation": "OBSERVED_BY",
+                  "confidence": 0.82
+                },
+                {
+                  "edge_id": "fault_anchor_edge_26c6a0f01dd5886a",
+                  "source": "faultanchor:stream_1_a_feed_loss",
+                  "target": "stream:stream_1_a_feed",
+                  "relation": "CAUSES",
+                  "confidence": 0.95
+                }
+              ],
+              "support_obs_ids": [
+                "obs_tep_001"
+              ]
+            },
+            {
+              "path_id": "path_tep_002",
+              "source_entity_id": "variable:manipulated_variable_3_a_feed",
+              "target_entity_id": "faultanchor:stream_1_a_feed_loss",
+              "target_entity_name": "Stream 1 A-feed loss disturbance",
+              "nodes": [
+                "variable:manipulated_variable_3_a_feed",
+                "stream:stream_1_a_feed",
+                "faultanchor:stream_1_a_feed_loss"
+              ],
+              "node_names": [
+                "Manipulated Variable 3: A Feed",
+                "Stream_1_A_Feed (A 进料流股)",
+                "Stream 1 A-feed loss disturbance"
+              ],
+              "relations": [
+                "ACTS_ON",
+                "CAUSES"
+              ],
+              "score": 0.87,
+              "confidence": 0.89,
+              "evidence_match": 0.88,
+              "length": 2,
+              "source_edges": [
+                {
+                  "edge_id": "semantic_lift_edge_20e581080e7de3c6",
+                  "source": "variable:manipulated_variable_3_a_feed",
+                  "target": "stream:stream_1_a_feed",
+                  "relation": "ACTS_ON",
+                  "confidence": 0.82
+                },
+                {
+                  "edge_id": "fault_anchor_edge_26c6a0f01dd5886a",
+                  "source": "faultanchor:stream_1_a_feed_loss",
+                  "target": "stream:stream_1_a_feed",
+                  "relation": "CAUSES",
+                  "confidence": 0.95
+                }
+              ],
+              "support_obs_ids": [
+                "obs_tep_002"
+              ]
+            },
+            {
+              "path_id": "path_tep_003",
+              "source_entity_id": "variable:manipulated_variable_3_a_feed",
+              "target_entity_id": "faultanchor:stream_1_a_feed_loss",
+              "target_entity_name": "Stream 1 A-feed loss disturbance",
+              "nodes": [
+                "variable:manipulated_variable_3_a_feed",
+                "faultanchor:stream_1_a_feed_loss"
+              ],
+              "node_names": [
+                "Manipulated Variable 3: A Feed",
+                "Stream 1 A-feed loss disturbance"
+              ],
+              "relations": [
+                "CAUSES"
+              ],
+              "score": 0.84,
+              "confidence": 0.95,
+              "evidence_match": 0.78,
+              "length": 1,
+              "source_edges": [
+                {
+                  "edge_id": "fault_anchor_edge_cbc328c82a449d70",
+                  "source": "faultanchor:stream_1_a_feed_loss",
+                  "target": "variable:manipulated_variable_3_a_feed",
+                  "relation": "CAUSES",
+                  "confidence": 0.95
+                }
+              ],
+              "support_obs_ids": [
+                "obs_tep_002"
+              ]
+            }
+          ]
+        },
+        "route2": {
+          "fault_signature": {
+            "contribution_vector": {
+              "variable:xmeas_1": 0.82,
+              "variable:manipulated_variable_3_a_feed": 0.61,
+              "variable:xmeas_4": 0.33
+            },
+            "ordered_variables": [
+              "variable:xmeas_1",
+              "variable:manipulated_variable_3_a_feed",
+              "variable:xmeas_4"
+            ],
+            "top_channels": [
+              {
+                "entity_id": "variable:xmeas_1",
+                "name": "XMEAS_1 (A 进料流量)",
+                "contribution": 0.82,
+                "rank": 1
+              },
+              {
+                "entity_id": "variable:manipulated_variable_3_a_feed",
+                "name": "Manipulated Variable 3: A Feed",
+                "contribution": 0.61,
+                "rank": 2
+              },
+              {
+                "entity_id": "variable:xmeas_4",
+                "name": "XMEAS_4 (A/B/C 进料流量)",
+                "contribution": 0.33,
+                "rank": 3
+              }
+            ],
+            "graph_contributions": {
+              "variable:xmeas_1": 0.82,
+              "variable:manipulated_variable_3_a_feed": 0.61,
+              "stream:stream_1_a_feed": 0.74,
+              "faultanchor:stream_1_a_feed_loss": 0.91
+            }
+          },
+          "ranked_candidates": [
+            {
+              "scenario_id": "tep-fault-06",
+              "fault_number": 6,
+              "simulation_run": 1,
+              "rank": 1,
+              "candidate_id": "faultanchor:stream_1_a_feed_loss",
+              "candidate_name": "Stream 1 A-feed loss disturbance",
+              "candidate_type": "FaultAnchor",
+              "candidate_role": "root_cause_anchor",
+              "priority_level": 1,
+              "seed_variable_id": "variable:xmeas_1",
+              "seed_score": 0.82,
+              "root_score": 0.91,
+              "ranking_score": 0.94,
+              "structural_ranking_score": 0.88,
+              "ranking_adjustment": 0.06,
+              "covered_contribution_mass": 0.93,
+              "active_variable_count": 3,
+              "pattern_entropy": 0.18,
+              "discriminator_alignment": 0.88,
+              "anchor_contribution_alignment": 0.9,
+              "anchor_dynamic_alignment": 0.76,
+              "anchor_unique_contribution_alignment": 0.83,
+              "anchor_memory_bonus": 0.04,
+              "anchor_memory_scenario_count": 4,
+              "top_affected_variables": [
+                {
+                  "entity_id": "variable:xmeas_1",
+                  "name": "XMEAS_1 (A 进料流量)",
+                  "propagated_score": 0.78,
+                  "rbc_contribution": 0.82
+                },
+                {
+                  "entity_id": "variable:manipulated_variable_3_a_feed",
+                  "name": "Manipulated Variable 3: A Feed",
+                  "propagated_score": 0.63,
+                  "rbc_contribution": 0.61
+                },
+                {
+                  "entity_id": "variable:xmeas_4",
+                  "name": "XMEAS_4 (A/B/C 进料流量)",
+                  "propagated_score": 0.37,
+                  "rbc_contribution": 0.33
+                }
+              ],
+              "top_support_paths": [
+                [
+                  "Stream 1 A-feed loss disturbance",
+                  "Stream_1_A_Feed (A 进料流股)",
+                  "XMEAS_1 (A 进料流量)"
+                ],
+                [
+                  "Stream 1 A-feed loss disturbance",
+                  "Manipulated Variable 3: A Feed"
+                ]
+              ],
+              "support_evidence_ids": [
+                "obs_tep_001",
+                "obs_tep_002"
+              ]
+            },
+            {
+              "scenario_id": "tep-fault-06",
+              "fault_number": 6,
+              "simulation_run": 1,
+              "rank": 2,
+              "candidate_id": "variable:manipulated_variable_3_a_feed",
+              "candidate_name": "Manipulated Variable 3: A Feed",
+              "candidate_type": "Variable",
+              "candidate_role": "actuator",
+              "priority_level": 1,
+              "seed_variable_id": "variable:manipulated_variable_3_a_feed",
+              "seed_score": 0.61,
+              "root_score": 0.83,
+              "ranking_score": 0.81,
+              "structural_ranking_score": 0.79,
+              "ranking_adjustment": 0.02,
+              "covered_contribution_mass": 0.71,
+              "active_variable_count": 2,
+              "pattern_entropy": 0.22,
+              "discriminator_alignment": 0.64,
+              "anchor_contribution_alignment": 0.59,
+              "anchor_dynamic_alignment": 0.52,
+              "anchor_unique_contribution_alignment": 0.57,
+              "anchor_memory_bonus": 0,
+              "anchor_memory_scenario_count": 0,
+              "top_affected_variables": [
+                {
+                  "entity_id": "variable:manipulated_variable_3_a_feed",
+                  "name": "Manipulated Variable 3: A Feed",
+                  "propagated_score": 0.61,
+                  "rbc_contribution": 0.61
+                },
+                {
+                  "entity_id": "variable:xmeas_1",
+                  "name": "XMEAS_1 (A 进料流量)",
+                  "propagated_score": 0.44,
+                  "rbc_contribution": 0.82
+                }
+              ],
+              "top_support_paths": [
+                [
+                  "Manipulated Variable 3: A Feed",
+                  "Stream_1_A_Feed (A 进料流股)",
+                  "XMEAS_1 (A 进料流量)"
+                ]
+              ],
+              "support_evidence_ids": [
+                "obs_tep_002"
+              ]
+            },
+            {
+              "scenario_id": "tep-fault-06",
+              "fault_number": 6,
+              "simulation_run": 1,
+              "rank": 3,
+              "candidate_id": "stream:stream_1_a_feed",
+              "candidate_name": "Stream_1_A_Feed (A 进料流股)",
+              "candidate_type": "Stream",
+              "candidate_role": "stream_anchor",
+              "priority_level": 2,
+              "seed_variable_id": "variable:xmeas_1",
+              "seed_score": 0.82,
+              "root_score": 0.78,
+              "ranking_score": 0.74,
+              "structural_ranking_score": 0.73,
+              "ranking_adjustment": 0.01,
+              "covered_contribution_mass": 0.69,
+              "active_variable_count": 2,
+              "pattern_entropy": 0.25,
+              "discriminator_alignment": 0.51,
+              "anchor_contribution_alignment": 0.48,
+              "anchor_dynamic_alignment": 0.44,
+              "anchor_unique_contribution_alignment": 0.46,
+              "anchor_memory_bonus": 0,
+              "anchor_memory_scenario_count": 0,
+              "top_affected_variables": [
+                {
+                  "entity_id": "variable:xmeas_1",
+                  "name": "XMEAS_1 (A 进料流量)",
+                  "propagated_score": 0.58,
+                  "rbc_contribution": 0.82
+                },
+                {
+                  "entity_id": "variable:manipulated_variable_3_a_feed",
+                  "name": "Manipulated Variable 3: A Feed",
+                  "propagated_score": 0.42,
+                  "rbc_contribution": 0.61
+                }
+              ],
+              "top_support_paths": [
+                [
+                  "Stream_1_A_Feed (A 进料流股)",
+                  "XMEAS_1 (A 进料流量)"
+                ]
+              ],
+              "support_evidence_ids": [
+                "obs_tep_001"
+              ]
+            }
+          ]
+        },
+        "cross_route_signals": [
+          {
+            "candidate_id": "faultanchor:stream_1_a_feed_loss",
+            "candidate_name": "Stream 1 A-feed loss disturbance",
+            "route1_path_ids": [
+              "path_tep_001",
+              "path_tep_002",
+              "path_tep_003"
+            ],
+            "route2_rank": 1,
+            "shared_obs_ids": [
+              "obs_tep_001",
+              "obs_tep_002"
+            ]
+          }
+        ],
+        "notes": [
+          "该案例为基于 RCA Graph 的前端 demo，字段命名与 Phase 1 contract 保持一致。",
+          "路线 2 保留了 TEP 场景的 FaultAnchor 表达，但当前页面只展示结果，不在前端重算传播。"
+        ]
+      }
+    },
+    {
+      "case_id": "mvtec_metal_nut_scratch",
+      "case_label": "MVTec / Metal Nut scratch",
+      "dataset": "mvtec",
+      "source": "image",
+      "summary": "视觉缺陷案例复用 KGTraceVis 的多源线索组织路线，缺陷类型、位置和 morphology 都绑定到真实图节点。",
+      "graph_snapshot": {
+        "dataset_id": "mvtec-project",
+        "label": "MVTec / KGTraceVis",
+        "graph_kind": "runtime-kg",
+        "description": "MVTec/KGTraceVis 当前默认运行时图谱，来自 nodes.csv、edges.csv 与 mvtec_rca_reference.csv 的合并层。"
+      },
+      "evidence": {
+        "case_id": "mvtec_metal_nut_scratch",
+        "case_label": "MVTec / Metal Nut scratch",
+        "dataset": "mvtec",
+        "source": "image",
+        "timestamp": "2026-05-11T02:08:00.000Z",
+        "summary": "A metal nut image contains a linear surface scratch with strong localization confidence.",
+        "graph_dataset_id": "mvtec-project",
+        "observations": [
+          {
+            "obs_id": "obs_mvtec_001",
+            "facet": "image_defect",
+            "object": "metal nut",
+            "anomaly_type": "scratch",
+            "location": "surface",
+            "morphology": {
+              "canonical": "linear",
+              "area_ratio": 0.014,
+              "eccentricity": 0.81,
+              "component_count": 1
+            },
+            "severity": 0.84,
+            "confidence": 0.93,
+            "linked_entity_hints": [
+              "MetalNutObject",
+              "ScratchDefect",
+              "SurfaceLocation",
+              "LinearMorphology"
+            ],
+            "raw_evidence_refs": [
+              {
+                "ref_id": "nodes.csv:3:graph_node",
+                "label": "nodes.csv:3",
+                "role": "graph_node",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/nodes.csv",
+                "line": 3
+              },
+              {
+                "ref_id": "edges.csv:3:graph_edge",
+                "label": "edges.csv:3",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/edges.csv",
+                "line": 3
+              },
+              {
+                "ref_id": "edges.csv:4:graph_edge",
+                "label": "edges.csv:4",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/edges.csv",
+                "line": 4
+              }
+            ],
+            "image_region": {
+              "x": 184,
+              "y": 76,
+              "w": 44,
+              "h": 18
+            },
+            "attributes": {
+              "mask_source": "caption_mask_stats",
+              "dataset_object": "metal_nut"
+            }
+          }
+        ]
+      },
+      "analysis": {
+        "case_id": "mvtec_metal_nut_scratch",
+        "timestamp": "2026-05-11T02:08:00.000Z",
+        "graph_dataset_id": "mvtec-project",
+        "route1": {
+          "linked_entities": [
+            {
+              "link_id": "link_mvtec_001",
+              "field": "object",
+              "mention": "metal nut",
+              "selected_entity_id": "MetalNutObject",
+              "selected_entity_name": "Metal nut",
+              "score": 0.96,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "MetalNutObject",
+                  "entity_name": "Metal nut",
+                  "entity_type": "Object",
+                  "score": 0.96
+                }
+              ],
+              "obs_id": "obs_mvtec_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_mvtec_002",
+              "field": "anomaly_type",
+              "mention": "scratch",
+              "selected_entity_id": "ScratchDefect",
+              "selected_entity_name": "Scratch defect",
+              "score": 0.99,
+              "match_type": "exact",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "ScratchDefect",
+                  "entity_name": "Scratch defect",
+                  "entity_type": "AnomalyType",
+                  "score": 0.99
+                }
+              ],
+              "obs_id": "obs_mvtec_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_mvtec_003",
+              "field": "location",
+              "mention": "surface",
+              "selected_entity_id": "SurfaceLocation",
+              "selected_entity_name": "Surface location",
+              "score": 0.9,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "SurfaceLocation",
+                  "entity_name": "Surface location",
+                  "entity_type": "Location",
+                  "score": 0.9
+                }
+              ],
+              "obs_id": "obs_mvtec_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_mvtec_004",
+              "field": "morphology",
+              "mention": "linear",
+              "selected_entity_id": "LinearMorphology",
+              "selected_entity_name": "Linear morphology",
+              "score": 0.95,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "LinearMorphology",
+                  "entity_name": "Linear morphology",
+                  "entity_type": "Morphology",
+                  "score": 0.95
+                }
+              ],
+              "obs_id": "obs_mvtec_001",
+              "facet": "image_defect"
+            }
+          ],
+          "consistency_score": 0.94,
+          "inconsistent_fields": [],
+          "consistency_checks": [
+            {
+              "source_field": "object",
+              "target_field": "anomaly_type",
+              "source_entity_id": "MetalNutObject",
+              "target_entity_id": "ScratchDefect",
+              "relations": [
+                "HAS_ANOMALY"
+              ],
+              "passed": true,
+              "matched_relation": "HAS_ANOMALY"
+            },
+            {
+              "source_field": "anomaly_type",
+              "target_field": "morphology",
+              "source_entity_id": "ScratchDefect",
+              "target_entity_id": "LinearMorphology",
+              "relations": [
+                "HAS_MORPHOLOGY"
+              ],
+              "passed": true,
+              "matched_relation": "HAS_MORPHOLOGY"
+            },
+            {
+              "source_field": "anomaly_type",
+              "target_field": "location",
+              "source_entity_id": "ScratchDefect",
+              "target_entity_id": "SurfaceLocation",
+              "relations": [
+                "OCCURS_ON"
+              ],
+              "passed": true,
+              "matched_relation": "OCCURS_ON"
+            }
+          ],
+          "correction_candidates": [],
+          "ranked_paths": [
+            {
+              "path_id": "path_mvtec_001",
+              "source_entity_id": "ScratchDefect",
+              "target_entity_id": "MechanicalContact",
+              "target_entity_name": "Mechanical contact",
+              "nodes": [
+                "ScratchDefect",
+                "MechanicalContact"
+              ],
+              "node_names": [
+                "Scratch defect",
+                "Mechanical contact"
+              ],
+              "relations": [
+                "HAS_PLAUSIBLE_CAUSE"
+              ],
+              "score": 0.86,
+              "confidence": 0.75,
+              "evidence_match": 0.93,
+              "length": 1,
+              "source_edges": [
+                {
+                  "edge_id": "mvtec-rca-reference:2:ScratchDefect:HAS_PLAUSIBLE_CAUSE:MechanicalContact",
+                  "source": "ScratchDefect",
+                  "target": "MechanicalContact",
+                  "relation": "HAS_PLAUSIBLE_CAUSE",
+                  "confidence": 0.75
+                }
+              ],
+              "support_obs_ids": [
+                "obs_mvtec_001"
+              ]
+            },
+            {
+              "path_id": "path_mvtec_002",
+              "source_entity_id": "ScratchDefect",
+              "target_entity_id": "HandlingDamage",
+              "target_entity_name": "Handling damage",
+              "nodes": [
+                "ScratchDefect",
+                "MechanicalContact",
+                "HandlingDamage"
+              ],
+              "node_names": [
+                "Scratch defect",
+                "Mechanical contact",
+                "Handling damage"
+              ],
+              "relations": [
+                "HAS_PLAUSIBLE_CAUSE",
+                "PART_OF"
+              ],
+              "score": 0.81,
+              "confidence": 0.72,
+              "evidence_match": 0.88,
+              "length": 2,
+              "source_edges": [
+                {
+                  "edge_id": "mvtec-rca-reference:2:ScratchDefect:HAS_PLAUSIBLE_CAUSE:MechanicalContact",
+                  "source": "ScratchDefect",
+                  "target": "MechanicalContact",
+                  "relation": "HAS_PLAUSIBLE_CAUSE",
+                  "confidence": 0.75
+                },
+                {
+                  "edge_id": "mvtec-rca-reference:3:MechanicalContact:PART_OF:HandlingDamage",
+                  "source": "MechanicalContact",
+                  "target": "HandlingDamage",
+                  "relation": "PART_OF",
+                  "confidence": 0.7
+                }
+              ],
+              "support_obs_ids": [
+                "obs_mvtec_001"
+              ]
+            }
+          ]
+        },
+        "route2": null,
+        "cross_route_signals": [],
+        "notes": [
+          "图像场景当前只启用路线 1，路线 2 维持为空。",
+          "路径排序直接绑定到 mvtec_rca_reference.csv 中的可解释 cause 链。"
+        ]
+      }
+    },
+    {
+      "case_id": "wafer_nearfull_dense_particles",
+      "case_label": "Wafer / Nearfull dense particles",
+      "dataset": "wafer",
+      "source": "multimodal",
+      "summary": "Wafer 案例展示 image + log 双模态 evidence 合流后的路线 1 解释链，当前仍不启用路线 2。",
+      "graph_snapshot": {
+        "dataset_id": "mvtec-project",
+        "label": "MVTec / KGTraceVis",
+        "graph_kind": "runtime-kg",
+        "description": "MVTec/KGTraceVis 当前默认运行时图谱，来自 nodes.csv、edges.csv 与 mvtec_rca_reference.csv 的合并层。"
+      },
+      "evidence": {
+        "case_id": "wafer_nearfull_dense_particles",
+        "case_label": "Wafer / Nearfull dense particles",
+        "dataset": "wafer",
+        "source": "multimodal",
+        "timestamp": "2026-05-11T03:24:00.000Z",
+        "summary": "Nearfull defect and alarm event co-occur on the wafer surface, suggesting glue-removal issues.",
+        "graph_dataset_id": "mvtec-project",
+        "observations": [
+          {
+            "obs_id": "obs_wafer_001",
+            "facet": "image_defect",
+            "object": "wafer",
+            "anomaly_type": "nearfull",
+            "location": "wafer surface",
+            "morphology": {
+              "canonical": "dense_particles",
+              "area_ratio": 0.41,
+              "component_count": 14,
+              "distribution": "dense"
+            },
+            "severity": 0.89,
+            "confidence": 0.9,
+            "linked_entity_hints": [
+              "WaferObject",
+              "NearfullDefect",
+              "DenseParticles",
+              "WaferSurface"
+            ],
+            "raw_evidence_refs": [
+              {
+                "ref_id": "nodes.csv:32:graph_node",
+                "label": "nodes.csv:32",
+                "role": "graph_node",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/nodes.csv",
+                "line": 32
+              },
+              {
+                "ref_id": "edges.csv:10:graph_edge",
+                "label": "edges.csv:10",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/edges.csv",
+                "line": 10
+              },
+              {
+                "ref_id": "edges.csv:11:graph_edge",
+                "label": "edges.csv:11",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/edges.csv",
+                "line": 11
+              }
+            ],
+            "image_region": {
+              "x": 42,
+              "y": 38,
+              "w": 168,
+              "h": 168
+            },
+            "attributes": {
+              "source_adapter": "wafer_adapter",
+              "event_alignment": "same-run-window"
+            }
+          },
+          {
+            "obs_id": "obs_wafer_002",
+            "facet": "log_event",
+            "event_type": "alarm",
+            "event_code": "EXAMPLE_ALARM",
+            "message": "Example alarm fired during nearfull defect window",
+            "equipment": "wafer surface",
+            "confidence": 0.78,
+            "linked_entity_hints": [
+              "ExampleAlarm",
+              "NearfullDefect"
+            ],
+            "raw_evidence_refs": [
+              {
+                "ref_id": "nodes.csv:36:graph_node",
+                "label": "nodes.csv:36",
+                "role": "graph_node",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/nodes.csv",
+                "line": 36
+              },
+              {
+                "ref_id": "edges.csv:12:graph_edge",
+                "label": "edges.csv:12",
+                "role": "graph_edge",
+                "file_path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/edges.csv",
+                "line": 12
+              }
+            ],
+            "attributes": {
+              "event_source": "fab_log",
+              "aligned_window": "2026-05-11T03:20:00.000Z/2026-05-11T03:26:00.000Z"
+            }
+          }
+        ]
+      },
+      "analysis": {
+        "case_id": "wafer_nearfull_dense_particles",
+        "timestamp": "2026-05-11T03:24:00.000Z",
+        "graph_dataset_id": "mvtec-project",
+        "route1": {
+          "linked_entities": [
+            {
+              "link_id": "link_wafer_001",
+              "field": "object",
+              "mention": "wafer",
+              "selected_entity_id": "WaferObject",
+              "selected_entity_name": "Wafer",
+              "score": 0.99,
+              "match_type": "exact",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "WaferObject",
+                  "entity_name": "Wafer",
+                  "entity_type": "Object",
+                  "score": 0.99
+                }
+              ],
+              "obs_id": "obs_wafer_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_wafer_002",
+              "field": "anomaly_type",
+              "mention": "nearfull",
+              "selected_entity_id": "NearfullDefect",
+              "selected_entity_name": "Nearfull defect",
+              "score": 0.97,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "NearfullDefect",
+                  "entity_name": "Nearfull defect",
+                  "entity_type": "AnomalyType",
+                  "score": 0.97
+                }
+              ],
+              "obs_id": "obs_wafer_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_wafer_003",
+              "field": "morphology",
+              "mention": "dense_particles",
+              "selected_entity_id": "DenseParticles",
+              "selected_entity_name": "Dense particles",
+              "score": 0.94,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "DenseParticles",
+                  "entity_name": "Dense particles",
+                  "entity_type": "Morphology",
+                  "score": 0.94
+                }
+              ],
+              "obs_id": "obs_wafer_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_wafer_004",
+              "field": "location",
+              "mention": "wafer surface",
+              "selected_entity_id": "WaferSurface",
+              "selected_entity_name": "Wafer surface",
+              "score": 0.95,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "WaferSurface",
+                  "entity_name": "Wafer surface",
+                  "entity_type": "Location",
+                  "score": 0.95
+                }
+              ],
+              "obs_id": "obs_wafer_001",
+              "facet": "image_defect"
+            },
+            {
+              "link_id": "link_wafer_005",
+              "field": "log_event",
+              "mention": "example alarm",
+              "selected_entity_id": "ExampleAlarm",
+              "selected_entity_name": "Example alarm",
+              "score": 0.92,
+              "match_type": "alias",
+              "ambiguous": false,
+              "candidates": [
+                {
+                  "entity_id": "ExampleAlarm",
+                  "entity_name": "Example alarm",
+                  "entity_type": "LogEvent",
+                  "score": 0.92
+                }
+              ],
+              "obs_id": "obs_wafer_002",
+              "facet": "log_event"
+            }
+          ],
+          "consistency_score": 0.9,
+          "inconsistent_fields": [],
+          "consistency_checks": [
+            {
+              "source_field": "object",
+              "target_field": "anomaly_type",
+              "source_entity_id": "WaferObject",
+              "target_entity_id": "NearfullDefect",
+              "relations": [
+                "HAS_ANOMALY"
+              ],
+              "passed": true,
+              "matched_relation": "HAS_ANOMALY"
+            },
+            {
+              "source_field": "anomaly_type",
+              "target_field": "morphology",
+              "source_entity_id": "NearfullDefect",
+              "target_entity_id": "DenseParticles",
+              "relations": [
+                "HAS_MORPHOLOGY"
+              ],
+              "passed": true,
+              "matched_relation": "HAS_MORPHOLOGY"
+            },
+            {
+              "source_field": "anomaly_type",
+              "target_field": "log_event",
+              "source_entity_id": "NearfullDefect",
+              "target_entity_id": "ExampleAlarm",
+              "relations": [
+                "ASSOCIATED_WITH_EVENT"
+              ],
+              "passed": true,
+              "matched_relation": "ASSOCIATED_WITH_EVENT"
+            }
+          ],
+          "correction_candidates": [],
+          "ranked_paths": [
+            {
+              "path_id": "path_wafer_001",
+              "source_entity_id": "ExampleAlarm",
+              "target_entity_id": "GlueRemovalInsufficient",
+              "target_entity_name": "Glue removal insufficient",
+              "nodes": [
+                "ExampleAlarm",
+                "NearfullDefect",
+                "GlueRemovalInsufficient"
+              ],
+              "node_names": [
+                "Example alarm",
+                "Nearfull defect",
+                "Glue removal insufficient"
+              ],
+              "relations": [
+                "ASSOCIATED_WITH_EVENT",
+                "HAS_PLAUSIBLE_CAUSE"
+              ],
+              "score": 0.83,
+              "confidence": 0.69,
+              "evidence_match": 0.91,
+              "length": 2,
+              "source_edges": [
+                {
+                  "edge_id": "base-edges:11:NearfullDefect:ASSOCIATED_WITH_EVENT:ExampleAlarm",
+                  "source": "NearfullDefect",
+                  "target": "ExampleAlarm",
+                  "relation": "ASSOCIATED_WITH_EVENT",
+                  "confidence": 0.6
+                },
+                {
+                  "edge_id": "base-edges:12:NearfullDefect:HAS_PLAUSIBLE_CAUSE:GlueRemovalInsufficient",
+                  "source": "NearfullDefect",
+                  "target": "GlueRemovalInsufficient",
+                  "relation": "HAS_PLAUSIBLE_CAUSE",
+                  "confidence": 0.78
+                }
+              ],
+              "support_obs_ids": [
+                "obs_wafer_001",
+                "obs_wafer_002"
+              ]
+            },
+            {
+              "path_id": "path_wafer_002",
+              "source_entity_id": "NearfullDefect",
+              "target_entity_id": "GlueRemovalInsufficient",
+              "target_entity_name": "Glue removal insufficient",
+              "nodes": [
+                "NearfullDefect",
+                "GlueRemovalInsufficient"
+              ],
+              "node_names": [
+                "Nearfull defect",
+                "Glue removal insufficient"
+              ],
+              "relations": [
+                "HAS_PLAUSIBLE_CAUSE"
+              ],
+              "score": 0.8,
+              "confidence": 0.78,
+              "evidence_match": 0.87,
+              "length": 1,
+              "source_edges": [
+                {
+                  "edge_id": "base-edges:12:NearfullDefect:HAS_PLAUSIBLE_CAUSE:GlueRemovalInsufficient",
+                  "source": "NearfullDefect",
+                  "target": "GlueRemovalInsufficient",
+                  "relation": "HAS_PLAUSIBLE_CAUSE",
+                  "confidence": 0.78
+                }
+              ],
+              "support_obs_ids": [
+                "obs_wafer_001"
+              ]
+            }
+          ]
+        },
+        "route2": null,
+        "cross_route_signals": [],
+        "notes": [
+          "Wafer 案例以双模态 evidence 组织为主，当前不回退到时序传播仿真。",
+          "log_event 通过 ASSOCIATED_WITH_EVENT 边接入同一张 KG，适合做证据审查与路径对比。"
+        ]
+      }
+    }
+  ]
+}
