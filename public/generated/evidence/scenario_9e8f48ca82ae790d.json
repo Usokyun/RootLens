@@ -1,0 +1,666 @@
+{
+  "case_id": "scenario_9e8f48ca82ae790d",
+  "case_label": "TEP Fault 14 / Run 3",
+  "dataset": "tep",
+  "fault_number": 14,
+  "graph_contributions": {
+    "variable:manipulated_variable_10_reactor_coolant": 0.17166183,
+    "variable:manipulated_variable_11_condenser_coolant": 1.47e-06,
+    "variable:manipulated_variable_1_d_feed": 0.06928772,
+    "variable:manipulated_variable_2_e_feed": 0.00438488,
+    "variable:manipulated_variable_3_a_feed": 0.00092407,
+    "variable:manipulated_variable_4_a_and_c_feed": 0.00232956,
+    "variable:manipulated_variable_5_recycle": 0.00199628,
+    "variable:manipulated_variable_6_purge": 0.00015519,
+    "variable:manipulated_variable_7_separator": 0.0,
+    "variable:manipulated_variable_8_stripper": 0.0,
+    "variable:manipulated_variable_9_steam": 0.0042807,
+    "variable:xmeas_1": 0.00096361,
+    "variable:xmeas_10": 0.00013299,
+    "variable:xmeas_11": 0.03133684,
+    "variable:xmeas_12": 0.0,
+    "variable:xmeas_13": 0.00245043,
+    "variable:xmeas_14": 0.0,
+    "variable:xmeas_15": 0.0,
+    "variable:xmeas_16": 0.00158559,
+    "variable:xmeas_17": 1.47e-06,
+    "variable:xmeas_18": 0.00416878,
+    "variable:xmeas_19": 0.00406736,
+    "variable:xmeas_2": 0.08539202,
+    "variable:xmeas_20": 0.00239872,
+    "variable:xmeas_21": 0.31944342,
+    "variable:xmeas_22": 0.07040841,
+    "variable:xmeas_23": 0.0048642,
+    "variable:xmeas_24": 0.00423107,
+    "variable:xmeas_25": 0.00331656,
+    "variable:xmeas_26": 8e-07,
+    "variable:xmeas_27": 0.00424644,
+    "variable:xmeas_28": 0.0038741,
+    "variable:xmeas_29": 0.00468289,
+    "variable:xmeas_3": 0.00409257,
+    "variable:xmeas_30": 0.00461899,
+    "variable:xmeas_31": 0.00226705,
+    "variable:xmeas_32": 0.00361479,
+    "variable:xmeas_33": 0.00289973,
+    "variable:xmeas_34": 0.00522214,
+    "variable:xmeas_35": 0.00221944,
+    "variable:xmeas_36": 0.00356039,
+    "variable:xmeas_37": 0.0,
+    "variable:xmeas_38": 0.00452073,
+    "variable:xmeas_39": 4.2e-07,
+    "variable:xmeas_4": 0.00244964,
+    "variable:xmeas_40": 0.0,
+    "variable:xmeas_41": 6e-08,
+    "variable:xmeas_5": 0.0,
+    "variable:xmeas_6": 5e-08,
+    "variable:xmeas_7": 0.00256279,
+    "variable:xmeas_8": 0.00402325,
+    "variable:xmeas_9": 0.15536055
+  },
+  "graph_dataset_id": "tep-kg",
+  "observations": [
+    {
+      "confidence": 0.95,
+      "contribution": 0.31944342,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_21",
+        "variable:plant_output_21_reactor_coolant_temp"
+      ],
+      "name": "xmeas_21",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_21",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_21"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.17166183,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_10_reactor_coolant",
+        "variable:mv_51"
+      ],
+      "name": "xmv_10",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_10",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_10"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.15536055,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_9",
+        "variable:plant_output_9_reactor_temperature"
+      ],
+      "name": "xmeas_9",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_9",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_9"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.08539202,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_2",
+        "variable:plant_output_2_d_feed"
+      ],
+      "name": "xmeas_2",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_2",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_2"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.07040841,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_22",
+        "variable:plant_output_22_separator_coolant_temp"
+      ],
+      "name": "xmeas_22",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_22",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_22"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.06928772,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_1_d_feed",
+        "variable:mv_42"
+      ],
+      "name": "xmv_1",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_1",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_1"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.03133684,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_11",
+        "variable:plant_output_11_product_sep_temp"
+      ],
+      "name": "xmeas_11",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_11",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_11"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00522214,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_34"
+      ],
+      "name": "xmeas_34",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_34",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_34"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.0048642,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_23"
+      ],
+      "name": "xmeas_23",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_23",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_23"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00468289,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_29"
+      ],
+      "name": "xmeas_29",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_29",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_29"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00461899,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_30"
+      ],
+      "name": "xmeas_30",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_30",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_30"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00452073,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_38"
+      ],
+      "name": "xmeas_38",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_38",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_38"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00438488,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_2_e_feed",
+        "variable:mv_44"
+      ],
+      "name": "xmv_2",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_2",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_2"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.0042807,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_9_steam",
+        "variable:mv_50"
+      ],
+      "name": "xmv_9",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_9",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_9"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00424644,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_27"
+      ],
+      "name": "xmeas_27",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_27",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_27"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00423107,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_24"
+      ],
+      "name": "xmeas_24",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_24",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_24"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00416878,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_18",
+        "variable:plant_output_18_stripper_temp"
+      ],
+      "name": "xmeas_18",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_18",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_18"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00409257,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_3",
+        "variable:plant_output_3_e_feed"
+      ],
+      "name": "xmeas_3",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_3",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_3"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00406736,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_19",
+        "variable:plant_output_19_stripper_steam_flow"
+      ],
+      "name": "xmeas_19",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_19",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_19"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00402325,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_8",
+        "variable:plant_output_8_reactor_level"
+      ],
+      "name": "xmeas_8",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_8",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_8"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.0038741,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_28"
+      ],
+      "name": "xmeas_28",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_28",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_28"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00361479,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_32"
+      ],
+      "name": "xmeas_32",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_32",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_32"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00356039,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_36"
+      ],
+      "name": "xmeas_36",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_36",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_36"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00331656,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_25"
+      ],
+      "name": "xmeas_25",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_25",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_25"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00289973,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_33"
+      ],
+      "name": "xmeas_33",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_33",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_33"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00256279,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_7",
+        "variable:plant_output_7_reactor_pressure"
+      ],
+      "name": "xmeas_7",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_7",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_7"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00245043,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_13",
+        "variable:plant_output_13_product_sep_pressure"
+      ],
+      "name": "xmeas_13",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_13",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_13"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00244964,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_4",
+        "variable:plant_output_4_a_and_c_feed"
+      ],
+      "name": "xmeas_4",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_4",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_4"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00239872,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_20",
+        "variable:plant_output_20_compressor_work"
+      ],
+      "name": "xmeas_20",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_20",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_20"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00232956,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_4_a_and_c_feed",
+        "variable:mv_45"
+      ],
+      "name": "xmv_4",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_4",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_4"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00226705,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_31"
+      ],
+      "name": "xmeas_31",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_31",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_31"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00221944,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_35"
+      ],
+      "name": "xmeas_35",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_35",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_35"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00199628,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_5_recycle",
+        "variable:mv_46"
+      ],
+      "name": "xmv_5",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_5",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_5"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00158559,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_16",
+        "variable:plant_output_16_stripper_pressure"
+      ],
+      "name": "xmeas_16",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_16",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_16"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00096361,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_1",
+        "variable:plant_output_1_a_feed"
+      ],
+      "name": "xmeas_1",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_1",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_1"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00092407,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_3_a_feed",
+        "variable:mv_43"
+      ],
+      "name": "xmv_3",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_3",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_3"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00015519,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_6_purge",
+        "variable:mv_47"
+      ],
+      "name": "xmv_6",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_6",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_6"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 0.00013299,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_10",
+        "variable:plant_output_10_purge_rate"
+      ],
+      "name": "xmeas_10",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_10",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_10"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 1.47e-06,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_17",
+        "variable:plant_output_17_stripper_underflow"
+      ],
+      "name": "xmeas_17",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_17",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_17"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 1.47e-06,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:manipulated_variable_11_condenser_coolant",
+        "variable:mv_52"
+      ],
+      "name": "xmv_11",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmv_11",
+      "raw_evidence_refs": [],
+      "variable_name": "xmv_11"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 8e-07,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_26"
+      ],
+      "name": "xmeas_26",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_26",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_26"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 4.2e-07,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_39"
+      ],
+      "name": "xmeas_39",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_39",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_39"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 6e-08,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_41"
+      ],
+      "name": "xmeas_41",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_41",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_41"
+    },
+    {
+      "confidence": 0.95,
+      "contribution": 5e-08,
+      "direction": "unknown",
+      "facet": "variable",
+      "linked_entity_hints": [
+        "variable:xmeas_6",
+        "variable:plant_output_6_reactor_feed_rate"
+      ],
+      "name": "xmeas_6",
+      "obs_id": "obs_scenario_9e8f48ca82ae790d_xmeas_6",
+      "raw_evidence_refs": [],
+      "variable_name": "xmeas_6"
+    }
+  ],
+  "simulation_run": 3,
+  "source": "time_series",
+  "summary": "TEP process fault #14, simulation run 3. Window samples 1–100.",
+  "timestamp": "2026-05-13T06:37:57Z"
+}

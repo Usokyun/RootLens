@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import ssl
 import subprocess
 import urllib.request
@@ -24,6 +25,11 @@ SAVE_URI = "/case2step/save_case_to_bits"
 
 JSONLike = Union[Dict[str, Any], list, str, int, float, bool, None]
 BITS_CASE_DETAIL_URL = "https://bits.bytedance.net/devops/{devops_id}/quality/case/caseDetail/{case_id}"
+CASE_HEADING_PATTERN = re.compile(r"^####\s+(?P<title>.+)$", re.MULTILINE)
+CASE_NODE_HEADING_PATTERN = re.compile(
+    r"^#{5,}\s+\*\*(?P<label>操作步骤|预期结果)\*\*\s*(?P<inline>.*)$",
+    re.MULTILINE,
+)
 
 
 def _call_api(uri: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -119,7 +125,189 @@ def _build_case_detail_url(devops_id: int, case_id: int) -> str:
     return BITS_CASE_DETAIL_URL.format(devops_id=devops_id, case_id=case_id)
 
 
-def _format_save_response(resp: Dict[str, Any], devops_id: int) -> Dict[str, Any]:
+def _normalize_case_heading(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _normalize_node_text(text: str) -> str:
+    lines = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("**[") and "]**" in line:
+            continue
+        lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _iter_case_heading_blocks(markdown: str) -> list[tuple[re.Match[str], str]]:
+    matches = list(CASE_HEADING_PATTERN.finditer(markdown))
+    blocks: list[tuple[re.Match[str], str]] = []
+    for index, match in enumerate(matches):
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        blocks.append((match, markdown[start:end]))
+    return blocks
+
+
+def _parse_case_expectation_paths(markdown: str) -> list[dict[str, Any]]:
+    cases: list[dict[str, Any]] = []
+    for case_index, (match, block) in enumerate(_iter_case_heading_blocks(markdown)):
+        nodes = list(CASE_NODE_HEADING_PATTERN.finditer(block))
+        expectation_nodes: list[dict[str, Any]] = []
+        step_index = -1
+        expectation_index_by_step: dict[int, int] = {}
+        for node_index, node in enumerate(nodes):
+            label = node.group("label")
+            section_end = (
+                nodes[node_index + 1].start() if node_index + 1 < len(nodes) else len(block)
+            )
+            inline = node.group("inline").strip()
+            body = block[node.end() : section_end].strip()
+            text = _normalize_node_text("\n".join(part for part in [inline, body] if part))
+            if label == "操作步骤":
+                step_index += 1
+                expectation_index_by_step.setdefault(step_index, 0)
+                continue
+            if label != "预期结果":
+                continue
+            if step_index < 0:
+                step_index = 0
+                expectation_index_by_step.setdefault(step_index, 0)
+            expectation_index = expectation_index_by_step.get(step_index, 0)
+            expectation_index_by_step[step_index] = expectation_index + 1
+            expectation_nodes.append(
+                {
+                    "path": [step_index, expectation_index],
+                    "expected_result": text,
+                }
+            )
+        cases.append(
+            {
+                "case_index": case_index,
+                "case_title": _normalize_case_heading(match.group("title")),
+                "expectation_nodes": expectation_nodes,
+            }
+        )
+    return cases
+
+
+def _node_text(node: dict[str, Any]) -> str:
+    for key in ("title", "name", "text", "content", "value", "desc", "description"):
+        value = node.get(key)
+        if isinstance(value, str) and value.strip():
+            return _normalize_node_text(value)
+    return ""
+
+
+def _is_expectation_node(node: dict[str, Any]) -> bool:
+    for key in ("node_type", "nodeType", "type", "category", "label"):
+        value = node.get(key)
+        if isinstance(value, str) and "预期结果" in value:
+            return True
+    text = _node_text(node)
+    return text.startswith("预期结果") or text.lower().startswith("expected result")
+
+
+def _node_id(node: dict[str, Any]) -> str | None:
+    for key in ("expectation_id", "expectationId", "id", "node_id", "nodeId", "key"):
+        value = node.get(key)
+        if isinstance(value, (str, int)) and str(value).strip():
+            return str(value).strip()
+    return None
+
+
+def _walk_nodes(root: Any) -> list[dict[str, Any]]:
+    found: list[dict[str, Any]] = []
+    if isinstance(root, dict):
+        if _is_expectation_node(root):
+            node_id = _node_id(root)
+            if node_id:
+                found.append({"id": node_id, "bits_text": _node_text(root)})
+        for value in root.values():
+            if isinstance(value, (dict, list)):
+                found.extend(_walk_nodes(value))
+    elif isinstance(root, list):
+        for item in root:
+            found.extend(_walk_nodes(item))
+    return found
+
+
+def _extract_bits_expectation_nodes(resp: Dict[str, Any]) -> list[dict[str, Any]]:
+    data = resp.get("data")
+    if not isinstance(data, dict):
+        return []
+    roots = [
+        data.get("case_data"),
+        data.get("mindNodes"),
+        data.get("mind_nodes"),
+        data.get("case_mind"),
+        data.get("caseMind"),
+    ]
+    nodes: list[dict[str, Any]] = []
+    for root in roots:
+        nodes.extend(_walk_nodes(root))
+    if not nodes:
+        nodes.extend(_walk_nodes(data))
+    seen: set[str] = set()
+    unique_nodes: list[dict[str, Any]] = []
+    for node in nodes:
+        node_id = node["id"]
+        if node_id in seen:
+            continue
+        seen.add(node_id)
+        unique_nodes.append(node)
+    return unique_nodes
+
+
+def _extract_case_expectations_from_save_response(
+    resp: Dict[str, Any],
+    case_content: str | None,
+) -> list[dict[str, Any]]:
+    if not case_content:
+        return []
+    parsed_cases = _parse_case_expectation_paths(case_content)
+    expected_paths = [
+        (case["case_index"], node["path"])
+        for case in parsed_cases
+        for node in case["expectation_nodes"]
+    ]
+    bits_nodes = _extract_bits_expectation_nodes(resp)
+    if not bits_nodes:
+        return []
+    if len(bits_nodes) != len(expected_paths):
+        return []
+
+    bits_iter = iter(bits_nodes)
+    case_expectations: list[dict[str, Any]] = []
+    for case in parsed_cases:
+        nodes: list[dict[str, Any]] = []
+        for parsed_node in case["expectation_nodes"]:
+            bits_node = next(bits_iter)
+            nodes.append(
+                {
+                    "path": parsed_node["path"],
+                    "id": bits_node["id"],
+                    "expected_result": parsed_node["expected_result"],
+                    "bits_text": bits_node.get("bits_text", ""),
+                }
+            )
+        case_expectations.append(
+            {
+                "case_index": case["case_index"],
+                "case_title": case["case_title"],
+                "expectation_nodes": nodes,
+            }
+        )
+    return case_expectations
+
+
+def _format_save_response(
+    resp: Dict[str, Any],
+    devops_id: int,
+    case_content: str | None = None,
+) -> Dict[str, Any]:
     data = resp.get("data")
     if not isinstance(data, dict):
         return resp
@@ -131,6 +319,10 @@ def _format_save_response(resp: Dict[str, Any], devops_id: int) -> Dict[str, Any
             data["case_detail_url"] = _build_case_detail_url(devops_id, case_id)
     elif isinstance(raw_case_url, int):
         data["case_detail_url"] = _build_case_detail_url(devops_id, raw_case_url)
+
+    case_expectations = _extract_case_expectations_from_save_response(resp, case_content)
+    if case_expectations:
+        data["case_expectations"] = case_expectations
 
     return resp
 
@@ -218,7 +410,7 @@ def main() -> int:
             dir_id=args.dir_id,
             case_id=args.case_id,
         )
-        resp = _format_save_response(resp, args.devops_id)
+        resp = _format_save_response(resp, args.devops_id, case_content=case_data)
         if args.output:
             write_case_to_file(resp, args.output, pretty=True)
             print(f"Saved case to Bits. API response written to: {args.output}")

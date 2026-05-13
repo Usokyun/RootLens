@@ -1319,19 +1319,12 @@ async function main() {
     generator: 'scripts/build-unified-graphs.mjs',
     datasets,
   }
-  const runtimeOutput = {
-    schema_version: 'rootlens-runtime.v1',
-    generated_at: output.generatedAt,
-    generator: 'scripts/build-unified-graphs.mjs',
-    cases: buildRuntimeCases(datasets),
-  }
 
   const outputDir = path.join(
     repoRoot,
     'public/generated',
   )
   const outputPath = path.join(outputDir, 'unified-graphs.json')
-  const runtimeOutputPath = path.join(outputDir, 'rootlens-runtime.json')
   const legacyTsPath = path.join(
     repoRoot,
     'src/data/generated/unified-graphs.ts',
@@ -1341,12 +1334,10 @@ async function main() {
     recursive: true,
   })
   await fs.writeFile(outputPath, JSON.stringify(output, null, 2), 'utf8')
-  await fs.writeFile(runtimeOutputPath, JSON.stringify(runtimeOutput, null, 2), 'utf8')
   await fs.rm(legacyTsPath, {
     force: true,
   })
   console.log(`wrote ${outputPath}`)
-  console.log(`wrote ${runtimeOutputPath}`)
 }
 
 main().catch((error) => {

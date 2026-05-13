@@ -99,5 +99,5 @@
   "severity": 0.6,
   "source": "time_series",
   "summary": "观测到的 process anomaly evidence only：adapter/manual demo annotation 记录 anomaly_type、process location 和 observed variable signals；不包含 root-cause label。",
-  "timestamp": "2026-05-12T11:17:29Z"
+  "timestamp": "2026-05-13T06:37:57Z"
 }

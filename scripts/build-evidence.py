@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import builtins
 import json
 import os as _os
 import sys
@@ -23,6 +24,53 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEP_KG_ROOT = Path("/Users/bytedance/my_project/TEP_KG")
 MVTEC_KG_ROOT = Path("/Users/bytedance/my_project/MVTec/KGTraceVis")
+
+
+def _install_zip_strict_compat() -> None:
+    """Backport ``zip(..., strict=...)`` for upstream Python 3.10+ code."""
+    if sys.version_info >= (3, 10):
+        return
+    if getattr(builtins.zip, "__name__", "") == "_zip_with_strict":
+        return
+
+    original_zip = builtins.zip
+
+    def _zip_with_strict(*iterables, strict: bool = False):
+        if not strict:
+            yield from original_zip(*iterables)
+            return
+
+        iterators = [iter(iterable) for iterable in iterables]
+        while True:
+            row = []
+            exhausted_at = None
+            for index, iterator in enumerate(iterators):
+                try:
+                    row.append(next(iterator))
+                except StopIteration:
+                    exhausted_at = index
+                    break
+            if exhausted_at is None:
+                yield tuple(row)
+                continue
+            if row:
+                raise ValueError(
+                    f"zip() argument {exhausted_at + 1} is shorter than argument 1"
+                )
+            for index, iterator in enumerate(iterators[exhausted_at + 1 :], start=exhausted_at + 2):
+                try:
+                    next(iterator)
+                except StopIteration:
+                    continue
+                raise ValueError(
+                    f"zip() argument {index} is longer than argument {exhausted_at + 1}"
+                )
+            return
+
+    builtins.zip = _zip_with_strict
+
+
+_install_zip_strict_compat()
 
 # ── helpers ────────────────────────────────────────────────────────
 
@@ -38,6 +86,14 @@ def _write_json(path: Path, payload: object) -> None:
         json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False),
         encoding="utf-8",
     )
+
+
+def _clear_generated_json(output_dir: Path) -> None:
+    """Remove stale generated evidence files before rebuilding the sample set."""
+    if not output_dir.exists():
+        return
+    for path in output_dir.glob("*.json"):
+        path.unlink()
 
 def _clamp(value: float, lower: float = 0.0, upper: float = 1.0) -> float:
     return max(lower, min(upper, value))
@@ -104,6 +160,39 @@ def _normalize_evidence_for_rootlens(evidence: dict) -> dict:
     return evidence
 
 
+def _select_balanced_tep_scenarios(
+    scenarios: list[dict],
+    max_cases: int | None,
+) -> list[dict]:
+    """Round-robin across fault numbers so capped TEP samples stay fault-balanced."""
+    if max_cases is None or max_cases >= len(scenarios):
+        return scenarios
+
+    by_fault: dict[int, list[dict]] = {}
+    for scenario in scenarios:
+        by_fault.setdefault(int(scenario["fault_number"]), []).append(scenario)
+
+    selected: list[dict] = []
+    round_index = 0
+    ordered_faults = sorted(by_fault)
+
+    while len(selected) < max_cases:
+        added = False
+        for fault_number in ordered_faults:
+            bucket = by_fault[fault_number]
+            if round_index >= len(bucket):
+                continue
+            selected.append(bucket[round_index])
+            added = True
+            if len(selected) >= max_cases:
+                break
+        if not added:
+            break
+        round_index += 1
+
+    return selected
+
+
 # =====================================================================
 # TEP  evidence construction  (RBC → observations)
 # =====================================================================
@@ -118,18 +207,28 @@ def _build_tep_evidence(
     from tep_kg.rbc import build_rbc_scenarios, load_tep_mapping
     from tep_kg.assets import read_jsonl
 
-    print("[tep] running RBC pipeline …", flush=True)
-    profile, scenarios, report = build_rbc_scenarios(
-        TEP_KG_ROOT,
-        row_stride=25,
-        window_size=100,
-        max_runs_per_fault=500,
-    )
-    print(
-        f"[tep]  done — {len(scenarios)} scenarios across "
-        f"{report['fault_count']} faults",
-        flush=True,
-    )
+    precomputed_path = TEP_KG_ROOT / "data" / "processed" / "rca" / "rbc_contributions.jsonl"
+    if precomputed_path.exists():
+        print("[tep] loading precomputed RBC scenarios …", flush=True)
+        scenarios = read_jsonl(precomputed_path)
+        fault_count = len({int(row["fault_number"]) for row in scenarios})
+        print(
+            f"[tep]  done — {len(scenarios)} scenarios across {fault_count} faults",
+            flush=True,
+        )
+    else:
+        print("[tep] running RBC pipeline …", flush=True)
+        _profile, scenarios, report = build_rbc_scenarios(
+            TEP_KG_ROOT,
+            row_stride=25,
+            window_size=100,
+            max_runs_per_fault=500,
+        )
+        print(
+            f"[tep]  done — {len(scenarios)} scenarios across "
+            f"{report['fault_count']} faults",
+            flush=True,
+        )
 
     mapping = load_tep_mapping(TEP_KG_ROOT)
     channel_info: dict[str, dict] = {}
@@ -146,7 +245,7 @@ def _build_tep_evidence(
             ),
         }
 
-    selected = scenarios[:max_cases] if max_cases else scenarios
+    selected = _select_balanced_tep_scenarios(scenarios, max_cases)
     cases: list[dict] = []
 
     for sc in selected:
@@ -258,6 +357,22 @@ def _build_kgtracevis_evidence(
                 case_json = json.loads(ev.model_dump_json())
                 case_json = _normalize_evidence_for_rootlens(case_json)
                 case_json["case_label"] = f"{ev.dataset.upper()} / {ev.object} / {ev.anomaly_type}"
+                case_id = str(case_json.get("case_id", f"{label}_{len(all_cases) + 1:04d}"))
+                dataset = str(case_json.get("dataset", ""))
+                case_json["graph_dataset_id"] = _select_graph_dataset_id(
+                    tep=(dataset == "tep"),
+                    mvtec=(dataset == "mvtec"),
+                    wafer=(dataset == "wafer"),
+                )
+                if not case_json.get("summary"):
+                    raw_desc = case_json.get("raw_evidence", {})
+                    if isinstance(raw_desc, dict):
+                        case_json["summary"] = str(raw_desc.get("description", ""))
+                    else:
+                        case_json["summary"] = ""
+                out_path = output_dir / f"{case_id}.json"
+                _write_json(out_path, case_json)
+                all_cases.append(case_json)
 
         print(
             f"[kgtracevis] wrote {len(all_cases)} evidence files to {output_dir}",
@@ -338,6 +453,9 @@ def build_all(
 
     if output_dir is None:
         output_dir = REPO_ROOT / "public" / "generated" / "evidence"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    _clear_generated_json(output_dir)
 
     # ── TEP RBC evidence ───────────────────────────────────────────
     if not skip_tep:

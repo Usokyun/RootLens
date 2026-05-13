@@ -1,6 +1,6 @@
 ---
 name: prd2case
-description: 指导如何生成文本测试用例(case.md), 文本测试用例将作为后续流程中API自动化测试和Web e2e自动化测试的输入；生成Web测试分析时仅聚焦spec.md中最核心的P00功能和验证点
+description: 指导如何生成文本测试用例(case.md), 文本测试用例将作为后续流程中API自动化测试和Web e2e自动化测试的输入
 user-invocable: true
 ---
 
@@ -8,11 +8,58 @@ user-invocable: true
 - PRD2Case有两类下游测试执行任务：API自动化测试和Web e2e自动化测试，二者所需的输入信息和输出内容不同，是**互相独立**的两种任务
 - 当你根据输入判定测试执行任务的类型后，直接阅读`任务类型1: 生成API自动化测试所需的文本测试用例` 或 `任务类型2: 生成Web e2e自动化测试所需的文本测试用例` 对应的内容，并忽略另一种任务类型的描述
 - 任务的产出需要放在本次开发任务的对应目录下，通常为`specs/yyyymmdd-feature-name`
+- 在进入任一任务类型的流程前，**必须**先执行下一节的 `前置：读取仓库偏好设置 (.test_config.ini)`
 
+
+## 前置：读取仓库偏好设置 (.test_config.ini)
+
+**适用范围**：任务类型1 和 任务类型2 都必须先执行此步骤，再进入各自的任务流程，不得跳过。
+
+**读取位置**：仅读取 git 仓库根目录下的 `.test_config.ini`（通过 `git rev-parse --show-toplevel` 定位仓库根），不读取其他目录或上层目录。
+
+**文件格式**：INI，prd2case 偏好集中写在 `[prd2case]` section 下。当前支持以下字段（均为可选）：
+
+```ini
+[prd2case]
+# 产出文档 (test_analysis.md / case.md) 的语言偏好
+# 取值：zh | en；未配置时跟随用户与 agent 的交流语言
+language = zh
+
+# 业务自定义知识库路径，绝对路径，或以项目根目录为基础的相对路径
+business_knowledge_path = .../path/to/knowledge_base
+```
+
+说明：
+- 该文件可同时承载其他工具的配置，各自放到自己的 section 下；prd2case 只读取并只认 `[prd2case]` section
+- 不在 `[prd2case]` section 下的键值对于 prd2case 一律忽略
+
+**执行步骤**：
+1. 使用 bash 获取仓库根目录，例如 `REPO_ROOT="$(git rev-parse --show-toplevel)"`
+2. 判断 `$REPO_ROOT/.test_config.ini` 是否存在
+3. **文件存在**：
+   - 使用标准 INI 解析器（如 Python `configparser`）读取 `[prd2case]` section
+   - 逐一校验字段取值（详见下文"字段语义与合法取值"）
+   - 将合法字段保存到当前任务的偏好上下文中，后续所有阶段均以该上下文为准，不得被默认逻辑覆盖
+   - 向用户一次性回显本次加载到的偏好，例如："已加载 .test_config.ini [prd2case]：language=zh, business_knowledge_path=xxx"
+   - 若文件存在但 `[prd2case]` section 缺失或为空，等同于"无偏好"，按下方"文件不存在"的提示流程处理
+4. **文件不存在**：
+   - 必须向用户输出一次性提示："未找到仓库根目录下的 `.test_config.ini`（或其中缺少 `[prd2case]` section），将使用默认流程"
+   - 之后按原有流程继续，**不得**中断任务、**不得**反复追问用户是否需要创建
+5. **文件存在但解析失败或部分字段非法**：
+   - 对非法字段输出提示后忽略该字段，继续使用默认值
+   - 合法字段仍正常加载，不因个别字段非法而终止任务
+
+**字段语义与合法取值**（均位于 `[prd2case]` section 下）：
+- `language`：
+  - 合法取值：`zh` 或 `en`
+  - 作用：覆盖任务类型2 中"语言跟随用户交流语言"的默认策略，决定 `test_analysis.md` 和 `case.md` 的输出语言；任务类型1 中同样适用于 `case.md` 的自然语言描述
+- `business_knowledge_path`：
+  - 合法取值：一个在本地文件系统中存在的路径
+  - 作用：直接作为任务类型2 Stage-3 生成测试用例时，读取业务知识补充和完善测试分析文档，为具体用例生成提供更完整的上下文
 
 ## 任务类型1: 生成API自动化测试所需的文本测试用例
 
-**Attention**: 当前仅支持单接口的测试用例执行，不要生成多接口的测试用例
+**Attention**: 当前仅支持单接口的测试用例执行，不要生成多接口的测试用例；**仅聚焦运行时 API 测试**，严禁生成诸如“代码编译检查、IDL 生成验证、CI 脚本执行”等非运行时的前置工程检查用例。
 
 ### 任务所需信息
 1. (**必须**) spec文档(spec.md)
@@ -29,7 +76,8 @@ user-invocable: true
 - 用户确认或提供路径和分支后继续后续步骤
 
 **step1: 复制模板并创建任务结果文件**
-使用cp的bash命令，复制resources/api_test_template.md到本次开发任务对应的`test/`目录，命名为`case.md`
+- 使用cp的bash命令，复制 `resources/api_test_template.md` 到本次开发任务对应的 `test/` 目录，命名为 `case.md`。
+- **[强制] 详细阅读并解析 `resources/api_test_template.md`，深刻理解其中的用例层级、区块定义（如前置条件、操作步骤、预期结果）以及所有的排版与 Markdown 语法规范，作为后续生成的唯一格式基准。**
 
 **step2: 受影响接口分析**
 根据任务所需的信息，读取任务所需信息的文件、相关代码和git工作区中的内容，整理受影响的接口，结果需要包含如下信息
@@ -41,12 +89,17 @@ user-invocable: true
 **step3: 测试分析**
 这一步是生成API测试所需文本测试用例的核心，你需要在这一步针对每个接口，做如下分析：
 1. 设计测试场景，针对接口的改动，设计正向和负向的测试场景，其中以正向的测试场景为主，验证功能被正确实现；负向的测试场景为辅，仅设计必要的负向测试场景，每个测试场景用一句话描述
-  - 例如只有在观察到接口对某个字符类型字段做了长度校验或截断，或者对应的数据库字段类型为VARCHAR(xxx)时，才设计对应的负向用例
-  - 除非输入中有明确的要求，否则不要设计例如查询参数为String, 但传参的值为Int这样不存在的负向场景
+  - **分页与数据量控制**：若接口属于 Search/List/Query 类（查询列表），**必须**检查并设计分页参数（如 `limit`, `offset`, `page_size`）的正向与边界测试场景，禁止仅设计无条件全量查询。
+  - **无参数接口处理（防断言冲突机制）**：若发现接口**没有任何业务入参**（无 Query、无 Body、无 Path 变量），说明其返回结果完全依赖服务端底层数据状态。此时：
+    - 默认仅设计 **1个** 最基础的正向场景（如“正常拉取默认数据”）。
+    - **严禁**自行脑补生成多个不同断言结果的正向场景（如同时生成“返回非空”和“返回为空”），这会导致完全相同的请求产生相互矛盾的断言。
+    - 若需要验证不同的前置数据状态，**必须使用 `AskUserQuestion` 提前向用户确认**：“当前为无参接口，是否需要补充不同前置数据状态（如空态/非空态）的用例？若是，请提供如何通过其他接口/脚本构造或区分这些状态，以免断言冲突。”。用户确认后再行生成。
+  - **负向测试场景**：设计必要的负向场景，必须包括**基础入参异常校验**（如必填字段缺失、数据类型传错例如要求数组却传字符串、超长边界等），以及业务逻辑约束错误（如已存在的数据重复提交等）。
 2. 设计每个测试场景的具体测试内容，包含三部分
   - 核心请求参数：测试这个场景所需的核心参数
-    - spec目录下通常会包含部分你所需要参数的具体指，每个核心参数都必须在specs目录下的信息中搜索可能的准确值
-    - 若通过已知信息能知道参数的值，则使用准确值；若无法获取，则使用文本描述说明这个参数需要是什么，例如一条数据库中存在的item_id
+    - **HTTP 规范约束**：严格区分 HTTP Method。如果是 `GET` 请求，参数应置于 Params/Query 中，**严禁在 Body 中传参，且无需携带 `Content-Type: application/json` 请求头**；若是 `POST/PUT` 等，再视情况置于 Body 并携带对应 Header。
+    - **请求字段命名约束**：请求体中的 JSON 字段命名（如驼峰、蛇形、帕斯卡等）必须**严格遵循 IDL/接口定义的实际要求**，禁止自行转换和混用（例如 IDL 中定义为 `bank_keys`，则用例中不得写成 `bankKeys`）。
+    - 赋值要求：spec目录下通常会包含部分所需参数的具体值，必须在specs目录下搜索准确值。若无法获取，则使用文本描述说明这个参数需要是什么（例如：一条数据库中存在的item_id）。
   - 校验点：采用**两层校验**结构，外层校验网关/传输层错误，内层校验业务响应状态和字段
     - **外层校验（网关层）**：
       - HTTP 类型接口：`status_code == 200`（校验业务 HTTP 状态码）
@@ -61,104 +114,89 @@ user-invocable: true
         - 正向场景必须校验该字段为成功值；负向场景校验对应的错误码。若IDL中接口响应结构确实不包含业务状态码字段，则跳过此项
         - **RPC 接口的业务响应码必须使用 `jsonpath` 断言**（如 `jsonpath('$.BaseResp.StatusCode') == 0`），不得使用 `status_code` 断言
       - 具体字段断言：对需要做校验的字段进行断言，断言的内容使用自然语言描述即可，但注意所有的断言都必须是明确且具体的，不要出现例如xx字段符合预期这样的模糊描述
-  - **jsonpath 字段路径规则（适用于所有断言，包括业务响应码和具体字段）**：
-    - 所有 `jsonpath` 断言中的字段路径必须与 JSON 实际序列化后的字段名完全一致，**禁止基于 Go/Python 等语言惯例自行将字段名转为 snake_case**
-    - 确定字段路径的唯一依据是 IDL 定义：
-      1. 若 IDL 字段有显式 `go.tag='json:"xxx"'` 注解，使用注解中的 `xxx` 作为 JSON 字段名
-      2. 若 IDL 字段**没有** `go.tag` 或 `json` 注解，**Thrift 默认行为是保留原始字段名**（通常为 PascalCase），例如 IDL 中 `ShopID` 序列化后仍为 `ShopID`，而非 `shop_id`
-    - 常见错误示例（**禁止**）：
-      - `$.base_resp.StatusCode` → 应为 `$.BaseResp.StatusCode`
-      - `$.shop_single_shelf_commission_list[0].shop_id` → 应为 `$.ShopSingleShelfCommissionList[0].ShopID`
-      - `$.open_loop_commission_list[0].single_shelf_commission_rate` → 应为 `$.OpenLoopCommissionList[0].SingleShelfCommissionRate`
-    - 编写断言前，必须阅读接口 Response 结构及其嵌套结构的 IDL 定义，逐一确认每个字段的实际 JSON 序列化名称
+    - **jsonpath 字段路径规则（适用于所有断言，包括业务响应码和具体字段）**：
+      - 所有 `jsonpath` 断言中的字段路径必须与 JSON 实际序列化后的字段名完全一致，**禁止基于 Go/Python 等语言惯例自行将字段名转为 snake_case**
+      - 确定字段路径的唯一依据是 IDL 定义：
+        1. 若 IDL 字段有显式 `go.tag='json:"xxx"'` 注解，使用注解中的 `xxx` 作为 JSON 字段名
+        2. 若 IDL 字段**没有** `go.tag` 或 `json` 注解，**Thrift 默认行为是保留原始字段名**（通常为 PascalCase），例如 IDL 中 `ShopID` 序列化后仍为 `ShopID`，而非 `shop_id`
+      - 常见错误示例（**禁止**）：
+        - `$.base_resp.StatusCode` → 应为 `$.BaseResp.StatusCode`
+        - `$.shop_single_shelf_commission_list[0].shop_id` → 应为 `$.ShopSingleShelfCommissionList[0].ShopID`
+        - `$.open_loop_commission_list[0].single_shelf_commission_rate` → 应为 `$.OpenLoopCommissionList[0].SingleShelfCommissionRate`
+      - 编写断言前，必须阅读接口 Response 结构及其嵌套结构的 IDL 定义，逐一确认每个字段的实际 JSON 序列化名称
   - 优先级：核心、典型场景为P0; 次要场景为P1; 负向测试场景的优先级通常为P2, 但如果是影响较大的重要负向场景，可标记为P1.
-  - **特别要求**：仅保留优先级为P0的测试用例
+  **特别注意**：如果对生成的测试用例存在疑问，例如用例是否真的能够通过构造测试数据来验证，建议与用户确认，确保理解无误后再继续。
 
 
-**step4: 更新test/case.md**
-根据前面步骤的结果，完成`test/case.md`的编写
+**step4: 严格按模板格式生成 test/case.md**
+根据前面步骤的结果，完成 `test/case.md` 的编写。
+- **[强制约束] 必须强遵循 `resources/api_test_template.md` 中的用例结构与文本格式**：
+  1. 绝不能随意增删模板中规定的标准区块（如前置条件、操作步骤、预期结果等结构）。
+  2. 必须严格保持标题层级（H1/H2/H3/H4等）、缩进、列表符号、加粗标记等 Markdown 语法与模板 100% 一致。
+  3. 参数表格和断言格式务必贴合模板样式，严禁自行创造格式。
+- **[格式检查]** 在输出生成内容前，务必对 `case.md` 内容进行自我格式校验，确保没有任何偏离模板规范的内容。
 
-## 任务类型2: 生成Web e2e自动化测试所需的文本测试用例
+## 任务类型2: 生成 Web E2E 自动化测试所需的文本测试用例
 
-**Global Principles**
-- This workflow is not suggestion, but a **SOP** you MUST follow.
-- NEVER SKIP, STRICTLY FOLLOW the INSTRUCTIONS.
+目标：从需求 / `spec.md` 生成可执行的 Web E2E 输入文档，产物固定在本次需求目录的 `test/` 下：
 
-### 任务所需信息
-1. (**必须**) spec文档(spec.md) 或需求文档（Lark URL、本地 Markdown 等）
-2. (可选) 技术实现文档(ERD)
-3. (可选) 代码变更，可通过阅读git工作区中的内容，commit等获取
+```text
+specs/<feature>/test/
+├── test_analysis.md   # 测试分析 + 数据可执行性记录
+└── case.md            # 下游 webe2e / TTAT / Bits 使用的文本用例
+```
 
-### 任务流程
+**边界**：Web 侧「执行—任务状态—失败诊断与报告」均在 **`webe2e`**；本 skill 负责 `test_analysis.md` / `case.md` 与 Bits/TTAT 同步编排，不包含报告分析。
 
-#### Stage-0: 偏好配置（固定值，无需用户确认）
-Web e2e 场景下，以下配置为固定值，直接使用，不需要询问用户：
+### 固定配置
+
 - `Global`: Semi Auto
 - `Generation Style`: Follow the input
 - `CASE_GENERATION_MODE`: Web
+- 输出语言：优先读取仓库根目录 `.test_config.ini` 的 `[prd2case].language`；未配置时跟随用户语言。
 
-#### Stage-1: 确定产出目录
-- Web e2e 场景的所有产出文件放在本次开发任务对应 spec 目录下的 `test/` 子目录中
-- 通常为 `specs/yyyymmdd-feature-name/test/`（与 spec.md 同级的 `test/` 目录）
-- 如果 `test/` 目录不存在，使用 `mkdir -p` 创建
-- 后续步骤中 `$TEST_DIR` 均指该目录
+### Stage-1：生成 `test_analysis.md`
 
-```
-specs/yyyymmdd-feature-name/
-├── spec.md
-├── plan.md
-├── ...
-└── test/
-    ├── test_analysis.md         # Stage-2 产出，同时作为 Stage-3 的输入文档
-    └── case.md
-```
+从测试执行视角分析需求，而不是复述实现细节。`test_analysis.md` 必须先基于上下文完整枚举验收点，再按可执行性分类；优先级只是排序和标注，不是裁剪范围的依据。
 
-#### Stage-2: 测试分析（生成 test_analysis.md）
+开始 Stage-1 前，先确定产物目录并创建初始分析文档：
 
-本阶段从测试执行视角分析 spec.md，产出 `test_analysis.md` 作为后续用例生成的输入文档。
+- Web E2E 产物固定放在本次需求目录的 `test/` 子目录；如目录不存在，先创建。
+- 若 `test_analysis.md` 不存在，复制 `resources/test_analysis_template.md` 到该目录并命名为 `test_analysis.md`，再在模板结构内填写分析内容。
+- 若 `test_analysis.md` 已存在，本轮只能在保留既有验证点的基础上补齐/修正，不得整文件覆盖导致历史已确认的验证点、用户提供检查点或上轮分析行丢失。
+- Stage-1 是覆盖矩阵的唯一来源；后续 Stage-2 TDRS 只能对这些行做数据研究、可执行性分类和回填，不能替代 Stage-1 重新生成覆盖范围。
 
-**语言选择**：`test_analysis.md` 及后续生成的 `case.md` 的内容语言，跟随用户的语言习惯（即用户与 agent 交流所使用的语言）。用户用中文交流则输出中文，用英文交流则输出英文。
+**上下文输入范围**：
 
-**step1: 测试分析**
-根据上下文中的信息，特别是如下信息
-- spec文档(spec.md)
-- 技术实现文档(ERD)
-从测试执行而非技术实现的视角，分析 spec.md 中的功能及其验证点
->> 测试执行视角：测试执行时，是由一个Browser Use Agent来根据自然语言描述的结构化脚本，进行页面操作和断言判定
+- 必读：`spec.md` / PRD / 用户提供的需求文档。
+- 如存在则必须参考：技术实现文档（ERD / design doc）、代码变更、Figma / 交互稿、历史 `test_analysis.md` / `case.md`、`.test_config.ini` 中的 `business_knowledge_path`、`business_knowledge/${Business Identifier}` 与 `skills/custom/${Business Identifier}`。
+- 业务自定义知识 / 技能优先级高于通用规则；如和通用规则冲突，说明采用原因。
+- 上下文只用于 **Stage-1 枚举和补齐验证点**，不得替代 Stage-2 的 TDRS：不能因为上下文里有样例 URL / ID 就跳过代码分析、live API 查数、Gate B 造数确认或 Gate C 裁决。
 
-补充约束：
-- 不限定优先级范围，完整分析 spec.md 中涉及的功能和验证点
-- 必须识别并标注哪些验证点属于 **P0 核心功能**（最核心的主链路、最影响验收结果的能力）
-- 输出目标是产出完整的测试分析，同时明确区分 P0 核心验证点与其他验证点
-- **前置条件必须写死到具体的测试对象**：不能只写泛化的"进入某页面"或"存在某数据"，必须明确指定满足该场景所需的具体测试对象和状态。例如：
-  - 错误写法：`进入项目详情页` / `存在历史版本`
-  - 正确写法：`进入包含至少 2 个版本且含 Auto Prompt 标识的项目详情页` / `当前项目存在 v1、v2 两个版本，其中 v2 带有 Auto Prompt 标识`
-  - 原则：前置条件应精确到测试执行 Agent 据此能判断"当前页面/数据是否满足要求"，而不是到了页面才发现数据不满足
+`test_analysis.md` 必须覆盖（覆盖范围先于可执行性判断）：
 
-**step2: 编写测试分析文档（全量功能验证点）**
-- 使用cp的bash命令，复制resources/test_analysis_template.md到 `$TEST_DIR` 下，命名为`test_analysis.md`
-- **必须覆盖 spec.md 中所有功能的验证点**，不能只写核心功能，按"功能模块 -> 测试场景 -> 验证点"组织：
-    1. 功能模块：spec.md 中涉及的**每一个**功能模块，不遗漏
-    2. 测试场景：每个功能模块下的所有可执行测试场景（包括正向主链路、关键分支、异常/边界场景）
-    3. 验证点：在该场景下必须明确断言的页面行为、结果状态、文案或产物
-- 每个验证点需标注是否为 P0（在测试场景描述末尾标注 `[P0]`），标注依据：
-  - P0：主链路、主入口、主结果等最核心的验收能力
-  - 未标注：次要场景、边界场景、异常场景等
-- 此步骤**只写功能测试章节**，测试执行信息章节留空，在 step4 中填充
+- 功能验证点：覆盖需求涉及的主链路、关键分支、异常 / 边界场景。
+- P0 标记：只给核心验收链路加 `[P0]`，不要把所有场景都标 P0；P0 / P1 / P2 / P3 只表示优先级，不得作为丢弃非 P0 验收点的理由。
+- 执行信息：每个验证点都要记录页面入口、数据状态、可观察锚点与可执行性状态；缺失处先保留原始数据要求并标 `UNVERIFIED` / `BLOCKED` / `manual-prep` / `skip`，不要猜。
 
-**step3: 结合 `spec.md` 与 `test_analysis.md` 二次反思，查漏补缺**
-- 完成功能测试章节后，不能直接进入下一步，必须做一次二次审查
-- 审查输入至少包括：
-  - `spec.md`
-  - 刚生成的 `test_analysis.md`
-  - 如有 ERD / 代码变更，也应一并参考
-- 必须使用下面这段固定 prompt 做二次反思，不能只凭感觉补充：
+**覆盖完整性硬规则**：
+
+- 一个验证点 = 一行 `test_analysis.md`。预期清单（用户给出的检查点、PRD 验收点、上一轮 spec / case.md 已经枚举的项）里有几条，就要落几行；**禁止**把若干验证点合并成"综合用例"或因为优先级不是 P0、数据暂缺、暂不可自动执行而在 Stage-1 / Stage-2 静默丢失。
+- 每行必须有稳定 `分析ID`（如 `WEB-001`）。后续 `case.md` 必须通过 `**[analysis-id]** <id>` 一对一引用；一条 case 只能引用一个 id，多个独立验收点必须拆成多条 case。
+- 进入下一阶段前自查：把需求里所有验收点 / 用户给定的检查点 ↔ `test_analysis.md` 行数做一次显式对账。任一条没对应行（包括"可能是 manual-prep"或"暂时不好测"），必须先标记原因再继续，不允许悄悄少。
+- 数据可行性 ≠ 是否保留行。"难造数 / 不好稳定执行"在 Stage-1 不是裁掉验证点的理由；这类行先保留，留给 Stage-2 的 TDRS 用 `manual-prep` / `BLOCKED` / `CLOSED with provided sample` 等正式状态裁决。
+- 可执行性不是进入 `case.md` 的门槛，只决定后续是生成可自动执行 case，还是生成带 `manual-review,needs-data` 等标记的未完成 / 待人工补全 case；不得因为缺鉴权、缺 owner、缺故障注入能力或缺大数据量样本而减少用例范围。
+- 前置条件必须精确到测试对象和状态，不能只写"进入某页面"或"存在某数据"。例如应写"进入包含至少 2 个版本且含 Auto Prompt 标识的项目详情页"，而不是"进入项目详情页"。
+
+**二次反思（必做）**：
+
+完成功能测试章节后，不能直接进入 Stage-2；必须结合 `spec.md`、当前 `test_analysis.md`，以及可用的 ERD / 代码变更 / 业务知识做一次系统性查漏补缺，并使用下面的固定 prompt：
 
 ```text
 请结合 spec.md 与当前 test_analysis.md，对测试分析做一次系统性查漏补缺。
 
 检查时至少覆盖以下维度：
-1. 全量功能覆盖：spec 中涉及的**每一个功能模块**是否都已分析，不能只覆盖核心功能而遗漏次要功能
+1. 全量功能覆盖：spec 中涉及的每一个功能模块是否都已分析，不能只覆盖核心功能而遗漏次要功能
 2. 全量场景覆盖：每个功能模块下的正向主链路、关键分支、异常/边界场景是否都已列出
 3. P0 标注：P0 核心验证点的标注是否准确，是否把非核心场景错误标为 P0，或遗漏了真正的核心链路
 4. 关键验证点：每个测试场景是否都写清楚了必须断言的结果、状态、文案、页面变化或产物
@@ -169,193 +207,142 @@ specs/yyyymmdd-feature-name/
 - 再说明"需要如何补到 test_analysis.md"
 - 如果没有遗漏，也要明确写出"未发现明显遗漏"，不能跳过这一步
 ```
-- 审查目标：
-  1. 检查 `spec.md` 中的功能与验收点是否已完整体现在 `test_analysis.md`
-  2. 检查 P0 标注是否准确
-  3. 检查 `test_analysis.md` 是否对测试执行足够具体、可执行
-- 如果发现遗漏，必须先回写并更新 `test_analysis.md`，再继续下一步
 
-**step4: 梳理测试执行信息（页面 URL + 可执行数据要求）**
-- 遍历 `test_analysis.md` 中所有验证点，梳理每个验证点的前置条件需要访问的页面**以及页面内的数据状态要求**
-- 将所有不重复的页面汇总到 `test_analysis.md` 的"测试执行信息"章节，填写三列信息：
-  - **页面名称**
-  - **页面 URL**：从 spec.md、输入信息及上下文中能获取到的直接填写，无法获取的填 `<TO_FILL>`
-  - **可执行数据要求**：该页面必须满足的数据状态，用例才能跑通。例如：
-    - "该项目至少存在 2 个可比较版本"
-    - "其中至少 1 个版本带有 Auto Prompt 标识"
-    - "列表中至少有 1 条可操作记录，不能是空态"
-  - 如果数据要求无法从 spec 直接得出，在该列填写 `<TO_FILL>`，在 step5 由用户补充
-- 同一个页面只列一行，去重
+如果发现遗漏，必须先回写并更新 `test_analysis.md`，再进入 Stage-2。二次反思只能补齐验证点和测试意图；不得在这里把样本标 `CLOSED`，也不得替代 TDRS 的代码分析、真实 API 查数、Gate B / Gate C。
 
-**step5: 用户确认测试执行信息（页面、URL 与数据要求）**
-- 必须把 `test_analysis.md` 中"测试执行信息"章节展示给用户确认
-- 必须确认的内容包括：
-  - 页面名称
-  - 页面 URL
-  - **可执行数据要求是否完整、准确**
-  - 是否还有缺失页面
-  - URL 是否对应本次实际测试环境
-- 当存在 `页面URL` 或 `可执行数据要求` 列为 `<TO_FILL>` 的占位符，或内容不完整/不准确，则使用 `AskUserQuestion` 工具让用户依次补充
-- 只有在用户明确确认后，才能继续进入 Stage-3
-- 如果用户修改了页面、URL 或数据要求，必须先更新 `test_analysis.md`，再继续下一步
+### Stage-2：代码分析 + 数据研究回填（强制）
 
-#### Stage-3: 用例生成
-- **[强制]** 读取 `references/case_generation_workflow.md`，严格遵循其中的指令
-- 本阶段以 Stage-2 产出的 `test_analysis.md` 作为输入文档
-- 偏好配置使用 Stage-0 的固定值（Semi Auto / Decide by Agent / Web）
+生成 `case.md` 前，**必须**对 `test_analysis.md` 的每一行执行 `webe2e/test-data-research-and-seeding`（TDRS）的固定四步流程，目标是最大化可执行样本闭环与 URL / 数据回填收益；**不得**把 TDRS 变成覆盖范围裁剪器，也不得替换为"case 执行时自包含构造"。`prd2case` 只声明门禁，每一步的方法论以 TDRS skill 为准。
 
-用例生成的核心流程（详见 `references/case_generation_workflow.md`）：
+**Stage-2 第 0 步——鉴权前置门禁（preflight）**：在做任何分类、查数、写 `TDRS证据` 之前，必须先跑 `python3 $WEBE2E_SKILL/scripts/tdrs_preflight.py <workspace>`。preflight 检查的是 workspace 下结构化文件是否存在：`.env`（含 token 形的 KEY=VALUE）、`cookies.txt`、`auth.json`、`save_result.json`，或 `auth_log.md` 中至少有一条 `user_reply_verbatim: <非空>` 条目。任意一个存在即可通过。preflight 不通过时，必须用 `AskQuestion`（或当前 agent 等价的用户交互工具）向用户发起鉴权 / API 材料请求（curl / cookie / token / owner scope / list 或 detail 接口），把用户的逐字回复追加到 `auth_log.md` 后再重跑 preflight。**禁止**只在 `test_analysis.md` 或对话里写一句"已请求材料"就视为问过用户——preflight 检查的是文件，不是 prose。preflight 通过前不得开始 TDRS 行操作。
 
-**step0: 输入确认（Input Confirmation）**
-- 确认 `test_analysis.md`（Stage-2 产出）已就绪
-- 检查 Business Identifier 是否可用
-- 检查其他可选输入（PRD、技术设计文档、代码变更、Figma）
-- 向用户展示检查结果，缺少必要输入时请求补充
+四步流程（顺序不得颠倒，每一步必须留下证据）：
 
-**step1: 生成风格（固定）**
-- Web e2e 场景下，`Generation Style` 固定为 **Follow the input**，由本地 agent 直接将 `test_analysis.md` 转换为 `case.md`，不调用远程 API
+1. **逐行数据需求拆解（不重建覆盖范围）**：以 Stage-1 已生成的 `test_analysis.md` 中每个验证点为单位，逐条列出该验证点要测什么、依赖什么前置条件。禁止在这里重新按 PRD/spec 生成一份新的测试分析来覆盖 Stage-1；若发现遗漏验证点，必须回 Stage-1 补行，再重新进入 Stage-2。
+2. **前置条件数据要求**：把每条验证点的前置条件展开为可执行的数据需求字段——目标实体 + 父容器、页面入口 / router provenance、URL 初始化参数策略、step 1 初始状态、运行时门控链（ambient enable chain）、结构不变量、可观察锚点、stateful 标记、可行性。占位符（"存在一条数据""一个可用项目"等）一律视为缺失。
+3. **代码分析 + API 调用查找 / 构造测试数据**：严格的优先级顺序如下，**不得跳级**——
+   1. **先做代码分析沉淀取数知识**：按 TDRS 硬规则做前端代码分析（路由 → 页面 → hooks → API wrapper → 权限 / 类型），把"在哪个 API、用哪些过滤参数、能筛出什么样的样本"写进 `business_knowledge/**/data_queries.md`；
+   2. **基于取数知识用真实 API 查找可复用样本**：用户已经给出稳定 ID / URL / 账号 / fixture 的，直接采用并标 `CLOSED — provided stable sample: <ref>`；其他行用沉淀好的 query 跑业务接口找现成可用样本；
+   3. **找不到再列造数方案给用户确认**（Gate B）：列出 `实体 + API + payload + 归属 + 原因 + 验证方式`，等用户显式确认后再执行；用户拒绝就重新规划或走 Gate C；
+   4. **manual-prep 类目走 Gate C** 输出 Manual-Prep Request，不要在 query / create 上反复试。
+4. **回填 URL，替换前置条件**：URL / 样本 id 的替换**只在 row 的样本被 live API 验证已满足数据要求，且页面 URL 已由目标 app 的真实 router / basename 或现有页面入口配置证明后才发生**。在此之前——查询中、Gate B 等用户确认中、未验证、只知道功能路径但未查路由——**保留**前置条件原本的数据要求描述（仅以 `UNVERIFIED — data requirement: <原描述>` 标注，元数据 tag 保留），**不要**写半成品 URL，也**不要**只凭应用名 + 功能路径直觉拼 URL。已 CLOSED 的 row 才按 **TDRS Phase 7.1 格式**回填：每行保留**原有元数据标签**（`[P0]` / `[P1]` / `[E2E]` / `[API]` / `[Smoke]` / `[Regression]` 等方括号 tag）+ 解析后的 `entity id (state, ownership 等关键事实)` + 直连 URL + route provenance + URL 初始化参数策略；**不要**把元数据 tag 删掉，**不要**把"需要存在 / 至少有 / 应该是"这类 setup 动词留下来。**前置条件依赖的数据必须在 Stage-2 全部就位**，不允许落到 case 执行时再现造（包括"运行时临时 KB / Text / CSV fixture"、"操作步骤里先 create 再 assert"等任何执行期补数据的写法）；只有验证目标本身就是"创建动作"的 case，才在操作步骤里执行创建。
 
-**step2: 上下文收集（Context Gathering）**
-- 搜索工作区（特别是 Knowledge Base 目录）查找相关的：
-  - 业务知识（`business_knowledge/${Business Identifier}`）
-  - 测试用例编写规则
-  - 回归测试用例
-  - 业务自定义技能（`skills/custom/${Business Identifier}`）
-- 业务自定义知识/技能优先级高于通用信息，如有冲突以自定义为准
-- 基于收集到的上下文，制定更新 `test_analysis.md` 的计划，经用户确认后执行
+> 注意：`test_analysis.md` 的前置条件列保留**完整元数据 + 解析样本**，是给 `prd2case` 自己 / executing test agent 看的；下一步 Stage-3 在生成 `case.md` 时会把它**精简**为只剩"访问 URL + tag"两行（见下方 Web 用例硬约束）。两套格式各有用途，不能互相替代，也不能混用。
 
-**step3: 用例生成（Test Case Generation）**
+硬门禁：
 
-采用 Follow the input 风格，由本地 agent 直接生成用例：
-- **[强制]** 读取 `references/test_case_grammar.md`，了解用例的文本格式和 JSON 格式语法
-- **[强制]** 读取 `references/ab_setting_rule.md`，了解 A/B 实验分组下的用例组织方式
-- 忠实于 `test_analysis.md`，将其转换为 `case.md`
-- **前置条件严格性检查**：生成 `case.md` 时，检查每个 `前置条件` 节点是否精确到具体的测试对象和状态，避免泛化描述导致测试执行 Agent 进入不满足条件的页面。如果 `test_analysis.md` 中的前置条件不够具体，在转换时主动补充细化
-- 使用 `scripts/case_grammar_check.py` 检查生成的用例
-- 再次读取 `references/test_case_grammar.md` 确认用例格式一致性
+- 四步缺一不可，但门禁对象是"每一行都有裁决状态"，不是"每一行都必须闭环可执行"。已完成真实查询 / 代码分析 / Gate B 或 Gate C 裁决的行可以分别标为 `CLOSED`、`BLOCKED`、`manual-prep`、`skip`、`UNVERIFIED` 等状态进入 Stage-3；不接受未分类行，也不接受因为未闭环就从 `test_analysis.md` 或 `case.md` 删除。
+- **TDRS gate 必跑**：Stage-2 结束后、Stage-3 之前必须运行 `python3 $WEBE2E_SKILL/scripts/tdrs_gate.py <test_analysis.md>`。该 gate 不要求所有行都 `CLOSED`，但要求每个 `分析ID` 都有终态、数据要求和裁决证据；`CLOSED` 行必须有 live API / provided sample 证据、查数参数、查数结果和回填 URL；`UNVERIFIED` 行也必须有尝试证据或阻断原因。gate 不通过不得生成 `case.md`。
+- **TDRS 证据列保持可读**：`test_analysis.md` 默认只保留 `TDRS状态` + `TDRS证据` 两列。`TDRS证据` 用分号分隔的 `key=value` 写法承载细节，例如：`数据要求=...; 查数API=...; 查数参数=...; 查数结果=...; 回填URL=...; 裁决证据=...; 查询次数=1; 造数次数=0`。如业务特别复杂，也可临时展开为独立列；`tdrs_gate.py` 同时兼容两种格式。
+- **缺鉴权 / 缺 API 信息先问用户**：`no live sample data provided`、`未提供样本`、`没有数据` 不是终态裁决，只是 Stage-2 起点。没有可用鉴权、curl、cookie、token、owner scope 或 list/detail API 时，必须先向用户请求这些信息；只有用户明确拒绝 / 明确无法提供 / 确认无对应权限，或已有真实 API 尝试/权限失败证据后，才允许写 `BLOCKED` / `manual-prep` / `UNVERIFIED`。`tdrs_gate.py` 会拒绝空泛的“未提供样本”裁决证据，也会拒绝只有“已请求材料”但没有明确用户结果的裁决。
+- `TDRS证据` 里只写 `查数结果=缺少鉴权/API 信息` 不算 API 尝试证据；必须补 `裁决证据=已向用户请求鉴权 curl / owner scope，用户明确无法提供`，或记录真实请求（如 `GET /api/...`、`curl ...`、`HTTP 403`、`API 500`）。
+- **有限尝试预算**：每个 `分析ID` 默认最多 2 次 query、1 次 Gate-B-confirmed create；超过预算必须停止尝试并记录 `UNVERIFIED` / `manual-prep` / `BLOCKED` 裁决，禁止无限查数或反复造数。
+- **数据准备顺序硬约束**：代码分析沉淀取数知识 → 用知识跑真实 API 找可复用样本（用户已给的样本直接 `CLOSED`）→ 找不到再列造数方案给用户确认 → 用户拒绝或不可造则走 Gate C。**不得**跳过任何一级，**不得**没查就直接进 Gate B，**不得**没确认就直接造数。
+- **Phase 3 必须真打 API**：Phase 3 查数 = 用 `.env` 里的鉴权（或用户粘贴的 curl）直接调平台 list/detail 接口。grep `specs/**` / 历史 spec 是 Phase 0 历史样本检索，结果是未验证线索；没有 live API 调用确认当前样本仍满足 row 要求之前，**不得**记 `CLOSED`，也**不得**升级到 Gate B / Manual-Prep。
+- **前置条件数据不得延迟到执行时**：所有前置条件依赖的数据必须在 Stage-2 就完成查询 / 创建并回填真实 ID / URL，case 操作步骤的第一步必须是"在已就位数据上的真实用户动作"，不能是"为了凑前置条件而创建数据"。仅当 case 的验证主题本身就是"创建动作"时，操作步骤才执行创建。
+- 每个可执行场景必须回填：直连 URL、目标数据引用、router provenance（例如 `basename=/moderation-system` + `route=/recall-strategy/strategy-group/list` + 来源文件）、URL 初始化参数策略、step 1 初始状态、可观察断言锚点；这些字段必须来自真实代码 / 页面入口配置 + 真实查询 / 已确认创建的样本，不得是构造性描述。
+- **URL 初始化参数策略**：必须区分稳定业务上下文参数与动态初始化参数。稳定参数（如 `tenantId`、`owners`、目标 id、筛选枚举）如果决定页面上下文或目标样本定位，应写入直连 URL；动态参数（如相对当前时间生成的 `startTime` / `endTime`）不要盲目固化过期时间戳，应在 `test_analysis.md` 记录来源和处理方式：由执行脚本动态补齐、或选择覆盖目标样本且长期有效的稳定时间范围。若候选 URL 打开后页面会通过 redirect / `history.replaceState` 补齐 query，Stage-2 必须记录最终落地 URL 与哪些参数被保留 / 动态化；不能只凭初始 URL 在手动浏览器会跳转就标 `CLOSED`。
+- 需要创建数据时，必须先给出 Gate B 创建计划（实体 + API + payload + 归属 + 原因 + 验证方式）并等用户显式确认后再执行；能复用已有样本则不创建。
+- 无法自动准备的数据（不同账号、外部原料导入 + 交互式鉴权、瞬态运行时状态、外部失败注入、第三方凭据等），按 Gate C 标为 `BLOCKED — needs manual prep: <原因>`，不得用 case 执行时自造数绕过。
+- 禁止带 `<TO_FILL>`、`<id>`、示例 URL、泛化描述（如"存在一条数据"）进入 `case.md` 的可执行 case。数据未就位的行不得用占位符凑成可执行 case，但必须按 Stage-3 的"需人工 Review / 非自动执行项"格式保留在 `case.md`，提示用户人工补数或确认跳过。
 
-##### Web 场景特殊后处理（两种风格均需执行）
-当 `case_mode` 为 `Web` 时，必须执行以下后处理：
-- **前置条件添加 URL**：在每个 `前置条件` 节点开头添加 `访问: $URL\n`
-  - `$URL` 来源于 `test_analysis.md`（Stage-2 产出）或上下文，如无具体 URL 信息则使用 AskUserQuestion 向用户索取
-  - URL 必须对应本次实际测试环境（prod / ppe / boe）
-- **移除冗余步骤**：如果 `操作步骤` 中已有 `打开浏览器`、`访问 $URL` 等步骤，移除它们，只保留访问后的操作
-- **添加 e2e 标签**：在 `前置条件` 节点内容末尾追加 `**[tag]** e2e`（新起一行，属于前置条件内容的一部分，遵循 `references/test_case_grammar.md` 中 tag 语法）
-- **添加 P0 优先级标签**：对 `test_analysis.md` 中标注了 `[P0]` 的验证点，该验证点对应的**每一个** `预期结果` 节点都要在其内容后面换行追加 `**[priority]** P0`。一个场景下有多个 `预期结果` 时，每个 `预期结果` 都独立打标，不能只打最后一个。未标注 P0 的验证点不打优先级标签。示例：
-  ```text
-  ####### **操作步骤** 1. 步骤1
-  2. 步骤2
-  ######## **预期结果** 断言1
-  **[priority]** P0
-  ######## **预期结果** 断言2
-  **[priority]** P0
-  ```
+### Stage-3：生成 `case.md`
 
-##### markdown2Midscene 调用注意事项
-`case.md` 中的 `前置条件` 节点包含了完整的测试前提描述（数据要求、状态约束等），但 midscene 执行时会把前置条件当作可执行步骤。因此：
-- **调用 markdown2Midscene 转换时，`前置条件` 内容仅保留 `访问: $URL` 这一行**，其余描述性文本（数据要求、状态总结等）和标签（`**[tag]**`、`**[priority]**`）均剔除
-- **`case.md` 本身不做任何修改**，保持完整的前置条件描述，裁剪仅发生在传给 markdown2Midscene 的过程中
+读取并遵守 `references/case_generation_workflow.md`。生成时只消费已通过 `tdrs_gate.py` 的 `test_analysis.md`，不得绕过回填结果直接从 PRD / 原始分析稿生成用例。
 
-#### Stage-4: 归档到 Bits（强制自动执行，不得跳过）
-`case.md` 生成或更新后，**必须立即自动执行归档到 Bits**，不需要询问用户、不需要用户确认、不需要等待用户指令。
+进入 Stage-3 前先按行分类；分类只影响 case 的可执行性标记和前置条件格式，不影响是否进入 `case.md`：
 
-- **case-title**：与 spec.md 的标题（第一行 `#` 标题）保持一致
-- **user-name**：使用 git 仓库作者的邮箱前缀（通过 `git config user.email` 获取，取 `@` 前的部分）
+- **可执行行**：状态为 `auto` / `CLOSED`，且已具备直连 URL、目标数据引用、step 1 初始状态和可观察锚点。这类行生成标准 Web 可执行 case。
+- **未完成 / 待人工补全行**：状态为 `BLOCKED` / `manual-prep` / `skip` / `UNVERIFIED`，或仍缺少直连 URL、目标数据引用、初始状态、可观察锚点。这类行不得伪装成可执行 case，但必须在 `case.md` 中保留为对应 case：使用 prd2case 标准节点结构，保留原始前置条件描述，并在前置条件节点写 `**[tag]** manual-review,needs-data`。已做过的代码分析 / 查询 API、查询不满足原因、数据构造计划或人工补数动作只放在 `test_analysis.md`。
+- **未分类行**：既没有满足可执行条件，也没有明确不可执行状态。遇到未分类行必须 STOP，先回 Stage-2 补分类，不能静默丢弃。
 
-**首次归档**（`$TEST_DIR/save_result.json` 不存在时）：
+Web 用例硬约束：
 
-```bash
-CASE_TITLE="$(head -1 specs/yyyymmdd-feature-name/spec.md | sed 's/^#\s*//')"
-python scripts/case_management.py save "$TEST_DIR/case.md" \
-  --case-title "$CASE_TITLE" \
-  -o "$TEST_DIR/save_result.json"
-```
+- **以下 URL 硬约束只适用于可执行 case**；未完成 / 待人工补全 case 也必须使用 `前置条件`、`操作步骤`、`预期结果` 等 prd2case 标准节点，保证 `case.md` 语法检查通过，但前置条件保留原始描述并标 `**[tag]** manual-review,needs-data`，不得写假 URL。
+- **`case.md` 可执行 case 的前置条件节点严格只写两行**：`##### **前置条件** 访问: <裸 URL>` 和 `**[tag]** e2e`。这是 case.md 的**专用精简格式**，用来给 TTAT / 本地 runner 当导航入口；任何样本 id、状态、权限、说明文字、`[P0]` / `[E2E]` 类元数据 tag 都**只**留在 `test_analysis.md` 的前置条件列里（见 Stage-2 第 4 步与 TDRS Phase 7.1），不要写进 `case.md` 的前置条件。
+  - 反例（混了 `test_analysis.md` 的 Phase 7.1 格式进来）：`##### **前置条件** [P0] [E2E] KB 7615... (Available); URL https://...`
+  - 正例：`##### **前置条件** 访问: https://vine.tiktok-row.net/rd_test/knowledge_base/7615.../document/7615...` + `**[tag]** e2e`
+  - 反过来也不允许：**禁止**把 `test_analysis.md` 的前置条件列裁成 `case.md` 那两行（裁掉了 `[P0]` / `[E2E]` 等下游过滤 tag 与样本事实，会破坏 TDRS Phase 7.1 的资产）。
+- **裸 URL 必须是完整可直连的绝对 URL**：必须以 `http://` 或 `https://` 开头，正则 `^https?://[^\s]+`。**禁止**写：
+  - 相对路径或路由片段：`/ads-creation/dashboard`、`/creation`、`./detail`、`../list`——这些是 spec / 前端代码里的 react-router / next-router 路由，不是可执行 URL。
+  - 仅 host：`https://platform.example.com`（少了业务页面路径，访问后落到首页或登录页，不是 case 想验证的入口）。
+  - 占位符：`<URL>`、`<TO_FILL>`、`https://example.com/...`、`http://localhost:xxx`。
+  - 模板片段：`https://{host}/path`、`https://${env}/...`。
+  - 判定原则：把字符串原样粘到浏览器 / `playwright-cli goto` 里，**当前账号**就能直接落到对应的"目标数据 + 初始状态"页面；做不到就不是裸 URL，必须回 Stage-2 通过 TDRS Phase 6/7 跑 live API 拿到真实样本 ID，把 URL 拼出来再回填。
+  - 把 spec 路由当成 URL 是 Stage-2 没做完的信号，不是 Stage-3 的锅；遇到就停 Stage-3，回 Stage-2 补样本，**不要**用相对路径凑数。
+- **裸 URL 的业务路径必须有 route provenance**：生成 Web E2E URL 前必须先查目标 app 的 router / basename（如 `apps/<app>/src/routers/index.tsx`、Next/React Router route config）或现有页面入口配置，确认最终路径由 `host + basename + route + query/hash` 组成。**禁止**根据应用名、目录名、功能路径或历史 URL 形状猜测路径，尤其是微前端仓库里 app 名、basename、业务 route 可能重复或不一致。若只知道"应用名 + 功能路径"，Stage-3 必须 STOP，回 Stage-2 补 route provenance。
+- `操作步骤` 不写"打开 / 访问 / 进入 URL"；第一步必须是页面已加载后的真实用户动作。
+- 上传文件步骤必须写成一行 Markdown 链接：`[<上传控件可见文本>](<file path or bytest URL>)`。
+- `[P0]` 验证点对应的每一个 `预期结果` 都要追加 `**[priority]** P0`。
+- 生成后运行 `scripts/case_grammar_check.py <case.md> --analysis-file <test_analysis.md>`；不通过就先修 `case.md` / `test_analysis.md`，不得进入 Stage-4。其中 `R9_PRECONDITION_URL` 会逐个可执行 case 的 `前置条件` 节点校验"`访问:` 后跟绝对 URL"；`R10_ANALYSIS_CASE_MAPPING` 会校验 `test_analysis.md` 每个 `分析ID` 都有且只有一条 case 对应，防止遗漏和聚合。带 `manual-review` / `needs-data` 等未完成标记的 case 可保留原始前置条件描述，但必须在 `test_analysis.md` 写清对应的数据要求、查询证据和补数计划。
 
-归档成功后，`save_result.json` 中会包含返回的 `case_id`，后续更新时使用。
+**用例粒度与覆盖硬规则**：
 
-**更新归档**（`$TEST_DIR/save_result.json` 已存在，从中读取 `case_id`）：
+- **一条 case = 一个稳定验证主题**（如"禁用 KB"、"启用 KB"、"非自管 KB 只读"、"Row 删除限制"、"Disabled 内容不被检索"）。**禁止**把若干独立验证点串成长链路用例；这类用例步数多、依赖累积，TTAT 失败定位困难。
+- **一对一映射**：`test_analysis.md` 中每一行都必须与 `case.md` 中一条 case 对应；`auto` / `CLOSED` 生成可执行 case，`BLOCKED` / `manual-prep` / `skip` / `UNVERIFIED` 生成未完成 / 待人工补全 case。Stage-3 不得合并多行成一条 case；不得静默丢弃任何行。
+- **analysis-id 映射硬门禁**：每条 `case.md` case 的 `测试点` 节点 body 必须写一行 `**[analysis-id]** <test_analysis.md 的分析ID>`。一条 case 只能写一个 id；多个独立验收点必须拆成多条 case。`R10_ANALYSIS_CASE_MAPPING` 不通过时，不得归档 Bits，也不得进入 TTAT。
+- **禁止聚合断言**：同一验证主题下多个独立验收标准必须拆成多个 `预期结果` 节点；如果一个 `预期结果` 同时包含多个可独立成败的验收标准，先拆节点。不得为了让执行更简单，把多条断言合并成一条大颗粒预期。
+- **全量保留映射**：`test_analysis.md` 中每一行都必须进入 `case.md`，要么成为一条已 URL 化的可执行 case，要么成为一条保留原始前置条件的未完成 / 待人工补全 case；不得因为数据缺失、人工准备、skip 或优先级较低而从 `case.md` 消失。
+- **覆盖对账自检**：写完 `case.md` 后，必须把"`test_analysis.md` 总行数 = `case.md` 可执行 case 数 + `case.md` 未完成 case 数"显式列出来；同时列出 `auto+CLOSED` 行数、`BLOCKED` / `manual-prep` / `skip` / `UNVERIFIED` 行数。差值不为 0 必须解释并补齐。
+- **状态变更场景必须独立成 case**：禁用 / 启用 / 删除 / 编辑 / 切换等 stateful 动作，每条都要独立 case，不能塞进同一条用例里走多个状态流转——这是 TDRS 「stateful 样本隔离」的下游硬约束（见 TDRS skill）。
 
-当 `case.md` 有更新时，**不要新建 Bits 用例**，使用已有的 `case_id` 更新：
+### Stage-4：同步 Bits 与 TTAT（顺序硬约束：Bits 先 → TTAT 后）
 
-```bash
-CASE_ID="$(python3 -c "import json; d=json.load(open('$TEST_DIR/save_result.json')); print(d.get('data',{}).get('case_url',{}).get('caseId') or d.get('data',{}).get('case_id',''))")"
-CASE_TITLE="$(head -1 specs/yyyymmdd-feature-name/spec.md | sed 's/^#\s*//')"
-python scripts/case_management.py save "$TEST_DIR/case.md" \
-  --case-title "$CASE_TITLE" \
-  --case-id "$CASE_ID" \
-  -o "$TEST_DIR/save_result.json"
-```
+`case.md` 生成或更新后**强制**走以下顺序，**Bits 归档必须先完成**，TTAT 才允许动；首次生成 / 增量更新都一样，不存在"首次跳过 Bits"的写法。
 
-#### TTAT 用例组更新（case.md 有更新时）
+#### Stage-4.1：Bits 归档（必做，不可跳）
 
-当 `case.md` 更新后，如果已有 TTAT 用例组（`case_group_id` 已知），**不要新建用例组**，直接使用 `edit_with_cases` 接口更新已有用例组的数据：
+1. 解析当前 case 是否已有 Bits `case_id`：依次看
+   - `case.md` 同目录的 `save_result.json`（之前 `case_management.py save` 产出，含 `data.case_id` / `data.url`）；
+   - 已有 `case.md` 头部 / `####` 用例块里出现的 `https://bits.bytedance.net/.../caseDetail/<id>`；
+   - `.env` 的 `BITS_CASE_ID` / `BITS_CASE_DETAIL_URL`。
+2. **首次（无任何 case_id）→ 必须新建 Bits 用例**：
+   ```bash
+   python3 $PRD2CASE_SKILL/scripts/case_management.py save \
+     <test/case.md> \
+     --case-title "<feature 名 / case 集合的可读标题>" \
+     -o <test/save_result.json>
+   ```
+3. **已有 case_id → 必须更新同一个 Bits 用例**（`case_id` 不变）：
+   ```bash
+   python3 $PRD2CASE_SKILL/scripts/case_management.py save \
+     <test/case.md> \
+     --case-title "<同标题>" \
+     --case-id <已有 id> \
+     -o <test/save_result.json>
+   ```
+4. 命令产出的 `save_result.json` 必须落到 `case.md` 同目录；这是 Stage-4.2 拼装 TTAT payload 级 `extras.extras.bitsConfig.url` 与 task 级 `tasks[].case_extra.expectation_ids` 的来源。失败时 STOP，**不得**带空 Bits 链接或空 expectation_ids 进 TTAT。
+5. `save_result.json` 必须包含 `data.case_expectations`：按 `case.md` 中每个 `####` 用例块保存 `expectation_nodes[]`，每个节点至少包含 `path: [操作步骤序号, 预期结果序号]`、`id`、`expected_result`。**Bits 预期结果节点数必须与当前 `case.md` 的 `##### **预期结果**` 节点数一致**；它不与 `####` 用例数、TTAT task 数或 markdown2midscene 拆出的 case 数对齐。若修改过 `case.md`，必须重跑 Stage-4.1 刷新该映射。
 
-```bash
-curl 'https://ttat-openapi-sg.tiktok-row.net/ui/web_e2e/case_group/edit_with_cases' \
-  -H 'Content-Type: application/json' \
-  -H 'X-Custom-Token: fb1202cb29e923298f002b71e0889cc6' \
-  --data-raw '{
-    "creator": "<git user.email 邮箱前缀>",
-    "case_group_name": "<用例组名称>",
-    "web": {"bridgeMode": "false"},
-    "tasks": <更新后的 tasks 数组>,
-    "extras": <原有 extras 配置>,
-    "case_group_id": <已有用例组 ID>
-  }'
-```
+#### Stage-4.2：TTAT case group + 任务
 
-**关键规则**：
-- `case_group_id`：使用已有用例组的 ID，不得省略，否则会新建用例组
-- `tasks`：根据更新后的 `case.md` 重新生成完整的 tasks 数组
-- `extras`：保持与原用例组一致的 `execEnv` 等执行环境配置
-- `creator`：与原用例组创建者一致
-- `case_group_name`：与原用例组名称一致
-- 只有当 `edit_with_cases` 接口调用失败时，才考虑新建用例组
+只有 Stage-4.1 已经产出 `save_result.json`（含 Bits 详情 URL 与 `data.case_expectations`），且能被 `webe2e/scripts/case2webe2e.py` 解析成 payload 级 `extras.extras.bitsConfig.url` 和 task 级 `tasks[].case_extra.expectation_ids` 时，才允许进 TTAT：
+
+- 已有 `case_group_id`（来自 `test_report.md` 或上一次命令行）→ 走 `edit-group` / `run --case-group-id <id>` 更新同一个 case group；不得新建平行 case group。
+- 无 `case_group_id` → 调 `create-group` / `run` 新建。
+- 拼装请求体时，**整份 `case.md` 必须能映射到一个 Bits 链接**，且每个 TTAT task 必须能按自身覆盖到的 `预期结果` 节点集合写入 `case_extra.expectation_ids`。同一个公共前缀步骤下的 `预期结果` 可以被多个拆分 task 共享；分支尾部的 `预期结果` 只进入对应 task。`webe2e` 侧若发现 Bits 链接或 expectation_ids 缺失，必须 STOP 并把缺失的 case 名/标题报回，要求先回 Stage-4.1 补归档。
+- 下游同步的具体请求体和字段由 `webe2e` skill / `case2webe2e.py` 维护，`prd2case` 不内联 curl 或 token。
+
+#### Stage-4 STOP 条件
+
+- `case.md` 已生成/更新但 Stage-4.1 没跑（没有 `save_result.json` 也没有内嵌 Bits 链接）→ 禁止动 TTAT。
+- Stage-4.1 跑了但接口失败 / 返回里没有 `case_id` 或 URL → 禁止动 TTAT，先排错。
+- Stage-4.2 拼装时 payload 级 `bitsConfig.url` 解析为空，或任意 task 缺少 `case_extra.expectation_ids` → 禁止下发请求，回到 Stage-4.1 刷新归档和预期结果节点映射。
+
+#### 最终回复前阶段审计（必写）
+
+完成 prd2case 后，最终回复必须列出以下审计信息；缺任何一项都不能声称完成：
+
+- `Stage-1 verification point count`: `test_analysis.md` 中有效 `分析ID` 数。
+- `Stage-2 preflight`: `tdrs_preflight.py <workspace>` 的结果，并列出已检测到的资产（如 `env`/`cookies`/`auth_json`/`save_result`/`auth_log`）；preflight 不通过时必须写明已通过 `AskQuestion` 等工具问过用户，以及用户逐字回复在 `auth_log.md` 的位置。
+- `Stage-2 TDRS gate`: `tdrs_gate.py <test_analysis.md>` 的结果，并列出 CLOSED / BLOCKED / manual-prep / skip / UNVERIFIED 数量。
+- `Stage-3 case count`: `case.md` 中带 `**[analysis-id]**` 的 case 数。
+- `Grammar gate`: `case_grammar_check.py <case.md> --analysis-file <test_analysis.md>` 的结果。
+- `Bits archive`: `save_result.json` 路径与 Bits URL / case_id；若用户明确只要求到 Stage-3，写明 `skipped by request`，否则视为未完成。
+- `TTAT gate`: 是否创建 / 更新 case group；未执行时写明原因。
 
 ### 读取 Lark 文档
 使用 `lark-docs` MCP 读取 Lark 文档，不要使用 fetch
-
-### Available Tools
-
-#### 读写 Bits 测试用例
-使用 `scripts/case_management.py` 读写 Bits 用例：
-
-- 从 Bits 获取用例并保存到本地（需提升权限执行）：
-```bash
-python scripts/case_management.py fetch "<bits_case_url>" -o "$TEST_DIR/case_xxx.json"
-```
-
-- 将本地用例上传到 Bits（新建，需提升权限执行）：
-```bash
-python scripts/case_management.py save "$TEST_DIR/case.md" \
-  --case-title "<标题>" \
-  -o "$TEST_DIR/save_result.json"
-```
-
-- 更新已有 Bits 用例（传入 `--case-id`，需提升权限执行）：
-```bash
-python scripts/case_management.py save "$TEST_DIR/case.md" \
-  --case-title "<标题>" \
-  --case-id <已有用例ID> \
-  -o "$TEST_DIR/save_result.json"
-```
-
-#### 更新 TTAT 用例组
-使用 `edit_with_cases` 接口更新已有用例组（不新建）：
-
-```bash
-curl 'https://ttat-openapi-sg.tiktok-row.net/ui/web_e2e/case_group/edit_with_cases' \
-  -H 'Content-Type: application/json' \
-  -H 'X-Custom-Token: fb1202cb29e923298f002b71e0889cc6' \
-  --data-raw '{
-    "creator": "<邮箱前缀>",
-    "case_group_name": "<用例组名称>",
-    "web": {"bridgeMode": "false"},
-    "tasks": [...],
-    "extras": {...},
-    "case_group_id": <用例组ID>
-  }'
-```
 
 ## Lessons Learned
 
@@ -380,4 +367,5 @@ curl 'https://ttat-openapi-sg.tiktok-row.net/ui/web_e2e/case_group/edit_with_cas
 
 **正确做法**：
 - 优先从平台原始报错中提取业务含义，翻译成准确的测试前置问题
+- 需要结合执行失败结论迭代 `test_analysis.md` / `case.md` 时：先在 **`webe2e`** 侧完成执行与报告结论；本 skill 仅在已有明确结论后协助改文档，不在本 skill 内做报告解读
 - 归因粒度要足够细："进入了不满足前置条件的详情页"比"空数据/没有数据"更准确

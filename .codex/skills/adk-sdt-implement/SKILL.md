@@ -69,7 +69,24 @@ Parse the test case file:
 - **Execution flow**: Order and dependency requirements
 
 
-### 3: Execute Tasks Based on Dependencies in test/task.md
+### 3: **⚠️ MANDATORY: Parallelization Analysis (MUST be done BEFORE any task execution)**
+
+**You MUST NOT start executing any task until this analysis is complete.** Before running the first task, you are required to explicitly identify and plan all tasks that can be executed in parallel. Skipping this step is not allowed.
+
+1. **Scan all pending tasks** (`- [ ]`) in `test/task.md` phase by phase.
+2. **Identify parallel groups**:
+   - Tasks explicitly marked with `[P]` within the same phase are candidates for parallel execution.
+   - Verify no file-path conflict between candidates — tasks touching the same files MUST run sequentially, even if marked `[P]`.
+   - Verify no implicit dependency (e.g., one task's output is another's input).
+3. **Produce a Parallelization Plan** and present it to the user before execution. The plan MUST include:
+   - Phase name
+   - Parallel groups: `[Group-N] → [TaskID-A, TaskID-B, ...]`
+   - Sequential tasks (tasks that must run alone): `[TaskID-X]`
+   - Reasoning for why non-`[P]` or conflicting tasks cannot be parallelized
+4. **Only after the plan is produced**, proceed to Step 4 to execute tasks according to the plan.
+
+### 4: Execute Tasks Based on Dependencies in test/task.md
+- **Follow the Parallelization Plan from Step 3**: Dispatch parallel groups concurrently, run sequential tasks one by one
 - **Phase-by-phase execution**: Complete each phase before moving to the next
 - **Never skip any task**: If a task is marked as `[ ]`, do not skip it.
 - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
@@ -77,7 +94,7 @@ Parse the test case file:
 - **File-based coordination**: Tasks affecting the same files must run sequentially
 - **Validation checkpoints**: Verify each phase completion before proceeding
 
-### 4: Summary:
+### 5: Summary:
 1. Read the report template: `plugins/ttadk/core/resources/templates/sdt-report-template.md`.
 2. Fill in the template with execution results:
    - **Execution Overview**: execution time, skill name, scope, pass/fail/skip counts and rates.
@@ -87,7 +104,7 @@ Parse the test case file:
 4. Display the execution summary.
 
 
-### 5: **⚠️ CRITICAL: Progress Tracking (MUST follow strictly)**
+### 6: **⚠️ CRITICAL: Progress Tracking (MUST follow strictly)**
 
 **Resume Rule**: If a task is already marked as `[X]` or `[x]`, skip it and move to the next uncompleted task. When re-entering this command, automatically continue from where you left off - do NOT start from the beginning unless the user explicitly requests to redo or fix a specific task.
 
@@ -101,10 +118,10 @@ Other error handling:
 - For parallel tasks [P], continue with successful tasks, report failed ones
 - Provide clear error messages with context for debugging
 
-### 6. Completion validation:
+### 7. Completion validation:
 - Verify all required tasks are completed
 
-### 7. Lark Export
+### 8. Lark Export
    - Use `mcp__lark-docs__import_markdown_to_lark` to import the generated report into Lark
    - Parameter settings:
      - `filePath`: Absolute path of the generated `test/report.md`
@@ -124,7 +141,7 @@ Other error handling:
       **Local File**: `test/report.md`
      ```
 
-### 8. **Final Task Completion Check**:
+### 9. **Final Task Completion Check**:
 - Re-read `test/tasks.md` and verify no `- [ ]` remains
 - If incomplete tasks exist, complete them before proceeding
 

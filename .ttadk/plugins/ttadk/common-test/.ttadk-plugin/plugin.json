@@ -6,6 +6,8 @@
   "author": {"name": "ttadk", "email": "ttadk@bytedance.com"},
   "tags": [],
   "skills": [
-    {"name": "prd2case", "path": "prd2case"}
+    {"name": "prd2case", "path": "prd2case"},
+    {"name": "prd2case_for_qa", "path": "prd2case_for_qa"},
+    {"name": "prd-2-api-case", "path": "prd-2-api-case"}
   ]
 }

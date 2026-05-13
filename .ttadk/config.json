@@ -18,7 +18,8 @@
         "ttadk/common-test",
         "ttadk/frontend-test",
         "ttadk/lark_cli",
-        "ttadk/bits-unit-test-gen"
+        "ttadk/bits-unit-test-gen",
+        "ttadk/goofy"
       ]
     }
   ]

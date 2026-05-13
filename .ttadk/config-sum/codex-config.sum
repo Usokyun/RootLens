@@ -18,20 +18,21 @@
           "ttadk/frontend-platform",
           "ttadk/common-test",
           "ttadk/frontend-test",
+          "ttadk/goofy",
           "ttadk/lark_cli",
           "ttadk/bits-unit-test-gen"
         ]
       }
     ],
-    "last_synced_at": "2026-05-10T04:36:44.539Z"
+    "last_synced_at": "2026-05-13T03:45:11.347Z"
   },
   "plugins": [
     {
       "name": "ttadk/core",
       "git_repo": "git@code.byted.org:tiktok/ttadk_plugin_market.git",
       "branch": "master",
-      "commit": "6461657f3fa5ff2d828c88dd47e276709f588250",
-      "updated_at": "2026-05-10T04:36:44.411Z"
+      "commit": "dcd7e955f6010d08a738bc9ffe32c1cabbfcd69e",
+      "updated_at": "2026-05-13T03:48:37.672Z"
     },
     {
       "name": "ttadk/frontend-platform",
@@ -44,15 +45,15 @@
       "name": "ttadk/common-test",
       "git_repo": "git@code.byted.org:tiktok/ttadk_plugin_market.git",
       "branch": "master",
-      "commit": "54653cfea1536396c10f68331c4fd84f611a4fe4",
-      "updated_at": "2026-05-10T04:36:44.445Z"
+      "commit": "dcd7e955f6010d08a738bc9ffe32c1cabbfcd69e",
+      "updated_at": "2026-05-13T03:48:37.690Z"
     },
     {
       "name": "ttadk/frontend-test",
       "git_repo": "git@code.byted.org:tiktok/ttadk_plugin_market.git",
       "branch": "master",
-      "commit": "54653cfea1536396c10f68331c4fd84f611a4fe4",
-      "updated_at": "2026-05-10T04:36:44.449Z"
+      "commit": "dcd7e955f6010d08a738bc9ffe32c1cabbfcd69e",
+      "updated_at": "2026-05-13T03:48:37.702Z"
     },
     {
       "name": "ttadk/lark_cli",
@@ -67,6 +68,13 @@
       "branch": "master",
       "commit": "9e5c306103ffd92e621fab635d256bf7597c3400",
       "updated_at": "2026-05-11T02:38:44.522Z"
+    },
+    {
+      "name": "ttadk/goofy",
+      "git_repo": "git@code.byted.org:tiktok/ttadk_plugin_market.git",
+      "branch": "master",
+      "commit": "99b9189491d360521b9585f34b32a1194b4e425e",
+      "updated_at": "2026-05-13T03:45:11.346Z"
     }
   ]
 }

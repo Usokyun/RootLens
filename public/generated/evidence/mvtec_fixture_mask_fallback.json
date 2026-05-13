@@ -1,0 +1,164 @@
+{
+  "adapter": {
+    "metadata": {},
+    "name": "mvtec",
+    "produces_root_cause": false,
+    "version": null
+  },
+  "anomaly_type": "scratch",
+  "case_id": "mvtec_fixture_mask_fallback",
+  "case_label": "MVTEC / bottle / scratch",
+  "confidence": 0.81,
+  "dataset": "mvtec",
+  "graph_dataset_id": "mvtec-project",
+  "human_feedback": null,
+  "kg_analysis": {
+    "consistency_score": null,
+    "correction_candidates": [],
+    "inconsistent_fields": [],
+    "linked_entities": [],
+    "top_k_paths": []
+  },
+  "location": "surface",
+  "morphology": "linear",
+  "normalized_evidence": {},
+  "object": "bottle",
+  "observations": [
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "object",
+      "linked_entity_hints": [
+        "bottle"
+      ],
+      "metadata": {},
+      "name": "bottle",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_object_bottle",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "anomaly_type",
+      "linked_entity_hints": [
+        "scratch"
+      ],
+      "metadata": {},
+      "name": "scratch",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_anomaly_type_scratch",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "location",
+      "linked_entity_hints": [
+        "surface"
+      ],
+      "metadata": {},
+      "name": "surface",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_location_surface",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "morphology",
+      "linked_entity_hints": [
+        "linear"
+      ],
+      "metadata": {},
+      "name": "linear",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_morphology_linear",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "severity",
+      "linked_entity_hints": [
+        "severity"
+      ],
+      "metadata": {},
+      "name": "severity",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_severity_severity",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": 0.16,
+      "value_type": "float"
+    },
+    {
+      "confidence": 0.81,
+      "direction": null,
+      "display_name": null,
+      "facet": "confidence",
+      "linked_entity_hints": [
+        "adapter_confidence"
+      ],
+      "metadata": {},
+      "name": "adapter_confidence",
+      "obs_id": "obs_mvtec_fixture_mask_fallback_confidence_adapter_confidence",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": 0.81,
+      "value_type": "float"
+    }
+  ],
+  "raw_evidence": {
+    "description": "Fixture omits explicit location and morphology so mask geometry supplies fallback evidence.",
+    "extra": {
+      "dataset": "mvtec",
+      "detector": {
+        "name": "fixture_detector",
+        "pred_score": 0.81
+      },
+      "image_path": "fixtures/mvtec/bottle_fallback.png",
+      "mask_path": "fixtures/mvtec/bottle_fallback_mask.png",
+      "mask_stats": {
+        "area_ratio": 0.16,
+        "centroid": [
+          0.48,
+          0.52
+        ],
+        "centroid_norm": [
+          0.48,
+          0.52
+        ],
+        "component_count": 1,
+        "eccentricity": 0.93
+      }
+    },
+    "heatmap_path": null,
+    "image_region": null,
+    "log_events": [],
+    "variable_contributions": {},
+    "variables": []
+  },
+  "severity": 0.16,
+  "source": "image",
+  "summary": "Fixture omits explicit location and morphology so mask geometry supplies fallback evidence.",
+  "timestamp": "2026-05-13T06:37:57Z"
+}

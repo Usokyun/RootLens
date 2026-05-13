@@ -1,0 +1,11 @@
+{
+  "name": "ttadk/goofy",
+  "display_name": "TTADK Goofy",
+  "version": "1.0.0",
+  "description": "goofy 发布平台",
+  "author": {"name": "wangjianbin.w", "email": "wangjianbin.wang@bytedance.com"},
+  "tags": [],
+  "skills": [
+    {"name": "goofy-deploy-workflow", "path": "goofy-deploy-workflow"}
+  ]
+}

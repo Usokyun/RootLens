@@ -8,7 +8,8 @@
 >
 > 当前仓库实际支持的是：
 >
-> - 导入已经构建好的图谱文件（TEP `nodes.jsonl` + `edges.jsonl`，或 MVTec `nodes.csv` + `edges.csv`）
+> - TEP 侧通过 `scripts/build-graphs.py` 调用上游 `tep_kg.graph_build.build_kg()`，再导入其最终 `nodes.jsonl` + `edges.jsonl`
+> - MVTec 侧导入 KGTraceVis 默认 KG CSV，并在有 records 素材时复用其 candidate KG 构建链路，生成 `nodes_candidate.csv` + `edges_candidate.csv` overlay 后再统一归一化
 > - 将这些图谱文件在前端归一化成统一图谱 contract
 >
 > 因此，本文档中的 L1-L4 描述应视为**目标态设计基线**，不是当前仓库已完整交付的能力。
@@ -29,6 +30,12 @@
 - `unified-graphs.json`
 - TEP `nodes.jsonl` + `edges.jsonl`
 - MVTec `nodes.csv` + `edges.csv` + 可选 `mvtec_rca_reference.csv`
+
+当前构建脚本额外支持的 build-time 上游素材为：
+
+- MVTec `records.jsonl`
+- 可选 `adapter_pipeline_table.csv`
+- candidate KG overlay 产物 `nodes_candidate.csv` + `edges_candidate.csv`
 
 因此，本文后续所有关于 Text / Code / Image / Sequence 的 L1-L4 说明，都应理解为**后续阶段的上游语义来源与目标态设计**，而不是当前浏览器端已经执行的素材解析流程。
 

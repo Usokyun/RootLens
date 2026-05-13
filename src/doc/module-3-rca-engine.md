@@ -2,40 +2,50 @@
 
 这份文档描述模块三的设计：**如何把统一 Evidence JSON 和知识图谱结合起来，进行根因推理分析**。这是 RootLens 三条模块链中的最后一环——前两个模块（图谱构建、证据构建）为它提供输入，它产出两条路线各自独立的推理结果供可视化工作台融合呈现。
 
-> 设计原则：**尽量保留 TEP_KG 的 Root-KGD 推理语义和 KGTraceVis 的 pipeline 推理语义。两条路线独立运行、共享同一张图谱和同一份 Evidence。RootLens 当前以浏览器本地运行时承接结果生成，融合统一由前端可视化工作台完成。**
+> 设计原则：**尽量保留 TEP_KG 的 Root-KGD 推理语义和 KGTraceVis 的 pipeline 推理语义。两条路线独立运行、共享同一张图谱和同一份 Evidence。RootLens 当前以“离线生成 parity runtime + 前端消费展示”为主，融合统一由前端可视化工作台完成。**
 >
 > **当前阶段说明**
 >
-> 本文档中的很多段落描述的是**目标态语义基线**，不是当前仓库已经完整复刻的算法实现。
+> 本文档中的很多段落描述的是**目标态语义基线**。当前仓库对“预生成 runtime case”的实现已经切到上游 Python 逻辑复用，但浏览器内 what-if / 本地导入重算仍保留启发式 fallback。
 >
-> 当前前端运行时的真实状态是：
+> 当前模块三的真实交付状态是：
 >
-> - 路线 1：浏览器端启发式 entity linking + consistency + shortest-path ranking
-> - 路线 2：浏览器端启发式 candidate ranking，不等同于完整 Root-KGD / RFPA / 10 层 adjustments
+> - 预生成 runtime case：
+>   - 路线 1：离线调用 KGTraceVis `entity_linker.py` / `consistency_checker.py` / `correction_generator.py` / `path_ranker.py`
+>   - 路线 2：直接复用 TEP_KG `rbc_contributions.jsonl` + `root_kgd_rankings.jsonl`，保持原始 Root-KGD 排名与命中率
+> - 浏览器本地重算 fallback：
+>   - 路线 1：`src/services/local-reasoning.ts` 中的启发式 entity linking + path ranking
+>   - 路线 2：`src/services/local-reasoning.ts` 中的启发式 candidate ranking
 >
-> 当前实现的目标是先完成“本地导入 -> 本地推理 -> 工作台展示”的闭环；后续阶段再逐步逼近上游算法语义。
+> 当前实现的目标，是让默认交付的 runtime case 达到上游算法 parity，同时保留浏览器端 what-if / feedback 工作流。
 
 ---
 
-## 0. Phase 1 当前实现映射
+## 0. 当前实现映射
 
-当前仓库里 RCA 引擎的真实交付边界，是浏览器端本地启发式推理，而不是完整的上游算法复刻：
+当前仓库里 RCA 引擎分成两层：
 
-- 本地推理入口：`src/services/local-reasoning.ts`
-- 导入时组装 runtime：`src/services/browser-runtime.ts`
+- parity runtime 生成：`scripts/build-runtime.py`
+- 图谱快照生成：`scripts/build-unified-graphs.mjs`
+- 本地 fallback 推理：`src/services/local-reasoning.ts`
+- 导入时本地组装 runtime：`src/services/browser-runtime.ts`
 - contract 真值：`src/types/rootlens.ts` 与 `src/contracts/runtime.ts`
 - 工作台消费：`src/views/ReasoningWorkbenchView.vue`
 
 当前实现的语义边界如下：
 
-- 路线 1：基于节点名/别名的启发式 entity linking，结合固定关系规则做 consistency / correction，再用 shortest-path + confidence / evidence match 计算路径分数。
-- 路线 2：只在存在 `facet: "variable"` observation 时启用；基于变量贡献、最短路径衰减和少量类型/角色 bias 生成候选排序。
+- 预生成 runtime：
+  - 路线 1：直接复用 KGTraceVis 原始 pipeline 逻辑；对 TEP 图使用 L4 explanatory projection（为 symptom → cause 路径检索反转边方向），不改上游评分逻辑。
+  - 路线 2：直接消费 TEP_KG 的 RBC scenario 与 Root-KGD ranking 产物，不在 RootLens 内重新实现 RFPA / ranking / adjustments。
+- 浏览器 fallback：
+  - 路线 1：基于节点名/别名的启发式 entity linking，结合固定关系规则做 consistency / correction，再用 shortest-path + confidence / evidence match 计算路径分数。
+  - 路线 2：只在存在 `facet: "variable"` observation 时启用；基于变量贡献、最短路径衰减和少量类型/角色 bias 生成候选排序。
 - 交叉信息：前端本地补 `cross_route_signals` 与 `notes`，供工作台做双路线对照展示。
 - what-if：RCA 工作台允许修改当前 case 的 observation，并在重算前展示字段 diff，然后基于当前统一图谱重新执行浏览器端本地推理；草稿会按会话写入浏览器 `localStorage`。
 - 人工反馈：RCA 工作台允许对 route1 path / route2 candidate 做接受或驳回标注，并附加 analyst note；工作台会额外生成 feedback summary，支持回跳到对应 path / candidate；这些记录与 what-if 草稿共用同一份本地 analysis workspace。
 - 跨页同步：Evidence 工作台消费同一份 draft case，因此 RCA 页里的本地重算结果会同步反映到 Evidence 视图。
 
-因此，本文后续涉及 KGTraceVis pipeline、Root-KGD、RFPA 和 10 层 adjustments 的段落，都应理解为**目标态语义来源**，不是当前浏览器实现已达到的算法 parity。
+因此，本文后续涉及 KGTraceVis pipeline、Root-KGD、RFPA 和 10 层 adjustments 的段落，对**预生成 runtime case**已经是直接复用的语义来源；对浏览器内 what-if / 本地导入，则仍是 fallback 的目标态基线。
 
 ---
 
@@ -74,7 +84,7 @@ RCA 推理引擎的输入和输出：
           └───────────────────────────────┘
 ```
 
-引擎内部组织为两条推理路线。目标态上，它们分别对齐上游项目的关键语义；当前 Phase 1 则以 contract 兼容的浏览器端启发式实现承接结果生成：
+引擎内部组织为两条推理路线。默认交付的 runtime case 已经对齐上游项目的关键语义；仅浏览器内 what-if / 本地导入重算仍使用 contract 兼容的启发式 fallback：
 
 | 路线 | 来源 | 核心思想 | 图谱用途 |
 |---|---|---|---|
@@ -529,7 +539,7 @@ interface AffectedVariable {
 | Condenser Moderate | condenser 排第 2-5 + 非极端 cond 信号 | condenser 适度追赶 rival | `_apply_condenser_moderate_adjustments` |
 | Separator Warm | stream_2 rank 1 + separator rank 2 + 温差信号 | separator 反超 stream_2 | `_apply_separator_warm_adjustments` |
 
-> **重要**：这 10 层调整逻辑是 TEP_KG 在大量实验中对 TEP 故障物理特性的编码，代表了目标态路线 2 的关键语义来源。RootLens 当前浏览器实现**尚未**落地这 10 层 adjustments；当前 route2 只输出兼容的候选排序结构，后续阶段再决定哪些调整逻辑需要以可替换模块方式承接。
+> **重要**：这 10 层调整逻辑是 TEP_KG 在大量实验中对 TEP 故障物理特性的编码，代表了路线 2 的关键语义来源。RootLens 当前的**预生成 runtime**已经直接复用这些调整后的 ranking 产物；仅浏览器内 fallback route2 仍未在前端重算这些 adjustments。
 
 ---
 
@@ -655,7 +665,7 @@ interface AffectedVariable {
 
 > 本文档为 Phase 0 框架审阅阶段的产物，由 Claude Code (Opus 4.7) 在 2026-05-11 基于对 TEP_KG (`/Users/bytedance/my_project/TEP_KG`) 和 MVTec/KGTraceVis (`/Users/bytedance/my_project/MVTec/KGTraceVis`) 源码的详细阅读编写。
 >
-> 本文档中的参数值、流程和函数名都能在对应的上游源代码中找到出处。但在 RootLens 当前仓库中，它们应被理解为**语义来源与目标态参考**，而不是“已经 1:1 落地完成”的现状声明。
+> 本文档中的参数值、流程和函数名都能在对应的上游源代码中找到出处。对于 RootLens 的**预生成 runtime case**，它们已经是直接复用的实现来源；对于浏览器内 fallback 重算，它们仍是语义参考，而不是 1:1 前端复刻声明。
 
 ---
 

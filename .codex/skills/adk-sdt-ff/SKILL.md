@@ -119,11 +119,11 @@ Given the user input (optional test data source), generate GWT-format test cases
 
 Set **target platform** to exactly `Backend` or `Frontend` (these strings) for all following steps.
 
-### Step 5: Generate Test Cases Using prd2case Skill
+### Step 5: Generate Test Cases Using Platform-Specific Skills
 
-1. Run the **prd2case** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd2case` and follow it). Use `FEATURE_DIR/spec.md` as the primary input. Generate test cases according to the **inferred** target platform from Step 4.
-    - If target platform is **Backend**, execute task type 1 to generate backend API test cases.
-    - If target platform is **Frontend**, execute task type 2 to generate web e2e test cases.
+1. Generate test cases according to the **inferred** target platform from Step 4. Use `FEATURE_DIR/spec.md` as the primary input.
+    - If target platform is **Backend**, run the **prd-2-api-case** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd-2-api-case` and follow it) to generate backend API test cases.
+    - If target platform is **Frontend**, run the **prd2case** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd2case` and follow it), execute task type 2 to generate web e2e test cases.
 
 ### Step 6: Generate Test Execution Task File
 
@@ -132,10 +132,14 @@ Set **target platform** to exactly `Backend` or `Frontend` (these strings) for a
 1. Based on the target platform from Step 4, if it is **Backend**, read the template:
    `plugins/ttadk/core/resources/templates/sdt-backend-task-template.md`.
    If it is **Frontend**, read the template: `plugins/ttadk/core/resources/templates/sdt-frontend-task-template.md`.
-2. Create `FEATURE_DIR/test/task.md` by copying the template file, if it doesn't exist.
-3. If `FEATURE_DIR/test/task.md` already exists, use `AskUserQuestion` to confirm overwrite:
+2. **⚠️ Language Adaptation (MANDATORY)**: Before writing `task.md`, you **MUST** adapt the template content to match the `preferred_language` setting:
+   - If `preferred_language` is `en`: Translate ALL Chinese text in the template to English — including titles, phase names, task descriptions, table headers, instructions, and marker explanations. Keep placeholders (`{{...}}`) and code blocks unchanged. Do NOT output Chinese text in the final `task.md`.
+   - If `preferred_language` is `zh`: Keep the original Chinese text as-is.
+   - This applies to the **entire template content**, not just the values you fill in. The structural text (headings, descriptions, labels) must also follow the language setting.
+3. Create `FEATURE_DIR/test/task.md` by copying the template file, if it doesn't exist.
+4. If `FEATURE_DIR/test/task.md` already exists, use `AskUserQuestion` to confirm overwrite:
     - "test/task.md already exists. Overwrite?" → Yes / No (append to existing file)
-4. fill `FEATURE_DIR/test/task.md` with:**Keep the original structure and the original text, only fill in the values, do not delete any content.**
+5. fill `FEATURE_DIR/test/task.md` with:**Keep the original structure and the original text, only fill in the values, do not delete any content.**
     - Correct feature name from plan.md
     - Phase 1: Env Deploy
     - Phase 2: Tests

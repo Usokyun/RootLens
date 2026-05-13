@@ -1,0 +1,208 @@
+{
+  "adapter": {
+    "metadata": {
+      "annotation_type": "demo_synthetic",
+      "schema_dataset": "wafer",
+      "source_dataset": "wm811k"
+    },
+    "name": "wm811k",
+    "produces_root_cause": false,
+    "version": null
+  },
+  "anomaly_type": "nearfull",
+  "case_id": "wm811k_fixture_descriptor_fallback",
+  "case_label": "WAFER / wafer / nearfull",
+  "confidence": 0.77,
+  "dataset": "wafer",
+  "graph_dataset_id": "mvtec-project",
+  "human_feedback": null,
+  "kg_analysis": {
+    "consistency_score": null,
+    "correction_candidates": [],
+    "inconsistent_fields": [],
+    "linked_entities": [],
+    "top_k_paths": []
+  },
+  "location": "wafer_surface",
+  "morphology": "dense_particles",
+  "normalized_evidence": {},
+  "object": "wafer",
+  "observations": [
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "object",
+      "linked_entity_hints": [
+        "wafer"
+      ],
+      "metadata": {},
+      "name": "wafer",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_object_wafer",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "anomaly_type",
+      "linked_entity_hints": [
+        "nearfull"
+      ],
+      "metadata": {},
+      "name": "nearfull",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_anomaly_type_nearfull",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "spatial_pattern",
+      "linked_entity_hints": [
+        "nearfull"
+      ],
+      "metadata": {},
+      "name": "nearfull",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_spatial_pattern_nearfull",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "location",
+      "linked_entity_hints": [
+        "wafer_surface"
+      ],
+      "metadata": {},
+      "name": "wafer_surface",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_location_wafer_surface",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "morphology",
+      "linked_entity_hints": [
+        "dense_particles"
+      ],
+      "metadata": {},
+      "name": "dense_particles",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_morphology_dense_particles",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": null,
+      "value_type": null
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "severity",
+      "linked_entity_hints": [
+        "severity"
+      ],
+      "metadata": {},
+      "name": "severity",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_severity_severity",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": 0.8888888888888888,
+      "value_type": "float"
+    },
+    {
+      "confidence": 0.77,
+      "direction": null,
+      "display_name": null,
+      "facet": "confidence",
+      "linked_entity_hints": [
+        "adapter_confidence"
+      ],
+      "metadata": {},
+      "name": "adapter_confidence",
+      "obs_id": "obs_wm811k_fixture_descriptor_fallback_confidence_adapter_confidence",
+      "raw_evidence_refs": [],
+      "time_window": null,
+      "unit": null,
+      "value": 0.77,
+      "value_type": "float"
+    }
+  ],
+  "raw_evidence": {
+    "description": null,
+    "extra": {
+      "descriptor_stats": {
+        "centroid_norm": [
+          0.5,
+          0.5
+        ],
+        "component_count": 1,
+        "defect_density": 0.8888888888888888,
+        "derived_location": "wafer_surface",
+        "derived_morphology": "dense_particles",
+        "derived_severity": 0.8888888888888888,
+        "die_count": 9,
+        "failed_die_count": 8,
+        "map_shape": [
+          3,
+          3
+        ],
+        "pattern": "nearfull",
+        "radial_mean": 0.8535533905932737
+      },
+      "saliency_path": "fixtures/wm811k/W811K-0002_saliency.npy",
+      "wm811k": {
+        "annotation_type": "demo_synthetic",
+        "original_pattern": "nearfull",
+        "source_dataset": "wm811k",
+        "wafer_id": "W811K-0002",
+        "wafer_map": [
+          [
+            2,
+            2,
+            2
+          ],
+          [
+            2,
+            0,
+            2
+          ],
+          [
+            2,
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    "heatmap_path": null,
+    "image_region": null,
+    "log_events": [],
+    "variable_contributions": {},
+    "variables": []
+  },
+  "severity": 0.8888888888888888,
+  "source": "image",
+  "summary": "None",
+  "timestamp": "2026-05-13T06:37:57Z"
+}
