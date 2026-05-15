@@ -1,0 +1,280 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "RCA Workbench" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: RCA Workbench
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]: Mock Mode
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e23]: 内置资产
+    - generic [ref=e24]:
+      - generic [ref=e25]: Current Run
+      - generic [ref=e26]: mock-wafer-evidence
+  - generic [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: 分析台
+        - generic [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: 实验与图谱
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e48]: KG Studio
+      - button "收起侧边栏" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+    - main [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: Current Workspace
+            - strong [ref=e57]: 分析台
+            - paragraph [ref=e58]: 按 handoff 合同管理 upload、history、run detail，并把当前 run 作为后续实验和图谱页的共享上下文。
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]: Mock
+              - generic [ref=e62]: 3 runs
+              - generic [ref=e63]: 1 cases
+            - button "刷新" [ref=e65] [cursor=pointer]:
+              - img [ref=e67]
+              - text: 刷新
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: Analysis
+            - heading "Run Evidence Through The RCA Contract" [level=2] [ref=e73]
+            - paragraph [ref=e74]: 这里固定处理 bootstrap、upload、run history 和单次 run detail。多 case records 优先围绕 cases[] 展示，不再用前端自推理结果兜底。
+            - generic [ref=e76]: candidate/plausible explanation only; not a verified root-cause label
+          - generic [ref=e77]:
+            - article [ref=e78]:
+              - generic [ref=e79]: Runs
+              - strong [ref=e80]: "3"
+              - generic [ref=e81]: 历史与最近运行
+            - article [ref=e82]:
+              - generic [ref=e83]: Cases
+              - strong [ref=e84]: "1"
+              - generic [ref=e85]: 当前 run 的案例数
+            - article [ref=e86]:
+              - generic [ref=e87]: Review Targets
+              - strong [ref=e88]: "8"
+              - generic [ref=e89]: 统一反馈入口
+        - generic [ref=e90]:
+          - article [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - heading "Live Upload" [level=3] [ref=e94]
+                - paragraph [ref=e95]: "`POST /api/runs/upload`"
+              - generic [ref=e96]: records
+            - generic [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: Mode
+                - generic "Producer records" [ref=e100] [cursor=pointer]:
+                  - textbox "Mode Producer records"
+                  - generic [ref=e101]: Producer records
+                  - img [ref=e104]
+              - generic [ref=e106]:
+                - generic [ref=e107]: Dataset
+                - generic "auto" [ref=e108] [cursor=pointer]:
+                  - textbox "Dataset auto"
+                  - generic [ref=e109]: auto
+                  - img [ref=e112]
+              - generic [ref=e114]:
+                - generic [ref=e115]: Top K
+                - generic [ref=e116]:
+                  - spinbutton "Top K" [ref=e117]: "5"
+                  - generic [ref=e119]:
+                    - button [ref=e120] [cursor=pointer]:
+                      - img [ref=e121]
+                    - button [ref=e123] [cursor=pointer]:
+                      - img [ref=e124]
+              - generic [ref=e126]:
+                - generic [ref=e127]: File
+                - button "File" [ref=e128]
+              - button "提交分析" [ref=e130] [cursor=pointer]:
+                - img [ref=e132]
+                - text: 提交分析
+          - article [ref=e134]:
+            - generic [ref=e135]:
+              - generic [ref=e136]:
+                - heading "Run History" [level=3] [ref=e137]
+                - paragraph [ref=e138]: "`GET /api/runs`"
+              - generic [ref=e139]: 3 total
+            - generic [ref=e140]:
+              - button "Mock wafer evidence case wafer_case_bundle.json wafer 2026/5/15 10:17:30" [ref=e141] [cursor=pointer]:
+                - generic [ref=e142]:
+                  - strong [ref=e143]: Mock wafer evidence case
+                  - paragraph [ref=e144]: wafer_case_bundle.json
+                - generic [ref=e145]:
+                  - generic [ref=e146]: wafer
+                  - generic [ref=e147]: 2026/5/15 10:17:30
+              - button "Mock MVTec image analysis bottle_scratch_001.png mvtec 2026/5/15 10:10:30" [ref=e148] [cursor=pointer]:
+                - generic [ref=e149]:
+                  - strong [ref=e150]: Mock MVTec image analysis
+                  - paragraph [ref=e151]: bottle_scratch_001.png
+                - generic [ref=e152]:
+                  - generic [ref=e153]: mvtec
+                  - generic [ref=e154]: 2026/5/15 10:10:30
+              - button "Mock TEP records batch tep_records_batch.jsonl tep 2026/5/15 09:57:30" [ref=e155] [cursor=pointer]:
+                - generic [ref=e156]:
+                  - strong [ref=e157]: Mock TEP records batch
+                  - paragraph [ref=e158]: tep_records_batch.jsonl
+                - generic [ref=e159]:
+                  - generic [ref=e160]: tep
+                  - generic [ref=e161]: 2026/5/15 09:57:30
+        - generic [ref=e162]:
+          - complementary [ref=e163]:
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - heading "Cases" [level=3] [ref=e166]
+                - paragraph [ref=e167]: "records 模式优先围绕 `cases[]` 展示"
+              - generic [ref=e168]: "1"
+            - button "wafer_0001 wafer" [ref=e170] [cursor=pointer]:
+              - strong [ref=e171]: wafer_0001
+              - generic [ref=e172]: wafer
+          - generic [ref=e173]:
+            - article [ref=e174]:
+              - generic [ref=e175]:
+                - generic [ref=e176]:
+                  - heading "Run Detail" [level=3] [ref=e177]
+                  - paragraph [ref=e178]: "`GET /api/runs/{run_id}`"
+                - generic [ref=e179]:
+                  - generic [ref=e180]: evidence
+                  - generic [ref=e181]: wafer
+              - generic [ref=e182]:
+                - generic [ref=e183]:
+                  - text: Run ID
+                  - strong [ref=e184]: mock-wafer-evidence
+                - generic [ref=e185]:
+                  - text: Created
+                  - strong [ref=e186]: 2026/5/15 10:17:30
+                - generic [ref=e187]:
+                  - text: Review Targets
+                  - strong [ref=e188]: "8"
+                - generic [ref=e189]:
+                  - text: Top Paths
+                  - strong [ref=e190]: "1"
+              - button "打开实验与图谱页" [ref=e192] [cursor=pointer]:
+                - img [ref=e194]
+                - text: 打开实验与图谱页
+            - generic [ref=e196]:
+              - article [ref=e197]:
+                - heading "Evidence Summary" [level=3] [ref=e199]
+                - generic [ref=e200]:
+                  - generic [ref=e201]:
+                    - text: Case
+                    - strong [ref=e202]: wafer_0001
+                  - generic [ref=e203]:
+                    - text: Dataset
+                    - strong [ref=e204]: wafer
+                  - generic [ref=e205]:
+                    - text: Paths
+                    - strong [ref=e206]: "1"
+                  - generic [ref=e207]:
+                    - text: Root Causes
+                    - strong [ref=e208]: "1"
+              - article [ref=e209]:
+                - heading "RCA Summary" [level=3] [ref=e211]
+                - generic [ref=e213]:
+                  - strong [ref=e214]: "#1 Glue removal insufficient"
+                  - text: heuristic_path_support · 0.479
+            - generic [ref=e215]:
+              - article [ref=e216]:
+                - heading "Visual Evidence" [level=3] [ref=e218]
+                - generic [ref=e219]:
+                  - generic [ref=e220]:
+                    - img "Wafer observation preview" [ref=e221]
+                    - generic [ref=e222]:
+                      - strong [ref=e223]: Wafer observation preview
+                      - paragraph [ref=e224]: Mock preview asset for frontend walkthrough.
+                  - generic [ref=e225]:
+                    - img "Wafer supporting visualization" [ref=e226]
+                    - generic [ref=e227]:
+                      - strong [ref=e228]: Wafer supporting visualization
+                      - paragraph [ref=e229]: Mock supporting visualization.
+              - article [ref=e230]:
+                - heading "Review Targets" [level=3] [ref=e232]
+                - generic [ref=e233]:
+                  - generic [ref=e234]:
+                    - strong [ref=e235]: Glue removal insufficient
+                    - text: path
+                  - generic [ref=e236]:
+                    - strong [ref=e237]: Glue removal insufficient
+                    - text: root_cause_candidate
+                  - generic [ref=e238]:
+                    - strong [ref=e239]: HAS_PLAUSIBLE_CAUSE
+                    - text: edge
+                  - generic [ref=e240]:
+                    - strong [ref=e241]: Wafer
+                    - text: entity_link
+                  - generic [ref=e242]:
+                    - strong [ref=e243]: Nearfull defect
+                    - text: entity_link
+                  - generic [ref=e244]:
+                    - strong [ref=e245]: Wafer surface
+                    - text: entity_link
+                  - generic [ref=e246]:
+                    - strong [ref=e247]: Dense particles
+                    - text: entity_link
+                  - generic [ref=e248]:
+                    - strong [ref=e249]: Example alarm
+                    - text: entity_link
+  - generic [ref=e251]:
+    - button "打开偏好设置" [ref=e252] [cursor=pointer]:
+      - img [ref=e254]
+      - generic [ref=e257]:
+        - generic [ref=e258]: 偏
+        - generic [ref=e259]: 好
+      - img [ref=e261]
+    - region "偏好设置":
+      - generic:
+        - generic:
+          - heading "偏好设置" [level=3]
+          - paragraph: 内置 mock 数据链路
+        - button "恢复默认"
+      - generic:
+        - generic:
+          - generic:
+            - generic: 数据源模式
+            - generic:
+              - img
+          - tablist "切换数据源模式":
+            - button "Mock"
+            - button "后端"
+        - generic:
+          - generic:
+            - generic: API Base URL
+            - generic:
+              - img
+          - generic:
+            - textbox "http://127.0.0.1:8000"
+        - generic:
+          - generic:
+            - generic: 素材默认布局
+          - tablist "切换素材布局":
+            - button "网格"
+            - button "列表"
+        - generic:
+          - generic:
+            - generic:
+              - generic: 窄屏自动切列表
+            - paragraph: 小屏默认转列表，避免工作台被压坏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 页面渐入效果
+            - paragraph: 关闭后保留静态切换，方便联调和录屏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: Debug 面板
+            - paragraph: 打开后显示更多 run/build 的原始对象。
+          - switch

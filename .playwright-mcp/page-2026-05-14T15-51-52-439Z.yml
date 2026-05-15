@@ -1,0 +1,314 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - button "Application menu" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: RL
+        - generic [ref=e11]: RootLens
+      - heading "RCA Workbench" [level=1] [ref=e13]:
+        - img [ref=e14]
+        - generic [ref=e17]: RCA Workbench
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - img [ref=e20]
+        - generic [ref=e22]: Route 1 + Route 2
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e26]: Local Runtime
+    - generic [ref=e27]:
+      - generic [ref=e28]: Session
+      - generic [ref=e29]: demo
+  - generic [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e35] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e39]: 证据管理
+        - generic [ref=e40] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: 图谱探索
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 素材管理
+      - button "收起侧边栏" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+    - main [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: Current Workspace
+            - strong [ref=e59]: 素材管理
+            - paragraph [ref=e60]: 导入多模态素材、管理素材库并发起图谱构建。
+          - generic [ref=e62]:
+            - generic [ref=e63]: Phase 1
+            - generic [ref=e64]: Graph Build
+            - generic [ref=e65]: 2 selected
+            - generic [ref=e66]: tep-kg
+        - generic [ref=e67]:
+          - article [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - img [ref=e72]
+                - heading "素材库" [level=3] [ref=e74]
+              - generic [ref=e75]:
+                - generic [ref=e77]: 已选中 2 项
+                - generic [ref=e79]:
+                  - tablist "切换列表布局" [ref=e80]:
+                    - tab "网格模式" [selected] [ref=e82] [cursor=pointer]:
+                      - img [ref=e83]
+                    - tab "列表模式" [ref=e85] [cursor=pointer]:
+                      - img [ref=e86]
+                  - img [ref=e89]
+                  - img [ref=e92]
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - strong [ref=e97]: 素材主舞台
+                  - paragraph [ref=e98]: 主区只负责资产浏览与筛选结果确认，导入、拖拽恢复和构图发布放到右侧辅助面板。
+                - generic [ref=e99]:
+                  - generic [ref=e100]:
+                    - img [ref=e101]
+                    - strong [ref=e103]: "7"
+                    - generic [ref=e104]: 筛选后
+                  - generic [ref=e105]:
+                    - img [ref=e106]
+                    - strong [ref=e108]: "2"
+                    - generic [ref=e109]: 待组装
+                  - generic [ref=e110]:
+                    - img [ref=e111]
+                    - strong [ref=e114]: "2"
+                    - generic [ref=e115]: 已发布图谱
+              - generic [ref=e116]:
+                - article [ref=e117] [cursor=pointer]:
+                  - generic [ref=e118]:
+                    - generic [ref=e119]:
+                      - generic [ref=e120]:
+                        - img [ref=e122]
+                        - generic [ref=e124]:
+                          - heading "nodes.jsonl" [level=4] [ref=e125]
+                          - generic [ref=e127]: 图谱
+                      - generic [ref=e128]:
+                        - checkbox [checked]
+                        - img [ref=e131]
+                    - generic [ref=e133]:
+                      - generic [ref=e134]:
+                        - img [ref=e135]
+                        - strong [ref=e137]: 140 rows
+                      - generic [ref=e138]:
+                        - img [ref=e139]
+                        - strong [ref=e142]: "layer: rca-node"
+                - article [ref=e143] [cursor=pointer]:
+                  - generic [ref=e144]:
+                    - generic [ref=e145]:
+                      - generic [ref=e146]:
+                        - img [ref=e148]
+                        - generic [ref=e150]:
+                          - heading "edges.jsonl" [level=4] [ref=e151]
+                          - generic [ref=e153]: 图谱
+                      - generic [ref=e154]:
+                        - checkbox [checked]
+                        - img [ref=e157]
+                    - generic [ref=e159]:
+                      - generic [ref=e160]:
+                        - img [ref=e161]
+                        - strong [ref=e163]: 252 rows
+                      - generic [ref=e164]:
+                        - img [ref=e165]
+                        - strong [ref=e168]: "layer: rca-edge"
+                - article [ref=e169] [cursor=pointer]:
+                  - generic [ref=e170]:
+                    - generic [ref=e171]:
+                      - generic [ref=e172]:
+                        - img [ref=e174]
+                        - generic [ref=e176]:
+                          - heading "bottle_001.png" [level=4] [ref=e177]
+                          - generic [ref=e179]: 图像
+                      - generic [ref=e180]:
+                        - checkbox
+                    - generic [ref=e183]:
+                      - generic [ref=e184]:
+                        - img [ref=e185]
+                        - strong [ref=e187]: 512 x 512
+                      - generic [ref=e188]:
+                        - img [ref=e189]
+                        - strong [ref=e192]: image sample
+                - article [ref=e193] [cursor=pointer]:
+                  - generic [ref=e194]:
+                    - generic [ref=e195]:
+                      - generic [ref=e196]:
+                        - img [ref=e198]
+                        - generic [ref=e200]:
+                          - heading "tep_fault_log.txt" [level=4] [ref=e201]
+                          - generic [ref=e203]: 文本
+                      - generic [ref=e204]:
+                        - checkbox
+                    - generic [ref=e207]:
+                      - generic [ref=e208]:
+                        - img [ref=e209]
+                        - strong [ref=e211]: 1.2 KB
+                      - generic [ref=e212]:
+                        - img [ref=e213]
+                        - strong [ref=e216]: raw log text
+                - article [ref=e217] [cursor=pointer]:
+                  - generic [ref=e218]:
+                    - generic [ref=e219]:
+                      - generic [ref=e220]:
+                        - img [ref=e222]
+                        - generic [ref=e224]:
+                          - heading "mvtec_nodes.csv" [level=4] [ref=e225]
+                          - generic [ref=e227]: 图谱
+                      - generic [ref=e228]:
+                        - checkbox
+                    - generic [ref=e231]:
+                      - generic [ref=e232]:
+                        - img [ref=e233]
+                        - strong [ref=e235]: 85 rows
+                      - generic [ref=e236]:
+                        - img [ref=e237]
+                        - strong [ref=e240]: "layer: mvtec-node"
+                - article [ref=e241] [cursor=pointer]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]:
+                      - generic [ref=e244]:
+                        - img [ref=e246]
+                        - generic [ref=e248]:
+                          - heading "mvtec_edges.csv" [level=4] [ref=e249]
+                          - generic [ref=e251]: 图谱
+                      - generic [ref=e252]:
+                        - checkbox
+                    - generic [ref=e255]:
+                      - generic [ref=e256]:
+                        - img [ref=e257]
+                        - strong [ref=e259]: 140 rows
+                      - generic [ref=e260]:
+                        - img [ref=e261]
+                        - strong [ref=e264]: "layer: mvtec-edge"
+                - article [ref=e265] [cursor=pointer]:
+                  - generic [ref=e266]:
+                    - generic [ref=e267]:
+                      - generic [ref=e268]:
+                        - img [ref=e270]
+                        - generic [ref=e272]:
+                          - heading "runtime_case_bundle.json" [level=4] [ref=e273]
+                          - generic [ref=e275]: JSON
+                      - generic [ref=e276]:
+                        - checkbox
+                    - generic [ref=e279]:
+                      - generic [ref=e280]:
+                        - img [ref=e281]
+                        - strong [ref=e283]: 4 cases
+                      - generic [ref=e284]:
+                        - img [ref=e285]
+                        - strong [ref=e288]: session bundle
+              - generic [ref=e289]:
+                - generic [ref=e290]:
+                  - generic [ref=e291]:
+                    - img [ref=e293]
+                    - heading "已构建图谱" [level=3] [ref=e295]
+                  - generic [ref=e296]:
+                    - generic [ref=e298]: tep-kg 默认
+                    - button "刷新列表" [ref=e300] [cursor=pointer]:
+                      - img [ref=e302]
+                      - text: 刷新列表
+                - generic [ref=e304]:
+                  - article [ref=e305]:
+                    - generic [ref=e306]:
+                      - generic [ref=e307]:
+                        - img [ref=e309]
+                        - generic [ref=e312]:
+                          - generic [ref=e313]:
+                            - heading "TEP_KG RCA Graph" [level=4] [ref=e314]
+                            - generic [ref=e315]: 默认
+                          - paragraph [ref=e316]: tep-kg
+                      - generic [ref=e317]:
+                        - generic [ref=e318]:
+                          - img [ref=e319]
+                          - strong [ref=e321]: nodes.jsonl + edges.jsonl
+                        - generic [ref=e322]:
+                          - img [ref=e323]
+                          - strong [ref=e325]: 2026-05-12 22:18
+                    - generic [ref=e326]:
+                      - generic [ref=e327]:
+                        - img [ref=e328]
+                        - strong [ref=e330]: "140"
+                      - generic [ref=e331]:
+                        - img [ref=e332]
+                        - strong [ref=e335]: "252"
+                      - button [ref=e336] [cursor=pointer]:
+                        - img [ref=e338]
+                  - article [ref=e341]:
+                    - generic [ref=e342]:
+                      - generic [ref=e343]:
+                        - img [ref=e345]
+                        - generic [ref=e348]:
+                          - heading "MVTec Runtime KG" [level=4] [ref=e350]
+                          - paragraph [ref=e351]: mvtec-runtime
+                      - generic [ref=e352]:
+                        - generic [ref=e353]:
+                          - img [ref=e354]
+                          - strong [ref=e356]: mvtec_nodes.csv + mvtec_edges.csv
+                        - generic [ref=e357]:
+                          - img [ref=e358]
+                          - strong [ref=e360]: 2026-05-12 22:27
+                    - generic [ref=e361]:
+                      - generic [ref=e362]:
+                        - img [ref=e363]
+                        - strong [ref=e365]: "85"
+                      - generic [ref=e366]:
+                        - img [ref=e367]
+                        - strong [ref=e370]: "140"
+                      - button [ref=e371] [cursor=pointer]:
+                        - img [ref=e373]
+          - complementary [ref=e376]:
+            - generic [ref=e378]:
+              - img [ref=e380]
+              - heading "导入区" [level=3] [ref=e382]
+            - generic [ref=e383]:
+              - generic [ref=e384]:
+                - generic [ref=e385]:
+                  - strong [ref=e386]: 素材筛选
+                  - button "重置" [ref=e387] [cursor=pointer]
+                - generic [ref=e388]:
+                  - generic [ref=e389]:
+                    - img [ref=e391]
+                    - textbox "按文件名搜索" [ref=e393]
+                    - img [ref=e396] [cursor=pointer]
+                  - generic "全部类型" [ref=e398] [cursor=pointer]:
+                    - textbox
+                    - generic [ref=e399]: 全部类型
+                    - img [ref=e402]
+                  - generic "全部角色" [ref=e404]:
+                    - textbox "全部角色"
+                    - generic: 全部角色
+                    - img [ref=e407]
+              - generic [ref=e409]:
+                - generic [ref=e410]:
+                  - button "上传文件" [ref=e411] [cursor=pointer]:
+                    - img [ref=e413]
+                    - text: 上传文件
+                  - button "恢复历史会话" [ref=e415] [cursor=pointer]:
+                    - img [ref=e417]
+                    - text: 恢复历史会话
+                  - button "切换到内置 Demo" [ref=e419] [cursor=pointer]:
+                    - img [ref=e421]
+                    - text: 切换到内置 Demo
+                - button "展开拖拽导入区" [ref=e423] [cursor=pointer]:
+                  - img [ref=e425]
+                  - text: 展开拖拽导入区
+              - generic [ref=e427]:
+                - generic [ref=e428]:
+                  - strong [ref=e429]: 素材预览
+                  - generic [ref=e430]: "2"
+                - generic [ref=e431]:
+                  - generic [ref=e432]:
+                    - text: nodes.jsonl
+                    - button "Close" [ref=e433] [cursor=pointer]:
+                      - img [ref=e434]
+                  - generic [ref=e436]:
+                    - text: edges.jsonl
+                    - button "Close" [ref=e437] [cursor=pointer]:
+                      - img [ref=e438]
+              - generic [ref=e440]:
+                - button "构建图谱" [ref=e441] [cursor=pointer]
+                - img [ref=e443]

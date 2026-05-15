@@ -1,0 +1,305 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "RCA 工作台" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: RCA 工作台
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]: 模拟模式
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e23]: 内置资产
+    - generic [ref=e24]:
+      - generic [ref=e25]: 当前运行
+      - generic [ref=e26]: mock-wafer-evidence
+  - generic [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: 分析台
+        - generic [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: 实验与图谱
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e48]: 图谱工坊
+      - button "收起侧边栏" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+    - main [ref=e52]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e69]: 实验与图谱
+            - generic [ref=e70]:
+              - heading "路径图、候选根因与反馈操作" [level=2] [ref=e71]
+              - generic [ref=e72]:
+                - generic [ref=e73]: 模拟模式
+                - generic [ref=e74]: wafer
+                - generic [ref=e75]: 路径
+            - paragraph [ref=e76]: "这里直接消费后端返回的 `path_graph`、`ranked_root_causes` 和 `review_targets`，并提供即时分析、假设分析与反馈提交入口。"
+            - generic [ref=e78]: 候选/合理解释，仅供研判；并非已验证的根因标签
+            - button "刷新当前视图" [ref=e80] [cursor=pointer]:
+              - img [ref=e82]
+              - text: 刷新当前视图
+          - generic [ref=e84]:
+            - article [ref=e85]:
+              - generic [ref=e86]: 路径数
+              - strong [ref=e87]: "1"
+              - generic [ref=e88]: 后端返回的路径图
+            - article [ref=e89]:
+              - generic [ref=e90]: 候选根因
+              - strong [ref=e91]: "1"
+              - generic [ref=e92]: 统一根因候选列表
+            - article [ref=e93]:
+              - generic [ref=e94]: 反馈目标
+              - strong [ref=e95]: "8"
+              - generic [ref=e96]: 统一反馈入口
+        - generic [ref=e97]:
+          - article [ref=e98]:
+            - generic [ref=e100]:
+              - heading "上下文选择" [level=3] [ref=e101]
+              - paragraph [ref=e102]: 选择当前运行和案例
+            - generic [ref=e103]:
+              - generic [ref=e104]:
+                - generic [ref=e105]: 运行
+                - generic "模拟晶圆证据案例" [ref=e106] [cursor=pointer]:
+                  - textbox "运行 模拟晶圆证据案例"
+                  - generic [ref=e107]: 模拟晶圆证据案例
+                  - img [ref=e110]
+              - generic [ref=e112]:
+                - generic [ref=e113]: 案例
+                - generic "wafer_0001" [ref=e114] [cursor=pointer]:
+                  - textbox "案例 wafer_0001"
+                  - generic [ref=e115]: wafer_0001
+                  - img [ref=e118]
+              - generic [ref=e120]:
+                - generic [ref=e121]: wafer
+                - generic [ref=e122]: 8 个反馈目标
+                - generic [ref=e123]: 1 个候选根因
+          - article [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - heading "反馈提交" [level=3] [ref=e127]
+                - paragraph [ref=e128]: "通过 `POST /api/feedback` 提交路径、边或实体链接反馈"
+              - generic [ref=e129]: 路径
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - generic [ref=e132]: 目标
+                - generic "Glue removal insufficient（路径）" [ref=e133] [cursor=pointer]:
+                  - textbox "目标 Glue removal insufficient（路径）"
+                  - generic [ref=e134]: Glue removal insufficient（路径）
+                  - img [ref=e137]
+              - generic [ref=e139]:
+                - generic [ref=e140]: 动作
+                - generic "接受" [ref=e141] [cursor=pointer]:
+                  - textbox "动作 接受"
+                  - generic [ref=e142]: 接受
+                  - img [ref=e145]
+              - generic [ref=e147]:
+                - generic [ref=e148]: 提交人
+                - textbox "提交人" [ref=e150]: rootlens-frontend
+              - generic [ref=e151]:
+                - generic [ref=e152]: 备注
+                - textbox "备注" [ref=e154]
+              - button "提交反馈" [ref=e156] [cursor=pointer]:
+                - img [ref=e158]
+                - text: 提交反馈
+        - generic [ref=e160]:
+          - article [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - heading "路径图" [level=3] [ref=e164]
+                - paragraph [ref=e165]: "直接渲染 `path_graph`，不在前端做二次组装"
+              - generic [ref=e166]: 1 条路径
+            - img [ref=e169]:
+              - generic [ref=e170]:
+                - generic [ref=e172]: path_wafer_0001_50847cf4b5
+                - generic [ref=e173]: 得分 0.479
+                - generic [ref=e175]: HAS_PLAUSIBLE_CAUSE
+                - generic [ref=e176]:
+                  - generic [ref=e178]: 起点
+                  - generic [ref=e179]: Nearfull defect
+                - generic [ref=e180]:
+                  - generic [ref=e182]: 终点
+                  - generic [ref=e183]: Glue removal insufficient
+          - complementary [ref=e184]:
+            - article [ref=e185]:
+              - heading "候选根因" [level=3] [ref=e187]
+              - button "#1 Glue removal insufficient 启发式路径支持 · 0.479" [ref=e189] [cursor=pointer]:
+                - strong [ref=e190]: "#1 Glue removal insufficient"
+                - generic [ref=e191]: 启发式路径支持 · 0.479
+            - article [ref=e192]:
+              - heading "当前选中" [level=3] [ref=e194]
+              - generic [ref=e195]:
+                - generic [ref=e196]:
+                  - text: 路径
+                  - strong [ref=e197]: path_wafer_0001_50847cf4b5
+                - generic [ref=e198]:
+                  - text: 候选根因
+                  - strong [ref=e199]: Glue removal insufficient
+                - generic [ref=e200]:
+                  - text: 分数
+                  - strong [ref=e201]: "0.479"
+                - generic [ref=e202]:
+                  - text: 反馈目标
+                  - strong [ref=e203]: Glue removal insufficient
+        - generic [ref=e204]:
+          - article [ref=e205]:
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - heading "即时分析" [level=3] [ref=e208]
+                - paragraph [ref=e209]: "通过 `POST /api/analyze` 提交一条证据并立即返回分析结果"
+              - generic [ref=e210]: 即时返回
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - generic [ref=e213]: 数据集
+                - textbox "数据集" [ref=e215]: wafer
+              - generic [ref=e216]:
+                - generic [ref=e217]: 来源
+                - textbox "来源" [ref=e219]: image
+              - generic [ref=e220]:
+                - generic [ref=e221]: 对象
+                - textbox "对象" [ref=e223]: bottle
+              - generic [ref=e224]:
+                - generic [ref=e225]: 异常类型
+                - textbox "异常类型" [ref=e227]: scratch
+              - generic [ref=e228]:
+                - generic [ref=e229]: 位置
+                - textbox "位置" [ref=e231]: surface
+              - generic [ref=e232]:
+                - generic [ref=e233]: 形态
+                - textbox "形态" [ref=e235]: linear
+              - generic [ref=e236]:
+                - generic [ref=e237]: 严重度
+                - generic [ref=e238]:
+                  - spinbutton "严重度" [ref=e239]: "0.7"
+                  - generic [ref=e241]:
+                    - button [ref=e242] [cursor=pointer]:
+                      - img [ref=e243]
+                    - button [ref=e245] [cursor=pointer]:
+                      - img [ref=e246]
+              - generic [ref=e248]:
+                - generic [ref=e249]: 置信度
+                - generic [ref=e250]:
+                  - spinbutton "置信度" [ref=e251]: "0.8"
+                  - generic [ref=e253]:
+                    - button [ref=e254] [cursor=pointer]:
+                      - img [ref=e255]
+                    - button [ref=e257] [cursor=pointer]:
+                      - img [ref=e258]
+              - generic [ref=e260]:
+                - generic [ref=e261]: 候选数
+                - generic [ref=e262]:
+                  - spinbutton "候选数" [ref=e263]: "5"
+                  - generic [ref=e265]:
+                    - button [ref=e266] [cursor=pointer]:
+                      - img [ref=e267]
+                    - button [ref=e269] [cursor=pointer]:
+                      - img [ref=e270]
+              - button "执行分析" [ref=e273] [cursor=pointer]:
+                - img [ref=e275]
+                - text: 执行分析
+          - article [ref=e277]:
+            - generic [ref=e278]:
+              - generic [ref=e279]:
+                - heading "假设分析" [level=3] [ref=e280]
+                - paragraph [ref=e281]: "通过 `POST /api/what-if` 修改当前案例条件并重新计算"
+              - generic [ref=e282]: wafer_0001
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - generic [ref=e285]: 异常类型
+                - textbox "异常类型" [ref=e287]: scratch
+              - generic [ref=e288]:
+                - generic [ref=e289]: 位置
+                - textbox "位置" [ref=e291]: surface
+              - generic [ref=e292]:
+                - generic [ref=e293]: 形态
+                - textbox "形态" [ref=e295]: linear
+              - generic [ref=e296]:
+                - generic [ref=e297]: 严重度
+                - generic [ref=e298]:
+                  - spinbutton "严重度" [ref=e299]: "0.7"
+                  - generic [ref=e301]:
+                    - button [ref=e302] [cursor=pointer]:
+                      - img [ref=e303]
+                    - button [ref=e305] [cursor=pointer]:
+                      - img [ref=e306]
+              - generic [ref=e308]:
+                - generic [ref=e309]: 置信度
+                - generic [ref=e310]:
+                  - spinbutton "置信度" [ref=e311]: "0.8"
+                  - generic [ref=e313]:
+                    - button [ref=e314] [cursor=pointer]:
+                      - img [ref=e315]
+                    - button [ref=e317] [cursor=pointer]:
+                      - img [ref=e318]
+              - generic [ref=e320]:
+                - generic [ref=e321]: 变量
+                - textbox "变量" [ref=e323]:
+                  - /placeholder: 例如 xmeas_1, xmv_3
+              - generic [ref=e324]:
+                - generic [ref=e325]: 日志事件
+                - textbox "日志事件" [ref=e327]:
+                  - /placeholder: 例如 alarm_A, alarm_B
+              - button "执行假设分析" [ref=e329] [cursor=pointer]:
+                - img [ref=e331]
+                - text: 执行假设分析
+  - generic [ref=e54]:
+    - button "打开偏好设置" [ref=e55] [cursor=pointer]:
+      - img [ref=e57]
+      - generic [ref=e60]:
+        - generic [ref=e61]: 偏
+        - generic [ref=e62]: 好
+      - img [ref=e64]
+    - region "偏好设置":
+      - generic:
+        - generic:
+          - heading "偏好设置" [level=3]
+          - paragraph: 内置模拟数据链路
+        - button "恢复默认"
+      - generic:
+        - generic:
+          - generic:
+            - generic: 数据源模式
+            - generic:
+              - img
+          - tablist "切换数据源模式":
+            - button "模拟"
+            - button "后端"
+        - generic:
+          - generic:
+            - generic: 后端地址
+            - generic:
+              - img
+          - generic:
+            - textbox "http://127.0.0.1:8000"
+        - generic:
+          - generic:
+            - generic: 素材默认布局
+          - tablist "切换素材布局":
+            - button "网格"
+            - button "列表"
+        - generic:
+          - generic:
+            - generic:
+              - generic: 窄屏自动切列表
+            - paragraph: 小屏默认转列表，避免工作台被压坏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 页面渐入效果
+            - paragraph: 关闭后保留静态切换，方便联调和录屏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 调试面板
+            - paragraph: 打开后显示更多运行与构建的原始对象。
+          - switch

@@ -1,0 +1,39 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - button "Application menu" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: RL
+        - generic [ref=e11]: RootLens
+      - heading "RCA Workbench" [level=1] [ref=e13]:
+        - img [ref=e14]
+        - generic [ref=e17]: RCA Workbench
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - img [ref=e20]
+        - generic [ref=e22]: Route 1 + Route 2
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e26]: Local Runtime
+    - generic [ref=e27]:
+      - generic [ref=e28]: Session
+      - generic [ref=e29]: demo
+  - generic [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e35] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e39]: 证据管理
+        - generic [ref=e40] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: 图谱探索
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 素材管理
+      - button "收起侧边栏" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+    - main [ref=e54]:
+      - generic [ref=e57]:
+        - img [ref=e59]
+        - generic [ref=e61]: 加载 runtime cases...

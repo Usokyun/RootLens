@@ -17,6 +17,7 @@
     "correction_candidates": [],
     "inconsistent_fields": [],
     "linked_entities": [],
+    "ranked_root_causes": [],
     "top_k_paths": []
   },
   "location": "surface",
@@ -143,5 +144,5 @@
   "severity": 0.18,
   "source": "image",
   "summary": "Scratch-like surface defect evidence from a tiny fixture record.",
-  "timestamp": "2026-05-13T06:37:57Z"
+  "timestamp": "2026-05-15T06:22:26Z"
 }

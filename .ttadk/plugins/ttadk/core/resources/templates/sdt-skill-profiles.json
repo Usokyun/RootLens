@@ -19,7 +19,7 @@
       },
       "frontend": {
         "WEBE2E_META": "webe2e",
-        "WEBE2E_RUN": "webe2e-test",
+        "WEBE2E_RUN": "webe2e",
         "DEPLOY": "goofy-deploy-workflow"
       }
     }

@@ -21,6 +21,7 @@
     "correction_candidates": [],
     "inconsistent_fields": [],
     "linked_entities": [],
+    "ranked_root_causes": [],
     "top_k_paths": []
   },
   "location": "wafer_surface",
@@ -204,5 +205,5 @@
   "severity": 0.8888888888888888,
   "source": "image",
   "summary": "None",
-  "timestamp": "2026-05-13T06:37:57Z"
+  "timestamp": "2026-05-15T06:22:26Z"
 }

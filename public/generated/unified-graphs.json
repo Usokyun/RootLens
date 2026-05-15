@@ -1,6 +1,6 @@
 {
   "schemaVersion": "graph.v1",
-  "generatedAt": "2026-05-13T06:37:58.014Z",
+  "generatedAt": "2026-05-15T06:22:26.999Z",
   "generator": "scripts/build-unified-graphs.mjs",
   "datasets": [
     {
@@ -9821,7 +9821,7 @@
               "variable:xmeas_41"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Composition analysis and component monitoring",
             "node_id": "semanticconcept:composition_monitoring",
             "provenance_ids": [
@@ -10023,15 +10023,14 @@
               "ev_fffccddb438f0440"
             ],
             "rca_graph_role": "measurement_concept",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Monitors component concentrations in product and purge streams using analyzers to track production quality and purge composition.",
+            "summary": "Rule-derived semantic concept grouped from keywords analyzer, component_, composition to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -10090,7 +10089,7 @@
               "variable:manipulated_variable_12_agitator"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Reactor operation and cooling",
             "node_id": "semanticconcept:reactor_operation",
             "provenance_ids": [
@@ -12121,15 +12120,14 @@
               "ev_fffccddb438f0440"
             ],
             "rca_graph_role": "process_subsystem",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Manages reactor level, pressure, and cooling via agitator and cooling coil, with feed from multiple streams.",
+            "summary": "Rule-derived semantic concept grouped from keywords agitator, cooling_coil, reactor to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -12187,7 +12185,7 @@
               "stream:stream_5_recycle"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Recycle compression and purge handling",
             "node_id": "semanticconcept:recycle_and_purge",
             "provenance_ids": [
@@ -14264,14 +14262,13 @@
               "ev_fffccddb438f0440"
             ],
             "rca_graph_role": "process_subsystem",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Handles recycle compression and purge rate control, with analysis of purge composition to manage inert buildup.",
+            "summary": "Rule-derived semantic concept grouped from keywords compressor, purge, recycle to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -14329,7 +14326,7 @@
               "stream:stream_6_reactor_feed"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Feed handling and inlet control",
             "node_id": "semanticconcept:feed_handling",
             "provenance_ids": [
@@ -16359,14 +16356,13 @@
               "ev_fffccddb438f0440"
             ],
             "rca_graph_role": "process_subsystem",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Controls feed rates of A, C, D, E and mixed ABC feed, with feedforward and analyzer monitoring.",
+            "summary": "Rule-derived semantic concept grouped from keywords a_feed, abc_feed, d_feed to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -16422,7 +16418,7 @@
               "stream:steam"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Stripper and steam handling",
             "node_id": "semanticconcept:stripper_and_steam",
             "provenance_ids": [
@@ -18452,14 +18448,13 @@
               "ev_fffccddb438f0440"
             ],
             "rca_graph_role": "process_subsystem",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Operates stripper with steam supply, managing flow, level, and overhead/bottom product separation.",
+            "summary": "Rule-derived semantic concept grouped from keywords bottom_product, overhead, steam to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -18514,7 +18509,7 @@
               "signalnode:separator_temperature"
             ],
             "is_tep_52_variable": false,
-            "lift_confidence": 0.9,
+            "lift_confidence": 0.72,
             "name": "Condensation and separation",
             "node_id": "semanticconcept:condensation_and_separation",
             "provenance_ids": [
@@ -19262,14 +19257,13 @@
               "ev_ff5f847a9e1c74ce"
             ],
             "rca_graph_role": "process_subsystem",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "root_cause_candidate": false,
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
-            "summary": "Manages condensation and vapor-liquid separation, controlling coolant and separator conditions.",
+            "summary": "Rule-derived semantic concept grouped from keywords condenser, coolant, cwr to bridge implementation evidence to RCA entities.",
             "tep_channel": "",
             "variable_role": "",
             "aliases_list": [
@@ -24305,11 +24299,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 4,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_b8db41eb4218de4f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24326,10 +24320,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 4,
@@ -24350,11 +24343,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 8,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_075e9c84881755ae",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24375,10 +24368,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 8,
@@ -24399,11 +24391,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 108,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_f6b76d258278ae47",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24524,10 +24516,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 108,
@@ -24548,11 +24539,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 4,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c8b2a93224a6374c",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24569,10 +24560,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 4,
@@ -24593,11 +24583,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 32,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_6eec7847257a3a33",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24642,10 +24632,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 32,
@@ -24666,11 +24655,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_8c7e0cf43e334de5",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24689,10 +24678,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -24713,11 +24701,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_57b82fe30df2333f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24736,10 +24724,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -24760,11 +24747,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 12,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_2dd6a4aa0f06bc55",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24789,10 +24776,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 12,
@@ -24813,11 +24799,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c59f09a728a2b104",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24831,10 +24817,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -24856,11 +24841,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_9d1b6beaa1b368e8",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24874,10 +24859,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -24899,11 +24883,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_d2bfa25a82558299",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24917,10 +24901,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -24942,11 +24925,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_05177f97a8ce9487",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -24960,10 +24943,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -24985,11 +24967,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_128edf6b341eb9f5",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25003,10 +24985,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25028,11 +25009,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_71f688297e373595",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25046,10 +25027,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25071,11 +25051,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_4348910ffae4d0b9",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25089,10 +25069,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25114,11 +25093,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c0da4589ea741f55",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25132,10 +25111,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25157,11 +25135,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_cb8c83d480fc2736",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25175,10 +25153,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25200,11 +25177,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_9455a0852e44092c",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25218,10 +25195,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25243,11 +25219,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_96d0407969bc8c9b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25261,10 +25237,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25286,11 +25261,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_eb4e91b41b491228",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25304,10 +25279,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25329,11 +25303,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_d5770d2584529310",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25347,10 +25321,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25372,11 +25345,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_2d5fff4f8998bc7c",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25390,10 +25363,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25415,11 +25387,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_d267c9b4016c84ee",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25433,10 +25405,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25458,11 +25429,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_31ded35c92aee24e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -25476,10 +25447,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -25501,11 +25471,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 683,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_682804b8820969dd",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -26201,10 +26171,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 683,
@@ -26225,11 +26194,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 719,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_fe48bba0bb2412d7",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -26961,10 +26930,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 719,
@@ -26985,11 +26953,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 617,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ad893d452ddaf9de",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27619,10 +27587,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 617,
@@ -27643,11 +27610,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_14ab19c024476a3b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27666,10 +27633,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -27690,11 +27656,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 12,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_49cd9354ac6b631d",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27719,10 +27685,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 12,
@@ -27743,11 +27708,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_a5946b565af46e6f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27766,10 +27731,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -27790,11 +27754,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ab0acc0e8f0c8fed",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27813,10 +27777,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -27837,11 +27800,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 12,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_aeba3dc4d0d8dcfd",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27866,10 +27829,9 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 12,
@@ -27890,11 +27852,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_98472f728471fd4f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27908,10 +27870,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -27933,11 +27894,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_55e056ed734b8436",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27951,10 +27912,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -27976,11 +27936,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_a8757e8f2e02d6f8",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -27994,10 +27954,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -28019,11 +27978,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_d191074c0fedd9b8",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -28037,10 +27996,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -28062,11 +28020,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_2d1f7101dc43bec0",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -28080,10 +28038,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -28105,11 +28062,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_9f3569b7aef92eca",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -28123,10 +28080,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "prior",
               "rule"
             ],
@@ -28148,11 +28104,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_11f997c99661ff08",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -28166,10 +28122,9 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
               "connectivity_repair",
-              "llm",
               "rule"
             ],
             "support_count": 1,
@@ -28190,11 +28145,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 683,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_e67148f35564389e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -28890,9 +28845,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 683,
@@ -28913,11 +28867,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 719,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_6a5751baddc88a2e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -29649,9 +29603,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 719,
@@ -29672,11 +29625,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 617,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_4b5390a2b18bc1a5",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30306,9 +30259,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 617,
@@ -30329,11 +30281,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 50,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ca61154ea11bd012",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30396,9 +30348,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 50,
@@ -30419,11 +30370,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 4,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_0bbf8582c58b18fe",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30440,9 +30391,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 4,
@@ -30463,11 +30413,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 15,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_74681c3de04c1d19",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30495,9 +30445,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 15,
@@ -30518,11 +30467,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 4,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_99ea401178782e97",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30539,9 +30488,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 4,
@@ -30562,11 +30510,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 2,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1759aec1241f4acd",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30581,9 +30529,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 2,
@@ -30604,11 +30551,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_806f08a8eefe5559",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30622,9 +30569,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30646,11 +30592,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c3975594c1ac03f1",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30664,9 +30610,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30688,11 +30633,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_10e1d9297e315a6b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30706,9 +30651,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30730,11 +30674,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_3b7f81e05e79fa4d",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30748,9 +30692,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30772,11 +30715,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_a0d40577a48b29a0",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30790,9 +30733,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30814,11 +30756,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_412571fc36622f5e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -30832,9 +30774,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -30856,11 +30797,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 683,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ac4f00cbbbcc6815",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -31556,9 +31497,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 683,
@@ -31579,11 +31519,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 719,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1f7ba597e3fdd473",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -32315,9 +32255,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 719,
@@ -32338,11 +32277,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 617,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_201abdf1d8624b20",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -32972,9 +32911,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 617,
@@ -32995,11 +32933,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 15,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_3f38a7d538ad91da",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33027,9 +32965,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 15,
@@ -33050,11 +32987,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 15,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_8123d4f59db0e39f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33082,9 +33019,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 15,
@@ -33105,11 +33041,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 15,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_a64d804e61d783e1",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33137,9 +33073,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 15,
@@ -33160,11 +33095,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 15,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_83ed85524251e188",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33192,9 +33127,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 15,
@@ -33215,11 +33149,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 18,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_a069251e64a94d30",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33250,9 +33184,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 18,
@@ -33273,11 +33206,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c530edfe529649d6",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33291,9 +33224,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33315,11 +33247,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1efdf9e6407b640e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33333,9 +33265,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33357,11 +33288,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_4621a07bd610fea6",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33375,9 +33306,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33399,11 +33329,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_0615b9db16b0aa9c",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33417,9 +33347,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33441,11 +33370,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_5b63871aab3f7f27",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33459,9 +33388,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33483,11 +33411,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c45d0fbd2ebe5650",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -33501,9 +33429,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -33525,11 +33452,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 683,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_71c1db51f561670e",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -34225,9 +34152,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 683,
@@ -34248,11 +34174,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 719,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_cff462aa79577809",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -34984,9 +34910,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 719,
@@ -35007,11 +34932,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 617,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_9f9e4bd04102eec8",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35641,9 +35566,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 617,
@@ -35664,11 +35588,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 6,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_64bc9555fadb5efc",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35687,9 +35611,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 6,
@@ -35710,11 +35633,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 10,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1cca73ceee64f997",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35737,9 +35660,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 10,
@@ -35760,11 +35682,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 12,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ae43a029949ef31b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35789,9 +35711,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 12,
@@ -35812,11 +35733,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1c2b4712add58c84",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35830,9 +35751,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -35854,11 +35774,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_87420842748d2ac0",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35872,9 +35792,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -35896,11 +35815,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_d06968bb2ee2eb2b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35914,9 +35833,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -35938,11 +35856,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_b02823dad4c3c75b",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35956,9 +35874,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -35980,11 +35897,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_e79972bc06bed5d3",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -35998,9 +35915,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -36022,11 +35938,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_6fa60d8395414280",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36040,9 +35956,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -36064,11 +35979,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 719,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ea269da86431624f",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36800,9 +36715,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 719,
@@ -36823,11 +36737,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 2,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_c88b9f1478bddc53",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36842,9 +36756,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 2,
@@ -36865,11 +36778,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 10,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_519ee85f899ba299",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36892,9 +36805,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 10,
@@ -36915,11 +36827,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 12,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ba89646bd68cb42d",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36944,9 +36856,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 12,
@@ -36967,11 +36878,11 @@
           "relation": "REALIZES",
           "category": "SEMANTIC_SUPPORT",
           "label": "REALIZES",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 8,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_0b2f3b2d1b69598c",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -36992,9 +36903,8 @@
             ],
             "relation": "REALIZES",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "rule"
             ],
             "support_count": 8,
@@ -37015,11 +36925,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_8564767235346681",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37033,9 +36943,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -37057,11 +36966,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_542f4435b726acd3",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37075,9 +36984,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -37099,11 +37007,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_6acec0645e85b3cb",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37117,9 +37025,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -37141,11 +37048,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_fea33b7bc0e59316",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37159,9 +37066,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -37183,11 +37089,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_ddd35ca58f651eaf",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37201,9 +37107,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -37225,11 +37130,11 @@
           "relation": "PART_OF",
           "category": "SEMANTIC_SUPPORT",
           "label": "PART_OF",
-          "confidence": 0.9,
+          "confidence": 0.72,
           "weight": 1,
           "directed": true,
           "attributes": {
-            "confidence": 0.9,
+            "confidence": 0.72,
             "edge_id": "semantic_edge_1add3c10b730fb61",
             "edge_origin": "rca_graph",
             "endpoint_rewrites": [],
@@ -37243,9 +37148,8 @@
             ],
             "relation": "PART_OF",
             "relation_family": "SEMANTIC_SUPPORT",
-            "review_status": "accept",
+            "review_status": "needs_review",
             "source_types": [
-              "llm",
               "prior",
               "rule"
             ],
@@ -41521,8 +41425,20 @@
             "semanticconcept:stripper_and_steam",
             "semanticconcept:condensation_and_separation"
           ],
-          "connectivity_repair_attachment_count": 0,
-          "connectivity_repair_nodes": [],
+          "connectivity_repair_attachment_count": 11,
+          "connectivity_repair_nodes": [
+            "component:component_f",
+            "component:component_g",
+            "component:component_h",
+            "variable:xmeas_28",
+            "variable:xmeas_34",
+            "variable:xmeas_35",
+            "variable:xmeas_36",
+            "variable:xmeas_39",
+            "variable:xmeas_40",
+            "variable:xmeas_41",
+            "variable:manipulated_variable_12_agitator"
+          ],
           "curated_propagation_bridge_count": 14,
           "fault_anchor_count": 16,
           "fault_anchor_ids": [
@@ -41549,8 +41465,15 @@
           "graph_node_count": 140,
           "inherited_semantic_lift_edge_count": 85,
           "isolated_node_count": 0,
-          "llm_mode": "live_llm_success",
-          "low_confidence_concepts": [],
+          "llm_mode": "rule_only_no_llm",
+          "low_confidence_concepts": [
+            "semanticconcept:composition_monitoring",
+            "semanticconcept:reactor_operation",
+            "semanticconcept:recycle_and_purge",
+            "semanticconcept:feed_handling",
+            "semanticconcept:stripper_and_steam",
+            "semanticconcept:condensation_and_separation"
+          ],
           "node_type_counts": {
             "Component": 8,
             "Equipment": 10,
@@ -41749,7 +41672,7 @@
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/source_registry.csv",
           "role": "source-registry",
           "layer": "source-registry",
-          "rowCount": 20,
+          "rowCount": 24,
           "fields": [
             "source_id",
             "title",
@@ -41763,43 +41686,103 @@
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/mvtec_nodes.csv",
           "role": "reserved-layer",
           "layer": "mvtec_nodes",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 65,
+          "fields": [
+            "id",
+            "name",
+            "label",
+            "scenario",
+            "aliases",
+            "description"
+          ]
         },
         {
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/mvtec_edges.csv",
           "role": "reserved-layer",
           "layer": "mvtec_edges",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 281,
+          "fields": [
+            "head",
+            "relation",
+            "tail",
+            "scenario",
+            "source",
+            "evidence",
+            "confidence",
+            "weight",
+            "review_status",
+            "feedback_count",
+            "accepted_count",
+            "rejected_count"
+          ]
         },
         {
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/tep_nodes.csv",
           "role": "reserved-layer",
           "layer": "tep_nodes",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 74,
+          "fields": [
+            "id",
+            "name",
+            "label",
+            "scenario",
+            "aliases",
+            "description"
+          ]
         },
         {
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/tep_edges.csv",
           "role": "reserved-layer",
           "layer": "tep_edges",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 216,
+          "fields": [
+            "head",
+            "relation",
+            "tail",
+            "scenario",
+            "source",
+            "evidence",
+            "confidence",
+            "weight",
+            "review_status",
+            "feedback_count",
+            "accepted_count",
+            "rejected_count"
+          ]
         },
         {
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/wafer_nodes.csv",
           "role": "reserved-layer",
           "layer": "wafer_nodes",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 36,
+          "fields": [
+            "id",
+            "name",
+            "label",
+            "scenario",
+            "aliases",
+            "description"
+          ]
         },
         {
           "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/wafer_edges.csv",
           "role": "reserved-layer",
           "layer": "wafer_edges",
-          "rowCount": 0,
-          "fields": []
+          "rowCount": 76,
+          "fields": [
+            "head",
+            "relation",
+            "tail",
+            "scenario",
+            "source",
+            "evidence",
+            "confidence",
+            "weight",
+            "review_status",
+            "feedback_count",
+            "accepted_count",
+            "rejected_count"
+          ]
         }
       ],
       "nodes": [
@@ -44185,34 +44168,41 @@
             "path_or_url": "docs/sources/mvtec_sources.md",
             "used_for": "Object-specific MVTec candidate mechanism edges",
             "notes": "Auto-review candidate paths only; not verified RCA"
+          },
+          {
+            "source_id": "tep_kg_variable_mapping",
+            "title": "TEP_KG variable mapping artifact",
+            "type": "project_artifact",
+            "path_or_url": "docs/sources/tep_sources.md",
+            "used_for": "TEP XMEAS/XMV channel aliases and variable nodes",
+            "notes": "Derived from local TEP_KG data/processed/kg/tep_variable_mapping.jsonl; channel mapping only"
+          },
+          {
+            "source_id": "tep_kg_fault_labels_v3",
+            "title": "TEP_KG fault root-cause label artifact",
+            "type": "project_artifact",
+            "path_or_url": "docs/sources/tep_sources.md",
+            "used_for": "TEP fault anchors and candidate variable support",
+            "notes": "Derived from local TEP_KG data/processed/rca/fault_root_cause_labels.json; reviewable RCA support only"
+          },
+          {
+            "source_id": "kgtracevis_tep_producer_contract",
+            "title": "KGTraceVis TEP producer contract",
+            "type": "project_code",
+            "path_or_url": "docs/dataset_record_producers.md",
+            "used_for": "TEP residual-contribution evidence morphology",
+            "notes": "Documents KGTraceVis producer output fields; not an external process fact"
+          },
+          {
+            "source_id": "rootlens_tep_runtime_projection",
+            "title": "RootLens TEP runtime projection",
+            "type": "project_artifact",
+            "path_or_url": "docs/sources/tep_sources.md",
+            "used_for": "TEP visualization/runtime cross-check",
+            "notes": "RootLens route2 examples align Fault 06 with XMEAS_1 and XMV_3 for reviewable visualization"
           }
         ],
-        "emptyReservedLayers": [
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/mvtec_nodes.csv",
-            "rowCount": 0
-          },
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/mvtec_edges.csv",
-            "rowCount": 0
-          },
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/tep_nodes.csv",
-            "rowCount": 0
-          },
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/tep_edges.csv",
-            "rowCount": 0
-          },
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/wafer_nodes.csv",
-            "rowCount": 0
-          },
-          {
-            "path": "/Users/bytedance/my_project/MVTec/KGTraceVis/data/kg/wafer_edges.csv",
-            "rowCount": 0
-          }
-        ],
+        "emptyReservedLayers": [],
         "scenarioCounts": {
           "mvtec": 25,
           "tep": 5,

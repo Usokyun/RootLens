@@ -1,0 +1,275 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "RCA 工作台" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: RCA 工作台
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]: 模拟模式
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e23]: 内置资产
+    - generic [ref=e24]:
+      - generic [ref=e25]: 当前运行
+      - generic [ref=e26]: mock-wafer-evidence
+  - generic [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: 分析台
+        - generic [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: 实验与图谱
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e48]: 图谱工坊
+      - button "收起侧边栏" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+    - main [ref=e52]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e69]: 分析工作台
+            - generic [ref=e70]:
+              - heading "运行记录与证据分析" [level=2] [ref=e71]
+              - generic [ref=e72]:
+                - generic [ref=e73]: 模拟模式
+                - generic [ref=e74]: 3 条运行
+                - generic [ref=e75]: 1 个案例
+            - paragraph [ref=e76]: "这里集中处理初始化信息、文件上传、运行历史和单次运行详情。对于多案例记录，优先围绕 `cases[]` 展示，不再依赖前端自推理兜底。"
+            - generic [ref=e78]: 候选/合理解释，仅供研判；并非已验证的根因标签
+            - button "刷新当前视图" [ref=e80] [cursor=pointer]:
+              - img [ref=e82]
+              - text: 刷新当前视图
+          - generic [ref=e84]:
+            - article [ref=e85]:
+              - generic [ref=e86]: 运行记录
+              - strong [ref=e87]: "3"
+              - generic [ref=e88]: 历史与最近运行
+            - article [ref=e89]:
+              - generic [ref=e90]: 案例数
+              - strong [ref=e91]: "1"
+              - generic [ref=e92]: 当前运行包含的案例数
+            - article [ref=e93]:
+              - generic [ref=e94]: 反馈目标
+              - strong [ref=e95]: "8"
+              - generic [ref=e96]: 统一反馈入口
+        - generic [ref=e97]:
+          - article [ref=e98]:
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - heading "上传分析" [level=3] [ref=e101]
+                - paragraph [ref=e102]: "通过 `POST /api/runs/upload` 提交文件并生成新运行"
+              - generic [ref=e103]: 批量记录
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - generic [ref=e106]: 模式
+                - generic "批量记录" [ref=e107] [cursor=pointer]:
+                  - textbox "模式 批量记录"
+                  - generic [ref=e108]: 批量记录
+                  - img [ref=e111]
+              - generic [ref=e113]:
+                - generic [ref=e114]: 数据集
+                - generic "自动" [ref=e115] [cursor=pointer]:
+                  - textbox "数据集 自动"
+                  - generic [ref=e116]: 自动
+                  - img [ref=e119]
+              - generic [ref=e121]:
+                - generic [ref=e122]: 候选数
+                - generic [ref=e123]:
+                  - spinbutton "候选数" [ref=e124]: "5"
+                  - generic [ref=e126]:
+                    - button [ref=e127] [cursor=pointer]:
+                      - img [ref=e128]
+                    - button [ref=e130] [cursor=pointer]:
+                      - img [ref=e131]
+              - generic [ref=e133]:
+                - generic [ref=e134]: 文件
+                - button "文件" [ref=e135]
+              - button "提交分析" [ref=e137] [cursor=pointer]:
+                - img [ref=e139]
+                - text: 提交分析
+          - article [ref=e141]:
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - heading "运行历史" [level=3] [ref=e144]
+                - paragraph [ref=e145]: "通过 `GET /api/runs` 查看已保存的运行记录"
+              - generic [ref=e146]: 3 条
+            - generic [ref=e147]:
+              - button "模拟晶圆证据案例 wafer_case_bundle.json wafer 2026/5/15 10:59:20" [ref=e148] [cursor=pointer]:
+                - generic [ref=e149]:
+                  - strong [ref=e150]: 模拟晶圆证据案例
+                  - paragraph [ref=e151]: wafer_case_bundle.json
+                - generic [ref=e152]:
+                  - generic [ref=e153]: wafer
+                  - generic [ref=e154]: 2026/5/15 10:59:20
+              - button "模拟 MVTec 图像分析 bottle_scratch_001.png mvtec 2026/5/15 10:52:20" [ref=e155] [cursor=pointer]:
+                - generic [ref=e156]:
+                  - strong [ref=e157]: 模拟 MVTec 图像分析
+                  - paragraph [ref=e158]: bottle_scratch_001.png
+                - generic [ref=e159]:
+                  - generic [ref=e160]: mvtec
+                  - generic [ref=e161]: 2026/5/15 10:52:20
+              - button "模拟 TEP 批量记录 tep_records_batch.jsonl tep 2026/5/15 10:39:20" [ref=e162] [cursor=pointer]:
+                - generic [ref=e163]:
+                  - strong [ref=e164]: 模拟 TEP 批量记录
+                  - paragraph [ref=e165]: tep_records_batch.jsonl
+                - generic [ref=e166]:
+                  - generic [ref=e167]: tep
+                  - generic [ref=e168]: 2026/5/15 10:39:20
+        - generic [ref=e169]:
+          - complementary [ref=e170]:
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - heading "案例列表" [level=3] [ref=e173]
+                - paragraph [ref=e174]: "批量记录模式优先围绕 `cases[]` 展示"
+              - generic [ref=e175]: "1"
+            - button "wafer_0001 wafer" [ref=e177] [cursor=pointer]:
+              - strong [ref=e178]: wafer_0001
+              - generic [ref=e179]: wafer
+          - generic [ref=e180]:
+            - article [ref=e181]:
+              - generic [ref=e182]:
+                - generic [ref=e183]:
+                  - heading "运行详情" [level=3] [ref=e184]
+                  - paragraph [ref=e185]: "通过 `GET /api/runs/{run_id}` 查看当前运行详情"
+                - generic [ref=e186]:
+                  - generic [ref=e187]: 单条证据
+                  - generic [ref=e188]: wafer
+              - generic [ref=e189]:
+                - generic [ref=e190]:
+                  - text: 运行 ID
+                  - strong [ref=e191]: mock-wafer-evidence
+                - generic [ref=e192]:
+                  - text: 创建时间
+                  - strong [ref=e193]: 2026/5/15 10:59:20
+                - generic [ref=e194]:
+                  - text: 反馈目标
+                  - strong [ref=e195]: "8"
+                - generic [ref=e196]:
+                  - text: 路径数量
+                  - strong [ref=e197]: "1"
+              - button "打开实验与图谱页" [ref=e199] [cursor=pointer]:
+                - img [ref=e201]
+                - text: 打开实验与图谱页
+            - generic [ref=e203]:
+              - article [ref=e204]:
+                - heading "证据摘要" [level=3] [ref=e206]
+                - generic [ref=e207]:
+                  - generic [ref=e208]:
+                    - text: 案例
+                    - strong [ref=e209]: wafer_0001
+                  - generic [ref=e210]:
+                    - text: 数据集
+                    - strong [ref=e211]: wafer
+                  - generic [ref=e212]:
+                    - text: 路径数
+                    - strong [ref=e213]: "1"
+                  - generic [ref=e214]:
+                    - text: 根因候选
+                    - strong [ref=e215]: "1"
+              - article [ref=e216]:
+                - heading "根因候选摘要" [level=3] [ref=e218]
+                - generic [ref=e220]:
+                  - strong [ref=e221]: "#1 Glue removal insufficient"
+                  - text: 启发式路径支持 · 0.479
+            - generic [ref=e222]:
+              - article [ref=e223]:
+                - heading "可视证据" [level=3] [ref=e225]
+                - generic [ref=e226]:
+                  - generic [ref=e227]:
+                    - img "晶圆 观测预览" [ref=e228]
+                    - generic [ref=e229]:
+                      - strong [ref=e230]: 晶圆 观测预览
+                      - paragraph [ref=e231]: 用于前端演示的模拟预览素材。
+                  - generic [ref=e232]:
+                    - img "晶圆 辅助可视化" [ref=e233]
+                    - generic [ref=e234]:
+                      - strong [ref=e235]: 晶圆 辅助可视化
+                      - paragraph [ref=e236]: 用于前端演示的模拟辅助可视化。
+              - article [ref=e237]:
+                - heading "反馈目标" [level=3] [ref=e239]
+                - generic [ref=e240]:
+                  - generic [ref=e241]:
+                    - strong [ref=e242]: Glue removal insufficient
+                    - text: 路径
+                  - generic [ref=e243]:
+                    - strong [ref=e244]: Glue removal insufficient
+                    - text: 候选根因
+                  - generic [ref=e245]:
+                    - strong [ref=e246]: HAS_PLAUSIBLE_CAUSE
+                    - text: 边
+                  - generic [ref=e247]:
+                    - strong [ref=e248]: Wafer
+                    - text: 实体链接
+                  - generic [ref=e249]:
+                    - strong [ref=e250]: Nearfull defect
+                    - text: 实体链接
+                  - generic [ref=e251]:
+                    - strong [ref=e252]: Wafer surface
+                    - text: 实体链接
+                  - generic [ref=e253]:
+                    - strong [ref=e254]: Dense particles
+                    - text: 实体链接
+                  - generic [ref=e255]:
+                    - strong [ref=e256]: Example alarm
+                    - text: 实体链接
+  - generic [ref=e54]:
+    - button "打开偏好设置" [ref=e55] [cursor=pointer]:
+      - img [ref=e57]
+      - generic [ref=e60]:
+        - generic [ref=e61]: 偏
+        - generic [ref=e62]: 好
+      - img [ref=e64]
+    - region "偏好设置":
+      - generic:
+        - generic:
+          - heading "偏好设置" [level=3]
+          - paragraph: 内置模拟数据链路
+        - button "恢复默认"
+      - generic:
+        - generic:
+          - generic:
+            - generic: 数据源模式
+            - generic:
+              - img
+          - tablist "切换数据源模式":
+            - button "模拟"
+            - button "后端"
+        - generic:
+          - generic:
+            - generic: 后端地址
+            - generic:
+              - img
+          - generic:
+            - textbox "http://127.0.0.1:8000"
+        - generic:
+          - generic:
+            - generic: 素材默认布局
+          - tablist "切换素材布局":
+            - button "网格"
+            - button "列表"
+        - generic:
+          - generic:
+            - generic:
+              - generic: 窄屏自动切列表
+            - paragraph: 小屏默认转列表，避免工作台被压坏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 页面渐入效果
+            - paragraph: 关闭后保留静态切换，方便联调和录屏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 调试面板
+            - paragraph: 打开后显示更多运行与构建的原始对象。
+          - switch

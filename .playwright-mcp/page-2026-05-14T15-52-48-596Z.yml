@@ -1,0 +1,421 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - button "Application menu" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: RL
+        - generic [ref=e11]: RootLens
+      - heading "RCA Workbench" [level=1] [ref=e13]:
+        - img [ref=e14]
+        - generic [ref=e17]: RCA Workbench
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - img [ref=e20]
+        - generic [ref=e22]: Route 1 + Route 2
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e26]: Local Runtime
+    - generic [ref=e27]:
+      - generic [ref=e28]: Session
+      - generic [ref=e29]: demo
+  - generic [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e34]:
+        - generic [ref=e35] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e39]: 证据管理
+        - generic [ref=e40] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: 图谱探索
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 素材管理
+      - button "收起侧边栏" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+    - main [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: Current Workspace
+            - strong [ref=e65]: 图谱探索
+            - paragraph [ref=e66]: 浏览统一图谱，联动 Route 1 / Route 2 结果并审查传播路径与悬浮情报。
+          - generic [ref=e68]:
+            - generic [ref=e69]: Phase 1
+            - generic [ref=e70]: tep-kg
+            - generic [ref=e71]: 101 cases
+            - generic [ref=e72]: 35 route2
+        - generic [ref=e73]:
+          - complementary [ref=e74]:
+            - article [ref=e75]:
+              - generic [ref=e77]:
+                - img [ref=e79]
+                - generic [ref=e81]:
+                  - heading "RCA 计算链路" [level=3] [ref=e82]
+                  - paragraph [ref=e83]: 切换 case 后先更新上下文，再延后执行本地 RCA。
+              - generic [ref=e84]:
+                - generic [ref=e85]:
+                  - generic "TEP Fault 19 / Run 5 (scenario_0115186e03c2fb56)" [ref=e86] [cursor=pointer]:
+                    - textbox
+                    - generic [ref=e87]: TEP Fault 19 / Run 5 (scenario_0115186e03c2fb56)
+                    - img [ref=e90]
+                  - generic [ref=e92]:
+                    - generic [ref=e93]: "obs: 44"
+                    - generic [ref=e94]: "Route2 候选: 35"
+                    - generic [ref=e95]: "Route1 路径: 0"
+                - generic [ref=e96]:
+                  - img [ref=e98]
+                  - paragraph [ref=e100]: 链路：证据进入图谱上下文，异步执行本地 RCA，再刷新候选排序和传播路径。
+            - article [ref=e101]:
+              - generic [ref=e102]:
+                - generic [ref=e103]:
+                  - img [ref=e105]
+                  - generic [ref=e107]:
+                    - heading "Score 排行" [level=3] [ref=e108]
+                    - paragraph [ref=e109]: 候选排序会在 RCA 完成后自动刷新。
+                - generic [ref=e110]:
+                  - generic [ref=e112]:
+                    - generic [ref=e113] [cursor=pointer]:
+                      - radio "列表" [checked]
+                      - generic [ref=e114]: 列表
+                    - generic [ref=e115] [cursor=pointer]:
+                      - radio "条图"
+                      - generic [ref=e116]: 条图
+                  - button [ref=e118] [cursor=pointer]:
+                    - img [ref=e120]
+              - generic [ref=e122]:
+                - article [ref=e123] [cursor=pointer]:
+                  - generic [ref=e124]:
+                    - generic [ref=e125]: "#1"
+                    - strong [ref=e126]: Multi-valve stiction disturbance
+                  - generic [ref=e127]:
+                    - generic [ref=e128]: FaultAnchor
+                    - generic [ref=e129]: root_cause_anchor
+                  - paragraph [ref=e130]: "ranking_score: 9.5288 · root_score: 0.5277"
+                - article [ref=e131] [cursor=pointer]:
+                  - generic [ref=e132]:
+                    - generic [ref=e133]: "#2"
+                    - strong [ref=e134]: Separator coolant valve stiction
+                  - generic [ref=e135]:
+                    - generic [ref=e136]: FaultAnchor
+                    - generic [ref=e137]: root_cause_anchor
+                  - paragraph [ref=e138]: "ranking_score: 9.2389 · root_score: 0.4061"
+                - article [ref=e139] [cursor=pointer]:
+                  - generic [ref=e140]:
+                    - generic [ref=e141]: "#3"
+                    - strong [ref=e142]: Stream 2 D-feed temperature disturbance
+                  - generic [ref=e143]:
+                    - generic [ref=e144]: FaultAnchor
+                    - generic [ref=e145]: root_cause_anchor
+                  - paragraph [ref=e146]: "ranking_score: 9.1449 · root_score: 0.2611"
+                - article [ref=e147] [cursor=pointer]:
+                  - generic [ref=e148]:
+                    - generic [ref=e149]: "#4"
+                    - strong [ref=e150]: Stream 4 feed temperature disturbance
+                  - generic [ref=e151]:
+                    - generic [ref=e152]: FaultAnchor
+                    - generic [ref=e153]: root_cause_anchor
+                  - paragraph [ref=e154]: "ranking_score: 8.7568 · root_score: 0.3311"
+                - article [ref=e155] [cursor=pointer]:
+                  - generic [ref=e156]:
+                    - generic [ref=e157]: "#5"
+                    - strong [ref=e158]: Stripper heat-transfer disturbance
+                  - generic [ref=e159]:
+                    - generic [ref=e160]: FaultAnchor
+                    - generic [ref=e161]: root_cause_anchor
+                  - paragraph [ref=e162]: "ranking_score: 8.6014 · root_score: 0.0897"
+                - article [ref=e163] [cursor=pointer]:
+                  - generic [ref=e164]:
+                    - generic [ref=e165]: "#6"
+                    - strong [ref=e166]: Separator cooling inlet temperature disturbance
+                  - generic [ref=e167]:
+                    - generic [ref=e168]: FaultAnchor
+                    - generic [ref=e169]: root_cause_anchor
+                  - paragraph [ref=e170]: "ranking_score: 7.5765 · root_score: 0.4061"
+                - article [ref=e171] [cursor=pointer]:
+                  - generic [ref=e172]:
+                    - generic [ref=e173]: "#7"
+                    - strong [ref=e174]: Stream 4 A/B/C composition disturbance
+                  - generic [ref=e175]:
+                    - generic [ref=e176]: FaultAnchor
+                    - generic [ref=e177]: root_cause_anchor
+                  - paragraph [ref=e178]: "ranking_score: 7.4260 · root_score: 0.4686"
+                - article [ref=e179] [cursor=pointer]:
+                  - generic [ref=e180]:
+                    - generic [ref=e181]: "#8"
+                    - strong [ref=e182]: Reactor kinetics disturbance
+                  - generic [ref=e183]:
+                    - generic [ref=e184]: FaultAnchor
+                    - generic [ref=e185]: root_cause_anchor
+                  - paragraph [ref=e186]: "ranking_score: 6.8173 · root_score: 0.2579"
+                - article [ref=e187] [cursor=pointer]:
+                  - generic [ref=e188]:
+                    - generic [ref=e189]: "#9"
+                    - strong [ref=e190]: Reactor cooling inlet temperature disturbance
+                  - generic [ref=e191]:
+                    - generic [ref=e192]: FaultAnchor
+                    - generic [ref=e193]: root_cause_anchor
+                  - paragraph [ref=e194]: "ranking_score: 6.7992 · root_score: 0.3239"
+                - article [ref=e195] [cursor=pointer]:
+                  - generic [ref=e196]:
+                    - generic [ref=e197]: "#10"
+                    - strong [ref=e198]: Condenser heat-transfer disturbance
+                  - generic [ref=e199]:
+                    - generic [ref=e200]: FaultAnchor
+                    - generic [ref=e201]: root_cause_anchor
+                  - paragraph [ref=e202]: "ranking_score: 6.4192 · root_score: 0.4062"
+                - article [ref=e203] [cursor=pointer]:
+                  - generic [ref=e204]:
+                    - generic [ref=e205]: "#11"
+                    - strong [ref=e206]: Stream 4 C-header pressure disturbance
+                  - generic [ref=e207]:
+                    - generic [ref=e208]: FaultAnchor
+                    - generic [ref=e209]: root_cause_anchor
+                  - paragraph [ref=e210]: "ranking_score: 4.7707 · root_score: 0.3311"
+                - article [ref=e211] [cursor=pointer]:
+                  - generic [ref=e212]:
+                    - generic [ref=e213]: "#12"
+                    - strong [ref=e214]: Stream 4 B-composition disturbance
+                  - generic [ref=e215]:
+                    - generic [ref=e216]: FaultAnchor
+                    - generic [ref=e217]: root_cause_anchor
+                  - paragraph [ref=e218]: "ranking_score: 4.6412 · root_score: 0.4215"
+                - article [ref=e219] [cursor=pointer]:
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: "#13"
+                    - strong [ref=e222]: Stream 4 A/C-ratio disturbance
+                  - generic [ref=e223]:
+                    - generic [ref=e224]: FaultAnchor
+                    - generic [ref=e225]: root_cause_anchor
+                  - paragraph [ref=e226]: "ranking_score: 4.4210 · root_score: 0.3966"
+                - article [ref=e227] [cursor=pointer]:
+                  - generic [ref=e228]:
+                    - generic [ref=e229]: "#14"
+                    - strong [ref=e230]: Reactor coolant valve stiction
+                  - generic [ref=e231]:
+                    - generic [ref=e232]: FaultAnchor
+                    - generic [ref=e233]: root_cause_anchor
+                  - paragraph [ref=e234]: "ranking_score: 4.3434 · root_score: 0.3239"
+                - article [ref=e235] [cursor=pointer]:
+                  - generic [ref=e236]:
+                    - generic [ref=e237]: "#15"
+                    - strong [ref=e238]: Reactor heat-transfer disturbance
+                  - generic [ref=e239]:
+                    - generic [ref=e240]: FaultAnchor
+                    - generic [ref=e241]: root_cause_anchor
+                  - paragraph [ref=e242]: "ranking_score: 3.4148 · root_score: 0.3239"
+                - article [ref=e243] [cursor=pointer]:
+                  - generic [ref=e244]:
+                    - generic [ref=e245]: "#16"
+                    - strong [ref=e246]: Stream 1 A-feed loss disturbance
+                  - generic [ref=e247]:
+                    - generic [ref=e248]: FaultAnchor
+                    - generic [ref=e249]: root_cause_anchor
+                  - paragraph [ref=e250]: "ranking_score: 3.1850 · root_score: 0.2528"
+                - article [ref=e251] [cursor=pointer]:
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: "#17"
+                    - strong [ref=e254]: Compressor (压缩机)
+                  - generic [ref=e255]:
+                    - generic [ref=e256]: Equipment
+                    - generic [ref=e257]: equipment_anchor
+                  - paragraph [ref=e258]: "ranking_score: 0.5375 · root_score: 0.5896"
+                - article [ref=e259] [cursor=pointer]:
+                  - generic [ref=e260]:
+                    - generic [ref=e261]: "#18"
+                    - strong [ref=e262]: Vapor_Liquid_Separator (气液分离器)
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: Equipment
+                    - generic [ref=e265]: equipment_anchor
+                  - paragraph [ref=e266]: "ranking_score: 0.4044 · root_score: 0.4953"
+                - article [ref=e267] [cursor=pointer]:
+                  - generic [ref=e268]:
+                    - generic [ref=e269]: "#19"
+                    - strong [ref=e270]: Condenser_1 (冷凝器)
+                  - generic [ref=e271]:
+                    - generic [ref=e272]: Equipment
+                    - generic [ref=e273]: equipment_anchor
+                  - paragraph [ref=e274]: "ranking_score: 0.3255 · root_score: 0.3951"
+                - article [ref=e275] [cursor=pointer]:
+                  - generic [ref=e276]:
+                    - generic [ref=e277]: "#20"
+                    - strong [ref=e278]: Reactor (反应器)
+                  - generic [ref=e279]:
+                    - generic [ref=e280]: Equipment
+                    - generic [ref=e281]: equipment_anchor
+                  - paragraph [ref=e282]: "ranking_score: 0.3218 · root_score: 0.3415"
+                - article [ref=e283] [cursor=pointer]:
+                  - generic [ref=e284]:
+                    - generic [ref=e285]: "#21"
+                    - strong [ref=e286]: Component_B (组分 B)
+                  - generic [ref=e287]:
+                    - generic [ref=e288]: Component
+                    - generic [ref=e289]: composition_anchor
+                  - paragraph [ref=e290]: "ranking_score: 0.3151 · root_score: 0.3564"
+                - article [ref=e291] [cursor=pointer]:
+                  - generic [ref=e292]:
+                    - generic [ref=e293]: "#22"
+                    - strong [ref=e294]: Stream_4_ABC_Feed (A/B/C 混合进料流股)
+                  - generic [ref=e295]:
+                    - generic [ref=e296]: Stream
+                    - generic [ref=e297]: stream_anchor
+                  - paragraph [ref=e298]: "ranking_score: 0.3056 · root_score: 0.4409"
+                - article [ref=e299] [cursor=pointer]:
+                  - generic [ref=e300]:
+                    - generic [ref=e301]: "#23"
+                    - strong [ref=e302]: Stream_3_E_Feed (E 进料流股)
+                  - generic [ref=e303]:
+                    - generic [ref=e304]: Stream
+                    - generic [ref=e305]: stream_anchor
+                  - paragraph [ref=e306]: "ranking_score: 0.2750 · root_score: 0.3895"
+                - article [ref=e307] [cursor=pointer]:
+                  - generic [ref=e308]:
+                    - generic [ref=e309]: "#24"
+                    - strong [ref=e310]: Component_A (组分 A)
+                  - generic [ref=e311]:
+                    - generic [ref=e312]: Component
+                    - generic [ref=e313]: composition_anchor
+                  - paragraph [ref=e314]: "ranking_score: 0.2697 · root_score: 0.3097"
+                - article [ref=e315] [cursor=pointer]:
+                  - generic [ref=e316]:
+                    - generic [ref=e317]: "#25"
+                    - strong [ref=e318]: Separator_Liquid_To_Stripper (分离器液相去汽提塔流股)
+                  - generic [ref=e319]:
+                    - generic [ref=e320]: Stream
+                    - generic [ref=e321]: stream_anchor
+                  - paragraph [ref=e322]: "ranking_score: 0.2635 · root_score: 0.4237"
+                - article [ref=e323] [cursor=pointer]:
+                  - generic [ref=e324]:
+                    - generic [ref=e325]: "#26"
+                    - strong [ref=e326]: Component_E (组分 E)
+                  - generic [ref=e327]:
+                    - generic [ref=e328]: Component
+                    - generic [ref=e329]: composition_anchor
+                  - paragraph [ref=e330]: "ranking_score: 0.2524 · root_score: 0.3065"
+                - article [ref=e331] [cursor=pointer]:
+                  - generic [ref=e332]:
+                    - generic [ref=e333]: "#27"
+                    - strong [ref=e334]: Component_F (组分 F)
+                  - generic [ref=e335]:
+                    - generic [ref=e336]: Component
+                    - generic [ref=e337]: composition_anchor
+                  - paragraph [ref=e338]: "ranking_score: 0.2378 · root_score: 0.2914"
+                - article [ref=e339] [cursor=pointer]:
+                  - generic [ref=e340]:
+                    - generic [ref=e341]: "#28"
+                    - strong [ref=e342]: Component_G (组分 G)
+                  - generic [ref=e343]:
+                    - generic [ref=e344]: Component
+                    - generic [ref=e345]: composition_anchor
+                  - paragraph [ref=e346]: "ranking_score: 0.1889 · root_score: 0.2264"
+                - article [ref=e347] [cursor=pointer]:
+                  - generic [ref=e348]:
+                    - generic [ref=e349]: "#29"
+                    - strong [ref=e350]: Stream_2_D_Feed (D 进料流股)
+                  - generic [ref=e351]:
+                    - generic [ref=e352]: Stream
+                    - generic [ref=e353]: stream_anchor
+                  - paragraph [ref=e354]: "ranking_score: 0.1824 · root_score: 0.2914"
+                - article [ref=e355] [cursor=pointer]:
+                  - generic [ref=e356]:
+                    - generic [ref=e357]: "#30"
+                    - strong [ref=e358]: "Manipulated Variable 2: E Feed"
+                  - generic [ref=e359]:
+                    - generic [ref=e360]: Variable
+                    - generic [ref=e361]: actuator
+                  - paragraph [ref=e362]: "ranking_score: 0.1580 · root_score: 0.2690"
+                - article [ref=e363] [cursor=pointer]:
+                  - generic [ref=e364]:
+                    - generic [ref=e365]: "#31"
+                    - strong [ref=e366]: Component_D (组分 D)
+                  - generic [ref=e367]:
+                    - generic [ref=e368]: Component
+                    - generic [ref=e369]: composition_anchor
+                  - paragraph [ref=e370]: "ranking_score: 0.1321 · root_score: 0.1818"
+                - article [ref=e371] [cursor=pointer]:
+                  - generic [ref=e372]:
+                    - generic [ref=e373]: "#32"
+                    - strong [ref=e374]: Stream_1_A_Feed (A 进料流股)
+                  - generic [ref=e375]:
+                    - generic [ref=e376]: Stream
+                    - generic [ref=e377]: stream_anchor
+                  - paragraph [ref=e378]: "ranking_score: 0.1226 · root_score: 0.2262"
+                - article [ref=e379] [cursor=pointer]:
+                  - generic [ref=e380]:
+                    - generic [ref=e381]: "#33"
+                    - strong [ref=e382]: Stream_6_Reactor_Feed (反应器入口总进料)
+                  - generic [ref=e383]:
+                    - generic [ref=e384]: Stream
+                    - generic [ref=e385]: stream_anchor
+                  - paragraph [ref=e386]: "ranking_score: 0.0979 · root_score: 0.1910"
+                - article [ref=e387] [cursor=pointer]:
+                  - generic [ref=e388]:
+                    - generic [ref=e389]: "#34"
+                    - strong [ref=e390]: Stream_5_Recycle (循环气/循环流股)
+                  - generic [ref=e391]:
+                    - generic [ref=e392]: Stream
+                    - generic [ref=e393]: stream_anchor
+                  - paragraph [ref=e394]: "ranking_score: -0.0024 · root_score: 0.0804"
+                - article [ref=e395] [cursor=pointer]:
+                  - generic [ref=e396]:
+                    - generic [ref=e397]: "#35"
+                    - strong [ref=e398]: Stream_10_Purge (放空气流股)
+                  - generic [ref=e399]:
+                    - generic [ref=e400]: Stream
+                    - generic [ref=e401]: stream_anchor
+                  - paragraph [ref=e402]: "ranking_score: -0.0222 · root_score: 0.0080"
+          - article [ref=e404]:
+            - generic [ref=e405]:
+              - generic [ref=e406]:
+                - generic [ref=e407]:
+                  - img [ref=e409]
+                  - generic [ref=e412]:
+                    - heading "图谱探索" [level=3] [ref=e413]
+                    - paragraph [ref=e414]: 先切换上下文，再渐进式渲染布局。
+                - generic "TEP RCA Graph · 140N/252E" [ref=e416] [cursor=pointer]:
+                  - textbox
+                  - generic [ref=e417]: TEP RCA Graph · 140N/252E
+                  - img [ref=e420]
+              - generic [ref=e422]:
+                - generic [ref=e423]:
+                  - generic [ref=e425] [cursor=pointer]:
+                    - checkbox "情报" [checked]
+                    - img [ref=e428]
+                    - generic [ref=e430]: 情报
+                  - generic [ref=e432] [cursor=pointer]:
+                    - checkbox "1-hop"
+                    - generic [ref=e435]: 1-hop
+                - generic [ref=e436]:
+                  - img [ref=e438]
+                  - textbox "搜索节点..." [ref=e440]
+                  - img [ref=e443] [cursor=pointer]
+                - switch [ref=e445] [cursor=pointer]
+            - generic [ref=e447]:
+              - generic [ref=e448]:
+                - generic [ref=e449]:
+                  - strong [ref=e450]: TEP RCA Graph
+                  - paragraph [ref=e451]: 当前分析 case 为 TEP Fault 19 / Run 5，悬浮信息和 1-hop 族谱会围绕当前选中节点更新。
+                - generic [ref=e452]:
+                  - generic [ref=e453]: 0 route1
+                  - generic [ref=e454]: 35 route2
+                  - generic [ref=e455]: 0 cross
+              - img [ref=e459]
+              - generic [ref=e995]:
+                - switch [ref=e996] [cursor=pointer]
+                - generic [ref=e998]: 同类型聚集
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Hover
+                    - generic: Node
+                  - strong: Stream 4 B-composition disturbance
+                  - paragraph: faultanchor:stream_4_b_composition
+                  - list:
+                    - listitem: "category: FaultAnchor"
+                    - listitem: "kind: root_cause_anchor"
+                    - listitem: "degree: 3"
+                    - listitem: "aliases: 2"
+            - generic [ref=e999]:
+              - generic [ref=e1000]: 140 nodes
+              - generic [ref=e1001]: 252 edges
+              - generic [ref=e1002]: 101 cases

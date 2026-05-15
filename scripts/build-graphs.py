@@ -20,7 +20,10 @@ import argparse
 import ast
 import builtins
 import csv
+import importlib
+import importlib.util
 import json
+import subprocess
 import shutil
 import sys
 import tempfile
@@ -35,6 +38,30 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # ── upstream project roots ──────────────────────────────────────────
 TEP_KG_ROOT = Path("/Users/bytedance/my_project/TEP_KG")
 MVTEC_KG_ROOT = Path("/Users/bytedance/my_project/MVTec/KGTraceVis")
+ROOTLENS_VENDOR_SITE = REPO_ROOT / ".rootlens-cache" / "python-vendor"
+
+# KGTraceVis declares these in its pyproject, but RootLens runs the upstream
+# code directly under the user's system Python. On a clean machine that Python
+# often lacks the upstream runtime deps, so we vendor the missing packages
+# locally and prepend them to sys.path before importing kgtracevis modules.
+KGTRACEVIS_RUNTIME_REQUIREMENTS: dict[str, str] = {
+    "fastapi": "fastapi>=0.115",
+    "networkx": "networkx>=3.0",
+    "neo4j": "neo4j>=5.0",
+    "numpy": "numpy>=1.24",
+    "pandas": "pandas>=2.0",
+    "PIL": "pillow>=10.0",
+    "pydantic": "pydantic>=2.0",
+    "pydantic_settings": "pydantic-settings>=2.0",
+    "psycopg": "psycopg[binary]>=3.2",
+    "dotenv": "python-dotenv>=1.0",
+    "multipart": "python-multipart>=0.0.9",
+    "yaml": "pyyaml>=6.0",
+    "rapidfuzz": "rapidfuzz>=3.0",
+    "sklearn": "scikit-learn>=1.3",
+    "tqdm": "tqdm>=4.0",
+    "uvicorn": "uvicorn>=0.30",
+}
 
 _ZIP_STRICT_SENTINEL = object()
 
@@ -156,6 +183,68 @@ def _first_existing_path(paths: list[Path]) -> Path | None:
         if path.exists():
             return path
     return None
+
+
+def _ensure_vendor_site_packages() -> Path:
+    ROOTLENS_VENDOR_SITE.mkdir(parents=True, exist_ok=True)
+    vendor_site_str = str(ROOTLENS_VENDOR_SITE)
+    if vendor_site_str not in sys.path:
+        sys.path.insert(0, vendor_site_str)
+    return ROOTLENS_VENDOR_SITE
+
+
+def _missing_python_packages(requirements: dict[str, str]) -> list[str]:
+    _ensure_vendor_site_packages()
+    missing: list[str] = []
+    for module_name, package_spec in requirements.items():
+        if importlib.util.find_spec(module_name) is None:
+            missing.append(package_spec)
+    return missing
+
+
+def _install_python_packages(packages: list[str], *, label: str) -> None:
+    if not packages:
+        return
+
+    _ensure_vendor_site_packages()
+    deduped_packages = list(dict.fromkeys(packages))
+    print(
+        f"[deps] installing {label} runtime deps into {ROOTLENS_VENDOR_SITE} …",
+        flush=True,
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-warn-script-location",
+        "--upgrade",
+        "--target",
+        str(ROOTLENS_VENDOR_SITE),
+        *deduped_packages,
+    ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        stderr = (result.stderr or result.stdout).strip()
+        raise RuntimeError(
+            f"failed to install {label} runtime deps via pip: "
+            f"{stderr or 'unknown pip error'}"
+        )
+    importlib.invalidate_caches()
+    print(f"[deps] installed {len(deduped_packages)} package(s)", flush=True)
+
+
+def _ensure_kgtracevis_runtime_deps() -> None:
+    missing_packages = _missing_python_packages(KGTRACEVIS_RUNTIME_REQUIREMENTS)
+    if not missing_packages:
+        return
+    _install_python_packages(missing_packages, label="KGTraceVis")
 
 
 # =====================================================================
@@ -294,6 +383,7 @@ def _ensure_zip_strict_backport() -> None:
 
 
 def _ensure_kgtracevis_import_context() -> None:
+    _ensure_kgtracevis_runtime_deps()
     source_dir = MVTEC_KG_ROOT / "src"
     source_dir_str = str(source_dir)
     if source_dir_str not in sys.path:

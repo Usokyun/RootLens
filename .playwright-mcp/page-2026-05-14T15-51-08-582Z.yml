@@ -1,0 +1,2882 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - button "Application menu" [ref=e6] [cursor=pointer]:
+          - img [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: RL
+          - generic [ref=e11]: RootLens
+        - heading "RCA Workbench" [level=1] [ref=e13]:
+          - img [ref=e14]
+          - generic [ref=e17]: RCA Workbench
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - img [ref=e20]
+          - generic [ref=e22]: Route 1 + Route 2
+        - generic [ref=e23]:
+          - img [ref=e24]
+          - generic [ref=e26]: Local Runtime
+      - generic [ref=e27]:
+        - generic [ref=e28]: Session
+        - generic [ref=e29]: demo
+    - generic [ref=e30]:
+      - generic [ref=e32]:
+        - generic [ref=e34]:
+          - generic [ref=e35] [cursor=pointer]:
+            - img [ref=e37]
+            - generic [ref=e39]: 证据管理
+          - generic [ref=e40] [cursor=pointer]:
+            - img [ref=e42]
+            - generic [ref=e45]: 图谱探索
+          - generic [ref=e46] [cursor=pointer]:
+            - img [ref=e48]
+            - generic [ref=e50]: 素材管理
+        - button "收起侧边栏" [ref=e51] [cursor=pointer]:
+          - img [ref=e52]
+      - main [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]: Current Workspace
+              - strong [ref=e65]: 证据管理
+              - paragraph [ref=e66]: 管理 case 与 observation，审查并编辑统一 Evidence。
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: Phase 1
+                - generic [ref=e70]: TEP Focus
+                - generic [ref=e71]: 101 cases
+                - generic [ref=e72]: 4361 observations
+              - generic [ref=e73]:
+                - button "导入 Evidence" [ref=e74] [cursor=pointer]:
+                  - img [ref=e76]
+                  - text: 导入 Evidence
+                - button "导入当前 Case" [ref=e78] [cursor=pointer]:
+                  - img [ref=e80]
+                  - text: 导入当前 Case
+          - generic [ref=e83]:
+            - complementary [ref=e84]:
+              - generic [ref=e86]:
+                - img [ref=e88]
+                - heading "Case 列表" [level=3] [ref=e90]
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - img [ref=e94]
+                  - textbox "搜索 case..." [ref=e96]
+                  - img [ref=e99] [cursor=pointer]
+                - switch [checked] [ref=e103] [cursor=pointer]
+                - generic [ref=e105]:
+                  - article [ref=e106] [cursor=pointer]:
+                    - generic [ref=e107]:
+                      - heading "TEP Fault 19 / Run 5" [level=4] [ref=e108]
+                      - generic [ref=e109]: TEP
+                    - paragraph [ref=e110]: scenario_0115186e03c2fb56
+                    - generic [ref=e111]:
+                      - button "导入 Case" [ref=e113]:
+                        - img [ref=e115]
+                        - text: 导入 Case
+                      - generic [ref=e118]:
+                        - generic [ref=e119]:
+                          - img [ref=e120]
+                          - strong [ref=e122]: "44"
+                        - generic [ref=e123]:
+                          - img [ref=e124]
+                          - strong [ref=e127]: tep-kg
+                  - article [ref=e128] [cursor=pointer]:
+                    - generic [ref=e129]:
+                      - heading "TEP Fault 06 / Run 5" [level=4] [ref=e130]
+                      - generic [ref=e131]: TEP
+                    - paragraph [ref=e132]: scenario_0366bc02ec99cdaa
+                    - generic [ref=e133]:
+                      - button "导入 Case" [ref=e135]:
+                        - img [ref=e137]
+                        - text: 导入 Case
+                      - generic [ref=e140]:
+                        - generic [ref=e141]:
+                          - img [ref=e142]
+                          - strong [ref=e144]: "43"
+                        - generic [ref=e145]:
+                          - img [ref=e146]
+                          - strong [ref=e149]: tep-kg
+                  - article [ref=e150] [cursor=pointer]:
+                    - generic [ref=e151]:
+                      - heading "TEP Fault 14 / Run 4" [level=4] [ref=e152]
+                      - generic [ref=e153]: TEP
+                    - paragraph [ref=e154]: scenario_0656fbd310cb88a9
+                    - generic [ref=e155]:
+                      - button "导入 Case" [ref=e157]:
+                        - img [ref=e159]
+                        - text: 导入 Case
+                      - generic [ref=e162]:
+                        - generic [ref=e163]:
+                          - img [ref=e164]
+                          - strong [ref=e166]: "44"
+                        - generic [ref=e167]:
+                          - img [ref=e168]
+                          - strong [ref=e171]: tep-kg
+                  - article [ref=e172] [cursor=pointer]:
+                    - generic [ref=e173]:
+                      - heading "TEP Fault 01 / Run 1" [level=4] [ref=e174]
+                      - generic [ref=e175]: TEP
+                    - paragraph [ref=e176]: scenario_07d9cc26a2089fb4
+                    - generic [ref=e177]:
+                      - button "导入 Case" [ref=e179]:
+                        - img [ref=e181]
+                        - text: 导入 Case
+                      - generic [ref=e184]:
+                        - generic [ref=e185]:
+                          - img [ref=e186]
+                          - strong [ref=e188]: "44"
+                        - generic [ref=e189]:
+                          - img [ref=e190]
+                          - strong [ref=e193]: tep-kg
+                  - article [ref=e194] [cursor=pointer]:
+                    - generic [ref=e195]:
+                      - heading "TEP Fault 16 / Run 5" [level=4] [ref=e196]
+                      - generic [ref=e197]: TEP
+                    - paragraph [ref=e198]: scenario_0938360f5eb6ffd3
+                    - generic [ref=e199]:
+                      - button "导入 Case" [ref=e201]:
+                        - img [ref=e203]
+                        - text: 导入 Case
+                      - generic [ref=e206]:
+                        - generic [ref=e207]:
+                          - img [ref=e208]
+                          - strong [ref=e210]: "43"
+                        - generic [ref=e211]:
+                          - img [ref=e212]
+                          - strong [ref=e215]: tep-kg
+                  - article [ref=e216] [cursor=pointer]:
+                    - generic [ref=e217]:
+                      - heading "TEP Fault 10 / Run 2" [level=4] [ref=e218]
+                      - generic [ref=e219]: TEP
+                    - paragraph [ref=e220]: scenario_0bb42c176a9d6763
+                    - generic [ref=e221]:
+                      - button "导入 Case" [ref=e223]:
+                        - img [ref=e225]
+                        - text: 导入 Case
+                      - generic [ref=e228]:
+                        - generic [ref=e229]:
+                          - img [ref=e230]
+                          - strong [ref=e232]: "43"
+                        - generic [ref=e233]:
+                          - img [ref=e234]
+                          - strong [ref=e237]: tep-kg
+                  - article [ref=e238] [cursor=pointer]:
+                    - generic [ref=e239]:
+                      - heading "TEP Fault 08 / Run 3" [level=4] [ref=e240]
+                      - generic [ref=e241]: TEP
+                    - paragraph [ref=e242]: scenario_127e49ec329142e2
+                    - generic [ref=e243]:
+                      - button "导入 Case" [ref=e245]:
+                        - img [ref=e247]
+                        - text: 导入 Case
+                      - generic [ref=e250]:
+                        - generic [ref=e251]:
+                          - img [ref=e252]
+                          - strong [ref=e254]: "43"
+                        - generic [ref=e255]:
+                          - img [ref=e256]
+                          - strong [ref=e259]: tep-kg
+                  - article [ref=e260] [cursor=pointer]:
+                    - generic [ref=e261]:
+                      - heading "TEP Fault 12 / Run 3" [level=4] [ref=e262]
+                      - generic [ref=e263]: TEP
+                    - paragraph [ref=e264]: scenario_16641e928854404f
+                    - generic [ref=e265]:
+                      - button "导入 Case" [ref=e267]:
+                        - img [ref=e269]
+                        - text: 导入 Case
+                      - generic [ref=e272]:
+                        - generic [ref=e273]:
+                          - img [ref=e274]
+                          - strong [ref=e276]: "44"
+                        - generic [ref=e277]:
+                          - img [ref=e278]
+                          - strong [ref=e281]: tep-kg
+                  - article [ref=e282] [cursor=pointer]:
+                    - generic [ref=e283]:
+                      - heading "TEP Fault 17 / Run 3" [level=4] [ref=e284]
+                      - generic [ref=e285]: TEP
+                    - paragraph [ref=e286]: scenario_1a96b756fb9ef9eb
+                    - generic [ref=e287]:
+                      - button "导入 Case" [ref=e289]:
+                        - img [ref=e291]
+                        - text: 导入 Case
+                      - generic [ref=e294]:
+                        - generic [ref=e295]:
+                          - img [ref=e296]
+                          - strong [ref=e298]: "44"
+                        - generic [ref=e299]:
+                          - img [ref=e300]
+                          - strong [ref=e303]: tep-kg
+                  - article [ref=e304] [cursor=pointer]:
+                    - generic [ref=e305]:
+                      - heading "TEP Fault 20 / Run 1" [level=4] [ref=e306]
+                      - generic [ref=e307]: TEP
+                    - paragraph [ref=e308]: scenario_1b4b6ef6930cf49a
+                    - generic [ref=e309]:
+                      - button "导入 Case" [ref=e311]:
+                        - img [ref=e313]
+                        - text: 导入 Case
+                      - generic [ref=e316]:
+                        - generic [ref=e317]:
+                          - img [ref=e318]
+                          - strong [ref=e320]: "43"
+                        - generic [ref=e321]:
+                          - img [ref=e322]
+                          - strong [ref=e325]: tep-kg
+                  - article [ref=e326] [cursor=pointer]:
+                    - generic [ref=e327]:
+                      - heading "TEP Fault 04 / Run 3" [level=4] [ref=e328]
+                      - generic [ref=e329]: TEP
+                    - paragraph [ref=e330]: scenario_1ea84d2217653137
+                    - generic [ref=e331]:
+                      - button "导入 Case" [ref=e333]:
+                        - img [ref=e335]
+                        - text: 导入 Case
+                      - generic [ref=e338]:
+                        - generic [ref=e339]:
+                          - img [ref=e340]
+                          - strong [ref=e342]: "43"
+                        - generic [ref=e343]:
+                          - img [ref=e344]
+                          - strong [ref=e347]: tep-kg
+                  - article [ref=e348] [cursor=pointer]:
+                    - generic [ref=e349]:
+                      - heading "TEP Fault 02 / Run 5" [level=4] [ref=e350]
+                      - generic [ref=e351]: TEP
+                    - paragraph [ref=e352]: scenario_20a9fccda127dc8f
+                    - generic [ref=e353]:
+                      - button "导入 Case" [ref=e355]:
+                        - img [ref=e357]
+                        - text: 导入 Case
+                      - generic [ref=e360]:
+                        - generic [ref=e361]:
+                          - img [ref=e362]
+                          - strong [ref=e364]: "43"
+                        - generic [ref=e365]:
+                          - img [ref=e366]
+                          - strong [ref=e369]: tep-kg
+                  - article [ref=e370] [cursor=pointer]:
+                    - generic [ref=e371]:
+                      - heading "TEP Fault 17 / Run 1" [level=4] [ref=e372]
+                      - generic [ref=e373]: TEP
+                    - paragraph [ref=e374]: scenario_2b41e2d35450fcb6
+                    - generic [ref=e375]:
+                      - button "导入 Case" [ref=e377]:
+                        - img [ref=e379]
+                        - text: 导入 Case
+                      - generic [ref=e382]:
+                        - generic [ref=e383]:
+                          - img [ref=e384]
+                          - strong [ref=e386]: "44"
+                        - generic [ref=e387]:
+                          - img [ref=e388]
+                          - strong [ref=e391]: tep-kg
+                  - article [ref=e392] [cursor=pointer]:
+                    - generic [ref=e393]:
+                      - heading "TEP Fault 07 / Run 1" [level=4] [ref=e394]
+                      - generic [ref=e395]: TEP
+                    - paragraph [ref=e396]: scenario_2f5253b383337757
+                    - generic [ref=e397]:
+                      - button "导入 Case" [ref=e399]:
+                        - img [ref=e401]
+                        - text: 导入 Case
+                      - generic [ref=e404]:
+                        - generic [ref=e405]:
+                          - img [ref=e406]
+                          - strong [ref=e408]: "43"
+                        - generic [ref=e409]:
+                          - img [ref=e410]
+                          - strong [ref=e413]: tep-kg
+                  - article [ref=e414] [cursor=pointer]:
+                    - generic [ref=e415]:
+                      - heading "TEP Fault 05 / Run 4" [level=4] [ref=e416]
+                      - generic [ref=e417]: TEP
+                    - paragraph [ref=e418]: scenario_33a4f9c9184fbde7
+                    - generic [ref=e419]:
+                      - button "导入 Case" [ref=e421]:
+                        - img [ref=e423]
+                        - text: 导入 Case
+                      - generic [ref=e426]:
+                        - generic [ref=e427]:
+                          - img [ref=e428]
+                          - strong [ref=e430]: "43"
+                        - generic [ref=e431]:
+                          - img [ref=e432]
+                          - strong [ref=e435]: tep-kg
+                  - article [ref=e436] [cursor=pointer]:
+                    - generic [ref=e437]:
+                      - heading "TEP Fault 14 / Run 2" [level=4] [ref=e438]
+                      - generic [ref=e439]: TEP
+                    - paragraph [ref=e440]: scenario_3833f85274377a5e
+                    - generic [ref=e441]:
+                      - button "导入 Case" [ref=e443]:
+                        - img [ref=e445]
+                        - text: 导入 Case
+                      - generic [ref=e448]:
+                        - generic [ref=e449]:
+                          - img [ref=e450]
+                          - strong [ref=e452]: "44"
+                        - generic [ref=e453]:
+                          - img [ref=e454]
+                          - strong [ref=e457]: tep-kg
+                  - article [ref=e458] [cursor=pointer]:
+                    - generic [ref=e459]:
+                      - heading "TEP Fault 16 / Run 2" [level=4] [ref=e460]
+                      - generic [ref=e461]: TEP
+                    - paragraph [ref=e462]: scenario_39323c7a7679892c
+                    - generic [ref=e463]:
+                      - button "导入 Case" [ref=e465]:
+                        - img [ref=e467]
+                        - text: 导入 Case
+                      - generic [ref=e470]:
+                        - generic [ref=e471]:
+                          - img [ref=e472]
+                          - strong [ref=e474]: "43"
+                        - generic [ref=e475]:
+                          - img [ref=e476]
+                          - strong [ref=e479]: tep-kg
+                  - article [ref=e480] [cursor=pointer]:
+                    - generic [ref=e481]:
+                      - heading "TEP Fault 19 / Run 2" [level=4] [ref=e482]
+                      - generic [ref=e483]: TEP
+                    - paragraph [ref=e484]: scenario_3a7937520c65c75e
+                    - generic [ref=e485]:
+                      - button "导入 Case" [ref=e487]:
+                        - img [ref=e489]
+                        - text: 导入 Case
+                      - generic [ref=e492]:
+                        - generic [ref=e493]:
+                          - img [ref=e494]
+                          - strong [ref=e496]: "44"
+                        - generic [ref=e497]:
+                          - img [ref=e498]
+                          - strong [ref=e501]: tep-kg
+                  - article [ref=e502] [cursor=pointer]:
+                    - generic [ref=e503]:
+                      - heading "TEP Fault 01 / Run 4" [level=4] [ref=e504]
+                      - generic [ref=e505]: TEP
+                    - paragraph [ref=e506]: scenario_3d903cf702650316
+                    - generic [ref=e507]:
+                      - button "导入 Case" [ref=e509]:
+                        - img [ref=e511]
+                        - text: 导入 Case
+                      - generic [ref=e514]:
+                        - generic [ref=e515]:
+                          - img [ref=e516]
+                          - strong [ref=e518]: "44"
+                        - generic [ref=e519]:
+                          - img [ref=e520]
+                          - strong [ref=e523]: tep-kg
+                  - article [ref=e524] [cursor=pointer]:
+                    - generic [ref=e525]:
+                      - heading "TEP Fault 08 / Run 2" [level=4] [ref=e526]
+                      - generic [ref=e527]: TEP
+                    - paragraph [ref=e528]: scenario_3dbe7a0fa454140d
+                    - generic [ref=e529]:
+                      - button "导入 Case" [ref=e531]:
+                        - img [ref=e533]
+                        - text: 导入 Case
+                      - generic [ref=e536]:
+                        - generic [ref=e537]:
+                          - img [ref=e538]
+                          - strong [ref=e540]: "43"
+                        - generic [ref=e541]:
+                          - img [ref=e542]
+                          - strong [ref=e545]: tep-kg
+                  - article [ref=e546] [cursor=pointer]:
+                    - generic [ref=e547]:
+                      - heading "TEP Fault 03 / Run 3" [level=4] [ref=e548]
+                      - generic [ref=e549]: TEP
+                    - paragraph [ref=e550]: scenario_3e0611706ed517f4
+                    - generic [ref=e551]:
+                      - button "导入 Case" [ref=e553]:
+                        - img [ref=e555]
+                        - text: 导入 Case
+                      - generic [ref=e558]:
+                        - generic [ref=e559]:
+                          - img [ref=e560]
+                          - strong [ref=e562]: "44"
+                        - generic [ref=e563]:
+                          - img [ref=e564]
+                          - strong [ref=e567]: tep-kg
+                  - article [ref=e568] [cursor=pointer]:
+                    - generic [ref=e569]:
+                      - heading "TEP Fault 13 / Run 4" [level=4] [ref=e570]
+                      - generic [ref=e571]: TEP
+                    - paragraph [ref=e572]: scenario_3ecdb808b5aaedbb
+                    - generic [ref=e573]:
+                      - button "导入 Case" [ref=e575]:
+                        - img [ref=e577]
+                        - text: 导入 Case
+                      - generic [ref=e580]:
+                        - generic [ref=e581]:
+                          - img [ref=e582]
+                          - strong [ref=e584]: "44"
+                        - generic [ref=e585]:
+                          - img [ref=e586]
+                          - strong [ref=e589]: tep-kg
+                  - article [ref=e590] [cursor=pointer]:
+                    - generic [ref=e591]:
+                      - heading "TEP Fault 02 / Run 1" [level=4] [ref=e592]
+                      - generic [ref=e593]: TEP
+                    - paragraph [ref=e594]: scenario_4096c40785fd6f8e
+                    - generic [ref=e595]:
+                      - button "导入 Case" [ref=e597]:
+                        - img [ref=e599]
+                        - text: 导入 Case
+                      - generic [ref=e602]:
+                        - generic [ref=e603]:
+                          - img [ref=e604]
+                          - strong [ref=e606]: "43"
+                        - generic [ref=e607]:
+                          - img [ref=e608]
+                          - strong [ref=e611]: tep-kg
+                  - article [ref=e612] [cursor=pointer]:
+                    - generic [ref=e613]:
+                      - heading "TEP Fault 09 / Run 3" [level=4] [ref=e614]
+                      - generic [ref=e615]: TEP
+                    - paragraph [ref=e616]: scenario_4216e52a336253da
+                    - generic [ref=e617]:
+                      - button "导入 Case" [ref=e619]:
+                        - img [ref=e621]
+                        - text: 导入 Case
+                      - generic [ref=e624]:
+                        - generic [ref=e625]:
+                          - img [ref=e626]
+                          - strong [ref=e628]: "44"
+                        - generic [ref=e629]:
+                          - img [ref=e630]
+                          - strong [ref=e633]: tep-kg
+                  - article [ref=e634] [cursor=pointer]:
+                    - generic [ref=e635]:
+                      - heading "TEP Fault 01 / Run 5" [level=4] [ref=e636]
+                      - generic [ref=e637]: TEP
+                    - paragraph [ref=e638]: scenario_436f87dcfa2e2b50
+                    - generic [ref=e639]:
+                      - button "导入 Case" [ref=e641]:
+                        - img [ref=e643]
+                        - text: 导入 Case
+                      - generic [ref=e646]:
+                        - generic [ref=e647]:
+                          - img [ref=e648]
+                          - strong [ref=e650]: "44"
+                        - generic [ref=e651]:
+                          - img [ref=e652]
+                          - strong [ref=e655]: tep-kg
+                  - article [ref=e656] [cursor=pointer]:
+                    - generic [ref=e657]:
+                      - heading "TEP Fault 11 / Run 4" [level=4] [ref=e658]
+                      - generic [ref=e659]: TEP
+                    - paragraph [ref=e660]: scenario_48536d7c9d68cecb
+                    - generic [ref=e661]:
+                      - button "导入 Case" [ref=e663]:
+                        - img [ref=e665]
+                        - text: 导入 Case
+                      - generic [ref=e668]:
+                        - generic [ref=e669]:
+                          - img [ref=e670]
+                          - strong [ref=e672]: "43"
+                        - generic [ref=e673]:
+                          - img [ref=e674]
+                          - strong [ref=e677]: tep-kg
+                  - article [ref=e678] [cursor=pointer]:
+                    - generic [ref=e679]:
+                      - heading "TEP Fault 20 / Run 2" [level=4] [ref=e680]
+                      - generic [ref=e681]: TEP
+                    - paragraph [ref=e682]: scenario_49ef6aa635eeb51b
+                    - generic [ref=e683]:
+                      - button "导入 Case" [ref=e685]:
+                        - img [ref=e687]
+                        - text: 导入 Case
+                      - generic [ref=e690]:
+                        - generic [ref=e691]:
+                          - img [ref=e692]
+                          - strong [ref=e694]: "43"
+                        - generic [ref=e695]:
+                          - img [ref=e696]
+                          - strong [ref=e699]: tep-kg
+                  - article [ref=e700] [cursor=pointer]:
+                    - generic [ref=e701]:
+                      - heading "TEP Fault 10 / Run 4" [level=4] [ref=e702]
+                      - generic [ref=e703]: TEP
+                    - paragraph [ref=e704]: scenario_4e5b98a60f814a92
+                    - generic [ref=e705]:
+                      - button "导入 Case" [ref=e707]:
+                        - img [ref=e709]
+                        - text: 导入 Case
+                      - generic [ref=e712]:
+                        - generic [ref=e713]:
+                          - img [ref=e714]
+                          - strong [ref=e716]: "44"
+                        - generic [ref=e717]:
+                          - img [ref=e718]
+                          - strong [ref=e721]: tep-kg
+                  - article [ref=e722] [cursor=pointer]:
+                    - generic [ref=e723]:
+                      - heading "TEP Fault 13 / Run 2" [level=4] [ref=e724]
+                      - generic [ref=e725]: TEP
+                    - paragraph [ref=e726]: scenario_4ecd77a827ebeafc
+                    - generic [ref=e727]:
+                      - button "导入 Case" [ref=e729]:
+                        - img [ref=e731]
+                        - text: 导入 Case
+                      - generic [ref=e734]:
+                        - generic [ref=e735]:
+                          - img [ref=e736]
+                          - strong [ref=e738]: "44"
+                        - generic [ref=e739]:
+                          - img [ref=e740]
+                          - strong [ref=e743]: tep-kg
+                  - article [ref=e744] [cursor=pointer]:
+                    - generic [ref=e745]:
+                      - heading "TEP Fault 03 / Run 2" [level=4] [ref=e746]
+                      - generic [ref=e747]: TEP
+                    - paragraph [ref=e748]: scenario_53a621b30076110e
+                    - generic [ref=e749]:
+                      - button "导入 Case" [ref=e751]:
+                        - img [ref=e753]
+                        - text: 导入 Case
+                      - generic [ref=e756]:
+                        - generic [ref=e757]:
+                          - img [ref=e758]
+                          - strong [ref=e760]: "44"
+                        - generic [ref=e761]:
+                          - img [ref=e762]
+                          - strong [ref=e765]: tep-kg
+                  - article [ref=e766] [cursor=pointer]:
+                    - generic [ref=e767]:
+                      - heading "TEP Fault 08 / Run 5" [level=4] [ref=e768]
+                      - generic [ref=e769]: TEP
+                    - paragraph [ref=e770]: scenario_53ca79e836eaea4e
+                    - generic [ref=e771]:
+                      - button "导入 Case" [ref=e773]:
+                        - img [ref=e775]
+                        - text: 导入 Case
+                      - generic [ref=e778]:
+                        - generic [ref=e779]:
+                          - img [ref=e780]
+                          - strong [ref=e782]: "44"
+                        - generic [ref=e783]:
+                          - img [ref=e784]
+                          - strong [ref=e787]: tep-kg
+                  - article [ref=e788] [cursor=pointer]:
+                    - generic [ref=e789]:
+                      - heading "TEP Fault 02 / Run 4" [level=4] [ref=e790]
+                      - generic [ref=e791]: TEP
+                    - paragraph [ref=e792]: scenario_589bc51b9f0e3824
+                    - generic [ref=e793]:
+                      - button "导入 Case" [ref=e795]:
+                        - img [ref=e797]
+                        - text: 导入 Case
+                      - generic [ref=e800]:
+                        - generic [ref=e801]:
+                          - img [ref=e802]
+                          - strong [ref=e804]: "43"
+                        - generic [ref=e805]:
+                          - img [ref=e806]
+                          - strong [ref=e809]: tep-kg
+                  - article [ref=e810] [cursor=pointer]:
+                    - generic [ref=e811]:
+                      - heading "TEP Fault 18 / Run 3" [level=4] [ref=e812]
+                      - generic [ref=e813]: TEP
+                    - paragraph [ref=e814]: scenario_64a207e09b1fea4e
+                    - generic [ref=e815]:
+                      - button "导入 Case" [ref=e817]:
+                        - img [ref=e819]
+                        - text: 导入 Case
+                      - generic [ref=e822]:
+                        - generic [ref=e823]:
+                          - img [ref=e824]
+                          - strong [ref=e826]: "44"
+                        - generic [ref=e827]:
+                          - img [ref=e828]
+                          - strong [ref=e831]: tep-kg
+                  - article [ref=e832] [cursor=pointer]:
+                    - generic [ref=e833]:
+                      - heading "TEP Fault 17 / Run 5" [level=4] [ref=e834]
+                      - generic [ref=e835]: TEP
+                    - paragraph [ref=e836]: scenario_64ed527bf039444e
+                    - generic [ref=e837]:
+                      - button "导入 Case" [ref=e839]:
+                        - img [ref=e841]
+                        - text: 导入 Case
+                      - generic [ref=e844]:
+                        - generic [ref=e845]:
+                          - img [ref=e846]
+                          - strong [ref=e848]: "44"
+                        - generic [ref=e849]:
+                          - img [ref=e850]
+                          - strong [ref=e853]: tep-kg
+                  - article [ref=e854] [cursor=pointer]:
+                    - generic [ref=e855]:
+                      - heading "TEP Fault 15 / Run 4" [level=4] [ref=e856]
+                      - generic [ref=e857]: TEP
+                    - paragraph [ref=e858]: scenario_69d7f1a8e9ee0f26
+                    - generic [ref=e859]:
+                      - button "导入 Case" [ref=e861]:
+                        - img [ref=e863]
+                        - text: 导入 Case
+                      - generic [ref=e866]:
+                        - generic [ref=e867]:
+                          - img [ref=e868]
+                          - strong [ref=e870]: "44"
+                        - generic [ref=e871]:
+                          - img [ref=e872]
+                          - strong [ref=e875]: tep-kg
+                  - article [ref=e876] [cursor=pointer]:
+                    - generic [ref=e877]:
+                      - heading "TEP Fault 03 / Run 1" [level=4] [ref=e878]
+                      - generic [ref=e879]: TEP
+                    - paragraph [ref=e880]: scenario_6a6e0445d2af7d45
+                    - generic [ref=e881]:
+                      - button "导入 Case" [ref=e883]:
+                        - img [ref=e885]
+                        - text: 导入 Case
+                      - generic [ref=e888]:
+                        - generic [ref=e889]:
+                          - img [ref=e890]
+                          - strong [ref=e892]: "44"
+                        - generic [ref=e893]:
+                          - img [ref=e894]
+                          - strong [ref=e897]: tep-kg
+                  - article [ref=e898] [cursor=pointer]:
+                    - generic [ref=e899]:
+                      - heading "TEP Fault 04 / Run 4" [level=4] [ref=e900]
+                      - generic [ref=e901]: TEP
+                    - paragraph [ref=e902]: scenario_6c889fe2bb6b605e
+                    - generic [ref=e903]:
+                      - button "导入 Case" [ref=e905]:
+                        - img [ref=e907]
+                        - text: 导入 Case
+                      - generic [ref=e910]:
+                        - generic [ref=e911]:
+                          - img [ref=e912]
+                          - strong [ref=e914]: "43"
+                        - generic [ref=e915]:
+                          - img [ref=e916]
+                          - strong [ref=e919]: tep-kg
+                  - article [ref=e920] [cursor=pointer]:
+                    - generic [ref=e921]:
+                      - heading "TEP Fault 07 / Run 4" [level=4] [ref=e922]
+                      - generic [ref=e923]: TEP
+                    - paragraph [ref=e924]: scenario_6d6f19e1676c1fd5
+                    - generic [ref=e925]:
+                      - button "导入 Case" [ref=e927]:
+                        - img [ref=e929]
+                        - text: 导入 Case
+                      - generic [ref=e932]:
+                        - generic [ref=e933]:
+                          - img [ref=e934]
+                          - strong [ref=e936]: "43"
+                        - generic [ref=e937]:
+                          - img [ref=e938]
+                          - strong [ref=e941]: tep-kg
+                  - article [ref=e942] [cursor=pointer]:
+                    - generic [ref=e943]:
+                      - heading "TEP Fault 06 / Run 2" [level=4] [ref=e944]
+                      - generic [ref=e945]: TEP
+                    - paragraph [ref=e946]: scenario_6e38e2e4b7fae0ad
+                    - generic [ref=e947]:
+                      - button "导入 Case" [ref=e949]:
+                        - img [ref=e951]
+                        - text: 导入 Case
+                      - generic [ref=e954]:
+                        - generic [ref=e955]:
+                          - img [ref=e956]
+                          - strong [ref=e958]: "43"
+                        - generic [ref=e959]:
+                          - img [ref=e960]
+                          - strong [ref=e963]: tep-kg
+                  - article [ref=e964] [cursor=pointer]:
+                    - generic [ref=e965]:
+                      - heading "TEP Fault 20 / Run 4" [level=4] [ref=e966]
+                      - generic [ref=e967]: TEP
+                    - paragraph [ref=e968]: scenario_6fe03b94ab4f4f35
+                    - generic [ref=e969]:
+                      - button "导入 Case" [ref=e971]:
+                        - img [ref=e973]
+                        - text: 导入 Case
+                      - generic [ref=e976]:
+                        - generic [ref=e977]:
+                          - img [ref=e978]
+                          - strong [ref=e980]: "44"
+                        - generic [ref=e981]:
+                          - img [ref=e982]
+                          - strong [ref=e985]: tep-kg
+                  - article [ref=e986] [cursor=pointer]:
+                    - generic [ref=e987]:
+                      - heading "TEP Fault 08 / Run 4" [level=4] [ref=e988]
+                      - generic [ref=e989]: TEP
+                    - paragraph [ref=e990]: scenario_756a37254a72b504
+                    - generic [ref=e991]:
+                      - button "导入 Case" [ref=e993]:
+                        - img [ref=e995]
+                        - text: 导入 Case
+                      - generic [ref=e998]:
+                        - generic [ref=e999]:
+                          - img [ref=e1000]
+                          - strong [ref=e1002]: "44"
+                        - generic [ref=e1003]:
+                          - img [ref=e1004]
+                          - strong [ref=e1007]: tep-kg
+                  - article [ref=e1008] [cursor=pointer]:
+                    - generic [ref=e1009]:
+                      - heading "TEP Fault 02 / Run 2" [level=4] [ref=e1010]
+                      - generic [ref=e1011]: TEP
+                    - paragraph [ref=e1012]: scenario_76b6bc95eeab655e
+                    - generic [ref=e1013]:
+                      - button "导入 Case" [ref=e1015]:
+                        - img [ref=e1017]
+                        - text: 导入 Case
+                      - generic [ref=e1020]:
+                        - generic [ref=e1021]:
+                          - img [ref=e1022]
+                          - strong [ref=e1024]: "43"
+                        - generic [ref=e1025]:
+                          - img [ref=e1026]
+                          - strong [ref=e1029]: tep-kg
+                  - article [ref=e1030] [cursor=pointer]:
+                    - generic [ref=e1031]:
+                      - heading "TEP Fault 10 / Run 1" [level=4] [ref=e1032]
+                      - generic [ref=e1033]: TEP
+                    - paragraph [ref=e1034]: scenario_793a108f1a1cabbc
+                    - generic [ref=e1035]:
+                      - button "导入 Case" [ref=e1037]:
+                        - img [ref=e1039]
+                        - text: 导入 Case
+                      - generic [ref=e1042]:
+                        - generic [ref=e1043]:
+                          - img [ref=e1044]
+                          - strong [ref=e1046]: "44"
+                        - generic [ref=e1047]:
+                          - img [ref=e1048]
+                          - strong [ref=e1051]: tep-kg
+                  - article [ref=e1052] [cursor=pointer]:
+                    - generic [ref=e1053]:
+                      - heading "TEP Fault 15 / Run 1" [level=4] [ref=e1054]
+                      - generic [ref=e1055]: TEP
+                    - paragraph [ref=e1056]: scenario_798d722f241367af
+                    - generic [ref=e1057]:
+                      - button "导入 Case" [ref=e1059]:
+                        - img [ref=e1061]
+                        - text: 导入 Case
+                      - generic [ref=e1064]:
+                        - generic [ref=e1065]:
+                          - img [ref=e1066]
+                          - strong [ref=e1068]: "44"
+                        - generic [ref=e1069]:
+                          - img [ref=e1070]
+                          - strong [ref=e1073]: tep-kg
+                  - article [ref=e1074] [cursor=pointer]:
+                    - generic [ref=e1075]:
+                      - heading "TEP Fault 05 / Run 5" [level=4] [ref=e1076]
+                      - generic [ref=e1077]: TEP
+                    - paragraph [ref=e1078]: scenario_79f56d039dce333d
+                    - generic [ref=e1079]:
+                      - button "导入 Case" [ref=e1081]:
+                        - img [ref=e1083]
+                        - text: 导入 Case
+                      - generic [ref=e1086]:
+                        - generic [ref=e1087]:
+                          - img [ref=e1088]
+                          - strong [ref=e1090]: "43"
+                        - generic [ref=e1091]:
+                          - img [ref=e1092]
+                          - strong [ref=e1095]: tep-kg
+                  - article [ref=e1096] [cursor=pointer]:
+                    - generic [ref=e1097]:
+                      - heading "TEP Fault 08 / Run 1" [level=4] [ref=e1098]
+                      - generic [ref=e1099]: TEP
+                    - paragraph [ref=e1100]: scenario_7a9c20b8b33a5d78
+                    - generic [ref=e1101]:
+                      - button "导入 Case" [ref=e1103]:
+                        - img [ref=e1105]
+                        - text: 导入 Case
+                      - generic [ref=e1108]:
+                        - generic [ref=e1109]:
+                          - img [ref=e1110]
+                          - strong [ref=e1112]: "43"
+                        - generic [ref=e1113]:
+                          - img [ref=e1114]
+                          - strong [ref=e1117]: tep-kg
+                  - article [ref=e1118] [cursor=pointer]:
+                    - generic [ref=e1119]:
+                      - heading "TEP Fault 04 / Run 1" [level=4] [ref=e1120]
+                      - generic [ref=e1121]: TEP
+                    - paragraph [ref=e1122]: scenario_7b2d01e3a2a0bf32
+                    - generic [ref=e1123]:
+                      - button "导入 Case" [ref=e1125]:
+                        - img [ref=e1127]
+                        - text: 导入 Case
+                      - generic [ref=e1130]:
+                        - generic [ref=e1131]:
+                          - img [ref=e1132]
+                          - strong [ref=e1134]: "43"
+                        - generic [ref=e1135]:
+                          - img [ref=e1136]
+                          - strong [ref=e1139]: tep-kg
+                  - article [ref=e1140] [cursor=pointer]:
+                    - generic [ref=e1141]:
+                      - heading "TEP Fault 20 / Run 5" [level=4] [ref=e1142]
+                      - generic [ref=e1143]: TEP
+                    - paragraph [ref=e1144]: scenario_7b4ce8dd668e33ce
+                    - generic [ref=e1145]:
+                      - button "导入 Case" [ref=e1147]:
+                        - img [ref=e1149]
+                        - text: 导入 Case
+                      - generic [ref=e1152]:
+                        - generic [ref=e1153]:
+                          - img [ref=e1154]
+                          - strong [ref=e1156]: "43"
+                        - generic [ref=e1157]:
+                          - img [ref=e1158]
+                          - strong [ref=e1161]: tep-kg
+                  - article [ref=e1162] [cursor=pointer]:
+                    - generic [ref=e1163]:
+                      - heading "TEP Fault 03 / Run 4" [level=4] [ref=e1164]
+                      - generic [ref=e1165]: TEP
+                    - paragraph [ref=e1166]: scenario_7f4f0b592f286856
+                    - generic [ref=e1167]:
+                      - button "导入 Case" [ref=e1169]:
+                        - img [ref=e1171]
+                        - text: 导入 Case
+                      - generic [ref=e1174]:
+                        - generic [ref=e1175]:
+                          - img [ref=e1176]
+                          - strong [ref=e1178]: "44"
+                        - generic [ref=e1179]:
+                          - img [ref=e1180]
+                          - strong [ref=e1183]: tep-kg
+                  - article [ref=e1184] [cursor=pointer]:
+                    - generic [ref=e1185]:
+                      - heading "TEP Fault 05 / Run 3" [level=4] [ref=e1186]
+                      - generic [ref=e1187]: TEP
+                    - paragraph [ref=e1188]: scenario_7f7acfeabc26bd7d
+                    - generic [ref=e1189]:
+                      - button "导入 Case" [ref=e1191]:
+                        - img [ref=e1193]
+                        - text: 导入 Case
+                      - generic [ref=e1196]:
+                        - generic [ref=e1197]:
+                          - img [ref=e1198]
+                          - strong [ref=e1200]: "44"
+                        - generic [ref=e1201]:
+                          - img [ref=e1202]
+                          - strong [ref=e1205]: tep-kg
+                  - article [ref=e1206] [cursor=pointer]:
+                    - generic [ref=e1207]:
+                      - heading "TEP Fault 16 / Run 1" [level=4] [ref=e1208]
+                      - generic [ref=e1209]: TEP
+                    - paragraph [ref=e1210]: scenario_828f649c133d3777
+                    - generic [ref=e1211]:
+                      - button "导入 Case" [ref=e1213]:
+                        - img [ref=e1215]
+                        - text: 导入 Case
+                      - generic [ref=e1218]:
+                        - generic [ref=e1219]:
+                          - img [ref=e1220]
+                          - strong [ref=e1222]: "44"
+                        - generic [ref=e1223]:
+                          - img [ref=e1224]
+                          - strong [ref=e1227]: tep-kg
+                  - article [ref=e1228] [cursor=pointer]:
+                    - generic [ref=e1229]:
+                      - heading "TEP Fault 17 / Run 2" [level=4] [ref=e1230]
+                      - generic [ref=e1231]: TEP
+                    - paragraph [ref=e1232]: scenario_8444e79fd0e5448a
+                    - generic [ref=e1233]:
+                      - button "导入 Case" [ref=e1235]:
+                        - img [ref=e1237]
+                        - text: 导入 Case
+                      - generic [ref=e1240]:
+                        - generic [ref=e1241]:
+                          - img [ref=e1242]
+                          - strong [ref=e1244]: "44"
+                        - generic [ref=e1245]:
+                          - img [ref=e1246]
+                          - strong [ref=e1249]: tep-kg
+                  - article [ref=e1250] [cursor=pointer]:
+                    - generic [ref=e1251]:
+                      - heading "TEP Fault 13 / Run 5" [level=4] [ref=e1252]
+                      - generic [ref=e1253]: TEP
+                    - paragraph [ref=e1254]: scenario_86252a11b3ede4bf
+                    - generic [ref=e1255]:
+                      - button "导入 Case" [ref=e1257]:
+                        - img [ref=e1259]
+                        - text: 导入 Case
+                      - generic [ref=e1262]:
+                        - generic [ref=e1263]:
+                          - img [ref=e1264]
+                          - strong [ref=e1266]: "44"
+                        - generic [ref=e1267]:
+                          - img [ref=e1268]
+                          - strong [ref=e1271]: tep-kg
+                  - article [ref=e1272] [cursor=pointer]:
+                    - generic [ref=e1273]:
+                      - heading "TEP Fault 15 / Run 2" [level=4] [ref=e1274]
+                      - generic [ref=e1275]: TEP
+                    - paragraph [ref=e1276]: scenario_87ef80980d99e42c
+                    - generic [ref=e1277]:
+                      - button "导入 Case" [ref=e1279]:
+                        - img [ref=e1281]
+                        - text: 导入 Case
+                      - generic [ref=e1284]:
+                        - generic [ref=e1285]:
+                          - img [ref=e1286]
+                          - strong [ref=e1288]: "43"
+                        - generic [ref=e1289]:
+                          - img [ref=e1290]
+                          - strong [ref=e1293]: tep-kg
+                  - article [ref=e1294] [cursor=pointer]:
+                    - generic [ref=e1295]:
+                      - heading "TEP Fault 18 / Run 2" [level=4] [ref=e1296]
+                      - generic [ref=e1297]: TEP
+                    - paragraph [ref=e1298]: scenario_8a6f055b6def6a3d
+                    - generic [ref=e1299]:
+                      - button "导入 Case" [ref=e1301]:
+                        - img [ref=e1303]
+                        - text: 导入 Case
+                      - generic [ref=e1306]:
+                        - generic [ref=e1307]:
+                          - img [ref=e1308]
+                          - strong [ref=e1310]: "44"
+                        - generic [ref=e1311]:
+                          - img [ref=e1312]
+                          - strong [ref=e1315]: tep-kg
+                  - article [ref=e1316] [cursor=pointer]:
+                    - generic [ref=e1317]:
+                      - heading "TEP Fault 01 / Run 3" [level=4] [ref=e1318]
+                      - generic [ref=e1319]: TEP
+                    - paragraph [ref=e1320]: scenario_8c5df113707fbefa
+                    - generic [ref=e1321]:
+                      - button "导入 Case" [ref=e1323]:
+                        - img [ref=e1325]
+                        - text: 导入 Case
+                      - generic [ref=e1328]:
+                        - generic [ref=e1329]:
+                          - img [ref=e1330]
+                          - strong [ref=e1332]: "44"
+                        - generic [ref=e1333]:
+                          - img [ref=e1334]
+                          - strong [ref=e1337]: tep-kg
+                  - article [ref=e1338] [cursor=pointer]:
+                    - generic [ref=e1339]:
+                      - heading "TEP Fault 09 / Run 4" [level=4] [ref=e1340]
+                      - generic [ref=e1341]: TEP
+                    - paragraph [ref=e1342]: scenario_93d897876b4df7a3
+                    - generic [ref=e1343]:
+                      - button "导入 Case" [ref=e1345]:
+                        - img [ref=e1347]
+                        - text: 导入 Case
+                      - generic [ref=e1350]:
+                        - generic [ref=e1351]:
+                          - img [ref=e1352]
+                          - strong [ref=e1354]: "44"
+                        - generic [ref=e1355]:
+                          - img [ref=e1356]
+                          - strong [ref=e1359]: tep-kg
+                  - article [ref=e1360] [cursor=pointer]:
+                    - generic [ref=e1361]:
+                      - heading "TEP Fault 05 / Run 1" [level=4] [ref=e1362]
+                      - generic [ref=e1363]: TEP
+                    - paragraph [ref=e1364]: scenario_9aefcfff4fe58068
+                    - generic [ref=e1365]:
+                      - button "导入 Case" [ref=e1367]:
+                        - img [ref=e1369]
+                        - text: 导入 Case
+                      - generic [ref=e1372]:
+                        - generic [ref=e1373]:
+                          - img [ref=e1374]
+                          - strong [ref=e1376]: "44"
+                        - generic [ref=e1377]:
+                          - img [ref=e1378]
+                          - strong [ref=e1381]: tep-kg
+                  - article [ref=e1382] [cursor=pointer]:
+                    - generic [ref=e1383]:
+                      - heading "TEP Fault 14 / Run 3" [level=4] [ref=e1384]
+                      - generic [ref=e1385]: TEP
+                    - paragraph [ref=e1386]: scenario_9e8f48ca82ae790d
+                    - generic [ref=e1387]:
+                      - button "导入 Case" [ref=e1389]:
+                        - img [ref=e1391]
+                        - text: 导入 Case
+                      - generic [ref=e1394]:
+                        - generic [ref=e1395]:
+                          - img [ref=e1396]
+                          - strong [ref=e1398]: "44"
+                        - generic [ref=e1399]:
+                          - img [ref=e1400]
+                          - strong [ref=e1403]: tep-kg
+                  - article [ref=e1404] [cursor=pointer]:
+                    - generic [ref=e1405]:
+                      - heading "TEP Fault 12 / Run 2" [level=4] [ref=e1406]
+                      - generic [ref=e1407]: TEP
+                    - paragraph [ref=e1408]: scenario_9fbf4a0b198d7c48
+                    - generic [ref=e1409]:
+                      - button "导入 Case" [ref=e1411]:
+                        - img [ref=e1413]
+                        - text: 导入 Case
+                      - generic [ref=e1416]:
+                        - generic [ref=e1417]:
+                          - img [ref=e1418]
+                          - strong [ref=e1420]: "44"
+                        - generic [ref=e1421]:
+                          - img [ref=e1422]
+                          - strong [ref=e1425]: tep-kg
+                  - article [ref=e1426] [cursor=pointer]:
+                    - generic [ref=e1427]:
+                      - heading "TEP Fault 13 / Run 1" [level=4] [ref=e1428]
+                      - generic [ref=e1429]: TEP
+                    - paragraph [ref=e1430]: scenario_a53c3a32af71239f
+                    - generic [ref=e1431]:
+                      - button "导入 Case" [ref=e1433]:
+                        - img [ref=e1435]
+                        - text: 导入 Case
+                      - generic [ref=e1438]:
+                        - generic [ref=e1439]:
+                          - img [ref=e1440]
+                          - strong [ref=e1442]: "44"
+                        - generic [ref=e1443]:
+                          - img [ref=e1444]
+                          - strong [ref=e1447]: tep-kg
+                  - article [ref=e1448] [cursor=pointer]:
+                    - generic [ref=e1449]:
+                      - heading "TEP Fault 14 / Run 1" [level=4] [ref=e1450]
+                      - generic [ref=e1451]: TEP
+                    - paragraph [ref=e1452]: scenario_ac42e1d6ebf7db6a
+                    - generic [ref=e1453]:
+                      - button "导入 Case" [ref=e1455]:
+                        - img [ref=e1457]
+                        - text: 导入 Case
+                      - generic [ref=e1460]:
+                        - generic [ref=e1461]:
+                          - img [ref=e1462]
+                          - strong [ref=e1464]: "44"
+                        - generic [ref=e1465]:
+                          - img [ref=e1466]
+                          - strong [ref=e1469]: tep-kg
+                  - article [ref=e1470] [cursor=pointer]:
+                    - generic [ref=e1471]:
+                      - heading "TEP Fault 12 / Run 1" [level=4] [ref=e1472]
+                      - generic [ref=e1473]: TEP
+                    - paragraph [ref=e1474]: scenario_ae2d4225e23d8520
+                    - generic [ref=e1475]:
+                      - button "导入 Case" [ref=e1477]:
+                        - img [ref=e1479]
+                        - text: 导入 Case
+                      - generic [ref=e1482]:
+                        - generic [ref=e1483]:
+                          - img [ref=e1484]
+                          - strong [ref=e1486]: "43"
+                        - generic [ref=e1487]:
+                          - img [ref=e1488]
+                          - strong [ref=e1491]: tep-kg
+                  - article [ref=e1492] [cursor=pointer]:
+                    - generic [ref=e1493]:
+                      - heading "TEP Fault 07 / Run 3" [level=4] [ref=e1494]
+                      - generic [ref=e1495]: TEP
+                    - paragraph [ref=e1496]: scenario_aef946046471dd2c
+                    - generic [ref=e1497]:
+                      - button "导入 Case" [ref=e1499]:
+                        - img [ref=e1501]
+                        - text: 导入 Case
+                      - generic [ref=e1504]:
+                        - generic [ref=e1505]:
+                          - img [ref=e1506]
+                          - strong [ref=e1508]: "43"
+                        - generic [ref=e1509]:
+                          - img [ref=e1510]
+                          - strong [ref=e1513]: tep-kg
+                  - article [ref=e1514] [cursor=pointer]:
+                    - generic [ref=e1515]:
+                      - heading "TEP Fault 19 / Run 4" [level=4] [ref=e1516]
+                      - generic [ref=e1517]: TEP
+                    - paragraph [ref=e1518]: scenario_afaadc0e1eca3345
+                    - generic [ref=e1519]:
+                      - button "导入 Case" [ref=e1521]:
+                        - img [ref=e1523]
+                        - text: 导入 Case
+                      - generic [ref=e1526]:
+                        - generic [ref=e1527]:
+                          - img [ref=e1528]
+                          - strong [ref=e1530]: "44"
+                        - generic [ref=e1531]:
+                          - img [ref=e1532]
+                          - strong [ref=e1535]: tep-kg
+                  - article [ref=e1536] [cursor=pointer]:
+                    - generic [ref=e1537]:
+                      - heading "TEP Fault 19 / Run 1" [level=4] [ref=e1538]
+                      - generic [ref=e1539]: TEP
+                    - paragraph [ref=e1540]: scenario_b15cac1e12efeca7
+                    - generic [ref=e1541]:
+                      - button "导入 Case" [ref=e1543]:
+                        - img [ref=e1545]
+                        - text: 导入 Case
+                      - generic [ref=e1548]:
+                        - generic [ref=e1549]:
+                          - img [ref=e1550]
+                          - strong [ref=e1552]: "44"
+                        - generic [ref=e1553]:
+                          - img [ref=e1554]
+                          - strong [ref=e1557]: tep-kg
+                  - article [ref=e1558] [cursor=pointer]:
+                    - generic [ref=e1559]:
+                      - heading "TEP Fault 05 / Run 2" [level=4] [ref=e1560]
+                      - generic [ref=e1561]: TEP
+                    - paragraph [ref=e1562]: scenario_b44fb261cb12f8b8
+                    - generic [ref=e1563]:
+                      - button "导入 Case" [ref=e1565]:
+                        - img [ref=e1567]
+                        - text: 导入 Case
+                      - generic [ref=e1570]:
+                        - generic [ref=e1571]:
+                          - img [ref=e1572]
+                          - strong [ref=e1574]: "43"
+                        - generic [ref=e1575]:
+                          - img [ref=e1576]
+                          - strong [ref=e1579]: tep-kg
+                  - article [ref=e1580] [cursor=pointer]:
+                    - generic [ref=e1581]:
+                      - heading "TEP Fault 16 / Run 3" [level=4] [ref=e1582]
+                      - generic [ref=e1583]: TEP
+                    - paragraph [ref=e1584]: scenario_b4a8952a9a736d2e
+                    - generic [ref=e1585]:
+                      - button "导入 Case" [ref=e1587]:
+                        - img [ref=e1589]
+                        - text: 导入 Case
+                      - generic [ref=e1592]:
+                        - generic [ref=e1593]:
+                          - img [ref=e1594]
+                          - strong [ref=e1596]: "44"
+                        - generic [ref=e1597]:
+                          - img [ref=e1598]
+                          - strong [ref=e1601]: tep-kg
+                  - article [ref=e1602] [cursor=pointer]:
+                    - generic [ref=e1603]:
+                      - heading "TEP Fault 12 / Run 4" [level=4] [ref=e1604]
+                      - generic [ref=e1605]: TEP
+                    - paragraph [ref=e1606]: scenario_b58361183d307893
+                    - generic [ref=e1607]:
+                      - button "导入 Case" [ref=e1609]:
+                        - img [ref=e1611]
+                        - text: 导入 Case
+                      - generic [ref=e1614]:
+                        - generic [ref=e1615]:
+                          - img [ref=e1616]
+                          - strong [ref=e1618]: "44"
+                        - generic [ref=e1619]:
+                          - img [ref=e1620]
+                          - strong [ref=e1623]: tep-kg
+                  - article [ref=e1624] [cursor=pointer]:
+                    - generic [ref=e1625]:
+                      - heading "TEP Fault 09 / Run 1" [level=4] [ref=e1626]
+                      - generic [ref=e1627]: TEP
+                    - paragraph [ref=e1628]: scenario_b6875fe7df449d21
+                    - generic [ref=e1629]:
+                      - button "导入 Case" [ref=e1631]:
+                        - img [ref=e1633]
+                        - text: 导入 Case
+                      - generic [ref=e1636]:
+                        - generic [ref=e1637]:
+                          - img [ref=e1638]
+                          - strong [ref=e1640]: "44"
+                        - generic [ref=e1641]:
+                          - img [ref=e1642]
+                          - strong [ref=e1645]: tep-kg
+                  - article [ref=e1646] [cursor=pointer]:
+                    - generic [ref=e1647]:
+                      - heading "TEP Fault 01 / Run 2" [level=4] [ref=e1648]
+                      - generic [ref=e1649]: TEP
+                    - paragraph [ref=e1650]: scenario_ba7d72a13276a207
+                    - generic [ref=e1651]:
+                      - button "导入 Case" [ref=e1653]:
+                        - img [ref=e1655]
+                        - text: 导入 Case
+                      - generic [ref=e1658]:
+                        - generic [ref=e1659]:
+                          - img [ref=e1660]
+                          - strong [ref=e1662]: "44"
+                        - generic [ref=e1663]:
+                          - img [ref=e1664]
+                          - strong [ref=e1667]: tep-kg
+                  - article [ref=e1668] [cursor=pointer]:
+                    - generic [ref=e1669]:
+                      - heading "TEP Fault 13 / Run 3" [level=4] [ref=e1670]
+                      - generic [ref=e1671]: TEP
+                    - paragraph [ref=e1672]: scenario_bde4f69ac893dffb
+                    - generic [ref=e1673]:
+                      - button "导入 Case" [ref=e1675]:
+                        - img [ref=e1677]
+                        - text: 导入 Case
+                      - generic [ref=e1680]:
+                        - generic [ref=e1681]:
+                          - img [ref=e1682]
+                          - strong [ref=e1684]: "44"
+                        - generic [ref=e1685]:
+                          - img [ref=e1686]
+                          - strong [ref=e1689]: tep-kg
+                  - article [ref=e1690] [cursor=pointer]:
+                    - generic [ref=e1691]:
+                      - heading "TEP Fault 03 / Run 5" [level=4] [ref=e1692]
+                      - generic [ref=e1693]: TEP
+                    - paragraph [ref=e1694]: scenario_be3b6b290461ed7f
+                    - generic [ref=e1695]:
+                      - button "导入 Case" [ref=e1697]:
+                        - img [ref=e1699]
+                        - text: 导入 Case
+                      - generic [ref=e1702]:
+                        - generic [ref=e1703]:
+                          - img [ref=e1704]
+                          - strong [ref=e1706]: "44"
+                        - generic [ref=e1707]:
+                          - img [ref=e1708]
+                          - strong [ref=e1711]: tep-kg
+                  - article [ref=e1712] [cursor=pointer]:
+                    - generic [ref=e1713]:
+                      - heading "TEP Fault 11 / Run 1" [level=4] [ref=e1714]
+                      - generic [ref=e1715]: TEP
+                    - paragraph [ref=e1716]: scenario_bffce8bacb81004c
+                    - generic [ref=e1717]:
+                      - button "导入 Case" [ref=e1719]:
+                        - img [ref=e1721]
+                        - text: 导入 Case
+                      - generic [ref=e1724]:
+                        - generic [ref=e1725]:
+                          - img [ref=e1726]
+                          - strong [ref=e1728]: "43"
+                        - generic [ref=e1729]:
+                          - img [ref=e1730]
+                          - strong [ref=e1733]: tep-kg
+                  - article [ref=e1734] [cursor=pointer]:
+                    - generic [ref=e1735]:
+                      - heading "TEP Fault 09 / Run 2" [level=4] [ref=e1736]
+                      - generic [ref=e1737]: TEP
+                    - paragraph [ref=e1738]: scenario_c326a9d93b925296
+                    - generic [ref=e1739]:
+                      - button "导入 Case" [ref=e1741]:
+                        - img [ref=e1743]
+                        - text: 导入 Case
+                      - generic [ref=e1746]:
+                        - generic [ref=e1747]:
+                          - img [ref=e1748]
+                          - strong [ref=e1750]: "44"
+                        - generic [ref=e1751]:
+                          - img [ref=e1752]
+                          - strong [ref=e1755]: tep-kg
+                  - article [ref=e1756] [cursor=pointer]:
+                    - generic [ref=e1757]:
+                      - heading "TEP Fault 06 / Run 1" [level=4] [ref=e1758]
+                      - generic [ref=e1759]: TEP
+                    - paragraph [ref=e1760]: scenario_c5b1eedd1a5fe389
+                    - generic [ref=e1761]:
+                      - button "导入 Case" [ref=e1763]:
+                        - img [ref=e1765]
+                        - text: 导入 Case
+                      - generic [ref=e1768]:
+                        - generic [ref=e1769]:
+                          - img [ref=e1770]
+                          - strong [ref=e1772]: "43"
+                        - generic [ref=e1773]:
+                          - img [ref=e1774]
+                          - strong [ref=e1777]: tep-kg
+                  - article [ref=e1778] [cursor=pointer]:
+                    - generic [ref=e1779]:
+                      - heading "TEP Fault 11 / Run 3" [level=4] [ref=e1780]
+                      - generic [ref=e1781]: TEP
+                    - paragraph [ref=e1782]: scenario_c8ea9d837e4e130a
+                    - generic [ref=e1783]:
+                      - button "导入 Case" [ref=e1785]:
+                        - img [ref=e1787]
+                        - text: 导入 Case
+                      - generic [ref=e1790]:
+                        - generic [ref=e1791]:
+                          - img [ref=e1792]
+                          - strong [ref=e1794]: "43"
+                        - generic [ref=e1795]:
+                          - img [ref=e1796]
+                          - strong [ref=e1799]: tep-kg
+                  - article [ref=e1800] [cursor=pointer]:
+                    - generic [ref=e1801]:
+                      - heading "TEP Fault 16 / Run 4" [level=4] [ref=e1802]
+                      - generic [ref=e1803]: TEP
+                    - paragraph [ref=e1804]: scenario_cfc2b8ffdb6e5d22
+                    - generic [ref=e1805]:
+                      - button "导入 Case" [ref=e1807]:
+                        - img [ref=e1809]
+                        - text: 导入 Case
+                      - generic [ref=e1812]:
+                        - generic [ref=e1813]:
+                          - img [ref=e1814]
+                          - strong [ref=e1816]: "44"
+                        - generic [ref=e1817]:
+                          - img [ref=e1818]
+                          - strong [ref=e1821]: tep-kg
+                  - article [ref=e1822] [cursor=pointer]:
+                    - generic [ref=e1823]:
+                      - heading "TEP Fault 11 / Run 2" [level=4] [ref=e1824]
+                      - generic [ref=e1825]: TEP
+                    - paragraph [ref=e1826]: scenario_d0d5b70301221e42
+                    - generic [ref=e1827]:
+                      - button "导入 Case" [ref=e1829]:
+                        - img [ref=e1831]
+                        - text: 导入 Case
+                      - generic [ref=e1834]:
+                        - generic [ref=e1835]:
+                          - img [ref=e1836]
+                          - strong [ref=e1838]: "43"
+                        - generic [ref=e1839]:
+                          - img [ref=e1840]
+                          - strong [ref=e1843]: tep-kg
+                  - article [ref=e1844] [cursor=pointer]:
+                    - generic [ref=e1845]:
+                      - heading "TEP Fault 04 / Run 5" [level=4] [ref=e1846]
+                      - generic [ref=e1847]: TEP
+                    - paragraph [ref=e1848]: scenario_d116a6aca31a7c96
+                    - generic [ref=e1849]:
+                      - button "导入 Case" [ref=e1851]:
+                        - img [ref=e1853]
+                        - text: 导入 Case
+                      - generic [ref=e1856]:
+                        - generic [ref=e1857]:
+                          - img [ref=e1858]
+                          - strong [ref=e1860]: "43"
+                        - generic [ref=e1861]:
+                          - img [ref=e1862]
+                          - strong [ref=e1865]: tep-kg
+                  - article [ref=e1866] [cursor=pointer]:
+                    - generic [ref=e1867]:
+                      - heading "TEP Fault 17 / Run 4" [level=4] [ref=e1868]
+                      - generic [ref=e1869]: TEP
+                    - paragraph [ref=e1870]: scenario_d43c9a2df7429a7a
+                    - generic [ref=e1871]:
+                      - button "导入 Case" [ref=e1873]:
+                        - img [ref=e1875]
+                        - text: 导入 Case
+                      - generic [ref=e1878]:
+                        - generic [ref=e1879]:
+                          - img [ref=e1880]
+                          - strong [ref=e1882]: "44"
+                        - generic [ref=e1883]:
+                          - img [ref=e1884]
+                          - strong [ref=e1887]: tep-kg
+                  - article [ref=e1888] [cursor=pointer]:
+                    - generic [ref=e1889]:
+                      - heading "TEP Fault 06 / Run 4" [level=4] [ref=e1890]
+                      - generic [ref=e1891]: TEP
+                    - paragraph [ref=e1892]: scenario_d4775100ae8207cb
+                    - generic [ref=e1893]:
+                      - button "导入 Case" [ref=e1895]:
+                        - img [ref=e1897]
+                        - text: 导入 Case
+                      - generic [ref=e1900]:
+                        - generic [ref=e1901]:
+                          - img [ref=e1902]
+                          - strong [ref=e1904]: "43"
+                        - generic [ref=e1905]:
+                          - img [ref=e1906]
+                          - strong [ref=e1909]: tep-kg
+                  - article [ref=e1910] [cursor=pointer]:
+                    - generic [ref=e1911]:
+                      - heading "TEP Fault 07 / Run 5" [level=4] [ref=e1912]
+                      - generic [ref=e1913]: TEP
+                    - paragraph [ref=e1914]: scenario_d509bcc1ea9c66ce
+                    - generic [ref=e1915]:
+                      - button "导入 Case" [ref=e1917]:
+                        - img [ref=e1919]
+                        - text: 导入 Case
+                      - generic [ref=e1922]:
+                        - generic [ref=e1923]:
+                          - img [ref=e1924]
+                          - strong [ref=e1926]: "43"
+                        - generic [ref=e1927]:
+                          - img [ref=e1928]
+                          - strong [ref=e1931]: tep-kg
+                  - article [ref=e1932] [cursor=pointer]:
+                    - generic [ref=e1933]:
+                      - heading "TEP Fault 20 / Run 3" [level=4] [ref=e1934]
+                      - generic [ref=e1935]: TEP
+                    - paragraph [ref=e1936]: scenario_d63b05c5e1ab0d89
+                    - generic [ref=e1937]:
+                      - button "导入 Case" [ref=e1939]:
+                        - img [ref=e1941]
+                        - text: 导入 Case
+                      - generic [ref=e1944]:
+                        - generic [ref=e1945]:
+                          - img [ref=e1946]
+                          - strong [ref=e1948]: "44"
+                        - generic [ref=e1949]:
+                          - img [ref=e1950]
+                          - strong [ref=e1953]: tep-kg
+                  - article [ref=e1954] [cursor=pointer]:
+                    - generic [ref=e1955]:
+                      - heading "TEP Fault 11 / Run 5" [level=4] [ref=e1956]
+                      - generic [ref=e1957]: TEP
+                    - paragraph [ref=e1958]: scenario_d7257dff7d18ac16
+                    - generic [ref=e1959]:
+                      - button "导入 Case" [ref=e1961]:
+                        - img [ref=e1963]
+                        - text: 导入 Case
+                      - generic [ref=e1966]:
+                        - generic [ref=e1967]:
+                          - img [ref=e1968]
+                          - strong [ref=e1970]: "43"
+                        - generic [ref=e1971]:
+                          - img [ref=e1972]
+                          - strong [ref=e1975]: tep-kg
+                  - article [ref=e1976] [cursor=pointer]:
+                    - generic [ref=e1977]:
+                      - heading "TEP Fault 18 / Run 5" [level=4] [ref=e1978]
+                      - generic [ref=e1979]: TEP
+                    - paragraph [ref=e1980]: scenario_d86c1b0cacfc9e7d
+                    - generic [ref=e1981]:
+                      - button "导入 Case" [ref=e1983]:
+                        - img [ref=e1985]
+                        - text: 导入 Case
+                      - generic [ref=e1988]:
+                        - generic [ref=e1989]:
+                          - img [ref=e1990]
+                          - strong [ref=e1992]: "44"
+                        - generic [ref=e1993]:
+                          - img [ref=e1994]
+                          - strong [ref=e1997]: tep-kg
+                  - article [ref=e1998] [cursor=pointer]:
+                    - generic [ref=e1999]:
+                      - heading "TEP Fault 18 / Run 1" [level=4] [ref=e2000]
+                      - generic [ref=e2001]: TEP
+                    - paragraph [ref=e2002]: scenario_dcc9936327bef147
+                    - generic [ref=e2003]:
+                      - button "导入 Case" [ref=e2005]:
+                        - img [ref=e2007]
+                        - text: 导入 Case
+                      - generic [ref=e2010]:
+                        - generic [ref=e2011]:
+                          - img [ref=e2012]
+                          - strong [ref=e2014]: "44"
+                        - generic [ref=e2015]:
+                          - img [ref=e2016]
+                          - strong [ref=e2019]: tep-kg
+                  - article [ref=e2020] [cursor=pointer]:
+                    - generic [ref=e2021]:
+                      - heading "TEP Fault 18 / Run 4" [level=4] [ref=e2022]
+                      - generic [ref=e2023]: TEP
+                    - paragraph [ref=e2024]: scenario_ddc9fe4fd63a1d53
+                    - generic [ref=e2025]:
+                      - button "导入 Case" [ref=e2027]:
+                        - img [ref=e2029]
+                        - text: 导入 Case
+                      - generic [ref=e2032]:
+                        - generic [ref=e2033]:
+                          - img [ref=e2034]
+                          - strong [ref=e2036]: "44"
+                        - generic [ref=e2037]:
+                          - img [ref=e2038]
+                          - strong [ref=e2041]: tep-kg
+                  - article [ref=e2042] [cursor=pointer]:
+                    - generic [ref=e2043]:
+                      - heading "TEP Fault 14 / Run 5" [level=4] [ref=e2044]
+                      - generic [ref=e2045]: TEP
+                    - paragraph [ref=e2046]: scenario_ddfd3859fea7052f
+                    - generic [ref=e2047]:
+                      - button "导入 Case" [ref=e2049]:
+                        - img [ref=e2051]
+                        - text: 导入 Case
+                      - generic [ref=e2054]:
+                        - generic [ref=e2055]:
+                          - img [ref=e2056]
+                          - strong [ref=e2058]: "44"
+                        - generic [ref=e2059]:
+                          - img [ref=e2060]
+                          - strong [ref=e2063]: tep-kg
+                  - article [ref=e2064] [cursor=pointer]:
+                    - generic [ref=e2065]:
+                      - heading "TEP Fault 10 / Run 3" [level=4] [ref=e2066]
+                      - generic [ref=e2067]: TEP
+                    - paragraph [ref=e2068]: scenario_def5793fbea3bd9a
+                    - generic [ref=e2069]:
+                      - button "导入 Case" [ref=e2071]:
+                        - img [ref=e2073]
+                        - text: 导入 Case
+                      - generic [ref=e2076]:
+                        - generic [ref=e2077]:
+                          - img [ref=e2078]
+                          - strong [ref=e2080]: "44"
+                        - generic [ref=e2081]:
+                          - img [ref=e2082]
+                          - strong [ref=e2085]: tep-kg
+                  - article [ref=e2086] [cursor=pointer]:
+                    - generic [ref=e2087]:
+                      - heading "TEP Fault 12 / Run 5" [level=4] [ref=e2088]
+                      - generic [ref=e2089]: TEP
+                    - paragraph [ref=e2090]: scenario_e0abfc49ef67d4be
+                    - generic [ref=e2091]:
+                      - button "导入 Case" [ref=e2093]:
+                        - img [ref=e2095]
+                        - text: 导入 Case
+                      - generic [ref=e2098]:
+                        - generic [ref=e2099]:
+                          - img [ref=e2100]
+                          - strong [ref=e2102]: "43"
+                        - generic [ref=e2103]:
+                          - img [ref=e2104]
+                          - strong [ref=e2107]: tep-kg
+                  - article [ref=e2108] [cursor=pointer]:
+                    - generic [ref=e2109]:
+                      - heading "TEP Fault 02 / Run 3" [level=4] [ref=e2110]
+                      - generic [ref=e2111]: TEP
+                    - paragraph [ref=e2112]: scenario_e229009e2a1b8d72
+                    - generic [ref=e2113]:
+                      - button "导入 Case" [ref=e2115]:
+                        - img [ref=e2117]
+                        - text: 导入 Case
+                      - generic [ref=e2120]:
+                        - generic [ref=e2121]:
+                          - img [ref=e2122]
+                          - strong [ref=e2124]: "43"
+                        - generic [ref=e2125]:
+                          - img [ref=e2126]
+                          - strong [ref=e2129]: tep-kg
+                  - article [ref=e2130] [cursor=pointer]:
+                    - generic [ref=e2131]:
+                      - heading "TEP Fault 09 / Run 5" [level=4] [ref=e2132]
+                      - generic [ref=e2133]: TEP
+                    - paragraph [ref=e2134]: scenario_e3081881a5d6ed95
+                    - generic [ref=e2135]:
+                      - button "导入 Case" [ref=e2137]:
+                        - img [ref=e2139]
+                        - text: 导入 Case
+                      - generic [ref=e2142]:
+                        - generic [ref=e2143]:
+                          - img [ref=e2144]
+                          - strong [ref=e2146]: "44"
+                        - generic [ref=e2147]:
+                          - img [ref=e2148]
+                          - strong [ref=e2151]: tep-kg
+                  - article [ref=e2152] [cursor=pointer]:
+                    - generic [ref=e2153]:
+                      - heading "TEP Fault 06 / Run 3" [level=4] [ref=e2154]
+                      - generic [ref=e2155]: TEP
+                    - paragraph [ref=e2156]: scenario_e787418a817c37cb
+                    - generic [ref=e2157]:
+                      - button "导入 Case" [ref=e2159]:
+                        - img [ref=e2161]
+                        - text: 导入 Case
+                      - generic [ref=e2164]:
+                        - generic [ref=e2165]:
+                          - img [ref=e2166]
+                          - strong [ref=e2168]: "43"
+                        - generic [ref=e2169]:
+                          - img [ref=e2170]
+                          - strong [ref=e2173]: tep-kg
+                  - article [ref=e2174] [cursor=pointer]:
+                    - generic [ref=e2175]:
+                      - heading "TEP Fault 15 / Run 5" [level=4] [ref=e2176]
+                      - generic [ref=e2177]: TEP
+                    - paragraph [ref=e2178]: scenario_e9bc01b3a88d7c03
+                    - generic [ref=e2179]:
+                      - button "导入 Case" [ref=e2181]:
+                        - img [ref=e2183]
+                        - text: 导入 Case
+                      - generic [ref=e2186]:
+                        - generic [ref=e2187]:
+                          - img [ref=e2188]
+                          - strong [ref=e2190]: "44"
+                        - generic [ref=e2191]:
+                          - img [ref=e2192]
+                          - strong [ref=e2195]: tep-kg
+                  - article [ref=e2196] [cursor=pointer]:
+                    - generic [ref=e2197]:
+                      - heading "TEP Fault 04 / Run 2" [level=4] [ref=e2198]
+                      - generic [ref=e2199]: TEP
+                    - paragraph [ref=e2200]: scenario_e9d49427c8d410af
+                    - generic [ref=e2201]:
+                      - button "导入 Case" [ref=e2203]:
+                        - img [ref=e2205]
+                        - text: 导入 Case
+                      - generic [ref=e2208]:
+                        - generic [ref=e2209]:
+                          - img [ref=e2210]
+                          - strong [ref=e2212]: "43"
+                        - generic [ref=e2213]:
+                          - img [ref=e2214]
+                          - strong [ref=e2217]: tep-kg
+                  - article [ref=e2218] [cursor=pointer]:
+                    - generic [ref=e2219]:
+                      - heading "TEP Fault 10 / Run 5" [level=4] [ref=e2220]
+                      - generic [ref=e2221]: TEP
+                    - paragraph [ref=e2222]: scenario_f0504df3c7e4b674
+                    - generic [ref=e2223]:
+                      - button "导入 Case" [ref=e2225]:
+                        - img [ref=e2227]
+                        - text: 导入 Case
+                      - generic [ref=e2230]:
+                        - generic [ref=e2231]:
+                          - img [ref=e2232]
+                          - strong [ref=e2234]: "43"
+                        - generic [ref=e2235]:
+                          - img [ref=e2236]
+                          - strong [ref=e2239]: tep-kg
+                  - article [ref=e2240] [cursor=pointer]:
+                    - generic [ref=e2241]:
+                      - heading "TEP Fault 15 / Run 3" [level=4] [ref=e2242]
+                      - generic [ref=e2243]: TEP
+                    - paragraph [ref=e2244]: scenario_f7cf69e9af6e70c3
+                    - generic [ref=e2245]:
+                      - button "导入 Case" [ref=e2247]:
+                        - img [ref=e2249]
+                        - text: 导入 Case
+                      - generic [ref=e2252]:
+                        - generic [ref=e2253]:
+                          - img [ref=e2254]
+                          - strong [ref=e2256]: "44"
+                        - generic [ref=e2257]:
+                          - img [ref=e2258]
+                          - strong [ref=e2261]: tep-kg
+                  - article [ref=e2262] [cursor=pointer]:
+                    - generic [ref=e2263]:
+                      - heading "TEP Fault 07 / Run 2" [level=4] [ref=e2264]
+                      - generic [ref=e2265]: TEP
+                    - paragraph [ref=e2266]: scenario_fd099f7747b22367
+                    - generic [ref=e2267]:
+                      - button "导入 Case" [ref=e2269]:
+                        - img [ref=e2271]
+                        - text: 导入 Case
+                      - generic [ref=e2274]:
+                        - generic [ref=e2275]:
+                          - img [ref=e2276]
+                          - strong [ref=e2278]: "43"
+                        - generic [ref=e2279]:
+                          - img [ref=e2280]
+                          - strong [ref=e2283]: tep-kg
+                  - article [ref=e2284] [cursor=pointer]:
+                    - generic [ref=e2285]:
+                      - heading "TEP Fault 19 / Run 3" [level=4] [ref=e2286]
+                      - generic [ref=e2287]: TEP
+                    - paragraph [ref=e2288]: scenario_fffccb390d76d3a6
+                    - generic [ref=e2289]:
+                      - button "导入 Case" [ref=e2291]:
+                        - img [ref=e2293]
+                        - text: 导入 Case
+                      - generic [ref=e2296]:
+                        - generic [ref=e2297]:
+                          - img [ref=e2298]
+                          - strong [ref=e2300]: "44"
+                        - generic [ref=e2301]:
+                          - img [ref=e2302]
+                          - strong [ref=e2305]: tep-kg
+                  - article [ref=e2306] [cursor=pointer]:
+                    - generic [ref=e2307]:
+                      - heading "tep_0001" [level=4] [ref=e2308]
+                      - generic [ref=e2309]: TEP
+                    - paragraph [ref=e2310]: tep_0001
+                    - generic [ref=e2311]:
+                      - button "导入 Case" [ref=e2313]:
+                        - img [ref=e2315]
+                        - text: 导入 Case
+                      - generic [ref=e2318]:
+                        - generic [ref=e2319]:
+                          - img [ref=e2320]
+                          - strong [ref=e2322]: "2"
+                        - generic [ref=e2323]:
+                          - img [ref=e2324]
+                          - strong [ref=e2327]: tep-kg
+            - article [ref=e2329]:
+              - generic [ref=e2330]:
+                - generic [ref=e2331]:
+                  - img [ref=e2333]
+                  - heading "Observation" [level=3] [ref=e2335]
+                - generic [ref=e2336]:
+                  - generic "全部 facet" [ref=e2338] [cursor=pointer]:
+                    - textbox
+                    - generic [ref=e2339]: 全部 facet
+                    - img [ref=e2342]
+                  - generic [ref=e2345]:
+                    - tablist "切换列表布局" [ref=e2346]:
+                      - tab "网格模式" [selected] [ref=e2348] [cursor=pointer]:
+                        - img [ref=e2349]
+                      - tab "列表模式" [ref=e2351] [cursor=pointer]:
+                        - img [ref=e2352]
+                    - img [ref=e2355]
+                    - img [ref=e2358]
+              - generic [ref=e2360]:
+                - generic [ref=e2361]:
+                  - generic [ref=e2362]:
+                    - strong [ref=e2363]: TEP Fault 19 / Run 5
+                    - paragraph [ref=e2364]: 当前图谱 tep-kg，点击按钮以模态框查看当前焦点 observation 的完整语义。
+                  - generic [ref=e2365]:
+                    - generic [ref=e2366]:
+                      - generic [ref=e2367]: 44 visible
+                      - generic [ref=e2368]: tep-kg
+                      - generic [ref=e2369]: obs_scenario_0115186e03c2fb56_xmv_5
+                    - button "当前焦点" [ref=e2370] [cursor=pointer]:
+                      - img [ref=e2372]
+                      - text: 当前焦点
+                - generic [ref=e2374]:
+                  - article [ref=e2375] [cursor=pointer]:
+                    - generic [ref=e2376]:
+                      - generic [ref=e2377]:
+                        - strong [ref=e2379]: xmv_5
+                        - generic [ref=e2380]: variable
+                      - generic [ref=e2381]:
+                        - paragraph [ref=e2382]: 变量 xmv_5 在当前窗口呈现 unknown 偏移，贡献度 0.083。
+                        - generic [ref=e2383]:
+                          - generic [ref=e2384]: process-variable
+                          - generic [ref=e2385]: direction unknown
+                          - generic [ref=e2386]: confidence 0.95
+                    - generic [ref=e2387]:
+                      - generic [ref=e2388]:
+                        - generic [ref=e2389]:
+                          - img [ref=e2390]
+                          - strong [ref=e2392]: "0.95"
+                        - generic [ref=e2393]:
+                          - img [ref=e2394]
+                          - strong [ref=e2397]: "2"
+                        - generic [ref=e2398]:
+                          - img [ref=e2399]
+                          - strong [ref=e2401]: "0"
+                      - button "导入 Obs" [ref=e2402]:
+                        - img [ref=e2404]
+                        - text: 导入 Obs
+                  - article [ref=e2406] [cursor=pointer]:
+                    - generic [ref=e2407]:
+                      - generic [ref=e2408]:
+                        - strong [ref=e2410]: xmeas_24
+                        - generic [ref=e2411]: variable
+                      - generic [ref=e2412]:
+                        - paragraph [ref=e2413]: 变量 xmeas_24 在当前窗口呈现 unknown 偏移，贡献度 0.056。
+                        - generic [ref=e2414]:
+                          - generic [ref=e2415]: process-variable
+                          - generic [ref=e2416]: direction unknown
+                          - generic [ref=e2417]: confidence 0.95
+                    - generic [ref=e2418]:
+                      - generic [ref=e2419]:
+                        - generic [ref=e2420]:
+                          - img [ref=e2421]
+                          - strong [ref=e2423]: "0.95"
+                        - generic [ref=e2424]:
+                          - img [ref=e2425]
+                          - strong [ref=e2428]: "1"
+                        - generic [ref=e2429]:
+                          - img [ref=e2430]
+                          - strong [ref=e2432]: "0"
+                      - button "导入 Obs" [ref=e2433]:
+                        - img [ref=e2435]
+                        - text: 导入 Obs
+                  - article [ref=e2437] [cursor=pointer]:
+                    - generic [ref=e2438]:
+                      - generic [ref=e2439]:
+                        - strong [ref=e2441]: xmeas_35
+                        - generic [ref=e2442]: variable
+                      - generic [ref=e2443]:
+                        - paragraph [ref=e2444]: 变量 xmeas_35 在当前窗口呈现 unknown 偏移，贡献度 0.056。
+                        - generic [ref=e2445]:
+                          - generic [ref=e2446]: process-variable
+                          - generic [ref=e2447]: direction unknown
+                          - generic [ref=e2448]: confidence 0.95
+                    - generic [ref=e2449]:
+                      - generic [ref=e2450]:
+                        - generic [ref=e2451]:
+                          - img [ref=e2452]
+                          - strong [ref=e2454]: "0.95"
+                        - generic [ref=e2455]:
+                          - img [ref=e2456]
+                          - strong [ref=e2459]: "1"
+                        - generic [ref=e2460]:
+                          - img [ref=e2461]
+                          - strong [ref=e2463]: "0"
+                      - button "导入 Obs" [ref=e2464]:
+                        - img [ref=e2466]
+                        - text: 导入 Obs
+                  - article [ref=e2468] [cursor=pointer]:
+                    - generic [ref=e2469]:
+                      - generic [ref=e2470]:
+                        - strong [ref=e2472]: xmeas_32
+                        - generic [ref=e2473]: variable
+                      - generic [ref=e2474]:
+                        - paragraph [ref=e2475]: 变量 xmeas_32 在当前窗口呈现 unknown 偏移，贡献度 0.056。
+                        - generic [ref=e2476]:
+                          - generic [ref=e2477]: process-variable
+                          - generic [ref=e2478]: direction unknown
+                          - generic [ref=e2479]: confidence 0.95
+                    - generic [ref=e2480]:
+                      - generic [ref=e2481]:
+                        - generic [ref=e2482]:
+                          - img [ref=e2483]
+                          - strong [ref=e2485]: "0.95"
+                        - generic [ref=e2486]:
+                          - img [ref=e2487]
+                          - strong [ref=e2490]: "1"
+                        - generic [ref=e2491]:
+                          - img [ref=e2492]
+                          - strong [ref=e2494]: "0"
+                      - button "导入 Obs" [ref=e2495]:
+                        - img [ref=e2497]
+                        - text: 导入 Obs
+                  - article [ref=e2499] [cursor=pointer]:
+                    - generic [ref=e2500]:
+                      - generic [ref=e2501]:
+                        - strong [ref=e2503]: xmeas_23
+                        - generic [ref=e2504]: variable
+                      - generic [ref=e2505]:
+                        - paragraph [ref=e2506]: 变量 xmeas_23 在当前窗口呈现 unknown 偏移，贡献度 0.049。
+                        - generic [ref=e2507]:
+                          - generic [ref=e2508]: process-variable
+                          - generic [ref=e2509]: direction unknown
+                          - generic [ref=e2510]: confidence 0.95
+                    - generic [ref=e2511]:
+                      - generic [ref=e2512]:
+                        - generic [ref=e2513]:
+                          - img [ref=e2514]
+                          - strong [ref=e2516]: "0.95"
+                        - generic [ref=e2517]:
+                          - img [ref=e2518]
+                          - strong [ref=e2521]: "1"
+                        - generic [ref=e2522]:
+                          - img [ref=e2523]
+                          - strong [ref=e2525]: "0"
+                      - button "导入 Obs" [ref=e2526]:
+                        - img [ref=e2528]
+                        - text: 导入 Obs
+                  - article [ref=e2530] [cursor=pointer]:
+                    - generic [ref=e2531]:
+                      - generic [ref=e2532]:
+                        - strong [ref=e2534]: xmeas_34
+                        - generic [ref=e2535]: variable
+                      - generic [ref=e2536]:
+                        - paragraph [ref=e2537]: 变量 xmeas_34 在当前窗口呈现 unknown 偏移，贡献度 0.045。
+                        - generic [ref=e2538]:
+                          - generic [ref=e2539]: process-variable
+                          - generic [ref=e2540]: direction unknown
+                          - generic [ref=e2541]: confidence 0.95
+                    - generic [ref=e2542]:
+                      - generic [ref=e2543]:
+                        - generic [ref=e2544]:
+                          - img [ref=e2545]
+                          - strong [ref=e2547]: "0.95"
+                        - generic [ref=e2548]:
+                          - img [ref=e2549]
+                          - strong [ref=e2552]: "1"
+                        - generic [ref=e2553]:
+                          - img [ref=e2554]
+                          - strong [ref=e2556]: "0"
+                      - button "导入 Obs" [ref=e2557]:
+                        - img [ref=e2559]
+                        - text: 导入 Obs
+                  - article [ref=e2561] [cursor=pointer]:
+                    - generic [ref=e2562]:
+                      - generic [ref=e2563]:
+                        - strong [ref=e2565]: xmeas_28
+                        - generic [ref=e2566]: variable
+                      - generic [ref=e2567]:
+                        - paragraph [ref=e2568]: 变量 xmeas_28 在当前窗口呈现 unknown 偏移，贡献度 0.043。
+                        - generic [ref=e2569]:
+                          - generic [ref=e2570]: process-variable
+                          - generic [ref=e2571]: direction unknown
+                          - generic [ref=e2572]: confidence 0.95
+                    - generic [ref=e2573]:
+                      - generic [ref=e2574]:
+                        - generic [ref=e2575]:
+                          - img [ref=e2576]
+                          - strong [ref=e2578]: "0.95"
+                        - generic [ref=e2579]:
+                          - img [ref=e2580]
+                          - strong [ref=e2583]: "1"
+                        - generic [ref=e2584]:
+                          - img [ref=e2585]
+                          - strong [ref=e2587]: "0"
+                      - button "导入 Obs" [ref=e2588]:
+                        - img [ref=e2590]
+                        - text: 导入 Obs
+                  - article [ref=e2592] [cursor=pointer]:
+                    - generic [ref=e2593]:
+                      - generic [ref=e2594]:
+                        - strong [ref=e2596]: xmeas_8
+                        - generic [ref=e2597]: variable
+                      - generic [ref=e2598]:
+                        - paragraph [ref=e2599]: 变量 xmeas_8 在当前窗口呈现 unknown 偏移，贡献度 0.040。
+                        - generic [ref=e2600]:
+                          - generic [ref=e2601]: process-variable
+                          - generic [ref=e2602]: direction unknown
+                          - generic [ref=e2603]: confidence 0.95
+                    - generic [ref=e2604]:
+                      - generic [ref=e2605]:
+                        - generic [ref=e2606]:
+                          - img [ref=e2607]
+                          - strong [ref=e2609]: "0.95"
+                        - generic [ref=e2610]:
+                          - img [ref=e2611]
+                          - strong [ref=e2614]: "2"
+                        - generic [ref=e2615]:
+                          - img [ref=e2616]
+                          - strong [ref=e2618]: "0"
+                      - button "导入 Obs" [ref=e2619]:
+                        - img [ref=e2621]
+                        - text: 导入 Obs
+                  - article [ref=e2623] [cursor=pointer]:
+                    - generic [ref=e2624]:
+                      - generic [ref=e2625]:
+                        - strong [ref=e2627]: xmeas_3
+                        - generic [ref=e2628]: variable
+                      - generic [ref=e2629]:
+                        - paragraph [ref=e2630]: 变量 xmeas_3 在当前窗口呈现 unknown 偏移，贡献度 0.038。
+                        - generic [ref=e2631]:
+                          - generic [ref=e2632]: process-variable
+                          - generic [ref=e2633]: direction unknown
+                          - generic [ref=e2634]: confidence 0.95
+                    - generic [ref=e2635]:
+                      - generic [ref=e2636]:
+                        - generic [ref=e2637]:
+                          - img [ref=e2638]
+                          - strong [ref=e2640]: "0.95"
+                        - generic [ref=e2641]:
+                          - img [ref=e2642]
+                          - strong [ref=e2645]: "2"
+                        - generic [ref=e2646]:
+                          - img [ref=e2647]
+                          - strong [ref=e2649]: "0"
+                      - button "导入 Obs" [ref=e2650]:
+                        - img [ref=e2652]
+                        - text: 导入 Obs
+                  - article [ref=e2654] [cursor=pointer]:
+                    - generic [ref=e2655]:
+                      - generic [ref=e2656]:
+                        - strong [ref=e2658]: xmeas_27
+                        - generic [ref=e2659]: variable
+                      - generic [ref=e2660]:
+                        - paragraph [ref=e2661]: 变量 xmeas_27 在当前窗口呈现 unknown 偏移，贡献度 0.037。
+                        - generic [ref=e2662]:
+                          - generic [ref=e2663]: process-variable
+                          - generic [ref=e2664]: direction unknown
+                          - generic [ref=e2665]: confidence 0.95
+                    - generic [ref=e2666]:
+                      - generic [ref=e2667]:
+                        - generic [ref=e2668]:
+                          - img [ref=e2669]
+                          - strong [ref=e2671]: "0.95"
+                        - generic [ref=e2672]:
+                          - img [ref=e2673]
+                          - strong [ref=e2676]: "1"
+                        - generic [ref=e2677]:
+                          - img [ref=e2678]
+                          - strong [ref=e2680]: "0"
+                      - button "导入 Obs" [ref=e2681]:
+                        - img [ref=e2683]
+                        - text: 导入 Obs
+                  - article [ref=e2685] [cursor=pointer]:
+                    - generic [ref=e2686]:
+                      - generic [ref=e2687]:
+                        - strong [ref=e2689]: xmv_2
+                        - generic [ref=e2690]: variable
+                      - generic [ref=e2691]:
+                        - paragraph [ref=e2692]: 变量 xmv_2 在当前窗口呈现 unknown 偏移，贡献度 0.034。
+                        - generic [ref=e2693]:
+                          - generic [ref=e2694]: process-variable
+                          - generic [ref=e2695]: direction unknown
+                          - generic [ref=e2696]: confidence 0.95
+                    - generic [ref=e2697]:
+                      - generic [ref=e2698]:
+                        - generic [ref=e2699]:
+                          - img [ref=e2700]
+                          - strong [ref=e2702]: "0.95"
+                        - generic [ref=e2703]:
+                          - img [ref=e2704]
+                          - strong [ref=e2707]: "2"
+                        - generic [ref=e2708]:
+                          - img [ref=e2709]
+                          - strong [ref=e2711]: "0"
+                      - button "导入 Obs" [ref=e2712]:
+                        - img [ref=e2714]
+                        - text: 导入 Obs
+                  - article [ref=e2716] [cursor=pointer]:
+                    - generic [ref=e2717]:
+                      - generic [ref=e2718]:
+                        - strong [ref=e2720]: xmeas_36
+                        - generic [ref=e2721]: variable
+                      - generic [ref=e2722]:
+                        - paragraph [ref=e2723]: 变量 xmeas_36 在当前窗口呈现 unknown 偏移，贡献度 0.034。
+                        - generic [ref=e2724]:
+                          - generic [ref=e2725]: process-variable
+                          - generic [ref=e2726]: direction unknown
+                          - generic [ref=e2727]: confidence 0.95
+                    - generic [ref=e2728]:
+                      - generic [ref=e2729]:
+                        - generic [ref=e2730]:
+                          - img [ref=e2731]
+                          - strong [ref=e2733]: "0.95"
+                        - generic [ref=e2734]:
+                          - img [ref=e2735]
+                          - strong [ref=e2738]: "1"
+                        - generic [ref=e2739]:
+                          - img [ref=e2740]
+                          - strong [ref=e2742]: "0"
+                      - button "导入 Obs" [ref=e2743]:
+                        - img [ref=e2745]
+                        - text: 导入 Obs
+                  - article [ref=e2747] [cursor=pointer]:
+                    - generic [ref=e2748]:
+                      - generic [ref=e2749]:
+                        - strong [ref=e2751]: xmeas_30
+                        - generic [ref=e2752]: variable
+                      - generic [ref=e2753]:
+                        - paragraph [ref=e2754]: 变量 xmeas_30 在当前窗口呈现 unknown 偏移，贡献度 0.032。
+                        - generic [ref=e2755]:
+                          - generic [ref=e2756]: process-variable
+                          - generic [ref=e2757]: direction unknown
+                          - generic [ref=e2758]: confidence 0.95
+                    - generic [ref=e2759]:
+                      - generic [ref=e2760]:
+                        - generic [ref=e2761]:
+                          - img [ref=e2762]
+                          - strong [ref=e2764]: "0.95"
+                        - generic [ref=e2765]:
+                          - img [ref=e2766]
+                          - strong [ref=e2769]: "1"
+                        - generic [ref=e2770]:
+                          - img [ref=e2771]
+                          - strong [ref=e2773]: "0"
+                      - button "导入 Obs" [ref=e2774]:
+                        - img [ref=e2776]
+                        - text: 导入 Obs
+                  - article [ref=e2778] [cursor=pointer]:
+                    - generic [ref=e2779]:
+                      - generic [ref=e2780]:
+                        - strong [ref=e2782]: xmeas_33
+                        - generic [ref=e2783]: variable
+                      - generic [ref=e2784]:
+                        - paragraph [ref=e2785]: 变量 xmeas_33 在当前窗口呈现 unknown 偏移，贡献度 0.031。
+                        - generic [ref=e2786]:
+                          - generic [ref=e2787]: process-variable
+                          - generic [ref=e2788]: direction unknown
+                          - generic [ref=e2789]: confidence 0.95
+                    - generic [ref=e2790]:
+                      - generic [ref=e2791]:
+                        - generic [ref=e2792]:
+                          - img [ref=e2793]
+                          - strong [ref=e2795]: "0.95"
+                        - generic [ref=e2796]:
+                          - img [ref=e2797]
+                          - strong [ref=e2800]: "1"
+                        - generic [ref=e2801]:
+                          - img [ref=e2802]
+                          - strong [ref=e2804]: "0"
+                      - button "导入 Obs" [ref=e2805]:
+                        - img [ref=e2807]
+                        - text: 导入 Obs
+                  - article [ref=e2809] [cursor=pointer]:
+                    - generic [ref=e2810]:
+                      - generic [ref=e2811]:
+                        - strong [ref=e2813]: xmeas_2
+                        - generic [ref=e2814]: variable
+                      - generic [ref=e2815]:
+                        - paragraph [ref=e2816]: 变量 xmeas_2 在当前窗口呈现 unknown 偏移，贡献度 0.030。
+                        - generic [ref=e2817]:
+                          - generic [ref=e2818]: process-variable
+                          - generic [ref=e2819]: direction unknown
+                          - generic [ref=e2820]: confidence 0.95
+                    - generic [ref=e2821]:
+                      - generic [ref=e2822]:
+                        - generic [ref=e2823]:
+                          - img [ref=e2824]
+                          - strong [ref=e2826]: "0.95"
+                        - generic [ref=e2827]:
+                          - img [ref=e2828]
+                          - strong [ref=e2831]: "2"
+                        - generic [ref=e2832]:
+                          - img [ref=e2833]
+                          - strong [ref=e2835]: "0"
+                      - button "导入 Obs" [ref=e2836]:
+                        - img [ref=e2838]
+                        - text: 导入 Obs
+                  - article [ref=e2840] [cursor=pointer]:
+                    - generic [ref=e2841]:
+                      - generic [ref=e2842]:
+                        - strong [ref=e2844]: xmeas_9
+                        - generic [ref=e2845]: variable
+                      - generic [ref=e2846]:
+                        - paragraph [ref=e2847]: 变量 xmeas_9 在当前窗口呈现 unknown 偏移，贡献度 0.030。
+                        - generic [ref=e2848]:
+                          - generic [ref=e2849]: process-variable
+                          - generic [ref=e2850]: direction unknown
+                          - generic [ref=e2851]: confidence 0.95
+                    - generic [ref=e2852]:
+                      - generic [ref=e2853]:
+                        - generic [ref=e2854]:
+                          - img [ref=e2855]
+                          - strong [ref=e2857]: "0.95"
+                        - generic [ref=e2858]:
+                          - img [ref=e2859]
+                          - strong [ref=e2862]: "2"
+                        - generic [ref=e2863]:
+                          - img [ref=e2864]
+                          - strong [ref=e2866]: "0"
+                      - button "导入 Obs" [ref=e2867]:
+                        - img [ref=e2869]
+                        - text: 导入 Obs
+                  - article [ref=e2871] [cursor=pointer]:
+                    - generic [ref=e2872]:
+                      - generic [ref=e2873]:
+                        - strong [ref=e2875]: xmv_10
+                        - generic [ref=e2876]: variable
+                      - generic [ref=e2877]:
+                        - paragraph [ref=e2878]: 变量 xmv_10 在当前窗口呈现 unknown 偏移，贡献度 0.029。
+                        - generic [ref=e2879]:
+                          - generic [ref=e2880]: process-variable
+                          - generic [ref=e2881]: direction unknown
+                          - generic [ref=e2882]: confidence 0.95
+                    - generic [ref=e2883]:
+                      - generic [ref=e2884]:
+                        - generic [ref=e2885]:
+                          - img [ref=e2886]
+                          - strong [ref=e2888]: "0.95"
+                        - generic [ref=e2889]:
+                          - img [ref=e2890]
+                          - strong [ref=e2893]: "2"
+                        - generic [ref=e2894]:
+                          - img [ref=e2895]
+                          - strong [ref=e2897]: "0"
+                      - button "导入 Obs" [ref=e2898]:
+                        - img [ref=e2900]
+                        - text: 导入 Obs
+                  - article [ref=e2902] [cursor=pointer]:
+                    - generic [ref=e2903]:
+                      - generic [ref=e2904]:
+                        - strong [ref=e2906]: xmeas_29
+                        - generic [ref=e2907]: variable
+                      - generic [ref=e2908]:
+                        - paragraph [ref=e2909]: 变量 xmeas_29 在当前窗口呈现 unknown 偏移，贡献度 0.027。
+                        - generic [ref=e2910]:
+                          - generic [ref=e2911]: process-variable
+                          - generic [ref=e2912]: direction unknown
+                          - generic [ref=e2913]: confidence 0.95
+                    - generic [ref=e2914]:
+                      - generic [ref=e2915]:
+                        - generic [ref=e2916]:
+                          - img [ref=e2917]
+                          - strong [ref=e2919]: "0.95"
+                        - generic [ref=e2920]:
+                          - img [ref=e2921]
+                          - strong [ref=e2924]: "1"
+                        - generic [ref=e2925]:
+                          - img [ref=e2926]
+                          - strong [ref=e2928]: "0"
+                      - button "导入 Obs" [ref=e2929]:
+                        - img [ref=e2931]
+                        - text: 导入 Obs
+                  - article [ref=e2933] [cursor=pointer]:
+                    - generic [ref=e2934]:
+                      - generic [ref=e2935]:
+                        - strong [ref=e2937]: xmeas_21
+                        - generic [ref=e2938]: variable
+                      - generic [ref=e2939]:
+                        - paragraph [ref=e2940]: 变量 xmeas_21 在当前窗口呈现 unknown 偏移，贡献度 0.027。
+                        - generic [ref=e2941]:
+                          - generic [ref=e2942]: process-variable
+                          - generic [ref=e2943]: direction unknown
+                          - generic [ref=e2944]: confidence 0.95
+                    - generic [ref=e2945]:
+                      - generic [ref=e2946]:
+                        - generic [ref=e2947]:
+                          - img [ref=e2948]
+                          - strong [ref=e2950]: "0.95"
+                        - generic [ref=e2951]:
+                          - img [ref=e2952]
+                          - strong [ref=e2955]: "2"
+                        - generic [ref=e2956]:
+                          - img [ref=e2957]
+                          - strong [ref=e2959]: "0"
+                      - button "导入 Obs" [ref=e2960]:
+                        - img [ref=e2962]
+                        - text: 导入 Obs
+                  - article [ref=e2964] [cursor=pointer]:
+                    - generic [ref=e2965]:
+                      - generic [ref=e2966]:
+                        - strong [ref=e2968]: xmeas_38
+                        - generic [ref=e2969]: variable
+                      - generic [ref=e2970]:
+                        - paragraph [ref=e2971]: 变量 xmeas_38 在当前窗口呈现 unknown 偏移，贡献度 0.025。
+                        - generic [ref=e2972]:
+                          - generic [ref=e2973]: process-variable
+                          - generic [ref=e2974]: direction unknown
+                          - generic [ref=e2975]: confidence 0.95
+                    - generic [ref=e2976]:
+                      - generic [ref=e2977]:
+                        - generic [ref=e2978]:
+                          - img [ref=e2979]
+                          - strong [ref=e2981]: "0.95"
+                        - generic [ref=e2982]:
+                          - img [ref=e2983]
+                          - strong [ref=e2986]: "1"
+                        - generic [ref=e2987]:
+                          - img [ref=e2988]
+                          - strong [ref=e2990]: "0"
+                      - button "导入 Obs" [ref=e2991]:
+                        - img [ref=e2993]
+                        - text: 导入 Obs
+                  - article [ref=e2995] [cursor=pointer]:
+                    - generic [ref=e2996]:
+                      - generic [ref=e2997]:
+                        - strong [ref=e2999]: xmv_1
+                        - generic [ref=e3000]: variable
+                      - generic [ref=e3001]:
+                        - paragraph [ref=e3002]: 变量 xmv_1 在当前窗口呈现 unknown 偏移，贡献度 0.023。
+                        - generic [ref=e3003]:
+                          - generic [ref=e3004]: process-variable
+                          - generic [ref=e3005]: direction unknown
+                          - generic [ref=e3006]: confidence 0.95
+                    - generic [ref=e3007]:
+                      - generic [ref=e3008]:
+                        - generic [ref=e3009]:
+                          - img [ref=e3010]
+                          - strong [ref=e3012]: "0.95"
+                        - generic [ref=e3013]:
+                          - img [ref=e3014]
+                          - strong [ref=e3017]: "2"
+                        - generic [ref=e3018]:
+                          - img [ref=e3019]
+                          - strong [ref=e3021]: "0"
+                      - button "导入 Obs" [ref=e3022]:
+                        - img [ref=e3024]
+                        - text: 导入 Obs
+                  - article [ref=e3026] [cursor=pointer]:
+                    - generic [ref=e3027]:
+                      - generic [ref=e3028]:
+                        - strong [ref=e3030]: xmeas_25
+                        - generic [ref=e3031]: variable
+                      - generic [ref=e3032]:
+                        - paragraph [ref=e3033]: 变量 xmeas_25 在当前窗口呈现 unknown 偏移，贡献度 0.022。
+                        - generic [ref=e3034]:
+                          - generic [ref=e3035]: process-variable
+                          - generic [ref=e3036]: direction unknown
+                          - generic [ref=e3037]: confidence 0.95
+                    - generic [ref=e3038]:
+                      - generic [ref=e3039]:
+                        - generic [ref=e3040]:
+                          - img [ref=e3041]
+                          - strong [ref=e3043]: "0.95"
+                        - generic [ref=e3044]:
+                          - img [ref=e3045]
+                          - strong [ref=e3048]: "1"
+                        - generic [ref=e3049]:
+                          - img [ref=e3050]
+                          - strong [ref=e3052]: "0"
+                      - button "导入 Obs" [ref=e3053]:
+                        - img [ref=e3055]
+                        - text: 导入 Obs
+                  - article [ref=e3057] [cursor=pointer]:
+                    - generic [ref=e3058]:
+                      - generic [ref=e3059]:
+                        - strong [ref=e3061]: xmeas_22
+                        - generic [ref=e3062]: variable
+                      - generic [ref=e3063]:
+                        - paragraph [ref=e3064]: 变量 xmeas_22 在当前窗口呈现 unknown 偏移，贡献度 0.019。
+                        - generic [ref=e3065]:
+                          - generic [ref=e3066]: process-variable
+                          - generic [ref=e3067]: direction unknown
+                          - generic [ref=e3068]: confidence 0.95
+                    - generic [ref=e3069]:
+                      - generic [ref=e3070]:
+                        - generic [ref=e3071]:
+                          - img [ref=e3072]
+                          - strong [ref=e3074]: "0.95"
+                        - generic [ref=e3075]:
+                          - img [ref=e3076]
+                          - strong [ref=e3079]: "2"
+                        - generic [ref=e3080]:
+                          - img [ref=e3081]
+                          - strong [ref=e3083]: "0"
+                      - button "导入 Obs" [ref=e3084]:
+                        - img [ref=e3086]
+                        - text: 导入 Obs
+                  - article [ref=e3088] [cursor=pointer]:
+                    - generic [ref=e3089]:
+                      - generic [ref=e3090]:
+                        - strong [ref=e3092]: xmeas_31
+                        - generic [ref=e3093]: variable
+                      - generic [ref=e3094]:
+                        - paragraph [ref=e3095]: 变量 xmeas_31 在当前窗口呈现 unknown 偏移，贡献度 0.017。
+                        - generic [ref=e3096]:
+                          - generic [ref=e3097]: process-variable
+                          - generic [ref=e3098]: direction unknown
+                          - generic [ref=e3099]: confidence 0.95
+                    - generic [ref=e3100]:
+                      - generic [ref=e3101]:
+                        - generic [ref=e3102]:
+                          - img [ref=e3103]
+                          - strong [ref=e3105]: "0.95"
+                        - generic [ref=e3106]:
+                          - img [ref=e3107]
+                          - strong [ref=e3110]: "1"
+                        - generic [ref=e3111]:
+                          - img [ref=e3112]
+                          - strong [ref=e3114]: "0"
+                      - button "导入 Obs" [ref=e3115]:
+                        - img [ref=e3117]
+                        - text: 导入 Obs
+                  - article [ref=e3119] [cursor=pointer]:
+                    - generic [ref=e3120]:
+                      - generic [ref=e3121]:
+                        - strong [ref=e3123]: xmeas_11
+                        - generic [ref=e3124]: variable
+                      - generic [ref=e3125]:
+                        - paragraph [ref=e3126]: 变量 xmeas_11 在当前窗口呈现 unknown 偏移，贡献度 0.016。
+                        - generic [ref=e3127]:
+                          - generic [ref=e3128]: process-variable
+                          - generic [ref=e3129]: direction unknown
+                          - generic [ref=e3130]: confidence 0.95
+                    - generic [ref=e3131]:
+                      - generic [ref=e3132]:
+                        - generic [ref=e3133]:
+                          - img [ref=e3134]
+                          - strong [ref=e3136]: "0.95"
+                        - generic [ref=e3137]:
+                          - img [ref=e3138]
+                          - strong [ref=e3141]: "2"
+                        - generic [ref=e3142]:
+                          - img [ref=e3143]
+                          - strong [ref=e3145]: "0"
+                      - button "导入 Obs" [ref=e3146]:
+                        - img [ref=e3148]
+                        - text: 导入 Obs
+                  - article [ref=e3150] [cursor=pointer]:
+                    - generic [ref=e3151]:
+                      - generic [ref=e3152]:
+                        - strong [ref=e3154]: xmeas_20
+                        - generic [ref=e3155]: variable
+                      - generic [ref=e3156]:
+                        - paragraph [ref=e3157]: 变量 xmeas_20 在当前窗口呈现 unknown 偏移，贡献度 0.015。
+                        - generic [ref=e3158]:
+                          - generic [ref=e3159]: process-variable
+                          - generic [ref=e3160]: direction unknown
+                          - generic [ref=e3161]: confidence 0.95
+                    - generic [ref=e3162]:
+                      - generic [ref=e3163]:
+                        - generic [ref=e3164]:
+                          - img [ref=e3165]
+                          - strong [ref=e3167]: "0.95"
+                        - generic [ref=e3168]:
+                          - img [ref=e3169]
+                          - strong [ref=e3172]: "2"
+                        - generic [ref=e3173]:
+                          - img [ref=e3174]
+                          - strong [ref=e3176]: "0"
+                      - button "导入 Obs" [ref=e3177]:
+                        - img [ref=e3179]
+                        - text: 导入 Obs
+                  - article [ref=e3181] [cursor=pointer]:
+                    - generic [ref=e3182]:
+                      - generic [ref=e3183]:
+                        - strong [ref=e3185]: xmeas_4
+                        - generic [ref=e3186]: variable
+                      - generic [ref=e3187]:
+                        - paragraph [ref=e3188]: 变量 xmeas_4 在当前窗口呈现 unknown 偏移，贡献度 0.014。
+                        - generic [ref=e3189]:
+                          - generic [ref=e3190]: process-variable
+                          - generic [ref=e3191]: direction unknown
+                          - generic [ref=e3192]: confidence 0.95
+                    - generic [ref=e3193]:
+                      - generic [ref=e3194]:
+                        - generic [ref=e3195]:
+                          - img [ref=e3196]
+                          - strong [ref=e3198]: "0.95"
+                        - generic [ref=e3199]:
+                          - img [ref=e3200]
+                          - strong [ref=e3203]: "2"
+                        - generic [ref=e3204]:
+                          - img [ref=e3205]
+                          - strong [ref=e3207]: "0"
+                      - button "导入 Obs" [ref=e3208]:
+                        - img [ref=e3210]
+                        - text: 导入 Obs
+                  - article [ref=e3212] [cursor=pointer]:
+                    - generic [ref=e3213]:
+                      - generic [ref=e3214]:
+                        - strong [ref=e3216]: xmeas_19
+                        - generic [ref=e3217]: variable
+                      - generic [ref=e3218]:
+                        - paragraph [ref=e3219]: 变量 xmeas_19 在当前窗口呈现 unknown 偏移，贡献度 0.013。
+                        - generic [ref=e3220]:
+                          - generic [ref=e3221]: process-variable
+                          - generic [ref=e3222]: direction unknown
+                          - generic [ref=e3223]: confidence 0.95
+                    - generic [ref=e3224]:
+                      - generic [ref=e3225]:
+                        - generic [ref=e3226]:
+                          - img [ref=e3227]
+                          - strong [ref=e3229]: "0.95"
+                        - generic [ref=e3230]:
+                          - img [ref=e3231]
+                          - strong [ref=e3234]: "2"
+                        - generic [ref=e3235]:
+                          - img [ref=e3236]
+                          - strong [ref=e3238]: "0"
+                      - button "导入 Obs" [ref=e3239]:
+                        - img [ref=e3241]
+                        - text: 导入 Obs
+                  - article [ref=e3243] [cursor=pointer]:
+                    - generic [ref=e3244]:
+                      - generic [ref=e3245]:
+                        - strong [ref=e3247]: xmeas_16
+                        - generic [ref=e3248]: variable
+                      - generic [ref=e3249]:
+                        - paragraph [ref=e3250]: 变量 xmeas_16 在当前窗口呈现 unknown 偏移，贡献度 0.010。
+                        - generic [ref=e3251]:
+                          - generic [ref=e3252]: process-variable
+                          - generic [ref=e3253]: direction unknown
+                          - generic [ref=e3254]: confidence 0.95
+                    - generic [ref=e3255]:
+                      - generic [ref=e3256]:
+                        - generic [ref=e3257]:
+                          - img [ref=e3258]
+                          - strong [ref=e3260]: "0.95"
+                        - generic [ref=e3261]:
+                          - img [ref=e3262]
+                          - strong [ref=e3265]: "2"
+                        - generic [ref=e3266]:
+                          - img [ref=e3267]
+                          - strong [ref=e3269]: "0"
+                      - button "导入 Obs" [ref=e3270]:
+                        - img [ref=e3272]
+                        - text: 导入 Obs
+                  - article [ref=e3274] [cursor=pointer]:
+                    - generic [ref=e3275]:
+                      - generic [ref=e3276]:
+                        - strong [ref=e3278]: xmeas_13
+                        - generic [ref=e3279]: variable
+                      - generic [ref=e3280]:
+                        - paragraph [ref=e3281]: 变量 xmeas_13 在当前窗口呈现 unknown 偏移，贡献度 0.010。
+                        - generic [ref=e3282]:
+                          - generic [ref=e3283]: process-variable
+                          - generic [ref=e3284]: direction unknown
+                          - generic [ref=e3285]: confidence 0.95
+                    - generic [ref=e3286]:
+                      - generic [ref=e3287]:
+                        - generic [ref=e3288]:
+                          - img [ref=e3289]
+                          - strong [ref=e3291]: "0.95"
+                        - generic [ref=e3292]:
+                          - img [ref=e3293]
+                          - strong [ref=e3296]: "2"
+                        - generic [ref=e3297]:
+                          - img [ref=e3298]
+                          - strong [ref=e3300]: "0"
+                      - button "导入 Obs" [ref=e3301]:
+                        - img [ref=e3303]
+                        - text: 导入 Obs
+                  - article [ref=e3305] [cursor=pointer]:
+                    - generic [ref=e3306]:
+                      - generic [ref=e3307]:
+                        - strong [ref=e3309]: xmv_4
+                        - generic [ref=e3310]: variable
+                      - generic [ref=e3311]:
+                        - paragraph [ref=e3312]: 变量 xmv_4 在当前窗口呈现 unknown 偏移，贡献度 0.010。
+                        - generic [ref=e3313]:
+                          - generic [ref=e3314]: process-variable
+                          - generic [ref=e3315]: direction unknown
+                          - generic [ref=e3316]: confidence 0.95
+                    - generic [ref=e3317]:
+                      - generic [ref=e3318]:
+                        - generic [ref=e3319]:
+                          - img [ref=e3320]
+                          - strong [ref=e3322]: "0.95"
+                        - generic [ref=e3323]:
+                          - img [ref=e3324]
+                          - strong [ref=e3327]: "2"
+                        - generic [ref=e3328]:
+                          - img [ref=e3329]
+                          - strong [ref=e3331]: "0"
+                      - button "导入 Obs" [ref=e3332]:
+                        - img [ref=e3334]
+                        - text: 导入 Obs
+                  - article [ref=e3336] [cursor=pointer]:
+                    - generic [ref=e3337]:
+                      - generic [ref=e3338]:
+                        - strong [ref=e3340]: xmeas_18
+                        - generic [ref=e3341]: variable
+                      - generic [ref=e3342]:
+                        - paragraph [ref=e3343]: 变量 xmeas_18 在当前窗口呈现 unknown 偏移，贡献度 0.009。
+                        - generic [ref=e3344]:
+                          - generic [ref=e3345]: process-variable
+                          - generic [ref=e3346]: direction unknown
+                          - generic [ref=e3347]: confidence 0.95
+                    - generic [ref=e3348]:
+                      - generic [ref=e3349]:
+                        - generic [ref=e3350]:
+                          - img [ref=e3351]
+                          - strong [ref=e3353]: "0.95"
+                        - generic [ref=e3354]:
+                          - img [ref=e3355]
+                          - strong [ref=e3358]: "2"
+                        - generic [ref=e3359]:
+                          - img [ref=e3360]
+                          - strong [ref=e3362]: "0"
+                      - button "导入 Obs" [ref=e3363]:
+                        - img [ref=e3365]
+                        - text: 导入 Obs
+                  - article [ref=e3367] [cursor=pointer]:
+                    - generic [ref=e3368]:
+                      - generic [ref=e3369]:
+                        - strong [ref=e3371]: xmv_9
+                        - generic [ref=e3372]: variable
+                      - generic [ref=e3373]:
+                        - paragraph [ref=e3374]: 变量 xmv_9 在当前窗口呈现 unknown 偏移，贡献度 0.009。
+                        - generic [ref=e3375]:
+                          - generic [ref=e3376]: process-variable
+                          - generic [ref=e3377]: direction unknown
+                          - generic [ref=e3378]: confidence 0.95
+                    - generic [ref=e3379]:
+                      - generic [ref=e3380]:
+                        - generic [ref=e3381]:
+                          - img [ref=e3382]
+                          - strong [ref=e3384]: "0.95"
+                        - generic [ref=e3385]:
+                          - img [ref=e3386]
+                          - strong [ref=e3389]: "2"
+                        - generic [ref=e3390]:
+                          - img [ref=e3391]
+                          - strong [ref=e3393]: "0"
+                      - button "导入 Obs" [ref=e3394]:
+                        - img [ref=e3396]
+                        - text: 导入 Obs
+                  - article [ref=e3398] [cursor=pointer]:
+                    - generic [ref=e3399]:
+                      - generic [ref=e3400]:
+                        - strong [ref=e3402]: xmeas_7
+                        - generic [ref=e3403]: variable
+                      - generic [ref=e3404]:
+                        - paragraph [ref=e3405]: 变量 xmeas_7 在当前窗口呈现 unknown 偏移，贡献度 0.008。
+                        - generic [ref=e3406]:
+                          - generic [ref=e3407]: process-variable
+                          - generic [ref=e3408]: direction unknown
+                          - generic [ref=e3409]: confidence 0.95
+                    - generic [ref=e3410]:
+                      - generic [ref=e3411]:
+                        - generic [ref=e3412]:
+                          - img [ref=e3413]
+                          - strong [ref=e3415]: "0.95"
+                        - generic [ref=e3416]:
+                          - img [ref=e3417]
+                          - strong [ref=e3420]: "2"
+                        - generic [ref=e3421]:
+                          - img [ref=e3422]
+                          - strong [ref=e3424]: "0"
+                      - button "导入 Obs" [ref=e3425]:
+                        - img [ref=e3427]
+                        - text: 导入 Obs
+                  - article [ref=e3429] [cursor=pointer]:
+                    - generic [ref=e3430]:
+                      - generic [ref=e3431]:
+                        - strong [ref=e3433]: xmeas_10
+                        - generic [ref=e3434]: variable
+                      - generic [ref=e3435]:
+                        - paragraph [ref=e3436]: 变量 xmeas_10 在当前窗口呈现 unknown 偏移，贡献度 0.001。
+                        - generic [ref=e3437]:
+                          - generic [ref=e3438]: process-variable
+                          - generic [ref=e3439]: direction unknown
+                          - generic [ref=e3440]: confidence 0.95
+                    - generic [ref=e3441]:
+                      - generic [ref=e3442]:
+                        - generic [ref=e3443]:
+                          - img [ref=e3444]
+                          - strong [ref=e3446]: "0.95"
+                        - generic [ref=e3447]:
+                          - img [ref=e3448]
+                          - strong [ref=e3451]: "2"
+                        - generic [ref=e3452]:
+                          - img [ref=e3453]
+                          - strong [ref=e3455]: "0"
+                      - button "导入 Obs" [ref=e3456]:
+                        - img [ref=e3458]
+                        - text: 导入 Obs
+                  - article [ref=e3460] [cursor=pointer]:
+                    - generic [ref=e3461]:
+                      - generic [ref=e3462]:
+                        - strong [ref=e3464]: xmv_6
+                        - generic [ref=e3465]: variable
+                      - generic [ref=e3466]:
+                        - paragraph [ref=e3467]: 变量 xmv_6 在当前窗口呈现 unknown 偏移，贡献度 0.001。
+                        - generic [ref=e3468]:
+                          - generic [ref=e3469]: process-variable
+                          - generic [ref=e3470]: direction unknown
+                          - generic [ref=e3471]: confidence 0.95
+                    - generic [ref=e3472]:
+                      - generic [ref=e3473]:
+                        - generic [ref=e3474]:
+                          - img [ref=e3475]
+                          - strong [ref=e3477]: "0.95"
+                        - generic [ref=e3478]:
+                          - img [ref=e3479]
+                          - strong [ref=e3482]: "2"
+                        - generic [ref=e3483]:
+                          - img [ref=e3484]
+                          - strong [ref=e3486]: "0"
+                      - button "导入 Obs" [ref=e3487]:
+                        - img [ref=e3489]
+                        - text: 导入 Obs
+                  - article [ref=e3491] [cursor=pointer]:
+                    - generic [ref=e3492]:
+                      - generic [ref=e3493]:
+                        - strong [ref=e3495]: xmv_3
+                        - generic [ref=e3496]: variable
+                      - generic [ref=e3497]:
+                        - paragraph [ref=e3498]: 变量 xmv_3 在当前窗口呈现 unknown 偏移，贡献度 0.001。
+                        - generic [ref=e3499]:
+                          - generic [ref=e3500]: process-variable
+                          - generic [ref=e3501]: direction unknown
+                          - generic [ref=e3502]: confidence 0.95
+                    - generic [ref=e3503]:
+                      - generic [ref=e3504]:
+                        - generic [ref=e3505]:
+                          - img [ref=e3506]
+                          - strong [ref=e3508]: "0.95"
+                        - generic [ref=e3509]:
+                          - img [ref=e3510]
+                          - strong [ref=e3513]: "2"
+                        - generic [ref=e3514]:
+                          - img [ref=e3515]
+                          - strong [ref=e3517]: "0"
+                      - button "导入 Obs" [ref=e3518]:
+                        - img [ref=e3520]
+                        - text: 导入 Obs
+                  - article [ref=e3522] [cursor=pointer]:
+                    - generic [ref=e3523]:
+                      - generic [ref=e3524]:
+                        - strong [ref=e3526]: xmeas_1
+                        - generic [ref=e3527]: variable
+                      - generic [ref=e3528]:
+                        - paragraph [ref=e3529]: 变量 xmeas_1 在当前窗口呈现 unknown 偏移，贡献度 0.001。
+                        - generic [ref=e3530]:
+                          - generic [ref=e3531]: process-variable
+                          - generic [ref=e3532]: direction unknown
+                          - generic [ref=e3533]: confidence 0.95
+                    - generic [ref=e3534]:
+                      - generic [ref=e3535]:
+                        - generic [ref=e3536]:
+                          - img [ref=e3537]
+                          - strong [ref=e3539]: "0.95"
+                        - generic [ref=e3540]:
+                          - img [ref=e3541]
+                          - strong [ref=e3544]: "2"
+                        - generic [ref=e3545]:
+                          - img [ref=e3546]
+                          - strong [ref=e3548]: "0"
+                      - button "导入 Obs" [ref=e3549]:
+                        - img [ref=e3551]
+                        - text: 导入 Obs
+                  - article [ref=e3553] [cursor=pointer]:
+                    - generic [ref=e3554]:
+                      - generic [ref=e3555]:
+                        - strong [ref=e3557]: xmeas_17
+                        - generic [ref=e3558]: variable
+                      - generic [ref=e3559]:
+                        - paragraph [ref=e3560]: 变量 xmeas_17 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3561]:
+                          - generic [ref=e3562]: process-variable
+                          - generic [ref=e3563]: direction unknown
+                          - generic [ref=e3564]: confidence 0.95
+                    - generic [ref=e3565]:
+                      - generic [ref=e3566]:
+                        - generic [ref=e3567]:
+                          - img [ref=e3568]
+                          - strong [ref=e3570]: "0.95"
+                        - generic [ref=e3571]:
+                          - img [ref=e3572]
+                          - strong [ref=e3575]: "2"
+                        - generic [ref=e3576]:
+                          - img [ref=e3577]
+                          - strong [ref=e3579]: "0"
+                      - button "导入 Obs" [ref=e3580]:
+                        - img [ref=e3582]
+                        - text: 导入 Obs
+                  - article [ref=e3584] [cursor=pointer]:
+                    - generic [ref=e3585]:
+                      - generic [ref=e3586]:
+                        - strong [ref=e3588]: xmv_11
+                        - generic [ref=e3589]: variable
+                      - generic [ref=e3590]:
+                        - paragraph [ref=e3591]: 变量 xmv_11 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3592]:
+                          - generic [ref=e3593]: process-variable
+                          - generic [ref=e3594]: direction unknown
+                          - generic [ref=e3595]: confidence 0.95
+                    - generic [ref=e3596]:
+                      - generic [ref=e3597]:
+                        - generic [ref=e3598]:
+                          - img [ref=e3599]
+                          - strong [ref=e3601]: "0.95"
+                        - generic [ref=e3602]:
+                          - img [ref=e3603]
+                          - strong [ref=e3606]: "2"
+                        - generic [ref=e3607]:
+                          - img [ref=e3608]
+                          - strong [ref=e3610]: "0"
+                      - button "导入 Obs" [ref=e3611]:
+                        - img [ref=e3613]
+                        - text: 导入 Obs
+                  - article [ref=e3615] [cursor=pointer]:
+                    - generic [ref=e3616]:
+                      - generic [ref=e3617]:
+                        - strong [ref=e3619]: xmeas_39
+                        - generic [ref=e3620]: variable
+                      - generic [ref=e3621]:
+                        - paragraph [ref=e3622]: 变量 xmeas_39 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3623]:
+                          - generic [ref=e3624]: process-variable
+                          - generic [ref=e3625]: direction unknown
+                          - generic [ref=e3626]: confidence 0.95
+                    - generic [ref=e3627]:
+                      - generic [ref=e3628]:
+                        - generic [ref=e3629]:
+                          - img [ref=e3630]
+                          - strong [ref=e3632]: "0.95"
+                        - generic [ref=e3633]:
+                          - img [ref=e3634]
+                          - strong [ref=e3637]: "1"
+                        - generic [ref=e3638]:
+                          - img [ref=e3639]
+                          - strong [ref=e3641]: "0"
+                      - button "导入 Obs" [ref=e3642]:
+                        - img [ref=e3644]
+                        - text: 导入 Obs
+                  - article [ref=e3646] [cursor=pointer]:
+                    - generic [ref=e3647]:
+                      - generic [ref=e3648]:
+                        - strong [ref=e3650]: xmeas_26
+                        - generic [ref=e3651]: variable
+                      - generic [ref=e3652]:
+                        - paragraph [ref=e3653]: 变量 xmeas_26 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3654]:
+                          - generic [ref=e3655]: process-variable
+                          - generic [ref=e3656]: direction unknown
+                          - generic [ref=e3657]: confidence 0.95
+                    - generic [ref=e3658]:
+                      - generic [ref=e3659]:
+                        - generic [ref=e3660]:
+                          - img [ref=e3661]
+                          - strong [ref=e3663]: "0.95"
+                        - generic [ref=e3664]:
+                          - img [ref=e3665]
+                          - strong [ref=e3668]: "1"
+                        - generic [ref=e3669]:
+                          - img [ref=e3670]
+                          - strong [ref=e3672]: "0"
+                      - button "导入 Obs" [ref=e3673]:
+                        - img [ref=e3675]
+                        - text: 导入 Obs
+                  - article [ref=e3677] [cursor=pointer]:
+                    - generic [ref=e3678]:
+                      - generic [ref=e3679]:
+                        - strong [ref=e3681]: xmeas_6
+                        - generic [ref=e3682]: variable
+                      - generic [ref=e3683]:
+                        - paragraph [ref=e3684]: 变量 xmeas_6 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3685]:
+                          - generic [ref=e3686]: process-variable
+                          - generic [ref=e3687]: direction unknown
+                          - generic [ref=e3688]: confidence 0.95
+                    - generic [ref=e3689]:
+                      - generic [ref=e3690]:
+                        - generic [ref=e3691]:
+                          - img [ref=e3692]
+                          - strong [ref=e3694]: "0.95"
+                        - generic [ref=e3695]:
+                          - img [ref=e3696]
+                          - strong [ref=e3699]: "2"
+                        - generic [ref=e3700]:
+                          - img [ref=e3701]
+                          - strong [ref=e3703]: "0"
+                      - button "导入 Obs" [ref=e3704]:
+                        - img [ref=e3706]
+                        - text: 导入 Obs
+                  - article [ref=e3708] [cursor=pointer]:
+                    - generic [ref=e3709]:
+                      - generic [ref=e3710]:
+                        - strong [ref=e3712]: xmeas_41
+                        - generic [ref=e3713]: variable
+                      - generic [ref=e3714]:
+                        - paragraph [ref=e3715]: 变量 xmeas_41 在当前窗口呈现 unknown 偏移，贡献度 0.000。
+                        - generic [ref=e3716]:
+                          - generic [ref=e3717]: process-variable
+                          - generic [ref=e3718]: direction unknown
+                          - generic [ref=e3719]: confidence 0.95
+                    - generic [ref=e3720]:
+                      - generic [ref=e3721]:
+                        - generic [ref=e3722]:
+                          - img [ref=e3723]
+                          - strong [ref=e3725]: "0.95"
+                        - generic [ref=e3726]:
+                          - img [ref=e3727]
+                          - strong [ref=e3730]: "1"
+                        - generic [ref=e3731]:
+                          - img [ref=e3732]
+                          - strong [ref=e3734]: "0"
+                      - button "导入 Obs" [ref=e3735]:
+                        - img [ref=e3737]
+                        - text: 导入 Obs
+  - generic [ref=e3742]:
+    - generic [ref=e3743]:
+      - generic [ref=e3745]: Observation 焦点信息
+      - button "Close" [ref=e3746] [cursor=pointer]:
+        - img [ref=e3748]
+    - generic [ref=e3751]:
+      - generic [ref=e3752]:
+        - generic [ref=e3753]:
+          - generic [ref=e3754]:
+            - generic [ref=e3755]: Focus Summary
+            - generic [ref=e3756]:
+              - img [ref=e3758]
+              - heading "xmv_5" [level=4] [ref=e3760]
+          - generic [ref=e3761]: variable
+        - paragraph [ref=e3762]: 变量 xmv_5 在当前窗口呈现 unknown 偏移，贡献度 0.083。
+        - generic [ref=e3763]:
+          - generic [ref=e3764]: scenario_0115186e03c2fb56
+          - generic [ref=e3765]: tep-kg
+          - generic [ref=e3766]: TEP
+        - generic [ref=e3767]:
+          - generic [ref=e3768]:
+            - strong [ref=e3769]: "0.95"
+            - generic [ref=e3770]: confidence
+          - generic [ref=e3771]:
+            - strong [ref=e3772]: "2"
+            - generic [ref=e3773]: linked hints
+          - generic [ref=e3774]:
+            - strong [ref=e3775]: "0"
+            - generic [ref=e3776]: raw refs
+        - generic [ref=e3777]:
+          - button "导入 Obs" [ref=e3778] [cursor=pointer]:
+            - img [ref=e3780]
+            - text: 导入 Obs
+          - button "导入 Case" [ref=e3782] [cursor=pointer]:
+            - img [ref=e3784]
+            - text: 导入 Case
+      - generic [ref=e3787]:
+        - generic [ref=e3788]:
+          - generic [ref=e3789]: Field Detail
+          - generic [ref=e3790]:
+            - generic [ref=e3791]:
+              - term [ref=e3792]: 变量
+              - definition [ref=e3793]: xmv_5
+            - generic [ref=e3794]:
+              - term [ref=e3795]: 贡献度
+              - definition [ref=e3796]: "0.083"
+            - generic [ref=e3797]:
+              - term [ref=e3798]: 方向
+              - definition [ref=e3799]: unknown
+            - generic [ref=e3800]:
+              - term [ref=e3801]: 时间窗
+              - definition [ref=e3802]: 未提供
+        - generic [ref=e3803]:
+          - generic [ref=e3804]: Classification
+          - generic [ref=e3805]:
+            - generic [ref=e3806]: process-variable
+            - generic [ref=e3807]: direction unknown
+            - generic [ref=e3808]: confidence 0.95
+        - generic [ref=e3809]:
+          - generic [ref=e3810]: Linked Entity Hints
+          - generic [ref=e3811]:
+            - generic [ref=e3812]: variable:manipulated_variable_5_recycle
+            - generic [ref=e3813]: variable:mv_46
+        - generic [ref=e3814]:
+          - generic [ref=e3815]: Raw Evidence Refs
+          - paragraph [ref=e3816]: 当前 observation 没有 raw evidence refs。

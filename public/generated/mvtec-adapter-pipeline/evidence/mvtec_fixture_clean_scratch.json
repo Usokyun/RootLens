@@ -126,7 +126,8 @@
     "consistency_score": null,
     "inconsistent_fields": [],
     "correction_candidates": [],
-    "top_k_paths": []
+    "top_k_paths": [],
+    "ranked_root_causes": []
   },
   "human_feedback": null
 }

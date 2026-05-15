@@ -122,7 +122,7 @@ Set **target platform** to exactly `Backend` or `Frontend` (these strings) for a
 ### Step 5: Generate Test Cases Using Platform-Specific Skills
 
 1. Generate test cases according to the **inferred** target platform from Step 4. Use `FEATURE_DIR/spec.md` as the primary input.
-    - If target platform is **Backend**, run the **prd-2-api-case** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd-2-api-case` and follow it) to generate backend API test cases.
+    - If target platform is **Backend**, run the **prd2case-api** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd2case-api` and follow it) to generate backend API test cases.
     - If target platform is **Frontend**, run the **prd2case** workflow per **Skills (host compatibility)** (invoke by name in Claude Code when available **or** resolve `SKILL.md` for `prd2case` and follow it), execute task type 2 to generate web e2e test cases.
 
 ### Step 6: Generate Test Execution Task File

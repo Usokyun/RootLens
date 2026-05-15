@@ -15,7 +15,7 @@ Use this skill for requests like:
 
 ## Operating Principle (Read First)
 
-This skill is an append/backfill pass over an existing `test_analysis.md`. It must not regenerate the coverage matrix from PRD/spec, overwrite the analysis document, or delete rows to make execution easier. Executability is a status and backfill target, not a coverage gate: unresolved rows stay in the analysis and later become manual-review cases in `case.md`. If a missing verification point is discovered, hand it back to `prd2case` Stage-1 to add the row, then rerun this skill on the updated analysis.
+This skill is an append/backfill pass over an existing `test_analysis.md`. It must not regenerate the coverage matrix from PRD/spec, overwrite the analysis document, or delete rows to make execution easier. Executability is a status and backfill target, not a coverage gate: unresolved rows stay in the analysis and later become manual-review cases in `case.md`. If a missing verification point is discovered, hand it back to `prd2case-web` Stage-1 to add the row, then rerun this skill on the updated analysis.
 
 The job is always:
 
@@ -576,7 +576,7 @@ URL / id replacement happens **only after** the row's sample has been **verified
 
 For every row whose data was successfully reused or created (status: CLOSED), replace the prose prerequisite description with a **resolved-data reference** — a short pointer the executor can consume directly. Drop the original setup narrative, **but keep all metadata tags** (see preservation list below).
 
-> Scope note. Phase 7.1 governs the `前置条件` **column inside `test_analysis.md`** (and any equivalent analysis table). It is **not** the format used in the downstream `case.md`. The `prd2case` skill's Stage-3 collapses each closed row's analysis cell into a 2-line case.md prelude (`##### **前置条件** 访问: <bare URL>` + `**[tag]** e2e`) when generating `case.md`. Do not write `case.md`'s 2-line preamble back into the `test_analysis.md` cell, and do not paste Phase 7.1's full `[P0] [E2E] <entity> (state); URL ...` line into `case.md`'s preamble — they serve different consumers (analysis-driven planning vs. runner navigation) and must each keep their own format.
+> Scope note. Phase 7.1 governs the `前置条件` **column inside `test_analysis.md`** (and any equivalent analysis table). It is **not** the format used in the downstream `case.md`. The `prd2case-web` skill's Stage-3 collapses each closed row's analysis cell into a 2-line case.md prelude (`##### **前置条件** 访问: <bare URL>` + `**[tag]** e2e`) when generating `case.md`. Do not write `case.md`'s 2-line preamble back into the `test_analysis.md` cell, and do not paste Phase 7.1's full `[P0] [E2E] <entity> (state); URL ...` line into `case.md`'s preamble — they serve different consumers (analysis-driven planning vs. runner navigation) and must each keep their own format.
 
 Required fields in the rewritten cell:
 

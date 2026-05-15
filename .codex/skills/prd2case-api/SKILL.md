@@ -1,5 +1,5 @@
 ---
-name: prd-2-api-case
+name: prd2case-api
 description: Generates text-based API test cases (case.md) from PRD and Spec documents. These cases serve as inputs for subsequent API automation testing.
 user-invocable: true
 ---

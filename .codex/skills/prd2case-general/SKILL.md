@@ -1,5 +1,5 @@
 ---
-name: prd2case_for_qa
+name: prd2case-general
 description: "Guide for test case generation and related operations and rules. Use this skill when you need to generate (write), modify, read (from Bits) and save (to Bits) test cases."
 ---
 

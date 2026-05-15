@@ -93,6 +93,11 @@ interface GraphIndex {
   linkedNodeIds: Set<string>
 }
 
+interface CachedGraphStructure {
+  nodeById: Map<string, UnifiedGraphNode>
+  neighborsByNodeId: Map<string, GraphNeighbor[]>
+}
+
 interface ObservationMention {
   obsId: string
   facet: EvidenceObservation['facet']
@@ -123,6 +128,10 @@ interface PropagatedVariableScore {
   contribution: number
 }
 
+const normalizedTextCache = new Map<string, string>()
+const nodeTermCache = new WeakMap<UnifiedGraphNode, string[]>()
+const graphStructureCache = new WeakMap<UnifiedGraphDataset, CachedGraphStructure>()
+
 function clamp(value: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, value))
 }
@@ -132,25 +141,38 @@ function normalizeScore(value: number): number {
 }
 
 function normalizeText(value: string): string {
-  return value
+  const cached = normalizedTextCache.get(value)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const normalized = value
     .trim()
     .toLowerCase()
     .replace(/[_-]+/g, ' ')
     .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
     .replace(/\s+/g, ' ')
+
+  if (normalizedTextCache.size > 5000) {
+    normalizedTextCache.clear()
+  }
+
+  normalizedTextCache.set(value, normalized)
+  return normalized
 }
 
 function collectNodeTerms(node: UnifiedGraphNode): string[] {
-  return [
-    node.id,
-    node.name,
-    node.category,
-    node.kind,
-    node.description,
-    ...node.aliases,
-  ]
+  const cached = nodeTermCache.get(node)
+  if (cached) {
+    return cached
+  }
+
+  const terms = [node.id, node.name, node.category, node.kind, node.description, ...node.aliases]
     .map((item) => normalizeText(item))
     .filter(Boolean)
+
+  nodeTermCache.set(node, terms)
+  return terms
 }
 
 function scoreNodeMatch(mention: string, node: UnifiedGraphNode): number {
@@ -247,21 +269,31 @@ function isFieldCompatible(field: string, node: UnifiedGraphNode): boolean {
 }
 
 function buildGraphIndex(dataset: UnifiedGraphDataset): GraphIndex {
-  const nodeById = new Map(dataset.nodes.map((node) => [node.id, node]))
-  const neighborsByNodeId = new Map<string, GraphNeighbor[]>()
+  let cachedStructure = graphStructureCache.get(dataset)
 
-  for (const node of dataset.nodes) {
-    neighborsByNodeId.set(node.id, [])
-  }
+  if (!cachedStructure) {
+    const nodeById = new Map(dataset.nodes.map((node) => [node.id, node]))
+    const neighborsByNodeId = new Map<string, GraphNeighbor[]>()
 
-  for (const edge of dataset.edges) {
-    neighborsByNodeId.get(edge.source)?.push({ edge, nodeId: edge.target })
-    neighborsByNodeId.get(edge.target)?.push({ edge, nodeId: edge.source })
+    for (const node of dataset.nodes) {
+      neighborsByNodeId.set(node.id, [])
+    }
+
+    for (const edge of dataset.edges) {
+      neighborsByNodeId.get(edge.source)?.push({ edge, nodeId: edge.target })
+      neighborsByNodeId.get(edge.target)?.push({ edge, nodeId: edge.source })
+    }
+
+    cachedStructure = {
+      nodeById,
+      neighborsByNodeId,
+    }
+    graphStructureCache.set(dataset, cachedStructure)
   }
 
   return {
-    nodeById,
-    neighborsByNodeId,
+    nodeById: cachedStructure.nodeById,
+    neighborsByNodeId: cachedStructure.neighborsByNodeId,
     linkedNodeIds: new Set<string>(),
   }
 }
@@ -802,8 +834,11 @@ function buildRankedPaths(
     .slice(0, 10)
 }
 
-function buildRoute1Result(dataset: UnifiedGraphDataset, evidence: UnifiedEvidence): Route1Result {
-  const graphIndex = buildGraphIndex(dataset)
+function buildRoute1Result(
+  dataset: UnifiedGraphDataset,
+  evidence: UnifiedEvidence,
+  graphIndex: GraphIndex = buildGraphIndex(dataset),
+): Route1Result {
   const linkedEntities = buildLinkedEntities(dataset, evidence, graphIndex)
   const consistency = buildConsistencyAndCorrections(graphIndex, linkedEntities)
 
@@ -1126,13 +1161,13 @@ function buildRoute2Result(
   dataset: UnifiedGraphDataset,
   evidence: UnifiedEvidence,
   route1: Route1Result,
+  graphIndex: GraphIndex = buildGraphIndex(dataset),
 ): Route2Result | null {
   const variableSupport = extractVariableSupport(evidence, route1)
   if (!variableSupport.length) {
     return null
   }
 
-  const graphIndex = buildGraphIndex(dataset)
   const totalContribution = variableSupport.reduce(
     (sum, item) => sum + item.observation.contribution,
     0,
@@ -1336,8 +1371,9 @@ export function buildLocalAnalysisResult(
   dataset: UnifiedGraphDataset,
   evidence: UnifiedEvidence,
 ): AnalysisResult {
-  const route1 = buildRoute1Result(dataset, evidence)
-  const route2 = buildRoute2Result(dataset, evidence, route1)
+  const graphIndex = buildGraphIndex(dataset)
+  const route1 = buildRoute1Result(dataset, evidence, graphIndex)
+  const route2 = buildRoute2Result(dataset, evidence, route1, graphIndex)
 
   return {
     case_id: evidence.case_id,

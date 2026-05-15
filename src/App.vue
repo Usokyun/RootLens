@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {
+  IconApps,
   IconBulb,
-  IconFile,
-  IconFolder,
+  IconDashboard,
+  IconExperiment,
   IconMenuFold,
   IconMenuUnfold,
   IconRelation,
@@ -10,6 +11,10 @@ import {
 import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
+
+import FloatingPreferencePanel from '@/components/layout/FloatingPreferencePanel.vue'
+import { useAppPreferences } from '@/services/app-preferences'
+import { useWorkbenchState } from '@/services/workbench-state'
 
 interface NavItem {
   name: 'materials' | 'evidence' | 'graphs'
@@ -20,8 +25,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     name: 'evidence',
-    label: '证据管理',
-    icon: IconFile,
+    label: '证据与审阅',
+    icon: IconDashboard,
   },
   {
     name: 'graphs',
@@ -30,24 +35,37 @@ const navItems: NavItem[] = [
   },
   {
     name: 'materials',
-    label: '素材管理',
-    icon: IconFolder,
+    label: '图谱工坊',
+    icon: IconExperiment,
   },
 ]
 
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
+const { preferences } = useAppPreferences()
+const { state: workbenchState } = useWorkbenchState()
 
 const activeMenuKey = computed(() => {
   const matched = navItems.find((item) => item.name === route.name)
   return matched?.name ?? 'evidence'
 })
 
-const pageLabel = computed(() => route.meta.label ?? '证据管理')
-const pageDescription = computed(
-  () => route.meta.description ?? '按重设计文档搭建前端骨架，后续再接入业务逻辑函数。',
-)
+const currentPageLabel = computed(() => {
+  return typeof route.meta.label === 'string' ? route.meta.label : 'RootLens 工作台'
+})
+
+const currentContextLabel = computed(() => {
+  return [workbenchState.value.selectedRunId, workbenchState.value.selectedCaseId].filter(Boolean).join(' / ') || '未选择上下文'
+})
+
+const apiBaseLabel = computed(() => {
+  if (preferences.value.dataSourceMode === 'mock') {
+    return '内置资产'
+  }
+
+  return preferences.value.apiBaseUrl.replace(/^https?:\/\//, '')
+})
 
 function handleNavigate(key: string | number) {
   const target = String(key) as NavItem['name']
@@ -61,31 +79,39 @@ function handleNavigate(key: string | number) {
   <div class="app-shell">
     <header class="ocean-header">
       <div class="ocean-header__left">
-        <button class="ocean-header__menu" type="button" aria-label="Application menu">
-          <icon-bulb />
-        </button>
         <div class="ocean-header__logo">
           <span class="ocean-header__logo-mark">RL</span>
           <span class="ocean-header__logo-text">RootLens</span>
         </div>
         <div class="ocean-header__divider" />
-        <h1 class="ocean-header__title">RCA Workbench</h1>
+        <h1 class="ocean-header__title">
+          <icon-dashboard />
+          <span>{{ currentPageLabel }}</span>
+        </h1>
       </div>
       <div class="ocean-header__right">
-        <a-tag size="small" color="arcoblue">Arco Design</a-tag>
-        <a-tag size="small">UI Redesign</a-tag>
+        <a-tag size="small" color="arcoblue">
+          <icon-apps />
+          <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '模拟模式' }}</span>
+        </a-tag>
+        <a-tag size="small" color="green">
+          <icon-bulb />
+          <span>{{ apiBaseLabel }}</span>
+        </a-tag>
       </div>
       <div class="ocean-header__profile">
-        <div class="ocean-header__profile-label">Session</div>
-        <div class="ocean-header__profile-value">demo</div>
+        <div class="ocean-header__profile-label">当前上下文</div>
+        <div class="ocean-header__profile-value">
+          {{ currentContextLabel }}
+        </div>
       </div>
     </header>
 
     <a-layout class="ads-brain-workbench-layout" has-sider>
       <a-layout-sider
         class="app-sider-menu"
-        :width="200"
-        :collapsed-width="48"
+        :width="220"
+        :collapsed-width="56"
         :collapsed="collapsed"
         hide-trigger
         breakpoint="xl"
@@ -116,14 +142,10 @@ function handleNavigate(key: string | number) {
       </a-layout-sider>
 
       <a-layout-content class="ads-brain-workbench-layout__content">
-        <section class="page-header-card">
-          <div class="page-header-card__label">Workspace</div>
-          <h2 class="page-header-card__title">{{ pageLabel }}</h2>
-          <p class="page-header-card__desc">{{ pageDescription }}</p>
-        </section>
-
         <RouterView />
       </a-layout-content>
     </a-layout>
+
+    <FloatingPreferencePanel />
   </div>
 </template>

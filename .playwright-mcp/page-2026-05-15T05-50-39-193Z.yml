@@ -1,0 +1,254 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "证据与审阅" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: 证据与审阅
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]: 模拟模式
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e23]: 内置资产
+    - generic [ref=e24]:
+      - generic [ref=e25]: 当前上下文
+      - generic [ref=e26]: 未选择上下文
+  - generic [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: 证据与审阅
+        - generic [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: 图谱探索
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e48]: 图谱工坊
+      - button "收起侧边栏" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+    - main [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: 证据与审阅
+            - generic [ref=e57]:
+              - heading "上传运行并快速筛选 Evidence" [level=2] [ref=e58]
+              - generic [ref=e59]:
+                - generic [ref=e60]: 模拟模式
+                - generic [ref=e61]: 未选择运行
+                - generic [ref=e62]: 未选择案例
+            - paragraph [ref=e63]: 主区聚焦上传与后端运行状态，右侧常驻辅区聚焦 Evidence 过滤与浏览，便于直接跳转到图谱探索。
+            - generic [ref=e65]: 候选结论边界加载中
+            - button "刷新视图" [ref=e67] [cursor=pointer]:
+              - img [ref=e69]
+              - text: 刷新视图
+          - generic [ref=e71]:
+            - article [ref=e72]:
+              - generic [ref=e73]: 运行记录
+              - strong [ref=e74]: "0"
+              - generic [ref=e75]: 当前可切换的运行数
+            - article [ref=e76]:
+              - generic [ref=e77]: Case 数
+              - strong [ref=e78]: "0"
+              - generic [ref=e79]: 当前运行内的案例数
+            - article [ref=e80]:
+              - generic [ref=e81]: Evidence 数
+              - strong [ref=e82]: "0"
+              - generic [ref=e83]: 按当前筛选可见的 observation
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - article [ref=e86]:
+              - generic [ref=e87]:
+                - generic [ref=e88]:
+                  - heading "上传与运行状态" [level=3] [ref=e89]
+                  - paragraph [ref=e90]: 左侧提交 record，右侧只看后端阶段、进度和运行状态。
+                - generic [ref=e91]: 批量记录
+              - generic [ref=e93]:
+                - generic [ref=e94]:
+                  - generic [ref=e95]:
+                    - generic [ref=e96]: 模式
+                    - generic "records" [ref=e97] [cursor=pointer]:
+                      - textbox "模式 records"
+                      - generic [ref=e98]: records
+                      - img [ref=e101]
+                  - generic [ref=e103]:
+                    - generic [ref=e104]: 数据集
+                    - generic "自动" [ref=e105] [cursor=pointer]:
+                      - textbox "数据集 自动"
+                      - generic [ref=e106]: 自动
+                      - img [ref=e109]
+                  - generic [ref=e111]:
+                    - generic [ref=e112]: 候选数
+                    - generic [ref=e113]:
+                      - spinbutton "候选数" [ref=e114]: "5"
+                      - generic [ref=e116]:
+                        - button [ref=e117] [cursor=pointer]:
+                          - img [ref=e118]
+                        - button [ref=e120] [cursor=pointer]:
+                          - img [ref=e121]
+                - generic [ref=e123]:
+                  - generic [ref=e124]: 文件
+                  - button "文件" [ref=e125]
+                - button "上传并生成 Run" [ref=e127] [cursor=pointer]:
+                  - img [ref=e129]
+                  - text: 上传并生成 Run
+            - article [ref=e131]:
+              - generic [ref=e132]:
+                - generic [ref=e133]:
+                  - heading "当前 Run 下的 Case 审阅表" [level=3] [ref=e134]
+                  - paragraph [ref=e135]: 选定 case 后可直接跳转到图谱探索。
+                - generic [ref=e136]:
+                  - generic [ref=e137]: "--"
+                  - generic [ref=e138]: 0 个案例
+              - generic [ref=e139]:
+                - table [ref=e141]:
+                  - rowgroup [ref=e142]:
+                    - row "Case Dataset Evidence Top1 根因 路径数 反馈状态 操作" [ref=e143]:
+                      - columnheader "Case" [ref=e144]
+                      - columnheader "Dataset" [ref=e145]
+                      - columnheader "Evidence" [ref=e146]
+                      - columnheader "Top1 根因" [ref=e147]
+                      - columnheader "路径数" [ref=e148]
+                      - columnheader "反馈状态" [ref=e149]
+                      - columnheader "操作" [ref=e150]
+                  - rowgroup
+                - generic [ref=e151]:
+                  - img [ref=e153]
+                  - generic [ref=e155]: 当前没有 case
+          - complementary [ref=e156]:
+            - article [ref=e157]:
+              - generic [ref=e159]:
+                - heading "Evidence 筛选" [level=3] [ref=e160]
+                - paragraph [ref=e161]: 基于图谱、run、facet 和关键字快速过滤。
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]: 图谱
+                  - generic "全部图谱" [ref=e165] [cursor=pointer]:
+                    - textbox "图谱 全部图谱"
+                    - generic [ref=e166]: 全部图谱
+                    - img [ref=e169]
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Run
+                  - textbox "Run" [disabled] [ref=e174]: "--"
+                - generic [ref=e175]:
+                  - generic [ref=e176]: Facet
+                  - generic "全部" [ref=e177] [cursor=pointer]:
+                    - textbox "Facet 全部"
+                    - generic [ref=e178]: 全部
+                    - img [ref=e181]
+                - generic [ref=e183]:
+                  - generic [ref=e184]: 关键字
+                  - textbox "关键字" [ref=e186]:
+                    - /placeholder: 搜索 observation / hint
+            - article [ref=e187]:
+              - generic [ref=e188]:
+                - generic [ref=e189]:
+                  - heading "Evidence 列表" [level=3] [ref=e190]
+                  - paragraph [ref=e191]: 当前 run 内按筛选条件可见的 observation。
+                - generic [ref=e192]: "0"
+              - generic [ref=e194]:
+                - img [ref=e196]
+                - generic [ref=e198]: 没有匹配的 evidence
+            - article [ref=e199]:
+              - generic [ref=e201]:
+                - heading "当前 Evidence 摘要" [level=3] [ref=e202]
+                - paragraph [ref=e203]: 展示 linked hints、raw refs 和所属上下文。
+              - generic [ref=e204]:
+                - generic [ref=e205]:
+                  - text: Case
+                  - strong [ref=e206]: "--"
+                - generic [ref=e207]:
+                  - text: Facet
+                  - strong [ref=e208]: "--"
+                - generic [ref=e209]:
+                  - text: 图谱
+                  - strong [ref=e210]: "--"
+                - generic [ref=e211]:
+                  - text: Raw Refs
+                  - strong [ref=e212]: "0"
+                - generic [ref=e213]:
+                  - text: Hint
+                  - strong [ref=e214]: "--"
+                - generic [ref=e215]:
+                  - text: 置信度
+                  - strong [ref=e216]: "--"
+          - complementary [ref=e217]:
+            - button "EVID" [ref=e218] [cursor=pointer]:
+              - generic [ref=e219]: EVID
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - generic:
+                  - heading "证据提示" [level=4]
+                  - paragraph: 额外挂件，用于放说明、统计和告警。
+              - generic [ref=e222]:
+                - generic:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]: 当前图谱
+                    - strong [ref=e225]: 全部图谱
+                  - generic [ref=e226]:
+                    - generic [ref=e227]: 当前 Run
+                    - strong [ref=e228]: "--"
+                  - generic [ref=e229]:
+                    - generic [ref=e230]: Observation 总量
+                    - strong [ref=e231]: "0"
+                  - generic [ref=e232]:
+                    - generic [ref=e233]: 筛选后可见
+                    - strong [ref=e234]: "0"
+  - generic [ref=e236]:
+    - button "打开偏好设置" [ref=e237] [cursor=pointer]:
+      - img [ref=e239]
+      - generic [ref=e242]:
+        - generic [ref=e243]: 偏
+        - generic [ref=e244]: 好
+      - img [ref=e246]
+    - region "偏好设置":
+      - generic:
+        - generic:
+          - heading "偏好设置" [level=3]
+          - paragraph: 内置模拟数据链路
+        - button "恢复默认"
+      - generic:
+        - generic:
+          - generic:
+            - generic: 数据源模式
+            - generic:
+              - img
+          - tablist "切换数据源模式":
+            - button "模拟"
+            - button "后端"
+        - generic:
+          - generic:
+            - generic: 后端地址
+            - generic:
+              - img
+          - generic:
+            - textbox "http://127.0.0.1:8000"
+        - generic:
+          - generic:
+            - generic: 素材默认布局
+          - tablist "切换素材布局":
+            - button "网格"
+            - button "列表"
+        - generic:
+          - generic:
+            - generic:
+              - generic: 窄屏自动切列表
+            - paragraph: 小屏默认转列表，避免工作台被压坏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 页面渐入效果
+            - paragraph: 关闭后保留静态切换，方便联调和录屏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 调试面板
+            - paragraph: 打开后显示更多运行与构建的原始对象。
+          - switch

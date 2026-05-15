@@ -51,7 +51,7 @@ user-invocable: true
 - 创建用例组和任务时无需逐个 curl 向用户确认接口调用
 - 只要进入执行阶段，无论用户说"执行"、"开始跑"、"run"还是"run-local"，都必须先确认执行模式；不能自行假定默认值
 - `test_report.md` 默认写到 `case.md` 同目录，文件名固定为 `test_report.md`
-- 写 `test_report.md` 时要参考 `prd2case` 的产物放置习惯：结果文件放在当前测试任务目录内，通常与 `case.md` 同级
+- 写 `test_report.md` 时要参考 `prd2case-web` 的产物放置习惯：结果文件放在当前测试任务目录内，通常与 `case.md` 同级
 - 本地模式与 TTAT 远程模式的 `test_report.md` 顶层格式必须保持一致，至少统一使用 `执行概览` 与 `任务状态` 两个主章节；本地不存在的远程字段使用 `-` 占位
 - `EXECUTION_MODE=ttat` 时，创建任务成功后，必须立即把任务信息和报告文件路径写入 `test_report.md`
 - `EXECUTION_MODE=local` 时，不创建 TTAT `case_group_id` / `task_id`，而是先生成本地执行计划，再通过 `playwright-cli`（每个 case 独立 `-s=<caseId>` session）实际执行，并把结果写回 `test_report.md`
@@ -59,7 +59,7 @@ user-invocable: true
 - 技能本身不自动轮询 TTAT 任务状态，也不自动分析报告
 - 如何查询任务状态、什么代表任务完成、以及如何显式进入报告分析阶段，统一写在 `SKILL.md` 中，不写入 `test_report.md`
 - 任务完成后，如需分析报告，应继续使用当前 `webe2e` 技能的分析子命令，并把当前 `task_id` 作为输入；不要在 `run` 完成后自动触发
-- **`prd2case` 边界**：`prd2case` 只负责从 PRD/spec 产出 `test_analysis.md` / `case.md`；**不包含** `analyze-task`、`test_report.md` 的撰写规范，也不描述 TTAT 失败报告的 Markdown/HTML 拉取与解析优先级。凡属「跑完之后的报告与归因」，一律在本 skill（含下文 `analyze-task` 分析规范）内完成；若用户要在失败迭代里改用例，应先按本 skill 落盘分析结论，再决定是否回到 `prd2case` 改文档。
+- **`prd2case-web` 边界**：`prd2case-web` 只负责从 PRD/spec 产出 `test_analysis.md` / `case.md`；**不包含** `analyze-task`、`test_report.md` 的撰写规范，也不描述 TTAT 失败报告的 Markdown/HTML 拉取与解析优先级。凡属「跑完之后的报告与归因」，一律在本 skill（含下文 `analyze-task` 分析规范）内完成；若用户要在失败迭代里改用例，应先按本 skill 落盘分析结论，再决定是否回到 `prd2case-web` 改文档。
 - `analyze-task` 以终端返回和可选文件落地为主；如调用方未明确要求，不需要额外生成 Excel 汇总文件
 - 当用户询问"Web E2E 有哪些平台可选"时，可按需调用 `list-platforms` 能力，并向用户列出 `nameZh`、`platform`、`domain`、`poc`
 - 当用户询问"某个平台的详情"时，可按需调用 `platform-detail` 能力，并向用户解释该平台需要补充哪些环境变量、哪些值可沿用默认值
@@ -398,7 +398,7 @@ python3 $SKILL_DIR/scripts/case2webe2e.py platform-detail --platform <platform> 
 依赖 `case.md` 的下游产物清单：
 
 - **本地 payload 快照**：`case_group_payload*.json`、`local_execution_plan.json` 等如已存在，必须删除后按新 `case.md` 重新生成。
-- **Bits 用例**：必须以新 `case.md` 覆盖回 Bits，`case_id` 不变（见 `prd2case` 技能的 `scripts/case_management.py save --case-id <已有 id>`）。
+- **Bits 用例**：必须以新 `case.md` 覆盖回 Bits，`case_id` 不变（见 `prd2case-web` 技能的 `scripts/case_management.py save --case-id <已有 id>`）。
 - **TTAT case group**：必须调用 `edit_with_cases` 更新同一个 `case_group_id`，严禁新建一个平行 case group。
 - **test_report.md**：必须重新写一次，`case_group_action` 字段记为 `updated`。
 
@@ -414,13 +414,13 @@ python3 $SKILL_DIR/scripts/case2webe2e.py platform-detail --platform <platform> 
 
 **默认 tag**：`create_case_group` / `edit_with_cases` 两条路径走的是同一份 `tasks[]`（脚本里 `_build_tasks` 是唯一出口），每条 task 默认都会带上 `tags = ["ttat", "e2e", "newFeature"]`、`tag_names = ["ttat", "e2e", "newFeature"]`；其中 `newFeature` 必须保留，保证新建 / 更新后的 TTAT case group 能继续被 `newFeature` 过滤命中。如需追加业务 tag，请改 `_build_tasks` 的常量列表，**不要**在调用方零散拼接，避免两条路径漂移。
 
-**更新已有 case group 的推荐链路**：先在 `prd2case` Stage-4.1 把新 `case.md` 覆盖回同一个 Bits 用例，再按 TTAT UI 的一键更新形态更新 case group：`get_case_detail_by_url` → `bits2midscene_batch` → `edit_with_cases`。脚本侧生成的 `edit_with_cases` payload 会保持 `case_id: null`、`itemKey: case_<index>`、`tags/tag_names = ["ttat", "e2e", "newFeature"]`，并从 `save_result.json.data.case_expectations` 注入 `case_extra.expectation_ids`，避免破坏已绑定的 Bits 结构。
+**更新已有 case group 的推荐链路**：先在 `prd2case-web` Stage-4.1 把新 `case.md` 覆盖回同一个 Bits 用例，再按 TTAT UI 的一键更新形态更新 case group：`get_case_detail_by_url` → `bits2midscene_batch` → `edit_with_cases`。脚本侧生成的 `edit_with_cases` payload 会保持 `case_id: null`、`itemKey: case_<index>`、`tags/tag_names = ["ttat", "e2e", "newFeature"]`，并从 `save_result.json.data.case_expectations` 注入 `case_extra.expectation_ids`，避免破坏已绑定的 Bits 结构。
 
 拼装 TTAT 请求体时，Bits 绑定走 payload 级 `extras.extras.bitsConfig.url`，不写入每个 `tasks[]` 的 `bits_case_url` / `case_id`。`bitsConfig.url` 解析优先级：`.env` 的 `BITS_CASE_DETAIL_URL` → 与 `case.md` 同目录的 `save_result.json`（`case_management.py save -o` 产出）→ `case.md` 中首次出现的 `https://bits.bytedance.net/.../caseDetail/<id>`。
 
-**Bits 归档硬门禁**：进入 `create-group` / `edit-group` / `run` 之前必须确认 payload 中存在非空 `extras.extras.bitsConfig.url`。解析不到 Bits 链接时，**禁止**下发请求；先回 `prd2case` Stage-4.1 用 `case_management.py save -o save_result.json` 把当前 `case.md` 归档到 Bits（首次 → 不带 `--case-id` 新建；已有 `case_id` → 带 `--case-id` 更新同一条），再回到本流程。**不允许**用空 `bitsConfig.url` 创建 / 更新 case group——TTAT 任务回到 Bits 反查时会断链。
+**Bits 归档硬门禁**：进入 `create-group` / `edit-group` / `run` 之前必须确认 payload 中存在非空 `extras.extras.bitsConfig.url`。解析不到 Bits 链接时，**禁止**下发请求；先回 `prd2case-web` Stage-4.1 用 `case_management.py save -o save_result.json` 把当前 `case.md` 归档到 Bits（首次 → 不带 `--case-id` 新建；已有 `case_id` → 带 `--case-id` 更新同一条），再回到本流程。**不允许**用空 `bitsConfig.url` 创建 / 更新 case group——TTAT 任务回到 Bits 反查时会断链。
 
-**Bits 预期结果节点门禁**：`save_result.json` 还必须包含 `data.case_expectations`，其中每个 `expectation_nodes[]` 对应 `case.md` 的一个 `##### **预期结果**` 节点，并包含 Bits 节点 `id` 与 `path: [操作步骤序号, 预期结果序号]`。节点数量只与 `case.md` 的 `预期结果` 节点数对齐，不与 `####` 用例数或 TTAT task 数对齐。脚本会按每个 task 覆盖到的预期结果集合写入 `tasks[].case_extra.expectation_ids`；如果任一 task 缺失该字段，`create-group` / `edit-group` / `run` 必须 STOP，并要求回 `prd2case` Stage-4.1 重新归档当前 `case.md`。
+**Bits 预期结果节点门禁**：`save_result.json` 还必须包含 `data.case_expectations`，其中每个 `expectation_nodes[]` 对应 `case.md` 的一个 `##### **预期结果**` 节点，并包含 Bits 节点 `id` 与 `path: [操作步骤序号, 预期结果序号]`。节点数量只与 `case.md` 的 `预期结果` 节点数对齐，不与 `####` 用例数或 TTAT task 数对齐。脚本会按每个 task 覆盖到的预期结果集合写入 `tasks[].case_extra.expectation_ids`；如果任一 task 缺失该字段，`create-group` / `edit-group` / `run` 必须 STOP，并要求回 `prd2case-web` Stage-4.1 重新归档当前 `case.md`。
 
 ### 步骤 4：执行自动化链路并初始化测试报告
 
@@ -428,12 +428,12 @@ python3 $SKILL_DIR/scripts/case2webe2e.py platform-detail --platform <platform> 
 
 #### 分支 A：`EXECUTION_MODE=ttat`
 
-**前置（Bits 归档硬门禁）**：进入 TTAT 链路前，必须确认 `case.md` 已经归档到 Bits，并且能解析出 payload 级 `extras.extras.bitsConfig.url` 与 task 级 `tasks[].case_extra.expectation_ids`——优先使用 `.env` 的 `BITS_CASE_DETAIL_URL` 解析 Bits 链接，其次使用 `case.md` 同目录的 `save_result.json`，最后才读取 `case.md` 内嵌的 `https://bits.bytedance.net/.../caseDetail/<id>` 链接；`expectation_ids` 只能来自 `save_result.json.data.case_expectations` 或转换结果自带字段。解析不到 Bits 链接或任一 task 缺 expectation_ids → STOP，提示用户回 `prd2case` Stage-4.1 用 `case_management.py save -o save_result.json` 完成归档（首次 / 增量都按那条规则），不允许带空 `bitsConfig.url` 或空 `expectation_ids` 创建 / 更新 case group。
+**前置（Bits 归档硬门禁）**：进入 TTAT 链路前，必须确认 `case.md` 已经归档到 Bits，并且能解析出 payload 级 `extras.extras.bitsConfig.url` 与 task 级 `tasks[].case_extra.expectation_ids`——优先使用 `.env` 的 `BITS_CASE_DETAIL_URL` 解析 Bits 链接，其次使用 `case.md` 同目录的 `save_result.json`，最后才读取 `case.md` 内嵌的 `https://bits.bytedance.net/.../caseDetail/<id>` 链接；`expectation_ids` 只能来自 `save_result.json.data.case_expectations` 或转换结果自带字段。解析不到 Bits 链接或任一 task 缺 expectation_ids → STOP，提示用户回 `prd2case-web` Stage-4.1 用 `case_management.py save -o save_result.json` 完成归档（首次 / 增量都按那条规则），不允许带空 `bitsConfig.url` 或空 `expectation_ids` 创建 / 更新 case group。
 
 1. 读取 `case.md`
 2. 由 `scripts/case2webe2e.py` 统一调用 `markdown2midscene` 并生成 Midscene 内容；未显式指定 `--case-priority` 时默认只保留 `P0` case
 3. 如需覆盖默认行为，可显式传入 `--case-priority P1`、`--case-priority P2`、`--case-priority P3` 或 `--case-priority all`；其中 `all` 会包含未标记 priority 的 case
-4. 解析返回内容并拼装 TTAT 请求体；脚本会按"`.env` `BITS_CASE_DETAIL_URL` → `save_result.json` → `case.md` 内嵌 Bits 链接"顺序填充 `extras.extras.bitsConfig.url`，并按 `save_result.json.data.case_expectations` 给每个 task 写入 `case_extra.expectation_ids`。任一字段为空必须停止下发，把当前 case 标题报回让用户回 `prd2case` Stage-4.1 补归档
+4. 解析返回内容并拼装 TTAT 请求体；脚本会按"`.env` `BITS_CASE_DETAIL_URL` → `save_result.json` → `case.md` 内嵌 Bits 链接"顺序填充 `extras.extras.bitsConfig.url`，并按 `save_result.json.data.case_expectations` 给每个 task 写入 `case_extra.expectation_ids`。任一字段为空必须停止下发，把当前 case 标题报回让用户回 `prd2case-web` Stage-4.1 补归档
    - URL 初始化参数处理：`case.md` 的 `访问:` URL 应保留稳定业务上下文参数；对页面初始化依赖的动态参数（如相对当前时间生成的时间窗），必须由 Stage-2 在 `test_analysis.md` 记录处理策略。通用脚本不内置业务页面专项补参逻辑；若某业务页面确实需要动态 URL，应在用例生成阶段产出明确的业务前置脚本或稳定时间范围。
 5. 读取环境配置并写入 `extras.execEnv`
 6. 确定 case group 走"新建"还是"更新"：
@@ -847,7 +847,7 @@ python3 $SKILL_DIR/scripts/case2webe2e.py analyze-task --task-id <task_id> --cas
 
 以下旧标签已废弃，**禁止在输出中使用**：
 - ❌ `改动方: 模型` → 改用 `归因类别: 工具问题 - 模型`
-- ❌ `改动方: PRD2Case` → 改用 `归因类别: Bits2Midscene-解析步骤`（确认是转换阶段问题）或 `归因类别: Case 描述 - 业务QA`（确认是用例描述问题）
+- ❌ `改动方: prd2case-web` → 改用 `归因类别: Bits2Midscene-解析步骤`（确认是转换阶段问题）或 `归因类别: Case 描述 - 业务QA`（确认是用例描述问题）
 - ❌ `改动方: 业务QA` → 改用 `归因类别: Case 测试数据问题` 或 `归因类别: Case 描述 - 业务QA`（必须区分数据问题 vs 描述问题）
 - ❌ `改动方: 业务QA（待确认）` → 已废弃，如证据不足直接标注置信度为"低"并给出最可能的归因方向
 - ❌ `改动方: 待确认` → 已废弃，同上
@@ -859,7 +859,7 @@ python3 $SKILL_DIR/scripts/case2webe2e.py analyze-task --task-id <task_id> --cas
 | 旧口径 | 当前归因类别 | 常见落点 |
 |------|------|------|
 | `改动方: 业务QA` | `Case 测试数据问题` 或 `Case 描述 - 业务QA` | 空数据、前置条件未满足、步骤描述不清、断言文案不符 |
-| `改动方: PRD2Case` | `Bits2Midscene-解析步骤` | 空步骤、URL 丢失、节点拆分异常 |
+| `改动方: prd2case-web` | `Bits2Midscene-解析步骤` | 空步骤、URL 丢失、节点拆分异常 |
 | `改动方: 模型` | `工具问题 - 模型` | 规划能力、执行边界、断言太快 |
 | `改动方: Midscene` | `Midscene` | 启动失败、截图异常、页面未稳定 |
 | `改动方: Bug` | `Bug` | 功能异常 |
@@ -994,7 +994,7 @@ python3 $SKILL_DIR/scripts/case2webe2e.py analyze-task --task-id <task_id> --cas
 
 ### 常见归因规则（更新版）
 
-#### `Bits2Midscene-解析步骤`（原 PRD2Case 部分场景）
+#### `Bits2Midscene-解析步骤`（原 prd2case-web 部分场景）
 
 - 真实报错明确指出 instruction 为空、`No specific instruction was provided`
 - URL 在 markdown2midscene 转换后丢失或拼接错误
@@ -1069,7 +1069,7 @@ python3 $SKILL_DIR/scripts/case2webe2e.py analyze-task --task-id <task_id> --cas
 - "断言不通过"
 - "页面加载问题"
 - "元素定位失败"
-- "全部都是 PRD2Case"
+- "全部都是 prd2case-web"
 - "没有证据，但先归因为 instruction 为空"
 - "指令不完整"
 - "登录问题"

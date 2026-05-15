@@ -4932,7 +4932,7 @@ def _align_expectation_ids_to_tasks(
         raise SystemExit(
             "expectation node count mismatch: case.md has "
             f"{parsed_count} 预期结果 nodes but save_result.json has {saved_count}. "
-            "Rerun prd2case Stage-4.1 to refresh save_result.json."
+            "Rerun prd2case-web Stage-4.1 to refresh save_result.json."
         )
 
     if path_groups is None:
@@ -4965,7 +4965,7 @@ def _align_expectation_ids_to_tasks(
                 raise SystemExit(
                     "expectation path missing in save_result.json: "
                     f"case_index={case_index}, path={path}. "
-                    "Rerun prd2case Stage-4.1 to refresh save_result.json."
+                    "Rerun prd2case-web Stage-4.1 to refresh save_result.json."
                 )
             ids.append(node_id)
         aligned.append(ids)
@@ -5236,8 +5236,8 @@ def _enforce_ttat_bits_archive_gate(payload: dict[str, Any], case_md: str) -> No
         "extras.extras.bitsConfig.url to bind the case group to a Bits case.\n"
         f"case.md: {case_md}\n"
         f"Current task titles:\n{case_text}\n"
-        "Run prd2case Stage-4.1 first, for example:\n"
-        "  python3 $PRD2CASE_SKILL/scripts/case_management.py save "
+        "Run prd2case-web Stage-4.1 first, for example:\n"
+        "  python3 $prd2case-web_SKILL/scripts/case_management.py save "
         "<case.md> --case-title \"<title>\" -o <case_dir>/save_result.json\n"
         "For an existing Bits case, rerun the same command with --case-id <existing id>. "
         "Alternatively set BITS_CASE_DETAIL_URL in the env file."
@@ -5275,8 +5275,8 @@ def _enforce_expectation_ids_gate(payload: dict[str, Any], case_md: str) -> None
         "tasks[].case_extra.expectation_ids bound to Bits 预期结果 nodes.\n"
         f"case.md: {case_md}\n"
         f"Missing task titles:\n{missing_text}\n"
-        "Rerun prd2case Stage-4.1 to refresh save_result.json:\n"
-        "  python3 $PRD2CASE_SKILL/scripts/case_management.py save "
+        "Rerun prd2case-web Stage-4.1 to refresh save_result.json:\n"
+        "  python3 $prd2case-web_SKILL/scripts/case_management.py save "
         "<case.md> --case-title \"<title>\" -o <case_dir>/save_result.json\n"
         "For an existing Bits case, rerun the same command with --case-id <existing id>."
     )

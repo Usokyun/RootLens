@@ -1,0 +1,87 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "RCA 工作台" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: RCA 工作台
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e19]: 模拟模式
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e23]: 内置资产
+    - generic [ref=e24]:
+      - generic [ref=e25]: 当前运行
+      - generic [ref=e26]: mock-wafer-evidence
+  - generic [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: 分析台
+        - generic [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: 实验与图谱
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e48]: 图谱工坊
+      - button "收起侧边栏" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+    - main [ref=e52]
+  - generic [ref=e54]:
+    - button "打开偏好设置" [ref=e55] [cursor=pointer]:
+      - img [ref=e57]
+      - generic [ref=e60]:
+        - generic [ref=e61]: 偏
+        - generic [ref=e62]: 好
+      - img [ref=e64]
+    - region "偏好设置":
+      - generic:
+        - generic:
+          - heading "偏好设置" [level=3]
+          - paragraph: 内置模拟数据链路
+        - button "恢复默认"
+      - generic:
+        - generic:
+          - generic:
+            - generic: 数据源模式
+            - generic:
+              - img
+          - tablist "切换数据源模式":
+            - button "模拟"
+            - button "后端"
+        - generic:
+          - generic:
+            - generic: 后端地址
+            - generic:
+              - img
+          - generic:
+            - textbox "http://127.0.0.1:8000"
+        - generic:
+          - generic:
+            - generic: 素材默认布局
+          - tablist "切换素材布局":
+            - button "网格"
+            - button "列表"
+        - generic:
+          - generic:
+            - generic:
+              - generic: 窄屏自动切列表
+            - paragraph: 小屏默认转列表，避免工作台被压坏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 页面渐入效果
+            - paragraph: 关闭后保留静态切换，方便联调和录屏。
+          - switch [checked]
+        - generic:
+          - generic:
+            - generic:
+              - generic: 调试面板
+            - paragraph: 打开后显示更多运行与构建的原始对象。
+          - switch

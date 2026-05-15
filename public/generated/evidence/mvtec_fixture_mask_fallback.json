@@ -17,6 +17,7 @@
     "correction_candidates": [],
     "inconsistent_fields": [],
     "linked_entities": [],
+    "ranked_root_causes": [],
     "top_k_paths": []
   },
   "location": "surface",
@@ -160,5 +161,5 @@
   "severity": 0.16,
   "source": "image",
   "summary": "Fixture omits explicit location and morphology so mask geometry supplies fallback evidence.",
-  "timestamp": "2026-05-13T06:37:57Z"
+  "timestamp": "2026-05-15T06:22:26Z"
 }

@@ -12,8 +12,9 @@ export const router = createRouter({
       name: 'evidence',
       component: () => import('@/views/EvidenceManageView.vue'),
       meta: {
-        label: '证据管理',
-        description: '管理 case 与 observation，审查并编辑统一 Evidence。',
+        label: '证据与审阅',
+        description: '上传 record、查看运行状态，并按 run / graph 筛选 Evidence。',
+        tags: ['Run Upload', 'Evidence Filter', 'Case Review'],
       },
     },
     {
@@ -22,7 +23,8 @@ export const router = createRouter({
       component: () => import('@/views/GraphExploreView.vue'),
       meta: {
         label: '图谱探索',
-        description: '图谱可视化、RCA 双路线结果、反馈与编辑入口。',
+        description: '总图谱、path_graph 子图、根因列表与反馈卡。',
+        tags: ['Total Graph', 'Path Graph', 'Feedback Review'],
       },
     },
     {
@@ -30,8 +32,9 @@ export const router = createRouter({
       name: 'materials',
       component: () => import('@/views/MaterialsManageView.vue'),
       meta: {
-        label: '素材管理',
-        description: '导入多模态素材、管理素材库并发起图谱构建。',
+        label: '图谱工坊',
+        description: '管理图谱素材、排序筛选、批量构图与构建结果。',
+        tags: ['Materials CRUD', 'Graph Build', 'Build Result'],
       },
     },
   ],
