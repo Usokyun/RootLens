@@ -15,6 +15,7 @@ import { useRoute, useRouter } from "vue-router";
 import type {
   KGStudioGraphNode,
   KGStudioPayload,
+  ReviewLedgerRecord,
   RunDetail,
   RunSummary,
 } from "@/api/contracts";
@@ -65,11 +66,21 @@ import {
   type TraceStep,
 } from "@/services/graph-reasoning-inspection";
 import {
+  buildGraphCorrectionProvenance,
   buildGraphEdgeProvenance,
   buildGraphEntityLinkProvenance,
   buildGraphPathProvenance,
+  resolveObservationForSelection,
   type ProvenanceInspectorState,
 } from "@/services/provenance-inspector";
+import {
+  buildReviewLedgerDisplayItems,
+  filterReviewLedgerRecords,
+  formatReviewLedgerTargetType,
+  isBoundedReviewTargetType,
+  type ReviewLedgerDisplayItem,
+  type ReviewLedgerTargetFilter,
+} from "@/services/review-ledger";
 import {
   formatClaimBoundaryCopy,
   formatScoringMethodLabel,
@@ -116,11 +127,15 @@ const reviewMessage = ref("");
 const totalGraphRenderMessage = ref("正在准备总图谱...");
 const localGraphRenderMessage = ref("正在准备局部子图...");
 const actionMessage = ref("");
-const feedbackCardTab = ref<"rca" | "curation" | "trace">("rca");
+const feedbackCardTab = ref<"rca" | "curation" | "trace" | "ledger">("rca");
 const crossCaseCompareOpen = ref(false);
 const selectedTraceStepId = ref<string | null>(null);
 const provenanceInspectorVisible = ref(false);
 const provenanceInspectorState = ref<ProvenanceInspectorState | null>(null);
+const ledgerLoading = ref(false);
+const ledgerErrorMessage = ref("");
+const ledgerRecords = ref<ReviewLedgerRecord[]>([]);
+const ledgerTargetTypeFilter = ref<ReviewLedgerTargetFilter>("all");
 const pendingCaseSelectionPatch = ref<Partial<WorkbenchState> | null>(null);
 const savedCaseDrafts = ref<Record<string, MockGraphCurationCaseDraft>>({});
 const workingCaseDrafts = ref<Record<string, MockGraphCurationCaseDraft>>({});
@@ -161,6 +176,19 @@ function formatAliasInput(value: string[] | null | undefined) {
 
 function formatScore(value: unknown) {
   return typeof value === "number" ? value.toFixed(3) : "--";
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "--";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("zh-CN", { hour12: false });
 }
 
 function readStringAttribute(
@@ -544,24 +572,46 @@ const activeCurationSuggestions = computed<CurationSuggestion[]>(() => {
   return [...edgeSuggestions, ...nodeSuggestions];
 });
 
+const activeTraceEntityLink = computed(() => {
+  if (!selectedTraceStepId.value?.startsWith("entity:")) {
+    return null;
+  }
+
+  return (
+    activeReasoningInspection.value.linkedEntities.find(
+      (item) => `entity:${item.linkId}` === selectedTraceStepId.value,
+    ) ?? null
+  );
+});
+
 const activeSubmitTarget = computed(() => {
   const reviewTargets =
     activeCase.value?.review_targets ?? runDetail.value?.review_targets ?? [];
-  const candidateTarget =
+  const edgeTarget =
     findReviewTargetInList(
       reviewTargets,
-      "root_cause_candidate",
-      activeCandidate.value?.ranking_id ?? activeCandidate.value?.candidate_id,
+      "edge",
+      activeCurationEdge.value?.id,
+    ) ?? null;
+  const entityLinkTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "entity_link",
+      activeTraceEntityLink.value?.linkId,
     ) ?? null;
   const pathTarget =
     findReviewTargetInList(reviewTargets, "path", activePath.value?.path_id) ??
     null;
 
+  if (edgeTarget && canSubmitReviewTargetType(edgeTarget.target_type)) {
+    return edgeTarget;
+  }
+
   if (
-    candidateTarget &&
-    canSubmitReviewTargetType(candidateTarget.target_type)
+    entityLinkTarget &&
+    canSubmitReviewTargetType(entityLinkTarget.target_type)
   ) {
-    return candidateTarget;
+    return entityLinkTarget;
   }
 
   if (pathTarget && canSubmitReviewTargetType(pathTarget.target_type)) {
@@ -718,6 +768,25 @@ const selectedObservationFocus = computed(() => {
   };
 });
 
+const filteredLedgerRecords = computed(() =>
+  filterReviewLedgerRecords(ledgerRecords.value, ledgerTargetTypeFilter.value),
+);
+
+const ledgerDisplayItems = computed(() =>
+  buildReviewLedgerDisplayItems(filteredLedgerRecords.value, activeCase.value),
+);
+
+const ledgerBoundedTargetOptions = computed(() => [
+  { value: "all", label: "全部 target" },
+  { value: "path", label: formatReviewLedgerTargetType("path") },
+  { value: "edge", label: formatReviewLedgerTargetType("edge") },
+  { value: "entity_link", label: formatReviewLedgerTargetType("entity_link") },
+  { value: "correction", label: formatReviewLedgerTargetType("correction") },
+]);
+
+const ledgerIntroCopy =
+  "本账本只包含 path / edge / entity_link / correction 的 append-only review 记录；candidate quick review 不纳入正式 ledger。";
+
 const feedbackCardBadge = computed(() => {
   if (feedbackCardTab.value === "rca") {
     return activeSubmitTarget.value?.label ?? "暂无反馈目标";
@@ -725,6 +794,14 @@ const feedbackCardBadge = computed(() => {
 
   if (feedbackCardTab.value === "curation") {
     return "本地 Draft Overlay";
+  }
+
+  if (feedbackCardTab.value === "ledger") {
+    if (ledgerLoading.value) {
+      return "正在加载 ledger";
+    }
+
+    return `${ledgerDisplayItems.value.length} 条 ledger 记录`;
   }
 
   return (
@@ -1123,6 +1200,211 @@ function openSelectedEdgeProvenance() {
       claimBoundary: graphClaimBoundaryCopy.value,
     }),
   );
+}
+
+function openLedgerRecordProvenance(item: ReviewLedgerDisplayItem) {
+  if (!activeCase.value) {
+    return;
+  }
+
+  if (item.target_type === "path") {
+    openGraphProvenance(
+      buildGraphPathProvenance({
+        caseDetail: activeCase.value,
+        pathId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  if (item.target_type === "entity_link") {
+    openGraphProvenance(
+      buildGraphEntityLinkProvenance({
+        caseDetail: activeCase.value,
+        linkId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  if (item.target_type === "correction") {
+    openGraphProvenance(
+      buildGraphCorrectionProvenance({
+        caseDetail: activeCase.value,
+        correctionId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  const sourceEdge =
+    totalGraphDataset.value?.edges.find((edge) => edge.id === item.target_id) ??
+    null;
+  const fallbackEdge = sourceEdge
+    ? sourceEdge
+    : ({
+        id: item.target_id,
+        source: normalizeText(item.metadata?.source),
+        target: normalizeText(item.metadata?.target),
+        relation: normalizeText(item.metadata?.relation),
+        confidence:
+          typeof item.metadata?.confidence === "number"
+            ? item.metadata.confidence
+            : null,
+        origin: undefined,
+        attributes: {
+          source: normalizeText(item.metadata?.source),
+          evidence: normalizeText(item.metadata?.evidence),
+        },
+      } as const);
+
+  openGraphProvenance(
+    buildGraphEdgeProvenance({
+      caseDetail: activeCase.value,
+      edge: fallbackEdge,
+      claimBoundary: graphClaimBoundaryCopy.value,
+    }),
+  );
+}
+
+function focusLedgerEdgeTarget(edgeId: string) {
+  const edge =
+    totalGraphDataset.value?.edges.find((item) => item.id === edgeId) ?? null;
+  if (!edge) {
+    return;
+  }
+
+  const centerNodeId =
+    workbenchState.value.selectedGraphNodeId === edge.source ||
+    workbenchState.value.selectedGraphNodeId === edge.target
+      ? workbenchState.value.selectedGraphNodeId
+      : edge.source;
+
+  updateState({
+    selectedGraphNodeId: centerNodeId,
+    subgraphMode: "neighborhood",
+    selectedSubgraphNodeId: null,
+    selectedSubgraphEdgeId: edge.id,
+  });
+}
+
+function handleLedgerRecordClick(item: ReviewLedgerDisplayItem) {
+  if (!activeCase.value || !item.targetAvailable) {
+    return;
+  }
+
+  selectedTraceStepId.value = null;
+
+  if (item.target_type === "path") {
+    updateState({
+      selectedPathId: item.target_id,
+      subgraphMode: "path",
+      selectedSubgraphNodeId: null,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  if (item.target_type === "edge") {
+    focusLedgerEdgeTarget(item.target_id);
+    return;
+  }
+
+  if (item.target_type === "entity_link") {
+    const link =
+      activeCase.value.linked_entities?.find(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          !Array.isArray(entry) &&
+          entry.link_id === item.target_id,
+      ) ?? null;
+    const nextObservation = resolveObservationForSelection(
+      activeCase.value,
+      typeof link === "object" && link
+        ? ((link as Record<string, unknown>).obs_id as string | null)
+        : null,
+    );
+    selectedTraceStepId.value = `entity:${item.target_id}`;
+    updateState({
+      selectedObservationId:
+        nextObservation?.id ?? workbenchState.value.selectedObservationId,
+      selectedGraphNodeId:
+        typeof link === "object" &&
+        link &&
+        typeof (link as Record<string, unknown>).selected_entity_id === "string"
+          ? ((link as Record<string, unknown>).selected_entity_id as string)
+          : workbenchState.value.selectedGraphNodeId,
+      subgraphMode:
+        typeof link === "object" &&
+        link &&
+        typeof (link as Record<string, unknown>).selected_entity_id === "string"
+          ? "neighborhood"
+          : workbenchState.value.subgraphMode,
+      selectedSubgraphNodeId: null,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  const correction =
+    activeCase.value.correction_candidates?.find(
+      (entry) =>
+        typeof entry === "object" &&
+        entry !== null &&
+        !Array.isArray(entry) &&
+        entry.candidate_id === item.target_id,
+    ) ?? null;
+  const nextObservation = resolveObservationForSelection(
+    activeCase.value,
+    typeof correction === "object" && correction
+      ? ((correction as Record<string, unknown>).target_obs_id as string | null)
+      : null,
+  );
+  if (nextObservation) {
+    updateState({ selectedObservationId: nextObservation.id });
+  }
+}
+
+function buildLedgerFriendlyError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (preferences.value.dataSourceMode === "backend") {
+    return message.includes("404") || message.includes("405")
+      ? "当前后端暂未提供 review ledger 列表接口；Mock / replay 模式可完整演示。"
+      : message;
+  }
+
+  return message;
+}
+
+async function loadReviewLedger() {
+  if (!runDetail.value || !activeCase.value) {
+    ledgerRecords.value = [];
+    ledgerErrorMessage.value = "";
+    return;
+  }
+
+  ledgerLoading.value = true;
+  ledgerErrorMessage.value = "";
+
+  try {
+    const response = await getRootLensService().listReviewLedger({
+      run_id: runDetail.value.run.run_id,
+      case_id: activeCase.value.case_id,
+      limit: 200,
+    });
+    ledgerRecords.value = response.records.filter((item) =>
+      isBoundedReviewTargetType(item.target_type),
+    );
+  } catch (error) {
+    ledgerRecords.value = [];
+    ledgerErrorMessage.value = buildLedgerFriendlyError(error);
+  } finally {
+    ledgerLoading.value = false;
+  }
 }
 
 function openCrossCaseCompare() {
@@ -1630,6 +1912,7 @@ async function handleFeedbackSubmit() {
     });
 
     reviewMessage.value = `反馈已记录：${String(response.record.feedback_id ?? response.status)}`;
+    await loadReviewLedger();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   }
@@ -1646,6 +1929,15 @@ watch(
   () => route.query,
   () => {
     syncQueryContext();
+  },
+);
+
+watch(
+  () => feedbackCardTab.value,
+  (tab) => {
+    if (tab === "ledger") {
+      void loadReviewLedger();
+    }
   },
 );
 
@@ -1668,6 +1960,25 @@ watch(
     selectedTraceStepId.value = null;
     if (!candidateId) {
       crossCaseCompareOpen.value = false;
+    }
+  },
+);
+
+watch(
+  [() => runDetail.value?.run.run_id, () => activeCase.value?.case_id],
+  ([runId, caseId], [previousRunId, previousCaseId]) => {
+    if (!runId || !caseId) {
+      ledgerRecords.value = [];
+      ledgerErrorMessage.value = "";
+      return;
+    }
+
+    if (runId !== previousRunId || caseId !== previousCaseId) {
+      ledgerRecords.value = [];
+      ledgerErrorMessage.value = "";
+      if (feedbackCardTab.value === "ledger") {
+        void loadReviewLedger();
+      }
     }
   },
 );
@@ -1972,6 +2283,17 @@ onMounted(() => {
                   @click="feedbackCardTab = 'trace'"
                 >
                   推理链路
+                </button>
+                <button
+                  type="button"
+                  class="workspace-feedback-tabs__item"
+                  :class="{
+                    'workspace-feedback-tabs__item--active':
+                      feedbackCardTab === 'ledger',
+                  }"
+                  @click="feedbackCardTab = 'ledger'"
+                >
+                  Review Ledger
                 </button>
               </div>
 
@@ -2590,7 +2912,122 @@ onMounted(() => {
                   </div>
                 </section>
               </template>
-              <template v-else>
+              <template v-else-if="feedbackCardTab === 'ledger'">
+                <section
+                  class="workspace-feedback-pane workspace-feedback-pane--ledger"
+                >
+                  <div class="workspace-feedback-pane__section">
+                    <div class="workspace-feedback-pane__section-head">
+                      <strong>Review Ledger</strong>
+                      <span>{{
+                        activeCase?.case_label ?? activeCase?.case_id ?? "--"
+                      }}</span>
+                    </div>
+
+                    <div
+                      class="workspace-claim-note workspace-claim-note--compact"
+                    >
+                      <span class="workspace-summary-label">
+                        <icon-info-circle />
+                        <span>Ledger policy</span>
+                      </span>
+                      <strong>{{ ledgerIntroCopy }}</strong>
+                    </div>
+
+                    <div class="workspace-form-row workspace-form-row--two">
+                      <div class="rl-form-field">
+                        <span class="workspace-field-label">
+                          <icon-relation />
+                          <span>Target type</span>
+                        </span>
+                        <a-select v-model="ledgerTargetTypeFilter">
+                          <a-option
+                            v-for="option in ledgerBoundedTargetOptions"
+                            :key="option.value"
+                            :value="option.value"
+                          >
+                            {{ option.label }}
+                          </a-option>
+                        </a-select>
+                      </div>
+                    </div>
+
+                    <a-alert
+                      v-if="ledgerErrorMessage"
+                      type="warning"
+                      :show-icon="false"
+                      :title="ledgerErrorMessage"
+                    />
+
+                    <div
+                      v-if="ledgerLoading"
+                      class="workspace-build-detail-modal__loading"
+                    >
+                      <a-spin />
+                    </div>
+                    <div
+                      v-else-if="ledgerDisplayItems.length"
+                      class="workspace-scroll-list workspace-scroll-list--ledger"
+                    >
+                      <div
+                        v-for="item in ledgerDisplayItems"
+                        :key="item.feedback_id"
+                        class="workspace-basic-list-item workspace-basic-list-item--ledger"
+                        @click="handleLedgerRecordClick(item)"
+                      >
+                        <div class="workspace-basic-list-item__primary">
+                          {{ item.title }}
+                        </div>
+                        <div
+                          class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                        >
+                          <span
+                            >{{ item.targetTypeLabel }} ·
+                            {{ item.target_id }}</span
+                          >
+                          <span
+                            >{{ item.actionLabel }} ·
+                            {{ item.reviewer ?? "anonymous" }}</span
+                          >
+                          <span>{{ formatDateTime(item.created_at) }}</span>
+                          <span>{{ graphClaimBoundaryCopy }}</span>
+                        </div>
+                        <p class="workspace-ledger-record__subtitle">
+                          {{ item.subtitle }}
+                        </p>
+                        <p class="workspace-ledger-record__note">
+                          {{ item.note ?? "无备注" }}
+                        </p>
+                        <div
+                          class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
+                        >
+                          <a-button
+                            size="mini"
+                            type="text"
+                            :disabled="!item.targetAvailable"
+                            @click.stop="handleLedgerRecordClick(item)"
+                          >
+                            定位
+                          </a-button>
+                          <a-button
+                            size="mini"
+                            type="text"
+                            :disabled="!item.targetAvailable"
+                            @click.stop="openLedgerRecordProvenance(item)"
+                          >
+                            Inspect Provenance
+                          </a-button>
+                        </div>
+                      </div>
+                    </div>
+                    <a-empty
+                      v-else
+                      description="当前 run / case 暂无 bounded review ledger 记录。"
+                    />
+                  </div>
+                </section>
+              </template>
+              <template v-else-if="feedbackCardTab === 'curation'">
                 <section
                   class="workspace-feedback-pane workspace-feedback-pane--curation"
                 >

@@ -7,6 +7,7 @@ import type {
   RunCaseDetail,
 } from "@/api/contracts";
 import {
+  buildGraphCorrectionProvenance,
   buildGraphEdgeProvenance,
   buildGraphEntityLinkProvenance,
   buildGraphPathProvenance,
@@ -65,6 +66,18 @@ const graphCase: RunCaseDetail = {
       match_type: "partial",
       ambiguous: true,
       obs_id: "obs_tep_0001_anomaly_type_process_fault",
+    },
+  ],
+  correction_candidates: [
+    {
+      candidate_id: "correction-1",
+      target_obs_id: "obs_tep_0001_anomaly_type_process_fault",
+      original_value: "process_fault",
+      suggested_entity_id: "component:component_a",
+      suggested_value: "Component_A (组分 A)",
+      score: 0.64,
+      reason: "process_fault maps weakly to component A",
+      supporting_edge_ids: ["edge-1"],
     },
   ],
   top_k_paths: [
@@ -151,6 +164,12 @@ const graphCase: RunCaseDetail = {
       target_id: "edge-1",
       target_key: "edge:edge-1",
       label: "Edge 1",
+    },
+    {
+      target_type: "correction",
+      target_id: "correction-1",
+      target_key: "correction:1",
+      label: "Correction 1",
     },
   ],
   visual_evidence: [
@@ -315,6 +334,25 @@ describe("provenance inspector builders", () => {
       expect.arrayContaining(["edge_metadata", "edge_provenance"]),
     );
     expect(result?.records[0].tags).toContain("projected");
+  });
+
+  it("builds correction provenance from correction metadata, supporting edges, and target observation refs", () => {
+    const result = buildGraphCorrectionProvenance({
+      caseDetail: graphCase,
+      correctionId: "correction-1",
+      claimBoundary,
+    });
+
+    expect(result?.targetKind).toBe("correction");
+    expect(result?.records.map((item) => item.sourceType)).toEqual(
+      expect.arrayContaining([
+        "correction",
+        "raw_evidence_ref",
+        "visual_evidence",
+        "edge_provenance",
+      ]),
+    );
+    expect(result?.linkedReviewTarget).toBe("correction:1");
   });
 
   it("builds build-level provenance from manifest, summary, qa report, and linked source materials", () => {

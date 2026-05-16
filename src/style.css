@@ -1510,6 +1510,28 @@ a {
   border-radius: 12px;
 }
 
+.workspace-scroll-list--ledger {
+  max-height: none;
+}
+
+.workspace-basic-list-item--ledger {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.workspace-ledger-record__subtitle,
+.workspace-ledger-record__note {
+  margin: 0;
+  color: #52606d;
+  font-size: 12px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.workspace-ledger-record__note {
+  color: #334e68;
+}
+
 .workspace-feedback-pane__field {
   gap: 8px;
 }

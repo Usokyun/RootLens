@@ -10,12 +10,13 @@ import {
   findObservationBrowseItem,
   type ObservationBrowseItem,
 } from "@/services/evidence-observation";
-import type { UnifiedGraphEdge } from "@/types/graph";
+import type { JsonValue, UnifiedGraphEdge } from "@/types/graph";
 
 export type ProvenanceTargetKind =
   | "path"
   | "edge"
   | "entity_link"
+  | "correction"
   | "build"
   | "build_edge";
 export type ProvenanceSourceType =
@@ -23,6 +24,7 @@ export type ProvenanceSourceType =
   | "visual_evidence"
   | "edge_provenance"
   | "entity_link"
+  | "correction"
   | "edge_metadata"
   | "manifest"
   | "summary"
@@ -53,6 +55,16 @@ export interface ProvenanceInspectorState {
   claimBoundary: string;
   records: ProvenanceRecord[];
   semanticNotes: string[];
+}
+
+export interface GraphProvenanceEdgeRef {
+  id: string;
+  source: string;
+  target: string;
+  relation: string;
+  confidence: number | null;
+  origin?: UnifiedGraphEdge["origin"];
+  attributes?: Record<string, JsonValue>;
 }
 
 export interface ProvenanceSourceMaterial {
@@ -246,7 +258,7 @@ function findParentObservationForField(
   );
 }
 
-function resolveObservationForSelection(
+export function resolveObservationForSelection(
   caseDetail: RunCaseDetail,
   selectionId: string | null | undefined,
 ) {
@@ -362,6 +374,22 @@ function findEdgeReviewTargetKey(
   return (
     caseDetail.review_targets?.find(
       (item) => item.target_type === "edge" && item.target_id === edgeId,
+    )?.target_key ?? null
+  );
+}
+
+function findCorrectionReviewTargetKey(
+  caseDetail: RunCaseDetail,
+  correctionId: string | null | undefined,
+) {
+  if (!correctionId) {
+    return null;
+  }
+
+  return (
+    caseDetail.review_targets?.find(
+      (item) =>
+        item.target_type === "correction" && item.target_id === correctionId,
     )?.target_key ?? null
   );
 }
@@ -644,19 +672,7 @@ export function buildGraphEntityLinkProvenance(input: {
 
 export function buildGraphEdgeProvenance(input: {
   caseDetail: RunCaseDetail | null | undefined;
-  edge:
-    | Pick<
-        UnifiedGraphEdge,
-        | "id"
-        | "source"
-        | "target"
-        | "relation"
-        | "confidence"
-        | "origin"
-        | "attributes"
-      >
-    | null
-    | undefined;
+  edge: GraphProvenanceEdgeRef | null | undefined;
   claimBoundary: string;
 }): ProvenanceInspectorState | null {
   if (!input.caseDetail || !input.edge) {
@@ -753,6 +769,118 @@ function buildSourceMaterialRecords(input: {
       multiline: false,
     };
   });
+}
+
+export function buildGraphCorrectionProvenance(input: {
+  caseDetail: RunCaseDetail | null | undefined;
+  correctionId: string | null | undefined;
+  claimBoundary: string;
+}): ProvenanceInspectorState | null {
+  if (!input.caseDetail || !input.correctionId) {
+    return null;
+  }
+
+  const correction =
+    (Array.isArray(input.caseDetail.correction_candidates)
+      ? input.caseDetail.correction_candidates.find(
+          (item) =>
+            isRecord(item) &&
+            normalizeText(item.candidate_id) === input.correctionId,
+        )
+      : null) ?? null;
+  if (!correction) {
+    return null;
+  }
+
+  const reviewTargetKey = findCorrectionReviewTargetKey(
+    input.caseDetail,
+    input.correctionId,
+  );
+  const observation = resolveObservationForSelection(
+    input.caseDetail,
+    normalizeNullableText(correction.target_obs_id),
+  );
+  const records: ProvenanceRecord[] = [
+    {
+      recordId: `correction:${input.correctionId}`,
+      sourceType: "correction",
+      sourceLabel: normalizeText(
+        correction.suggested_value,
+        input.correctionId,
+      ),
+      sourcePathOrId: normalizeText(
+        correction.suggested_entity_id,
+        input.correctionId,
+      ),
+      snippetOrPreview: `${normalizeText(correction.reason, "correction")} · ${JSON.stringify(correction.original_value ?? null)} -> ${normalizeText(correction.suggested_value, input.correctionId)}`,
+      previewUrl: null,
+      confidence: normalizeNumber(correction.score),
+      claimBoundary: input.claimBoundary,
+      reviewTargetKey,
+      tags: ["source-grounded"],
+      multiline: false,
+    },
+  ];
+
+  if (observation) {
+    records.push(
+      ...observation.rawEvidenceRefs.map((rawRef, index) =>
+        buildRawRefRecord({
+          recordId: `correction-raw-ref:${input.correctionId}:${index}`,
+          claimBoundary: input.claimBoundary,
+          reviewTargetKey,
+          observationId: observation.id,
+          rawRef,
+        }),
+      ),
+    );
+    records.push(
+      ...buildVisualEvidenceRecords({
+        visualEvidence: input.caseDetail.visual_evidence,
+        observation,
+        claimBoundary: input.claimBoundary,
+        reviewTargetKey,
+      }),
+    );
+  }
+
+  const supportingEdgeIds = readStringArray(correction.supporting_edge_ids);
+  for (const edgeId of supportingEdgeIds) {
+    const sourceEdge = Array.isArray(input.caseDetail.source_edge_provenance)
+      ? input.caseDetail.source_edge_provenance.find(
+          (item) => isRecord(item) && normalizeText(item.edge_id) === edgeId,
+        )
+      : null;
+
+    if (sourceEdge && isRecord(sourceEdge)) {
+      records.push({
+        recordId: `correction-edge:${edgeId}`,
+        sourceType: "edge_provenance",
+        sourceLabel: normalizeText(sourceEdge.relation, edgeId),
+        sourcePathOrId: normalizeText(sourceEdge.source, edgeId),
+        snippetOrPreview:
+          normalizeText(sourceEdge.evidence) ||
+          `${normalizeText(sourceEdge.source)} —${normalizeText(sourceEdge.relation)}→ ${normalizeText(sourceEdge.target)}`,
+        previewUrl: null,
+        confidence: normalizeNumber(sourceEdge.confidence),
+        claimBoundary: input.claimBoundary,
+        reviewTargetKey,
+        tags: ["source-grounded"],
+        multiline: false,
+      });
+    }
+  }
+
+  return {
+    targetKind: "correction",
+    targetId: input.correctionId,
+    summary: normalizeText(correction.suggested_value, input.correctionId),
+    contextLabel: input.caseDetail.case_label ?? input.caseDetail.case_id,
+    linkedReviewTarget: reviewTargetKey,
+    claimBoundary: input.claimBoundary,
+    records: uniqueStable(records, (item) => item.recordId),
+    semanticNotes: [],
+  };
 }
 
 export function buildMaterialsBuildProvenance(input: {

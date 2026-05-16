@@ -34,6 +34,8 @@ function formatTargetKind(value: ProvenanceTargetKind | null | undefined) {
       return "Edge";
     case "entity_link":
       return "Entity Link";
+    case "correction":
+      return "Correction";
     case "build":
       return "Build";
     case "build_edge":
@@ -53,6 +55,8 @@ function formatSourceType(value: ProvenanceSourceType) {
       return "Edge provenance";
     case "entity_link":
       return "Entity link";
+    case "correction":
+      return "Correction";
     case "edge_metadata":
       return "Edge metadata";
     case "manifest":
