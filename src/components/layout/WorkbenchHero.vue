@@ -26,16 +26,11 @@ withDefaults(
 
 <template>
   <section class="workbench-hero" :class="`workbench-hero--${tone}`">
-    <div class="workbench-hero__backdrop" aria-hidden="true" />
-
     <div class="workbench-hero__main">
       <span class="workbench-hero__eyebrow">{{ eyebrow }}</span>
 
       <div class="workbench-hero__title-row">
         <h2 class="workbench-hero__title">{{ title }}</h2>
-        <div v-if="$slots.badges" class="workbench-hero__badges">
-          <slot name="badges" />
-        </div>
       </div>
 
       <p v-if="description" class="workbench-hero__description">{{ description }}</p>
@@ -67,44 +62,24 @@ withDefaults(
 <style scoped>
 .workbench-hero {
   position: relative;
-  border: 1px solid rgba(63, 124, 255, 0.14);
+  border: 1px solid var(--rl-border);
   border-radius: 18px;
   padding: 16px 18px;
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.9fr);
   gap: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.94)),
-    radial-gradient(circle at top left, rgba(63, 124, 255, 0.14), transparent 30%);
-  box-shadow: 0 20px 42px rgba(17, 25, 39, 0.08);
+  background: var(--rl-card);
+  box-shadow: var(--rl-shadow);
   overflow: hidden;
   isolation: isolate;
 }
 
-.workbench-hero__backdrop {
-  position: absolute;
-  inset: auto -8% -45% auto;
-  width: 240px;
-  height: 240px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(63, 124, 255, 0.16), transparent 66%);
-  pointer-events: none;
-}
-
 .workbench-hero--teal {
-  border-color: rgba(15, 118, 110, 0.16);
-}
-
-.workbench-hero--teal .workbench-hero__backdrop {
-  background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 66%);
+  border-color: var(--rl-border);
 }
 
 .workbench-hero--amber {
-  border-color: rgba(217, 119, 6, 0.18);
-}
-
-.workbench-hero--amber .workbench-hero__backdrop {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.18), transparent 66%);
+  border-color: var(--rl-border);
 }
 
 .workbench-hero__main,
@@ -157,13 +132,6 @@ withDefaults(
   color: #102a43;
   font-size: clamp(1.5rem, 2vw, 2rem);
   line-height: 1.05;
-}
-
-.workbench-hero__badges {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .workbench-hero__description {

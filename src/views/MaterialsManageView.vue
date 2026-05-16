@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { IconRefresh, IconUpload } from '@arco-design/web-vue/es/icon'
+import {
+  IconBulb,
+  IconInfoCircle,
+  IconRefresh,
+  IconRelation,
+  IconStorage,
+  IconUpload,
+} from '@arco-design/web-vue/es/icon'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import type {
@@ -11,10 +18,10 @@ import type {
   KGConstructionSourceType,
   KGStudioPayload,
 } from '@/api/contracts'
-import HoverInfoDock from '@/components/layout/HoverInfoDock.vue'
 import WorkbenchHero from '@/components/layout/WorkbenchHero.vue'
 import { useAppPreferences } from '@/services/app-preferences'
 import { getRootLensService } from '@/services/rootlens-service'
+import { downloadJsonFile } from '@/services/session-export'
 import { useWorkbenchState } from '@/services/workbench-state'
 
 interface MaterialRecord {
@@ -32,6 +39,16 @@ interface MaterialRecord {
   buildSource: KGConstructionSourceInput
 }
 
+interface RootLensKGBuildExportV1 {
+  schema_version: 'rootlens-kg-build-export.v1'
+  exported_at: string
+  source_mode: 'mock' | 'backend'
+  build: KGConstructionBuildDetail['build']
+  summary: KGConstructionBuildDetail['summary']
+  manifest: KGConstructionBuildDetail['manifest']
+  claim_boundary: string
+}
+
 const { preferences } = useAppPreferences()
 const { state: workbenchState, updateState } = useWorkbenchState()
 
@@ -43,6 +60,9 @@ const kgStudio = ref<KGStudioPayload | null>(null)
 const builds = ref<KGConstructionBuildListResponse | null>(null)
 const buildDetail = ref<KGConstructionBuildDetail | null>(null)
 const sourceList = ref<KGConstructionSourceListResponse | null>(null)
+const sourceUploadInputRef = ref<HTMLInputElement | null>(null)
+const sourceUploadDragActive = ref(false)
+const sourceUploadDragDepth = ref(0)
 
 const selectedMaterialId = ref<string | null>(null)
 const selectedMaterialIds = ref<string[]>([])
@@ -79,21 +99,8 @@ const buildForm = reactive({
 })
 
 const selectedBuildRunId = computed(() => workbenchState.value.selectedConstructionRunId)
-
-const workspaceTags = computed(() => [
-  {
-    label: preferences.value.dataSourceMode === 'backend' ? '后端模式' : '模拟模式',
-    color: 'arcoblue' as const,
-  },
-  {
-    label: `${materials.value.length} 份素材`,
-    color: 'green' as const,
-  },
-  {
-    label: `${builds.value?.builds.length ?? 0} 次构图`,
-    color: 'gold' as const,
-  },
-])
+const sourceUploadAccept = '.csv,.json,.jsonl'
+const canExportBuild = computed(() => !!buildDetail.value)
 
 const heroMetrics = computed(() => [
   {
@@ -249,9 +256,48 @@ function syncEditorFromSelectedMaterial() {
   materialEditor.note = selectedMaterial.value?.note ?? ''
 }
 
+function setSourceUploadFile(file: File | null) {
+  sourceUpload.file = file
+}
+
 function handleSourceUploadFileChange(event: Event) {
   const input = event.target as HTMLInputElement | null
-  sourceUpload.file = input?.files?.[0] ?? null
+  setSourceUploadFile(input?.files?.[0] ?? null)
+}
+
+function openSourceUploadPicker() {
+  sourceUploadInputRef.value?.click()
+}
+
+function resetSourceUploadDragState() {
+  sourceUploadDragDepth.value = 0
+  sourceUploadDragActive.value = false
+}
+
+function handleSourceUploadDragEnter(event: DragEvent) {
+  event.preventDefault()
+  sourceUploadDragDepth.value += 1
+  sourceUploadDragActive.value = true
+}
+
+function handleSourceUploadDragOver(event: DragEvent) {
+  event.preventDefault()
+  sourceUploadDragActive.value = true
+}
+
+function handleSourceUploadDragLeave(event: DragEvent) {
+  event.preventDefault()
+  sourceUploadDragDepth.value = Math.max(0, sourceUploadDragDepth.value - 1)
+  if (sourceUploadDragDepth.value === 0) {
+    sourceUploadDragActive.value = false
+  }
+}
+
+function handleSourceUploadDrop(event: DragEvent) {
+  event.preventDefault()
+  const [file] = event.dataTransfer?.files ?? []
+  setSourceUploadFile(file ?? null)
+  resetSourceUploadDragState()
 }
 
 function toggleMaterialSelection(materialId: string, checked: boolean) {
@@ -385,6 +431,25 @@ async function handleBuild() {
   }
 }
 
+function handleExportBuild() {
+  if (!buildDetail.value) {
+    return
+  }
+
+  const payload: RootLensKGBuildExportV1 = {
+    schema_version: 'rootlens-kg-build-export.v1',
+    exported_at: new Date().toISOString(),
+    source_mode: preferences.value.dataSourceMode,
+    build: buildDetail.value.build,
+    summary: buildDetail.value.summary,
+    manifest: buildDetail.value.manifest,
+    claim_boundary: buildDetail.value.build.claim_boundary,
+  }
+
+  downloadJsonFile(`rootlens-kg-build-${buildDetail.value.build.run_id}.json`, payload)
+  actionMessage.value = `已导出图谱 bundle：${buildDetail.value.build.run_id}`
+}
+
 watch(
   () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
   () => {
@@ -420,11 +485,6 @@ onMounted(() => {
       :metrics="heroMetrics"
       tone="amber"
     >
-      <template #badges>
-        <a-tag v-for="tag in workspaceTags" :key="tag.label" size="small" :color="tag.color">
-          {{ tag.label }}
-        </a-tag>
-      </template>
       <template #actions>
         <a-button size="small" @click="refreshWorkspace">
           <template #icon>
@@ -438,301 +498,337 @@ onMounted(() => {
     <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
     <a-alert v-if="actionMessage" class="rl-alert" type="success" :title="actionMessage" />
 
-    <section class="workspace-shell">
-      <div class="workspace-shell__main workspace-stack">
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">筛选与排序组</h3>
-              <p class="rl-section-card__desc">轻量筛选，不再堆叠复杂高级检索面板。</p>
-            </div>
-          </header>
-          <div class="rl-section-card__body workspace-filter-row">
-            <a-input v-model="filters.search" placeholder="搜索素材名称 / 路径 / 说明" />
-            <a-select v-model="filters.dataset">
-              <a-option value="all">全部数据集</a-option>
-              <a-option value="shared">shared</a-option>
-              <a-option value="tep">tep</a-option>
-              <a-option value="mvtec">mvtec</a-option>
-              <a-option value="wafer">wafer</a-option>
-            </a-select>
-            <a-select v-model="filters.type">
-              <a-option value="all">全部类型</a-option>
-              <a-option value="manual_table">manual_table</a-option>
-              <a-option value="structured_records">structured_records</a-option>
-              <a-option value="tep_semantic_lift">tep_semantic_lift</a-option>
-              <a-option value="tep_variable_mapping">tep_variable_mapping</a-option>
-            </a-select>
-            <a-select v-model="filters.status">
-              <a-option value="all">全部状态</a-option>
-              <a-option value="内置">内置</a-option>
-              <a-option value="已上传">已上传</a-option>
-            </a-select>
-            <a-select v-model="filters.sortField">
-              <a-option value="updatedAt">按更新时间</a-option>
-              <a-option value="title">按名称</a-option>
-              <a-option value="type">按类型</a-option>
-            </a-select>
-            <a-select v-model="filters.sortOrder">
-              <a-option value="desc">降序</a-option>
-              <a-option value="asc">升序</a-option>
-            </a-select>
-          </div>
-        </article>
-
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">素材列表</h3>
-              <p class="rl-section-card__desc">优先表格视图，支持选择、编辑、删除和批量构图。</p>
-            </div>
-            <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
-          </header>
-          <div class="rl-section-card__body workspace-table-card">
-            <div class="workspace-table-wrap">
-              <table class="workspace-table">
-                <thead>
-                  <tr>
-                    <th>选择</th>
-                    <th>名称</th>
-                    <th>类型</th>
-                    <th>角色</th>
-                    <th>数据集</th>
-                    <th>更新时间</th>
-                    <th>状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="material in filteredMaterials"
-                    :key="material.id"
-                    :class="{ 'workspace-table__row--active': material.id === selectedMaterial?.id }"
-                    @click="selectedMaterialId = material.id"
-                  >
-                    <td>
-                      <input
-                        type="checkbox"
-                        :checked="selectedMaterialIds.includes(material.id)"
-                        @click.stop
-                        @change="toggleMaterialSelection(material.id, ($event.target as HTMLInputElement).checked)"
-                      />
-                    </td>
-                    <td>
-                      <strong>{{ material.title }}</strong>
-                    </td>
-                    <td>{{ material.type }}</td>
-                    <td>{{ material.role }}</td>
-                    <td>{{ material.dataset }}</td>
-                    <td>{{ formatDateTime(material.updatedAt) }}</td>
-                    <td>{{ material.status }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <a-empty v-if="!filteredMaterials.length">暂无素材</a-empty>
-          </div>
-        </article>
-
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">构图结果 / 已生成图谱</h3>
-              <p class="rl-section-card__desc">查看构图批次、节点边数量以及当前默认批次。</p>
-            </div>
-            <a-tag color="gold">{{ builds?.builds.length ?? 0 }} 次</a-tag>
-          </header>
-          <div class="rl-section-card__body workspace-table-card">
-            <div class="workspace-table-wrap">
-              <table class="workspace-table">
-                <thead>
-                  <tr>
-                    <th>图谱名</th>
-                    <th>来源素材数</th>
-                    <th>节点/边</th>
-                    <th>状态</th>
-                    <th>更新时间</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="build in builds?.builds ?? []"
-                    :key="build.run_id"
-                    :class="{ 'workspace-table__row--active': build.run_id === buildDetail?.build.run_id }"
-                    @click="loadBuildDetail(build.run_id)"
-                  >
-                    <td>
-                      <strong>{{ build.run_id }}</strong>
-                    </td>
-                    <td>{{ build.source_count }}</td>
-                    <td>{{ build.node_count }} / {{ build.edge_count }}</td>
-                    <td>{{ build.status }}</td>
-                    <td>{{ formatDateTime(build.created_at) }}</td>
-                    <td>
-                      <a-button size="mini" type="text" @click.stop="loadBuildDetail(build.run_id)">查看详情</a-button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-if="buildDetail" class="workspace-build-detail">
-              <div class="workspace-summary-list">
-                <div class="workspace-summary-list__item">
-                  <span>当前批次</span>
-                  <strong>{{ buildDetail.build.run_id }}</strong>
-                </div>
-                <div class="workspace-summary-list__item">
-                  <span>输出目录</span>
-                  <strong>{{ buildDetail.build.output_dir }}</strong>
-                </div>
-                <div class="workspace-summary-list__item">
-                  <span>Summary Path</span>
-                  <strong>{{ buildDetail.build.summary_path }}</strong>
-                </div>
+    <section class="workspace-shell workspace-shell--materials">
+      <div class="workspace-materials-layout">
+        <section class="workspace-materials-top-grid">
+          <article class="rl-section-card workspace-materials-card">
+            <header class="rl-section-card__header">
+              <div>
+                <h3 class="rl-section-card__title workspace-title-with-icon">
+                  <icon-relation />
+                  <span>素材列表</span>
+                </h3>
+                <p class="rl-section-card__desc">优先表格视图，支持选择、编辑、删除和批量构图。</p>
               </div>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <aside class="workspace-shell__aside workspace-stack">
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">上传 / 新建素材</h3>
-              <p class="rl-section-card__desc">先用现有 backend 接口完成上传；编辑与删除先在前端视图层生效。</p>
-            </div>
-          </header>
-          <div class="rl-section-card__body workspace-stack">
-            <div class="rl-form-field">
-              <span>来源 ID</span>
-              <a-input v-model="sourceUpload.source_id" />
-            </div>
-            <div class="workspace-form-row workspace-form-row--two">
-              <div class="rl-form-field">
-                <span>类型</span>
-                <a-select v-model="sourceUpload.source_type">
+              <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
+            </header>
+            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
+              <div class="workspace-filter-row">
+                <a-input v-model="filters.search" placeholder="搜索素材名称 / 路径 / 说明" />
+                <a-select v-model="filters.dataset">
+                  <a-option value="all">全部数据集</a-option>
+                  <a-option value="shared">shared</a-option>
+                  <a-option value="tep">tep</a-option>
+                  <a-option value="mvtec">mvtec</a-option>
+                  <a-option value="wafer">wafer</a-option>
+                </a-select>
+                <a-select v-model="filters.type">
+                  <a-option value="all">全部类型</a-option>
                   <a-option value="manual_table">manual_table</a-option>
                   <a-option value="structured_records">structured_records</a-option>
                   <a-option value="tep_semantic_lift">tep_semantic_lift</a-option>
                   <a-option value="tep_variable_mapping">tep_variable_mapping</a-option>
                 </a-select>
-              </div>
-              <div class="rl-form-field">
-                <span>格式</span>
-                <a-select v-model="sourceUpload.source_format">
-                  <a-option value="csv">csv</a-option>
-                  <a-option value="json">json</a-option>
-                  <a-option value="jsonl">jsonl</a-option>
+                <a-select v-model="filters.status">
+                  <a-option value="all">全部状态</a-option>
+                  <a-option value="内置">内置</a-option>
+                  <a-option value="已上传">已上传</a-option>
+                </a-select>
+                <a-select v-model="filters.sortField">
+                  <a-option value="updatedAt">按更新时间</a-option>
+                  <a-option value="title">按名称</a-option>
+                  <a-option value="type">按类型</a-option>
+                </a-select>
+                <a-select v-model="filters.sortOrder">
+                  <a-option value="desc">降序</a-option>
+                  <a-option value="asc">升序</a-option>
                 </a-select>
               </div>
-            </div>
-            <div class="rl-form-field">
-              <span>场景</span>
-              <a-input v-model="sourceUpload.scenario" />
-            </div>
-            <div class="rl-form-field">
-              <span>文件</span>
-              <input type="file" @change="handleSourceUploadFileChange" />
-            </div>
-            <div class="rl-form-actions">
-              <a-button type="primary" @click="handleSourceUpload">
-                <template #icon>
-                  <icon-upload />
-                </template>
-                上传素材
-              </a-button>
-            </div>
-          </div>
-        </article>
 
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">当前选中素材</h3>
-              <p class="rl-section-card__desc">先以 UI 层编辑为主，便于 mock / backend 双模式演示。</p>
+              <div class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill">
+                <table class="workspace-table">
+                  <thead>
+                    <tr>
+                      <th>选择</th>
+                      <th>名称</th>
+                      <th>类型</th>
+                      <th>角色</th>
+                      <th>数据集</th>
+                      <th>更新时间</th>
+                      <th>状态</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="material in filteredMaterials"
+                      :key="material.id"
+                      :class="{ 'workspace-table__row--active': material.id === selectedMaterial?.id }"
+                      @click="selectedMaterialId = material.id"
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          :checked="selectedMaterialIds.includes(material.id)"
+                          @click.stop
+                          @change="toggleMaterialSelection(material.id, ($event.target as HTMLInputElement).checked)"
+                        />
+                      </td>
+                      <td>
+                        <strong>{{ material.title }}</strong>
+                      </td>
+                      <td>{{ material.type }}</td>
+                      <td>{{ material.role }}</td>
+                      <td>{{ material.dataset }}</td>
+                      <td>{{ formatDateTime(material.updatedAt) }}</td>
+                      <td>{{ material.status }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <a-empty v-if="!filteredMaterials.length">暂无素材</a-empty>
             </div>
-          </header>
-          <div class="rl-section-card__body workspace-stack">
-            <div class="rl-form-field">
-              <span>名称</span>
-              <a-input v-model="materialEditor.title" />
+          </article>
+
+          <div class="workspace-materials-top-side-stack">
+            <article class="rl-section-card workspace-material-editor-card">
+              <header class="rl-section-card__header">
+                <div>
+                  <h3 class="rl-section-card__title workspace-title-with-icon">
+                    <icon-storage />
+                    <span>当前选中素材</span>
+                  </h3>
+                  <p class="rl-section-card__desc">先以 UI 层编辑为主，便于 mock / backend 双模式演示。</p>
+                </div>
+              </header>
+              <div class="rl-section-card__body workspace-stack workspace-material-editor-form">
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-info-circle />
+                    <span>名称</span>
+                  </span>
+                  <a-input v-model="materialEditor.title" />
+                </div>
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label">
+                      <icon-relation />
+                      <span>数据集</span>
+                    </span>
+                    <a-input v-model="materialEditor.dataset" />
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label">
+                      <icon-bulb />
+                      <span>角色</span>
+                    </span>
+                    <a-input v-model="materialEditor.role" />
+                  </div>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-info-circle />
+                    <span>说明</span>
+                  </span>
+                  <a-textarea v-model="materialEditor.note" :auto-size="{ minRows: 3, maxRows: 5 }" />
+                </div>
+                <div class="rl-form-actions">
+                  <a-button type="primary" :disabled="!selectedMaterial" @click="applyMaterialEdit">保存展示修改</a-button>
+                  <a-button status="danger" :disabled="!selectedMaterial" @click="deleteMaterialFromView">从视图删除</a-button>
+                </div>
+              </div>
+            </article>
+
+            <article class="rl-section-card workspace-upload-source-card">
+              <header class="rl-section-card__header">
+                <div>
+                  <h3 class="rl-section-card__title workspace-title-with-icon">
+                    <icon-upload />
+                    <span>上传 / 新建素材</span>
+                  </h3>
+                  <p class="rl-section-card__desc">先用现有 backend 接口完成上传；编辑与删除先在前端视图层生效。</p>
+                </div>
+              </header>
+              <div class="rl-section-card__body workspace-stack workspace-stack--fill">
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-storage />
+                    <span>来源 ID</span>
+                  </span>
+                  <a-input v-model="sourceUpload.source_id" />
+                </div>
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label">
+                      <icon-relation />
+                      <span>类型</span>
+                    </span>
+                    <a-select v-model="sourceUpload.source_type">
+                      <a-option value="manual_table">manual_table</a-option>
+                      <a-option value="structured_records">structured_records</a-option>
+                      <a-option value="tep_semantic_lift">tep_semantic_lift</a-option>
+                      <a-option value="tep_variable_mapping">tep_variable_mapping</a-option>
+                    </a-select>
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label">
+                      <icon-info-circle />
+                      <span>格式</span>
+                    </span>
+                    <a-select v-model="sourceUpload.source_format">
+                      <a-option value="csv">csv</a-option>
+                      <a-option value="json">json</a-option>
+                      <a-option value="jsonl">jsonl</a-option>
+                    </a-select>
+                  </div>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-bulb />
+                    <span>场景</span>
+                  </span>
+                  <a-input v-model="sourceUpload.scenario" />
+                </div>
+                <div class="rl-form-field workspace-dropzone-field">
+                  <span class="workspace-field-label">
+                    <icon-upload />
+                    <span>文件</span>
+                  </span>
+                  <div
+                    class="rl-file-dropzone rl-file-dropzone--fill"
+                    :class="{ 'rl-file-dropzone--active': sourceUploadDragActive }"
+                    @dragenter="handleSourceUploadDragEnter"
+                    @dragover="handleSourceUploadDragOver"
+                    @dragleave="handleSourceUploadDragLeave"
+                    @drop="handleSourceUploadDrop"
+                  >
+                    <input
+                      ref="sourceUploadInputRef"
+                      class="rl-file-input-native"
+                      type="file"
+                      :accept="sourceUploadAccept"
+                      @change="handleSourceUploadFileChange"
+                    />
+                    <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
+                      <div class="rl-file-dropzone__copy">
+                        <strong>{{ sourceUpload.file?.name ?? '拖动来源文件到这里，或点击按钮选择文件' }}</strong>
+                        <span>{{ sourceUploadAccept }}</span>
+                      </div>
+                      <a-button size="small" @click="openSourceUploadPicker">选择文件</a-button>
+                    </div>
+                  </div>
+                </div>
+                <div class="rl-form-actions">
+                  <a-button type="primary" @click="handleSourceUpload">
+                    <template #icon>
+                      <icon-upload />
+                    </template>
+                    上传素材
+                  </a-button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="workspace-materials-bottom-grid">
+          <article class="rl-section-card workspace-builds-card">
+            <header class="rl-section-card__header">
+              <div>
+                <h3 class="rl-section-card__title workspace-title-with-icon">
+                  <icon-relation />
+                  <span>构图结果 / 已生成图谱</span>
+                </h3>
+                <p class="rl-section-card__desc">查看构图批次、节点边数量以及当前默认批次。</p>
+              </div>
+              <a-tag color="gold">{{ builds?.builds.length ?? 0 }} 次</a-tag>
+            </header>
+            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
+              <div class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill">
+                <table class="workspace-table">
+                  <thead>
+                    <tr>
+                      <th>图谱名</th>
+                      <th>来源素材数</th>
+                      <th>节点/边</th>
+                      <th>状态</th>
+                      <th>更新时间</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="build in builds?.builds ?? []"
+                      :key="build.run_id"
+                      :class="{ 'workspace-table__row--active': build.run_id === buildDetail?.build.run_id }"
+                      @click="loadBuildDetail(build.run_id)"
+                    >
+                      <td>
+                        <strong>{{ build.run_id }}</strong>
+                      </td>
+                      <td>{{ build.source_count }}</td>
+                      <td>{{ build.node_count }} / {{ build.edge_count }}</td>
+                      <td>{{ build.status }}</td>
+                      <td>{{ formatDateTime(build.created_at) }}</td>
+                      <td>
+                        <a-button size="mini" type="text" @click.stop="loadBuildDetail(build.run_id)">查看详情</a-button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="workspace-form-row workspace-form-row--two">
+          </article>
+
+          <article class="rl-section-card workspace-build-recipe-card">
+            <header class="rl-section-card__header">
+              <div>
+                <h3 class="rl-section-card__title workspace-title-with-icon">
+                  <icon-bulb />
+                  <span>构图配方</span>
+                </h3>
+                <p class="rl-section-card__desc">基于当前勾选素材生成图谱批次，并支持导出当前 build bundle。</p>
+              </div>
+              <a-tag color="arcoblue">{{ selectedMaterials.length }} 份已选</a-tag>
+            </header>
+            <div class="rl-section-card__body workspace-stack">
+              <div class="workspace-summary-list workspace-summary-list--two-col">
+                <div class="workspace-summary-list__item">
+                  <span class="workspace-summary-label">
+                    <icon-upload />
+                    <span>已选素材</span>
+                  </span>
+                  <strong>{{ selectedMaterials.length }}</strong>
+                </div>
+                <div class="workspace-summary-list__item">
+                  <span class="workspace-summary-label">
+                    <icon-storage />
+                    <span>默认图谱</span>
+                  </span>
+                  <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
+                </div>
+              </div>
               <div class="rl-form-field">
-                <span>数据集</span>
-                <a-input v-model="materialEditor.dataset" />
+                <span class="workspace-field-label">
+                  <icon-info-circle />
+                  <span>输出图谱名</span>
+                </span>
+                <a-input v-model="buildForm.output_name" />
               </div>
               <div class="rl-form-field">
-                <span>角色</span>
-                <a-input v-model="materialEditor.role" />
+                <span class="workspace-field-label">
+                  <icon-bulb />
+                  <span>场景</span>
+                </span>
+                <a-input v-model="buildForm.scenario" />
+              </div>
+              <div class="rl-form-actions rl-form-actions--dual">
+                <a-button type="primary" @click="handleBuild">生成图谱</a-button>
+                <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出到本地</a-button>
               </div>
             </div>
-            <div class="rl-form-field">
-              <span>说明</span>
-              <a-textarea v-model="materialEditor.note" :auto-size="{ minRows: 4, maxRows: 6 }" />
-            </div>
-            <div class="rl-form-actions">
-              <a-button type="primary" :disabled="!selectedMaterial" @click="applyMaterialEdit">保存展示修改</a-button>
-              <a-button status="danger" :disabled="!selectedMaterial" @click="deleteMaterialFromView">从视图删除</a-button>
-            </div>
-          </div>
-        </article>
-
-        <article class="rl-section-card">
-          <header class="rl-section-card__header">
-            <div>
-              <h3 class="rl-section-card__title">构图配方</h3>
-              <p class="rl-section-card__desc">基于当前勾选素材生成图谱批次。</p>
-            </div>
-            <a-tag color="arcoblue">{{ selectedMaterials.length }} 份已选</a-tag>
-          </header>
-          <div class="rl-section-card__body workspace-stack">
-            <div class="workspace-summary-list">
-              <div class="workspace-summary-list__item">
-                <span>已选素材</span>
-                <strong>{{ selectedMaterials.length }}</strong>
-              </div>
-              <div class="workspace-summary-list__item">
-                <span>默认图谱</span>
-                <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
-              </div>
-            </div>
-            <div class="rl-form-field">
-              <span>输出图谱名</span>
-              <a-input v-model="buildForm.output_name" />
-            </div>
-            <div class="rl-form-field">
-              <span>场景</span>
-              <a-input v-model="buildForm.scenario" />
-            </div>
-            <div class="rl-form-actions">
-              <a-button type="primary" @click="handleBuild">生成图谱</a-button>
-            </div>
-          </div>
-        </article>
-      </aside>
-
-      <HoverInfoDock title="工坊提示" label="BUILD" subtitle="额外信息挂件，用于放构图统计、失败原因和快捷说明。" tone="amber">
-        <div class="workspace-summary-list">
-          <div class="workspace-summary-list__item">
-            <span>当前默认图谱</span>
-            <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
-          </div>
-          <div class="workspace-summary-list__item">
-            <span>候选图谱节点</span>
-            <strong>{{ kgStudio?.node_count ?? 0 }}</strong>
-          </div>
-          <div class="workspace-summary-list__item">
-            <span>候选图谱边</span>
-            <strong>{{ kgStudio?.edge_count ?? 0 }}</strong>
-          </div>
-          <div class="workspace-summary-list__item">
-            <span>已选素材数</span>
-            <strong>{{ selectedMaterials.length }}</strong>
-          </div>
-        </div>
-      </HoverInfoDock>
+          </article>
+        </section>
+      </div>
     </section>
   </div>
 </template>

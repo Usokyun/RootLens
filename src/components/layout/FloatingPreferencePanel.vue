@@ -110,10 +110,6 @@ onBeforeUnmount(() => {
         <span class="floating-preference-panel__handle-icon">
           <icon-settings />
         </span>
-        <span class="floating-preference-panel__handle-label" aria-hidden="true">
-          <span>偏</span>
-          <span>好</span>
-        </span>
         <span
           class="floating-preference-panel__handle-arrow"
           :class="{ 'floating-preference-panel__handle-arrow--open': open }"
@@ -261,9 +257,9 @@ onBeforeUnmount(() => {
   width: 54px;
   border: 0;
   border-radius: 18px;
-  padding: 12px 0 10px;
+  padding: 14px 0 12px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   justify-items: center;
   background: linear-gradient(180deg, #0d1b2a, #1b263b);
   color: #fff;
@@ -279,15 +275,7 @@ onBeforeUnmount(() => {
 
 .floating-preference-panel__handle-icon {
   display: inline-flex;
-  font-size: 18px;
-}
-
-.floating-preference-panel__handle-label {
-  display: grid;
-  gap: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 20px;
 }
 
 .floating-preference-panel__handle-arrow {

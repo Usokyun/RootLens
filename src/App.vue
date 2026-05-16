@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import {
   IconApps,
+  IconCloud,
   IconBulb,
   IconDashboard,
   IconExperiment,
   IconMenuFold,
   IconMenuUnfold,
   IconRelation,
+  IconStorage,
 } from '@arco-design/web-vue/es/icon'
 import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
-import FloatingPreferencePanel from '@/components/layout/FloatingPreferencePanel.vue'
 import { useAppPreferences } from '@/services/app-preferences'
 import { useWorkbenchState } from '@/services/workbench-state'
 
@@ -43,8 +44,13 @@ const navItems: NavItem[] = [
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
-const { preferences } = useAppPreferences()
+const { preferences, updatePreferences } = useAppPreferences()
 const { state: workbenchState } = useWorkbenchState()
+
+const sourceModeOptions = [
+  { value: 'mock', label: 'Mock', icon: IconStorage },
+  { value: 'backend', label: 'Backend', icon: IconCloud },
+] as const
 
 const activeMenuKey = computed(() => {
   const matched = navItems.find((item) => item.name === route.name)
@@ -73,6 +79,12 @@ function handleNavigate(key: string | number) {
     name: target,
   })
 }
+
+function handleSourceModeChange(mode: 'mock' | 'backend') {
+  updatePreferences({
+    dataSourceMode: mode,
+  })
+}
 </script>
 
 <template>
@@ -90,6 +102,21 @@ function handleNavigate(key: string | number) {
         </h1>
       </div>
       <div class="ocean-header__right">
+        <div class="ocean-header__mode-toggle" role="tablist" aria-label="切换数据源模式">
+          <button
+            v-for="item in sourceModeOptions"
+            :key="item.value"
+            type="button"
+            class="ocean-header__mode-toggle-button"
+            :class="{
+              'ocean-header__mode-toggle-button--active': preferences.dataSourceMode === item.value,
+            }"
+            @click="handleSourceModeChange(item.value)"
+          >
+            <component :is="item.icon" />
+            <span>{{ item.label }}</span>
+          </button>
+        </div>
         <a-tag size="small" color="arcoblue">
           <icon-apps />
           <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '模拟模式' }}</span>
@@ -145,7 +172,5 @@ function handleNavigate(key: string | number) {
         <RouterView />
       </a-layout-content>
     </a-layout>
-
-    <FloatingPreferencePanel />
   </div>
 </template>

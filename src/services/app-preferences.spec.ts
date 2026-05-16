@@ -33,5 +33,6 @@ describe('app preferences', () => {
 
     expect(resetAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
     expect(getAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
+    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8001')
   })
 })

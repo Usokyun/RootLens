@@ -40,12 +40,19 @@ import type {
   VisualEvidenceItem,
   WhatIfRequest,
 } from '@/api/contracts'
-import { loadRootLensRuntime } from '@/services/rootlens-data'
+import { loadBundledRootLensRuntime } from '@/services/rootlens-data'
 import type { RootKGDCandidate, RootLensRuntimeCase, RootLensRuntimeFile, RankedPath } from '@/types/rootlens'
 import heroImage from '@/assets/hero.png'
 
 const CLAIM_BOUNDARY = 'candidate/plausible explanation only; not a verified root-cause label'
 const MOCK_STORAGE_KEY = 'rootlens.mock-backend-state'
+const PAPER_DEMO_RUN_ID = 'paper-demo-curated'
+const PAPER_DEMO_CASE_IDS = [
+  'mvtec_fixture_clean_scratch',
+  'mvtec_noisy_0001',
+  'tep_0001',
+  'wafer_0001',
+] as const
 const REVIEWABLE_FEEDBACK_TARGETS = new Set<ReviewTargetType>([
   'path',
   'edge',
@@ -599,6 +606,39 @@ function buildRunSummary(config: {
 }
 
 function buildWorkflowSteps(run: RunSummary, caseCount: number): RunDetail['workflow_steps'] {
+  if (run.run_id === PAPER_DEMO_RUN_ID) {
+    return [
+      {
+        step_id: 'curated_cases',
+        title: '已装载论文案例',
+        status: 'completed',
+        summary: `${caseCount} 个预设 case 已就绪，可直接截图和切换场景。`,
+        details: {
+          case_count: caseCount,
+          mode: 'paper-demo-curated',
+        },
+      },
+      {
+        step_id: 'graph_snapshot',
+        title: '静态图谱快照',
+        status: 'completed',
+        summary: '总图谱与 path_graph 均来自已提交的静态资产快照。',
+        details: {
+          graph_source: 'public/generated',
+        },
+      },
+      {
+        step_id: 'analysis',
+        title: 'RCA 结果就绪',
+        status: 'completed',
+        summary: '候选根因、路径和反馈目标均已预先生成，可直接联动查看。',
+        details: {
+          review_targets_ready: true,
+        },
+      },
+    ]
+  }
+
   return [
     {
       step_id: 'upload',
@@ -740,66 +780,35 @@ function buildRunDetail(config: {
   }
 }
 
-function groupCasesByDataset(runtime: RootLensRuntimeFile) {
-  const grouped = new Map<string, RootLensRuntimeCase[]>()
+function selectCuratedRuntimeCases(runtime: RootLensRuntimeFile): RootLensRuntimeCase[] {
+  const casesById = new Map(runtime.cases.map((caseItem) => [caseItem.case_id, caseItem]))
+  const selected = PAPER_DEMO_CASE_IDS.map((caseId) => casesById.get(caseId)).filter(
+    (caseItem): caseItem is RootLensRuntimeCase => caseItem !== undefined,
+  )
 
-  runtime.cases.forEach((caseItem) => {
-    const bucket = grouped.get(caseItem.dataset) ?? []
-    bucket.push(caseItem)
-    grouped.set(caseItem.dataset, bucket)
-  })
+  if (selected.length !== PAPER_DEMO_CASE_IDS.length) {
+    const missing = PAPER_DEMO_CASE_IDS.filter((caseId) => !casesById.has(caseId))
+    throw new Error(`论文演示 mock 缺少预设 case：${missing.join(', ')}`)
+  }
 
-  return grouped
+  return selected
 }
 
 function buildSeedRuns(runtime: RootLensRuntimeFile): RunDetail[] {
-  const grouped = groupCasesByDataset(runtime)
-  const tepCases = grouped.get('tep') ?? []
-  const mvtecCases = grouped.get('mvtec') ?? []
-  const waferCases = grouped.get('wafer') ?? []
-
-  return compactList([
-    tepCases.length
-      ? buildRunDetail({
-          runId: 'mock-tep-records',
-          createdAt: toIsoDate(25),
-          mode: 'records',
-          sourceFilename: 'tep_records_batch.jsonl',
-          label: '模拟 TEP 批量记录',
-          topK: 5,
-          dataset: 'tep',
-          cases: tepCases.slice(0, 18),
-          modelBackend: 'mock-runtime',
-        })
-      : null,
-    mvtecCases.length
-      ? buildRunDetail({
-          runId: 'mock-mvtec-image',
-          createdAt: toIsoDate(12),
-          mode: 'image',
-          sourceFilename: 'bottle_scratch_001.png',
-          label: '模拟 MVTec 图像分析',
-          topK: 5,
-          dataset: 'mvtec',
-          cases: mvtecCases.slice(0, 1),
-          modelPreset: 'mock-default',
-          modelBackend: 'mock-image-preset',
-        })
-      : null,
-    waferCases.length
-      ? buildRunDetail({
-          runId: 'mock-wafer-evidence',
-          createdAt: toIsoDate(5),
-          mode: 'evidence',
-          sourceFilename: 'wafer_case_bundle.json',
-          label: '模拟晶圆证据案例',
-          topK: 5,
-          dataset: 'wafer',
-          cases: waferCases.slice(0, 1),
-          modelBackend: 'mock-runtime',
-        })
-      : null,
-  ])
+  const curatedCases = selectCuratedRuntimeCases(runtime)
+  return [
+    buildRunDetail({
+      runId: PAPER_DEMO_RUN_ID,
+      createdAt: toIsoDate(3),
+      mode: 'evidence',
+      sourceFilename: 'paper-demo-curated.json',
+      label: '论文演示预设案例',
+      topK: 5,
+      dataset: null,
+      cases: curatedCases,
+      modelBackend: 'bundled-runtime-snapshot',
+    }),
+  ]
 }
 
 function parseCsvRecords(text: string): Record<string, string>[] {
@@ -979,12 +988,12 @@ async function buildSeedKgStudio(): Promise<{ kgStudio: KGStudioPayload; build: 
 
 async function ensureSeedBundle(): Promise<SeedBundle> {
   if (!seedBundlePromise) {
-    seedBundlePromise = Promise.all([loadRootLensRuntime(), buildSeedKgStudio()]).then(
+    seedBundlePromise = Promise.all([loadBundledRootLensRuntime(), buildSeedKgStudio()]).then(
       ([runtime, kgSeed]) => {
         const runs = buildSeedRuns(runtime)
         const bootstrap: DashboardBootstrap = {
           status: 'ok',
-          api_version: 'mock-frontend-1.0',
+          api_version: 'mock-paper-demo-1.0',
           claim_boundary: CLAIM_BOUNDARY,
           supported_datasets: ['mvtec', 'tep', 'wafer'],
           supported_feedback_targets: ['path', 'edge', 'entity_link', 'correction'],
@@ -993,21 +1002,21 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
             {
               mode: 'records',
               label: '批量记录',
-              description: '模拟模式会根据上传记录元数据生成一条合成运行。',
+              description: '论文演示模式固定使用 4 个预设 case；上传仅在 backend 模式启用。',
               accepted_extensions: ['.json', '.jsonl', '.csv'],
               required_fields: [],
             },
             {
               mode: 'evidence',
               label: '证据 JSON',
-              description: '模拟模式会克隆与数据集对齐的证据案例，并返回完整运行详情。',
+              description: '论文演示模式固定使用静态 evidence 快照；真实上传请切换 backend。',
               accepted_extensions: ['.json'],
               required_fields: [],
             },
             {
               mode: 'image',
               label: 'MVTec 图像',
-              description: '模拟模式会返回一条合成图像分析运行，并附带可视证据预览。',
+              description: '论文演示模式不开放 mock 图像上传；截图请直接切换预设 case。',
               accepted_extensions: ['.png', '.jpg', '.jpeg'],
               required_fields: ['dataset', 'object_name', 'model_preset'],
             },
@@ -1043,8 +1052,8 @@ async function loadCurrentState() {
   }
 }
 
-function mergedRuns(seed: SeedBundle, persistentState: MockPersistentState): RunDetail[] {
-  return [...persistentState.uploaded_runs, ...seed.runs].sort((left, right) =>
+function mergedRuns(seed: SeedBundle): RunDetail[] {
+  return [...seed.runs].sort((left, right) =>
     right.run.created_at.localeCompare(left.run.created_at),
   )
 }
@@ -1056,30 +1065,6 @@ function selectSeedRun(seedRuns: RunDetail[], options: { dataset?: string; mode?
     seedRuns.find((run) => run.run.mode === options.mode) ??
     seedRuns[0]
   )
-}
-
-function buildUploadedMockRun(seedRun: RunDetail, request: UploadRequest): RunDetail {
-  const clone = deepClone(seedRun)
-  const runId = `mock-upload-${Date.now()}`
-  clone.run = {
-    ...clone.run,
-    run_id: runId,
-    created_at: new Date().toISOString(),
-    mode: request.mode,
-    source_filename: request.file.name,
-    label: `模拟上传 · ${request.file.name}`,
-    dataset: request.dataset ?? clone.run.dataset,
-    model_preset: request.model_preset ?? clone.run.model_preset,
-    model_backend: 'mock-upload-pipeline',
-  }
-  clone.workflow_steps = buildWorkflowSteps(clone.run, clone.run.case_count)
-  clone.summary = {
-    ...(clone.summary ?? {}),
-    uploaded_filename: request.file.name,
-    upload_size_bytes: request.file.size,
-    source_mode: 'mock',
-  }
-  return clone
 }
 
 function findRunById(runs: RunDetail[], runId: string): RunDetail {
@@ -1425,12 +1410,6 @@ function filterConstructionEdges(
   })
 }
 
-function persistUploadedRun(runDetail: RunDetail) {
-  const state = readPersistentState()
-  state.uploaded_runs = uniqueByKey([runDetail, ...state.uploaded_runs], (item) => item.run.run_id)
-  writePersistentState(state)
-}
-
 function persistFeedbackRecord(record: MockFeedbackRecord) {
   const state = readPersistentState()
   state.feedback_records = [record, ...state.feedback_records]
@@ -1461,30 +1440,26 @@ function mergedConstructionBuilds(seed: SeedBundle, persistentState: MockPersist
 
 export const mockBackend = {
   async bootstrap(): Promise<DashboardBootstrap> {
-    const { seed, persistentState } = await loadCurrentState()
+    const { seed } = await loadCurrentState()
     return {
       ...deepClone(seed.bootstrap),
-      recent_runs: mergedRuns(seed, persistentState).map((run) => run.run),
+      recent_runs: mergedRuns(seed).map((run) => run.run),
     }
   },
   async listRuns(): Promise<RunSummary[]> {
-    const { seed, persistentState } = await loadCurrentState()
-    return mergedRuns(seed, persistentState).map((run) => run.run)
+    const { seed } = await loadCurrentState()
+    return mergedRuns(seed).map((run) => run.run)
   },
   async getRun(runId: string): Promise<RunDetail> {
-    const { seed, persistentState } = await loadCurrentState()
-    return findRunById(mergedRuns(seed, persistentState), runId)
-  },
-  async uploadRun(request: UploadRequest): Promise<RunDetail> {
     const { seed } = await loadCurrentState()
-    const seedRun = selectSeedRun(seed.runs, { dataset: request.dataset, mode: request.mode })
-    const uploadedRun = buildUploadedMockRun(seedRun, request)
-    persistUploadedRun(uploadedRun)
-    return uploadedRun
+    return findRunById(mergedRuns(seed), runId)
+  },
+  async uploadRun(_request: UploadRequest): Promise<RunDetail> {
+    throw new Error('论文演示 mock 模式不支持上传，请切换到 backend 模式后再上传真实数据。')
   },
   async analyze(request: AnalyzeRequest): Promise<AnalyzeEnvelope> {
-    const { seed, persistentState } = await loadCurrentState()
-    const runs = mergedRuns(seed, persistentState)
+    const { seed } = await loadCurrentState()
+    const runs = mergedRuns(seed)
     if (request.case_id) {
       const caseDetail = findCaseById(runs, request.case_id)
       if (caseDetail) {
@@ -1495,8 +1470,8 @@ export const mockBackend = {
     return buildEnvelopeFromCase(seedRun.cases[0])
   },
   async whatIf(request: WhatIfRequest): Promise<AnalyzeEnvelope> {
-    const { seed, persistentState } = await loadCurrentState()
-    const caseDetail = findCaseById(mergedRuns(seed, persistentState), request.case_id)
+    const { seed } = await loadCurrentState()
+    const caseDetail = findCaseById(mergedRuns(seed), request.case_id)
     if (!caseDetail) {
       throw new Error(`未找到模拟案例：${request.case_id}`)
     }

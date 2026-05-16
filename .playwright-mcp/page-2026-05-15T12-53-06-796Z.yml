@@ -1,0 +1,164 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "图谱探索" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: 图谱探索
+    - generic [ref=e15]:
+      - tablist "切换数据源模式" [ref=e16]:
+        - button "Mock" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Mock
+        - button "Backend" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Backend
+      - generic [ref=e28]:
+        - img [ref=e29]
+        - generic [ref=e31]: 模拟模式
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e35]: 内置资产
+    - generic [ref=e36]:
+      - generic [ref=e37]: 当前上下文
+      - generic [ref=e38]: mock-wafer-evidence / wafer_0001
+  - generic [ref=e39]:
+    - generic [ref=e41]:
+      - generic [ref=e43]:
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e49]: 证据与审阅
+        - generic [ref=e50] [cursor=pointer]:
+          - img [ref=e52]
+          - generic [ref=e55]: 图谱探索
+        - generic [ref=e56] [cursor=pointer]:
+          - img [ref=e58]
+          - generic [ref=e60]: 图谱工坊
+      - button "收起侧边栏" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+    - main [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - generic [ref=e68]: 图谱探索
+            - heading "总图谱、局部子图与审阅策展" [level=2] [ref=e70]
+            - generic [ref=e71]:
+              - button "刷新视图" [ref=e72]:
+                - img [ref=e74]
+                - text: 刷新视图
+              - button "返回证据与审阅" [ref=e76] [cursor=pointer]
+          - generic [ref=e77]:
+            - article [ref=e78]:
+              - generic [ref=e79]: 总图谱节点
+              - strong [ref=e80]: "0"
+              - generic [ref=e81]: 论文演示静态 RCA graph 节点数
+            - article [ref=e82]:
+              - generic [ref=e83]: 局部子图边
+              - strong [ref=e84]: "0"
+              - generic [ref=e85]: 当前 case path_graph union 边数
+            - article [ref=e86]:
+              - generic [ref=e87]: 根因候选
+              - strong [ref=e88]: "0"
+              - generic [ref=e89]: 右侧候选会同步驱动图谱联动
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - article [ref=e92]:
+              - generic [ref=e93]:
+                - heading "总图谱" [level=3] [ref=e95]
+                - generic [ref=e96]:
+                  - generic [ref=e97]: 0 节点
+                  - generic [ref=e98]: 0 边
+              - generic [ref=e100]:
+                - img [ref=e102]
+                - generic [ref=e104]: 暂无总图谱数据
+              - generic [ref=e106]: 正在准备总图谱...
+            - generic [ref=e107]:
+              - article [ref=e108]:
+                - generic [ref=e109]:
+                  - heading "局部子图" [level=3] [ref=e111]
+                  - generic [ref=e113]: 路径模式
+                - generic [ref=e117]:
+                  - img [ref=e119]
+                  - generic [ref=e121]: 暂无局部子图
+                - generic [ref=e123]: 正在准备局部子图...
+              - article [ref=e124]:
+                - generic [ref=e125]:
+                  - heading "审阅与策展卡" [level=3] [ref=e127]
+                  - generic [ref=e128]: 暂无目标
+                - generic [ref=e129]:
+                  - generic [ref=e130]:
+                    - button "RCA 反馈" [ref=e131] [cursor=pointer]
+                    - button "图谱策展" [ref=e132] [cursor=pointer]
+                  - generic [ref=e133]:
+                    - generic [ref=e134]:
+                      - generic [ref=e135]: 当前候选
+                      - strong [ref=e136]: "--"
+                    - generic [ref=e137]:
+                      - generic [ref=e138]: 当前路径
+                      - strong [ref=e139]: "--"
+                    - generic [ref=e140]:
+                      - generic [ref=e141]: 反馈目标
+                      - strong [ref=e142]: "--"
+                    - generic [ref=e143]:
+                      - generic [ref=e144]: 得分
+                      - strong [ref=e145]: "--"
+                  - generic [ref=e146]:
+                    - button "接受" [ref=e147] [cursor=pointer]
+                    - button "拒绝" [ref=e148] [cursor=pointer]
+                  - generic [ref=e149]:
+                    - generic [ref=e150]: 备注
+                    - textbox "记录你的审阅判断和上下文。" [ref=e152]
+                  - button "提交反馈" [ref=e154] [cursor=pointer]:
+                    - img [ref=e156]
+                    - text: 提交反馈
+                  - generic [ref=e158]:
+                    - strong [ref=e160]: 等待提交反馈
+                    - generic [ref=e161]:
+                      - generic [ref=e162]: 最近动作：接受
+                      - generic [ref=e163]: 提交人：rootlens-frontend
+                      - generic [ref=e164]: 时间：--
+          - complementary [ref=e165]:
+            - article [ref=e166]:
+              - heading "紧凑上下文" [level=3] [ref=e169]
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Run
+                  - generic [ref=e173] [cursor=pointer]:
+                    - textbox [ref=e174]
+                    - img [ref=e177]
+                - generic [ref=e179]:
+                  - generic [ref=e180]: Case
+                  - generic [ref=e181] [cursor=pointer]:
+                    - textbox [ref=e182]
+                    - img [ref=e185]
+                - generic [ref=e187]:
+                  - generic [ref=e188]:
+                    - generic [ref=e189]: Dataset
+                    - strong [ref=e190]: "--"
+                  - generic [ref=e191]:
+                    - generic [ref=e192]: 子图模式
+                    - strong [ref=e193]: 路径
+            - article [ref=e194]:
+              - generic [ref=e195]:
+                - heading "根因列表" [level=3] [ref=e197]
+                - generic [ref=e198]: "0"
+              - generic [ref=e200]:
+                - img [ref=e202]
+                - generic [ref=e204]: 暂无候选根因
+          - article [ref=e205]:
+            - heading "图谱提示" [level=3] [ref=e208]
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - generic [ref=e212]: 总图节点
+                - strong [ref=e213]: "0"
+              - generic [ref=e214]:
+                - generic [ref=e215]: 总图边数
+                - strong [ref=e216]: "0"
+              - generic [ref=e217]:
+                - generic [ref=e218]: 局部边数
+                - strong [ref=e219]: "0"
+              - generic [ref=e220]:
+                - generic [ref=e221]: 本地 Draft
+                - strong [ref=e222]: "0"

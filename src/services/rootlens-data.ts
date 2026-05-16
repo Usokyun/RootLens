@@ -21,6 +21,8 @@ async function fetchJson(url: string): Promise<unknown> {
 
 let unifiedGraphsPromise: Promise<UnifiedGraphsFile> | null = null
 let runtimePromise: Promise<RootLensRuntimeFile> | null = null
+let bundledUnifiedGraphsPromise: Promise<UnifiedGraphsFile> | null = null
+let bundledRuntimePromise: Promise<RootLensRuntimeFile> | null = null
 
 function readLocalJson(key: string): unknown | null {
   if (typeof window === 'undefined') {
@@ -54,6 +56,8 @@ function removeLocalJson(key: string) {
 function resetPromises() {
   unifiedGraphsPromise = null
   runtimePromise = null
+  bundledUnifiedGraphsPromise = null
+  bundledRuntimePromise = null
 }
 
 function notifySessionChange() {
@@ -280,4 +284,20 @@ export async function loadRootLensRuntime(): Promise<RootLensRuntimeFile> {
   }
 
   return runtimePromise
+}
+
+export async function loadBundledUnifiedGraphs(): Promise<UnifiedGraphsFile> {
+  if (!bundledUnifiedGraphsPromise) {
+    bundledUnifiedGraphsPromise = fetchJson('/generated/unified-graphs.json').then(parseUnifiedGraphsFile)
+  }
+
+  return bundledUnifiedGraphsPromise
+}
+
+export async function loadBundledRootLensRuntime(): Promise<RootLensRuntimeFile> {
+  if (!bundledRuntimePromise) {
+    bundledRuntimePromise = fetchJson('/generated/rootlens-runtime.json').then(parseRootLensRuntimeFile)
+  }
+
+  return bundledRuntimePromise
 }

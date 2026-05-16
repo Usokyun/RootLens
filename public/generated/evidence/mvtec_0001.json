@@ -90,5 +90,5 @@
   "severity": 0.4,
   "source": "image",
   "summary": "观测到的 visual anomaly evidence only：manual demo annotation 记录 object、anomaly_type、location 和 morphology；不包含 root-cause label。",
-  "timestamp": "2026-05-15T06:22:26Z"
+  "timestamp": "2026-05-16T02:04:33Z"
 }

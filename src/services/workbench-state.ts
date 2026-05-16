@@ -6,6 +6,10 @@ export interface WorkbenchState {
   selectedPathId: string | null
   selectedCandidateId: string | null
   selectedReviewTargetKey: string | null
+  selectedGraphNodeId: string | null
+  subgraphMode: 'path' | 'neighborhood'
+  selectedSubgraphNodeId: string | null
+  selectedSubgraphEdgeId: string | null
   selectedConstructionRunId: string | null
 }
 
@@ -24,6 +28,10 @@ const DEFAULT_WORKBENCH_STATE: WorkbenchState = {
   selectedPathId: null,
   selectedCandidateId: null,
   selectedReviewTargetKey: null,
+  selectedGraphNodeId: null,
+  subgraphMode: 'path',
+  selectedSubgraphNodeId: null,
+  selectedSubgraphEdgeId: null,
   selectedConstructionRunId: null,
 }
 
@@ -47,6 +55,10 @@ function normalizeWorkbenchState(candidate?: Partial<WorkbenchState> | null): Wo
     selectedPathId: normalizeString(candidate?.selectedPathId),
     selectedCandidateId: normalizeString(candidate?.selectedCandidateId),
     selectedReviewTargetKey: normalizeString(candidate?.selectedReviewTargetKey),
+    selectedGraphNodeId: normalizeString(candidate?.selectedGraphNodeId),
+    subgraphMode: candidate?.subgraphMode === 'neighborhood' ? 'neighborhood' : 'path',
+    selectedSubgraphNodeId: normalizeString(candidate?.selectedSubgraphNodeId),
+    selectedSubgraphEdgeId: normalizeString(candidate?.selectedSubgraphEdgeId),
     selectedConstructionRunId: normalizeString(candidate?.selectedConstructionRunId),
   }
 }

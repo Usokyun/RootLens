@@ -52,6 +52,7 @@ interface GraphScene {
   svg: any
   viewport: any
   links: any
+  linkHitAreas: any
   nodes: any
   circles: any
   labels: any
@@ -72,6 +73,8 @@ const props = defineProps<{
   searchTerm: string
   focusedNodeIds?: string[]
   focusedEdgeIds?: string[]
+  selectedNodeId?: string | null
+  selectedEdgeId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -115,6 +118,8 @@ const nodeById = computed(() => new Map(props.dataset.nodes.map((node) => [node.
 const edgeById = computed(() => new Map(props.dataset.edges.map((edge) => [edge.id, edge])))
 const focusedEdgeIds = computed(() => new Set(props.focusedEdgeIds ?? []))
 const focusedNodeIds = computed(() => new Set(props.focusedNodeIds ?? []))
+const selectedNodeIds = computed(() => new Set(props.selectedNodeId ? [props.selectedNodeId] : []))
+const selectedEdgeIds = computed(() => new Set(props.selectedEdgeId ? [props.selectedEdgeId] : []))
 
 const focusRelatedNodeIds = computed(() => {
   const related = new Set(focusedNodeIds.value)
@@ -182,6 +187,38 @@ function resolveEndpointId(endpoint: string | RenderNode) {
   return typeof endpoint === 'string' ? endpoint : endpoint.id
 }
 
+function resolveLineEndpoint(edge: RenderEdge) {
+  const sourceNode = edge.source as RenderNode
+  const targetNode = edge.target as RenderNode
+  const dx = targetNode.x - sourceNode.x
+  const dy = targetNode.y - sourceNode.y
+  const distance = Math.max(Math.hypot(dx, dy), 0.001)
+  const unitX = dx / distance
+  const unitY = dy / distance
+  const sourceOffset = sourceNode.radius + 2
+  const targetOffset = targetNode.radius + 12
+
+  return {
+    x1: sourceNode.x + unitX * sourceOffset,
+    y1: sourceNode.y + unitY * sourceOffset,
+    x2: targetNode.x - unitX * targetOffset,
+    y2: targetNode.y - unitY * targetOffset,
+  }
+}
+
+function readStringAttribute(attributes: Record<string, unknown>, key: string) {
+  const value = attributes[key]
+  return typeof value === 'string' ? value : null
+}
+
+function readNodeCurationStatus(node: RenderNode) {
+  return readStringAttribute(node.attributes, 'curation_status')
+}
+
+function readEdgeCurationDecision(edge: RenderEdge) {
+  return readStringAttribute(edge.attributes, 'curation_decision')
+}
+
 function cacheLayout() {
   if (!scene.value) {
     return
@@ -223,7 +260,7 @@ function applySceneForces() {
   }
 
   const simulation = scene.value.simulation
-  const defaultCharge = props.dataset.nodes.length > 300 ? -48 : -118
+  const defaultCharge = props.dataset.nodes.length > 300 ? -58 : -146
 
   simulation
     .force('cluster-x', null)
@@ -231,7 +268,7 @@ function applySceneForces() {
     .force('charge', scene.value.d3.forceManyBody().strength(defaultCharge))
     .force(
       'collide',
-      scene.value.d3.forceCollide().radius((node: RenderNode) => node.radius + 6).strength(0.72),
+      scene.value.d3.forceCollide().radius((node: RenderNode) => node.radius + 10).strength(0.82),
     )
 }
 
@@ -294,34 +331,51 @@ function applyDecorations() {
   const keywordMatches = highlightedNodeIds.value
   const focusedNodes = focusRelatedNodeIds.value
   const focusedEdgesSet = focusedEdgeIds.value
+  const selectedNodes = selectedNodeIds.value
+  const selectedEdgesSet = selectedEdgeIds.value
   const hasSearch = keywordMatches.size > 0
-  const hasFocus = focusedNodes.size > 0 || focusedEdgesSet.size > 0
+  const hasFocus = focusedNodes.size > 0 || focusedEdgesSet.size > 0 || selectedNodes.size > 0 || selectedEdgesSet.size > 0
 
   scene.value.circles
     .attr('r', (node: RenderNode) => {
+      const isSelected = selectedNodes.has(node.id)
       const isSearchMatched = keywordMatches.has(node.id)
       const isFocusMatched = focusedNodes.has(node.id)
-      return node.radius + (isFocusMatched ? 4 : isSearchMatched ? 2 : 0)
+      return node.radius + (isSelected ? 7 : isFocusMatched ? 1.8 : isSearchMatched ? 2 : 0)
     })
     .attr('opacity', (node: RenderNode) => {
+      const isSelected = selectedNodes.has(node.id)
       const isSearchMatched = keywordMatches.has(node.id)
       const isFocusMatched = focusedNodes.has(node.id)
-      const isMatched = isSearchMatched || isFocusMatched
+      const isMatched = isSelected || isSearchMatched || isFocusMatched
 
       if (!hasSearch && !hasFocus) {
-        return 0.94
+        return 0.96
       }
 
-      if (isMatched) {
+      if (isSelected) {
         return 1
       }
 
-      return hasFocus && !hasSearch ? 0.16 : 0.22
+      if (isMatched) {
+        return 0.92
+      }
+
+      return hasFocus && !hasSearch ? 0.36 : 0.5
     })
     .attr('fill', (node: RenderNode) => palette[node.categoryIndex % palette.length])
     .attr('stroke', (node: RenderNode) => {
+      const curationStatus = readNodeCurationStatus(node)
+      if (selectedNodes.has(node.id)) {
+        return '#1e3a8a'
+      }
+
       if (focusedNodes.has(node.id)) {
-        return '#0f172a'
+        return 'rgba(37, 99, 235, 0.78)'
+      }
+
+      if (curationStatus === 'revised') {
+        return '#d97706'
       }
 
       if (keywordMatches.has(node.id)) {
@@ -331,8 +385,17 @@ function applyDecorations() {
       return 'rgba(255, 255, 255, 0.72)'
     })
     .attr('stroke-width', (node: RenderNode) => {
+      const curationStatus = readNodeCurationStatus(node)
+      if (selectedNodes.has(node.id)) {
+        return 4.8
+      }
+
       if (focusedNodes.has(node.id)) {
-        return 2.8
+        return 1.4
+      }
+
+      if (curationStatus === 'revised') {
+        return 2.2
       }
 
       if (keywordMatches.has(node.id)) {
@@ -341,49 +404,123 @@ function applyDecorations() {
 
       return 0.9
     })
-    .attr('filter', (node: RenderNode) =>
-      focusedNodes.has(node.id) ? 'drop-shadow(0 0 18px rgba(29, 78, 216, 0.28))' : null,
-    )
+    .attr('filter', (node: RenderNode) => {
+      if (selectedNodes.has(node.id)) {
+        return 'drop-shadow(0 0 22px rgba(30, 58, 138, 0.34))'
+      }
+
+      if (focusedNodes.has(node.id)) {
+        return 'drop-shadow(0 0 10px rgba(37, 99, 235, 0.14))'
+      }
+
+      return readNodeCurationStatus(node) === 'revised'
+        ? 'drop-shadow(0 0 10px rgba(217, 119, 6, 0.22))'
+        : null
+    })
 
   scene.value.labels
     .attr('display', (node: RenderNode) =>
-      props.showLabels || keywordMatches.has(node.id) || focusedNodes.has(node.id) ? null : 'none',
+      props.showLabels || keywordMatches.has(node.id) || focusedNodes.has(node.id) || selectedNodes.has(node.id)
+        ? null
+        : 'none',
     )
-    .attr('opacity', (node: RenderNode) => (focusedNodes.has(node.id) ? 1 : keywordMatches.has(node.id) ? 0.92 : 0.82))
+    .attr('opacity', (node: RenderNode) => {
+      if (selectedNodes.has(node.id)) {
+        return 1
+      }
+      if (focusedNodes.has(node.id)) {
+        return 0.9
+      }
+      return keywordMatches.has(node.id) ? 0.88 : 0.78
+    })
 
   scene.value.links
     .attr('opacity', (edge: RenderEdge) => {
+      const decision = readEdgeCurationDecision(edge)
       const sourceId = resolveEndpointId(edge.source)
       const targetId = resolveEndpointId(edge.target)
       const isSearchRelated = keywordMatches.has(sourceId) || keywordMatches.has(targetId)
+      const isSelected = selectedEdgesSet.has(edge.id)
       const isFocusMatched = focusedEdgesSet.has(edge.id)
+      const isSelectedRelated = selectedNodes.has(sourceId) || selectedNodes.has(targetId)
       const isFocusRelated = focusedNodes.has(sourceId) || focusedNodes.has(targetId)
-      const isRelated = isSearchRelated || isFocusMatched || isFocusRelated
+      const isRelated = isSearchRelated || isSelected || isFocusMatched || isSelectedRelated || isFocusRelated
 
       if (!hasSearch && !hasFocus) {
-        return 0.18
+        return 0.24
+      }
+
+      if (isSelected) {
+        return 1
       }
 
       if (isFocusMatched) {
-        return 0.96
+        return 0.52
+      }
+
+      if (decision === 'reject') {
+        return 0.18
+      }
+
+      if (isSelectedRelated) {
+        return 0.38
       }
 
       if (isFocusRelated) {
-        return 0.68
+        return 0.28
       }
 
       if (isRelated) {
-        return 0.42
+        return 0.24
       }
 
-      return 0.05
+      return 0.16
     })
-    .attr('stroke', (edge: RenderEdge) => (focusedEdgesSet.has(edge.id) ? '#1d4ed8' : '#7b8ea8'))
+    .attr('stroke', (edge: RenderEdge) => {
+      const decision = readEdgeCurationDecision(edge)
+      if (selectedEdgesSet.has(edge.id)) {
+        return '#1e3a8a'
+      }
+      if (focusedEdgesSet.has(edge.id)) {
+        return 'rgba(37, 99, 235, 0.74)'
+      }
+      if (decision === 'accept') {
+        return '#059669'
+      }
+      if (decision === 'reject') {
+        return '#94a3b8'
+      }
+      if (decision === 'needs_completion') {
+        return '#d97706'
+      }
+      if (decision === 'revise') {
+        return '#2563eb'
+      }
+      return '#7b8ea8'
+    })
     .attr('stroke-width', (edge: RenderEdge) => {
       const widthBase = edge.weight ?? edge.confidence ?? 0.3
-      return Math.max(0.8, Math.min(4.2, widthBase * 3.4)) + (focusedEdgesSet.has(edge.id) ? 1.8 : 0)
+      const decision = readEdgeCurationDecision(edge)
+      const emphasis = decision === 'accept' ? 0.8 : decision === 'revise' ? 0.5 : 0
+      const selectedBoost = selectedEdgesSet.has(edge.id) ? 3 : focusedEdgesSet.has(edge.id) ? 0.8 : 0
+      return Math.max(0.8, Math.min(4.2, widthBase * 3.4)) + emphasis + selectedBoost
     })
-    .attr('stroke-dasharray', (edge: RenderEdge) => (focusedEdgesSet.has(edge.id) ? null : '3 4'))
+    .attr('stroke-dasharray', (edge: RenderEdge) => {
+      const decision = readEdgeCurationDecision(edge)
+      if (selectedEdgesSet.has(edge.id) || focusedEdgesSet.has(edge.id)) {
+        return null
+      }
+      if (decision === 'reject') {
+        return '2 7'
+      }
+      if (decision === 'needs_completion') {
+        return '7 5'
+      }
+      if (decision === 'accept' || decision === 'revise') {
+        return null
+      }
+      return '3 4'
+    })
 }
 
 function scheduleTickRender() {
@@ -399,10 +536,16 @@ function scheduleTickRender() {
     }
 
     scene.value.links
-      .attr('x1', (edge: RenderEdge) => (edge.source as RenderNode).x)
-      .attr('y1', (edge: RenderEdge) => (edge.source as RenderNode).y)
-      .attr('x2', (edge: RenderEdge) => (edge.target as RenderNode).x)
-      .attr('y2', (edge: RenderEdge) => (edge.target as RenderNode).y)
+      .attr('x1', (edge: RenderEdge) => resolveLineEndpoint(edge).x1)
+      .attr('y1', (edge: RenderEdge) => resolveLineEndpoint(edge).y1)
+      .attr('x2', (edge: RenderEdge) => resolveLineEndpoint(edge).x2)
+      .attr('y2', (edge: RenderEdge) => resolveLineEndpoint(edge).y2)
+
+    scene.value.linkHitAreas
+      .attr('x1', (edge: RenderEdge) => resolveLineEndpoint(edge).x1)
+      .attr('y1', (edge: RenderEdge) => resolveLineEndpoint(edge).y1)
+      .attr('x2', (edge: RenderEdge) => resolveLineEndpoint(edge).x2)
+      .attr('y2', (edge: RenderEdge) => resolveLineEndpoint(edge).y2)
 
     scene.value.nodes.attr('transform', (node: RenderNode) => `translate(${node.x}, ${node.y})`)
 
@@ -558,10 +701,10 @@ async function renderGraph() {
       .append('marker')
       .attr('id', `graph-arrow-${props.dataset.id}`)
       .attr('viewBox', '0 0 10 10')
-      .attr('refX', 8)
+      .attr('refX', 11)
       .attr('refY', 5)
-      .attr('markerWidth', 7)
-      .attr('markerHeight', 7)
+      .attr('markerWidth', 8)
+      .attr('markerHeight', 8)
       .attr('orient', 'auto-start-reverse')
       .append('path')
       .attr('d', 'M 0 0 L 10 5 L 0 10 z')
@@ -597,6 +740,18 @@ async function renderGraph() {
       .attr('marker-end', (edge: RenderEdge) =>
         edge.directed ? `url(#graph-arrow-${props.dataset.id})` : null,
       )
+      .style('pointer-events', 'none')
+
+    const linkHitAreas = viewport
+      .append('g')
+      .attr('class', 'knowledge-graph-chart__link-hit-areas')
+      .selectAll('line')
+      .data(edgeItems, (edge: RenderEdge) => edge.id)
+      .join('line')
+      .attr('stroke', 'rgba(0, 0, 0, 0)')
+      .attr('stroke-width', 16)
+      .attr('stroke-linecap', 'round')
+      .style('cursor', 'pointer')
       .style('pointer-events', 'stroke')
       .on('click', (event: MouseEvent, edge: RenderEdge) => {
         event.stopPropagation()
@@ -690,13 +845,13 @@ async function renderGraph() {
           .id((node: RenderNode) => node.id)
           .distance((edge: RenderEdge) =>
             props.dataset.nodes.length > 300
-              ? 24
-              : clamp(((edge.weight ?? edge.confidence ?? 0.42) + 0.15) * 88, 38, 110),
+              ? 34
+              : clamp(((edge.weight ?? edge.confidence ?? 0.42) + 0.18) * 112, 56, 136),
           )
           .strength((edge: RenderEdge) => clamp((edge.weight ?? edge.confidence ?? 0.32) + 0.08, 0.12, 0.72)),
       )
-      .force('charge', d3.forceManyBody().strength(props.dataset.nodes.length > 300 ? -48 : -118))
-      .force('collide', d3.forceCollide().radius((node: RenderNode) => node.radius + 6).strength(0.72))
+      .force('charge', d3.forceManyBody().strength(props.dataset.nodes.length > 300 ? -58 : -146))
+      .force('collide', d3.forceCollide().radius((node: RenderNode) => node.radius + 10).strength(0.82))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .alpha(cachedLayout ? 0.42 : 0.95)
       .alphaDecay(props.dataset.nodes.length > 250 ? 0.08 : 0.055)
@@ -731,6 +886,7 @@ async function renderGraph() {
       svg,
       viewport,
       links,
+      linkHitAreas,
       nodes,
       circles,
       labels,
@@ -784,6 +940,8 @@ watch(
     () => props.searchTerm,
     () => (props.focusedNodeIds ?? []).join('|'),
     () => (props.focusedEdgeIds ?? []).join('|'),
+    () => props.selectedNodeId ?? '',
+    () => props.selectedEdgeId ?? '',
   ],
   () => {
     applyDecorations()
@@ -837,10 +995,7 @@ onBeforeUnmount(() => {
   min-height: 520px;
   overflow: hidden;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at top left, rgba(63, 124, 255, 0.14), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(15, 139, 141, 0.12), transparent 22%),
-    linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(242, 247, 252, 0.98));
+  background: #f8fbff;
 }
 
 .knowledge-graph-chart__surface {
@@ -856,7 +1011,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: rgba(248, 251, 255, 0.86);
+  background: rgba(248, 251, 255, 0.9);
   backdrop-filter: blur(4px);
   color: #39526c;
 }

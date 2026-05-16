@@ -391,9 +391,13 @@ def _build_kgtracevis_evidence(
 def _copy_seed_evidence(output_dir: Path) -> list[dict]:
     """Copy and normalize KGTraceVis pre-built example evidence files."""
     examples_dir = MVTEC_KG_ROOT / "data" / "examples"
+    seed_case_labels = {
+        "mvtec_noisy_morphology_demo.json": "MVTec Noisy Demo / bottle / scratch",
+    }
     seed_files = [
         "tep_example.json",
         "ds_mvtec_example.json",
+        "mvtec_noisy_morphology_demo.json",
         "wafer_example.json",
     ]
 
@@ -411,9 +415,12 @@ def _copy_seed_evidence(output_dir: Path) -> list[dict]:
         case_id = str(data.get("case_id", filename.replace(".json", "")))
         dataset = str(data.get("dataset", ""))
 
-        data["case_label"] = data.get(
-            "case_label",
-            f"{dataset.upper()} Demo / {data.get('object', 'unknown')}",
+        data["case_label"] = seed_case_labels.get(
+            filename,
+            data.get(
+                "case_label",
+                f"{dataset.upper()} Demo / {data.get('object', 'unknown')}",
+            ),
         )
         data["graph_dataset_id"] = _select_graph_dataset_id(
             tep=(dataset == "tep"),

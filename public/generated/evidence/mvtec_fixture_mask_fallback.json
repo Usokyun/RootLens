@@ -161,5 +161,5 @@
   "severity": 0.16,
   "source": "image",
   "summary": "Fixture omits explicit location and morphology so mask geometry supplies fallback evidence.",
-  "timestamp": "2026-05-15T06:22:26Z"
+  "timestamp": "2026-05-16T02:04:33Z"
 }

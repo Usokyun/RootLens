@@ -8,10 +8,14 @@
 - 运行时 DTO：`src/kgtracevis/service/run_models.py`
 - 分析结果补充字段：`src/kgtracevis/service/run_enrichment.py`
 - 直接分析/what-if/feedback 请求：`src/kgtracevis/service/handlers.py`
+- Source material library：`src/kgtracevis/service/kg_materials.py`
 - KG Studio：`src/kgtracevis/service/kg_studio.py`
 - Source-to-KG：`src/kgtracevis/service/kg_source_drafts.py`
 - 构建/发布/评审：`src/kgtracevis/service/kg_construction.py`
 - 前端现有类型：`web/src/api/contracts.ts`
+- 前端 API client：`web/src/api/client.ts`
+- 前端 KG Studio 页面：`web/src/features/kg-studio/KGStudioPages.tsx`
+- 前端路由/Tab：`web/src/app/routes.tsx`
 
 ## 1. 先说结论
 
@@ -53,6 +57,9 @@ KGTraceVis 不是一个“纯 CRUD 后端项目”，而是一个：
    - `POST /api/feedback`
 5. 提供 KG Studio 和 Source-to-KG 相关接口
    - 读候选 KG
+   - 管理 source material library
+   - 对 material 做 extraction，生成 structured records
+   - 把 selected materials 转成 construction build-ready sources
    - 生成 source draft
    - 触发 build / validate / publish / review
 
@@ -62,7 +69,7 @@ KGTraceVis 不是一个“纯 CRUD 后端项目”，而是一个：
 2. 展示运行历史和单次运行详情
 3. 渲染证据、链路、候选根因、路径图、来源边信息
 4. 维护当前选中的 case / path / review target
-5. 提交 review feedback / KG draft / source draft / construction build
+5. 提交 review feedback / KG draft / source draft / material extraction / construction build
 6. 始终显示 candidate/plausible claim boundary
 
 ### 2.3 前端不要做的事
@@ -91,9 +98,9 @@ uv run python scripts/run_web_api.py
 
 后端地址：
 
-- API: `http://127.0.0.1:8000`
-- Swagger: `http://127.0.0.1:8000/docs`
-- OpenAPI: `http://127.0.0.1:8000/openapi.json`
+- API: `http://127.0.0.1:8001`
+- Swagger: `http://127.0.0.1:8001/docs`
+- OpenAPI: `http://127.0.0.1:8001/openapi.json`
 
 如果本地数据库未起，需要先启动 Neo4j / Postgres。项目 README 当前建议：
 
@@ -395,7 +402,173 @@ npm run dev
 
 这不是“写 KG”的接口，而是“读候选 KG + 读评审目标”的接口。
 
-## 5.10 `POST /api/kg/source-draft`
+## 5.10 `GET /api/kg/materials`
+
+作用：返回 KG Studio 的 source material library。
+
+返回重点字段：
+
+- `status`
+- `material_dir`
+- `material_root`
+- `count`
+- `materials`
+- `note`
+
+`materials[*]` 是当前前端新增的重点合同，常用字段包括：
+
+- `material_id`
+- `title`
+- `scenario`
+- `source_type`
+- `source_format`
+- `path`
+- `url`
+- `uri`
+- `filename`
+- `processing_status`
+- `extraction_status`
+- `chunk_count`
+- `page_count`
+- `source_id`
+- `notes`
+- `created_at`
+- `metadata`
+- `extraction`
+
+前端用途：
+
+- KG Studio 的 Material Library 表格
+- 选中 material 后右侧 metadata 面板
+- 判断一个 material 是否已经 `extracted`，是否可进入 build-sources / build
+
+## 5.11 `POST /api/kg/materials/upload`
+
+作用：上传一个本地 source material 文件并注册到 material library。
+
+请求类型：`multipart/form-data`
+
+表单字段：
+
+- `file`: 必填
+- `title`: 可选
+- `scenario`: 可选，默认 `shared`
+- `source_type`: 可选，默认 `other`
+- `notes`: 可选
+- `metadata`: 可选，JSON string
+- `material_id`: 可选
+- `overwrite`: 可选
+
+返回重点字段：
+
+- `status`
+- `material`
+- `note`
+
+注意：
+
+- 这一步只是把 provenance material 纳入工作台，不会直接构建 KG
+- 上传成功后，前端下一步通常是调用 extract
+
+## 5.12 `POST /api/kg/materials/register-url`
+
+作用：把一个远程 URL 注册成 source material，而不是上传文件。
+
+请求体：
+
+```json
+{
+  "url": "https://example.com/doc",
+  "title": "optional title",
+  "scenario": "shared",
+  "source_type": "webpage",
+  "notes": "optional note",
+  "metadata": {},
+  "material_id": "optional_id"
+}
+```
+
+返回重点字段：
+
+- `status`
+- `material`
+- `note`
+
+前端用途：
+
+- 收录网页、在线文档、公开资料链接
+- 后续再对该 material 走 extraction
+
+## 5.13 `POST /api/kg/materials/{material_id}/extract`
+
+作用：把一个已注册的 material 解析为 text chunks，并运行 source-grounded candidate extraction，输出 `structured_records.jsonl`。
+
+请求体字段：
+
+- `provider`: 当前只支持 `openai`
+- `max_chars`
+- `overlap_chars`
+- `source_format`: 当前必须是 `jsonl`
+- `overwrite`
+
+返回重点字段：
+
+- `status`
+- `material`
+- `structured_records_path`
+- `record_count`
+- `claim_boundary`
+
+前端用途：
+
+- 把 source material 从“只是被登记”推进到“已经有结构化 candidate records”
+- 让 material 进入下一步 `build-sources`
+
+## 5.14 `POST /api/kg/materials/build-sources`
+
+作用：把一组选中的 extracted materials 转成标准 `KGConstructionSourceInput[]`，相当于 material library 到 construction build 的桥接接口。
+
+请求体：
+
+```json
+{
+  "material_ids": ["mat_1", "mat_2"],
+  "output_name": "material_library",
+  "overwrite": false,
+  "run_id": null,
+  "source_type": "structured_records"
+}
+```
+
+返回重点字段：
+
+- `status`
+- `material_root`
+- `request`
+- `materials`
+- `sources`
+- `construction_request`
+- `claim_boundary`
+
+前端用途：
+
+- 先预览哪些 sources 会被送进 construction
+- 再把 `construction_request` 直接喂给 `POST /api/kg/construction/build`
+
+## 5.15 Material Library 相关补充接口
+
+后端还额外实现了两条接口：
+
+- `GET /api/kg/materials/{material_id}`
+- `POST /api/kg/materials/register`
+
+说明：
+
+- 这两条是后端已实现能力
+- 当前 `web/src/api/client.ts` 还没有对它们做封装
+- 目前前端主要使用的是 `list / upload / register-url / extract / build-sources`
+
+## 5.16 `POST /api/kg/source-draft`
 
 作用：把结构化 source text 解析成候选 KG 边，不直接写 CSV。
 
@@ -432,7 +605,7 @@ npm run dev
 - `weight`
 - `review_status`
 
-## 5.11 `POST /api/kg/drafts`
+## 5.17 `POST /api/kg/drafts`
 
 作用：记录 KG edge draft adjustment，当前是 append-only，不直接修改 KG CSV。
 
@@ -455,7 +628,7 @@ npm run dev
 - `status`
 - `record`
 
-## 5.12 KG Construction 相关接口
+## 5.18 KG Construction 相关接口
 
 这组接口后端已经实现，前端可以按需接入。
 
@@ -471,12 +644,28 @@ npm run dev
 - `GET /api/kg/construction/sources`
 - `POST /api/kg/construction/sources/upload`
 
+当前 `web/src/api/client.ts` 已封装：
+
+- `POST /api/kg/construction/build`
+
+后端已实现但当前前端 client 还没封装：
+
+- `GET /api/kg/construction/builds`
+- `GET /api/kg/construction/builds/{run_id}`
+- `POST /api/kg/construction/builds/{run_id}/validate`
+- `POST /api/kg/construction/builds/{run_id}/publish`
+- `POST /api/kg/construction/builds/{run_id}/review`
+- `GET /api/kg/construction/builds/{run_id}/review-queue`
+- `GET /api/kg/construction/sources`
+- `POST /api/kg/construction/sources/upload`
+
 建议前端分阶段接入：
 
 1. 先用 `build`
 2. 再接 `builds` / `detail`
-3. 再接 `review-queue` / `review`
-4. 最后接 `publish`
+3. 再接 `validate`
+4. 再接 `review-queue` / `review`
+5. 最后接 `publish`
 
 ## 6. 前端最应该围绕什么数据结构开发
 
@@ -659,16 +848,33 @@ npm run dev
 
 ## 7.3 KG Studio
 
-建议拆成四块：
+当前前端实际路由已经拆成 6 个 tab：
 
 1. Overview
    - `GET /api/kg/studio`
-2. Source Draft
+   - 展示 KG 状态、validation、counts、artifact paths
+2. Sources
+   - `GET /api/kg/materials`
+   - `POST /api/kg/materials/upload`
+   - `POST /api/kg/materials/register-url`
+   - `POST /api/kg/materials/{material_id}/extract`
+   - `POST /api/kg/materials/build-sources`
    - `POST /api/kg/source-draft`
-3. Draft Lab
+   - 当前 Sources tab 既包含 material library，也包含 heuristic source draft
+3. Build
+   - `POST /api/kg/construction/build`
+   - 当前是手动 construction form + material-derived sources 的汇合点
+4. Graph
+   - `GET /api/kg/studio`
+   - 展示 candidate graph 和 edge provenance
+5. Review
+   - `GET /api/kg/studio`
+   - `POST /api/feedback`
+   - 当前主要围绕 edge review target
+6. Drafts
    - `POST /api/kg/drafts`
-4. Construction
-   - build / validate / review / publish
+
+如果后续继续扩展，建议保持这个分层，不要再把 KG Studio 收缩成一个大杂烩页面。
 
 ## 7.4 Experiments
 
@@ -685,14 +891,21 @@ npm run dev
 2. 再接 `POST /api/runs/upload`
 3. 再接 `POST /api/feedback`
 4. 再接 `GET /api/kg/studio`
-5. 再接 `POST /api/kg/source-draft` 和 `POST /api/kg/drafts`
-6. 最后接 construction build / validate / review / publish
+5. 再接 material library：
+   - `GET /api/kg/materials`
+   - `POST /api/kg/materials/upload`
+   - `POST /api/kg/materials/register-url`
+   - `POST /api/kg/materials/{material_id}/extract`
+   - `POST /api/kg/materials/build-sources`
+6. 再接 `POST /api/kg/source-draft` 和 `POST /api/kg/drafts`
+7. 最后接 construction build / validate / review / publish
 
 这样做的原因：
 
 - 先把分析主链路跑通
 - 再补评审
-- 最后再接候选 KG 构建工作台
+- 再把 material library 路径接通
+- 最后再接候选 KG 构建工作台的高级流程
 
 ## 9. 已知契约缺口
 
@@ -762,6 +975,45 @@ npm run dev
 
 建议后续把 `cases[]` 升级为明确的 case detail 类型。
 
+### 9.5 前端 API client 目前只封装了后端接口的一部分
+
+当前 `web/src/api/client.ts` 已封装的重点接口包括：
+
+- `bootstrap`
+- `kgStudio`
+- `listKGMaterials`
+- `uploadKGMaterial`
+- `registerKGMaterialUrl`
+- `extractKGMaterial`
+- `buildKGMaterialSources`
+- `listRuns`
+- `getRun`
+- `uploadRun`
+- `submitReview`
+- `submitKGDraft`
+- `generateKGSourceDraft`
+- `buildKGConstruction`
+
+后端已实现但当前 client 尚未封装的接口包括：
+
+- `POST /api/analyze`
+- `POST /api/what-if`
+- `GET /api/kg/materials/{material_id}`
+- `POST /api/kg/materials/register`
+- `GET /api/kg/construction/builds`
+- `GET /api/kg/construction/builds/{run_id}`
+- `POST /api/kg/construction/builds/{run_id}/validate`
+- `POST /api/kg/construction/builds/{run_id}/publish`
+- `POST /api/kg/construction/builds/{run_id}/review`
+- `GET /api/kg/construction/builds/{run_id}/review-queue`
+- `GET /api/kg/construction/sources`
+- `POST /api/kg/construction/sources/upload`
+
+这意味着：
+
+- 后端能力已经比当前前端封装更完整
+- 交互设计时要区分“后端未实现”和“前端暂未接”
+
 ## 10. 对前端同学的直接建议
 
 如果你只想尽快把主界面做起来，最小可行做法是：
@@ -783,6 +1035,12 @@ npm run dev
    - `edge`
    - `entity_link`
    - `correction`
+7. 如果你优先做 KG Studio，建议先把 material flow 做通：
+   - list materials
+   - upload / register-url
+   - extract
+   - build-sources
+   - build candidate KG
 
 等 `root_cause_candidate` 契约补齐以后，再把 RCA candidate feedback 打开。
 
@@ -791,6 +1049,9 @@ npm run dev
 - API client：`web/src/api/client.ts`
 - TS contracts：`web/src/api/contracts.ts`
 - Analysis 页面：`web/src/features/analysis/AnalysisPages.tsx`
+- KG Studio 页面：`web/src/features/kg-studio/KGStudioPages.tsx`
+- Workbench 路由/Tab：`web/src/app/routes.tsx`
 - 设计文档：`docs/rootlens_dashboard.md`
+- KG construction 详细设计：`docs/kg_construction.md`
 
 如果接口和页面不一致，以后端真实 DTO 和 OpenAPI 为准，不以后端 README 或旧页面文案为准。

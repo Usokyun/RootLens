@@ -1,11 +1,11 @@
 {
   "case_count_by_dataset": {
-    "mvtec": 3,
+    "mvtec": 4,
     "tep": 101,
     "wafer": 3
   },
-  "generated_at": "2026-05-15T06:22:41Z",
-  "route1_case_count": 107,
+  "generated_at": "2026-05-16T02:04:49Z",
+  "route1_case_count": 108,
   "route2_case_count": 100,
   "route2_case_ids": [
     "scenario_0115186e03c2fb56",
@@ -844,7 +844,7 @@
       20
     ]
   },
-  "runtime_case_count": 107,
+  "runtime_case_count": 108,
   "sources": {
     "route1": [
       "KGTraceVis/src/kgtracevis/kg/entity_linker.py",

@@ -25,7 +25,7 @@ import type {
   WhatIfRequest,
 } from '@/api/contracts'
 
-const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8001'
 const BACKEND_PROXY_TARGET = import.meta.env.VITE_BACKEND_PROXY_TARGET ?? DEFAULT_API_BASE_URL
 
 function trimTrailingSlash(value: string): string {
