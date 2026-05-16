@@ -26,6 +26,7 @@ import type {
   WhatIfRequest,
 } from '@/api/contracts'
 import { getAppPreferences } from '@/services/app-preferences'
+import { getLocalSessionMeta } from '@/services/rootlens-data'
 import { canSubmitReviewTarget, mockBackend } from '@/services/mock-backend'
 
 export interface RootLensService {
@@ -71,16 +72,38 @@ function getBackendClient(): ApiClient {
   return createApiClient(preferences.apiBaseUrl)
 }
 
-function getCurrentService(): RootLensService {
-  const preferences = getAppPreferences()
-  if (preferences.dataSourceMode === 'backend') {
-    return getBackendClient()
-  }
+function isImportedReplayActive() {
+  return getLocalSessionMeta()?.source === 'import'
+}
 
+function buildMockService(): RootLensService {
   return {
     ...mockBackend,
     artifactUrl: (_runId: string, artifactName: string) => artifactName,
   }
+}
+
+function withImportedReplayOverrides(baseService: RootLensService): RootLensService {
+  if (!isImportedReplayActive()) {
+    return baseService
+  }
+
+  const replayService = buildMockService()
+  return {
+    ...baseService,
+    bootstrap: replayService.bootstrap,
+    listRuns: replayService.listRuns,
+    getRun: replayService.getRun,
+    analyze: replayService.analyze,
+    whatIf: replayService.whatIf,
+    submitReview: replayService.submitReview,
+  }
+}
+
+function getCurrentService(): RootLensService {
+  const preferences = getAppPreferences()
+  const baseService = preferences.dataSourceMode === 'backend' ? getBackendClient() : buildMockService()
+  return withImportedReplayOverrides(baseService)
 }
 
 export function getRootLensService(): RootLensService {

@@ -8,7 +8,7 @@ import {
   IconStorage,
   IconUpload,
 } from '@arco-design/web-vue/es/icon'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type {
@@ -21,8 +21,12 @@ import type {
 } from '@/api/contracts'
 import WorkbenchHero from '@/components/layout/WorkbenchHero.vue'
 import { useAppPreferences } from '@/services/app-preferences'
+import { buildLocalImportResult } from '@/services/browser-runtime'
+import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventName, getLocalSessionMeta, saveImportedSession } from '@/services/rootlens-data'
 import { getRootLensService } from '@/services/rootlens-service'
-import { formatScoringMethodLabel } from '@/services/ui-copy'
+import { restoreSessionImportFile } from '@/services/session-export'
+import { filterObservationBrowseItems, buildObservationBrowseItems, collectObservationModalities, collectObservationSources, findObservationBrowseItem, selectVisualEvidenceForObservation, type ObservationBrowseItem, type ObservationConfidenceBand, type ObservationModality } from '@/services/evidence-observation'
+import { formatClaimBoundaryCopy, formatScoringMethodLabel } from '@/services/ui-copy'
 import { useWorkbenchState } from '@/services/workbench-state'
 
 interface CaseEvidenceEntry {
@@ -59,6 +63,23 @@ const uploadInputRef = ref<HTMLInputElement | null>(null)
 const uploadDragActive = ref(false)
 const uploadDragDepth = ref(0)
 
+const replayModalVisible = ref(false)
+const replayImportLoading = ref(false)
+const replayRuntimeInputRef = ref<HTMLInputElement | null>(null)
+const replayGraphsInputRef = ref<HTMLInputElement | null>(null)
+const replayWorkspaceInputRef = ref<HTMLInputElement | null>(null)
+const importedSessionMeta = ref(getLocalSessionMeta())
+const importedSessionSummary = ref(getImportedSessionSummary())
+const replayWarnings = ref<string[]>([])
+
+const replayImportForm = reactive({
+  runtimeFile: null as File | null,
+  graphsFile: null as File | null,
+  workspaceFile: null as File | null,
+})
+
+const observationDetailModalVisible = ref(false)
+
 const uploadForm = reactive({
   mode: 'records' as UploadMode,
   dataset: '',
@@ -70,10 +91,44 @@ const uploadForm = reactive({
 })
 
 const evidenceFilter = reactive({
-  graph: 'all',
-  facet: 'all',
-  keyword: '',
+  graph: workbenchState.value.evidenceFilterGraph ?? 'all',
+  modality: workbenchState.value.evidenceFilterModality ?? 'all',
+  source: workbenchState.value.evidenceFilterSource ?? 'all',
+  confidenceBand: workbenchState.value.evidenceFilterConfidenceBand,
+  timeFrom: workbenchState.value.evidenceFilterTimeFrom ?? '',
+  timeTo: workbenchState.value.evidenceFilterTimeTo ?? '',
+  keyword: workbenchState.value.evidenceFilterKeyword ?? '',
 })
+
+
+const isReplaySessionActive = computed(() => importedSessionMeta.value?.source === 'import')
+const replaySourceModeLabel = computed(() => {
+  switch (importedSessionSummary.value?.sourceMode) {
+    case 'graphs+evidence':
+      return '图谱 + Evidence'
+    case 'graphs-only':
+      return '仅图谱'
+    case 'runtime':
+      return '完整回放'
+    default:
+      return '--'
+  }
+})
+const evidenceClaimBoundaryCopy = computed(() =>
+  formatClaimBoundaryCopy(runDetail.value?.claim_boundary ?? bootstrap.value?.claim_boundary),
+)
+
+
+const selectedObservationId = computed(() => workbenchState.value.selectedObservationId)
+const normalizedObservationFilters = computed(() => ({
+  graph: evidenceFilter.graph === 'all' ? null : evidenceFilter.graph,
+  modality: evidenceFilter.modality === 'all' ? null : (evidenceFilter.modality as ObservationModality),
+  source: evidenceFilter.source === 'all' ? null : evidenceFilter.source,
+  keyword: evidenceFilter.keyword.trim() || null,
+  confidenceBand: evidenceFilter.confidenceBand as ObservationConfidenceBand,
+  timeFrom: evidenceFilter.timeFrom || null,
+  timeTo: evidenceFilter.timeTo || null,
+}))
 
 const selectedRunId = computed(() => workbenchState.value.selectedRunId)
 const activeCaseId = computed(() => workbenchState.value.selectedCaseId)
@@ -102,32 +157,50 @@ const graphOptions = computed(() => {
   return [...options]
 })
 
+const observationItemsByCase = computed(
+  () =>
+    new Map((runDetail.value?.cases ?? []).map((caseItem) => [caseItem.case_id, buildObservationBrowseItems(caseItem)])),
+)
+
+const activeObservationItems = computed(() => {
+  if (!activeCase.value) {
+    return []
+  }
+
+  return observationItemsByCase.value.get(activeCase.value.case_id) ?? []
+})
+
+const filteredActiveObservationItems = computed(() =>
+  filterObservationBrowseItems(activeObservationItems.value, normalizedObservationFilters.value),
+)
+
+const activeObservation = computed(() =>
+  findObservationBrowseItem(activeObservationItems.value, selectedObservationId.value),
+)
+
+const observationModalityOptions = computed(() => collectObservationModalities(caseEvidenceEntriesObservationItems.value))
+const observationSourceOptions = computed(() => collectObservationSources(caseEvidenceEntriesObservationItems.value))
+const selectedObservationVisualEvidence = computed(() =>
+  selectVisualEvidenceForObservation(activeObservation.value, activeCase.value?.visual_evidence ?? []),
+)
+
 const uploadAccept = computed(() => {
   const modeConfig = bootstrap.value?.upload_modes.find((item) => item.mode === uploadForm.mode)
   return modeConfig?.accepted_extensions.join(',') ?? ''
 })
+
+const caseEvidenceEntriesObservationItems = computed(() =>
+  (runDetail.value?.cases ?? []).flatMap((caseItem) => buildObservationBrowseItems(caseItem)),
+)
 
 const caseEvidenceEntries = computed<CaseEvidenceEntry[]>(() => {
   return (runDetail.value?.cases ?? []).map((caseItem) => buildCaseEvidenceEntry(caseItem))
 })
 
 const filteredCaseEvidenceEntries = computed(() => {
-  const keyword = evidenceFilter.keyword.trim().toLowerCase()
-
   return caseEvidenceEntries.value.filter((item) => {
-    if (evidenceFilter.graph !== 'all' && item.graphDatasetId !== evidenceFilter.graph) {
-      return false
-    }
-
-    if (evidenceFilter.facet !== 'all' && !item.facetKeys.includes(evidenceFilter.facet)) {
-      return false
-    }
-
-    if (!keyword) {
-      return true
-    }
-
-    return item.searchableText.includes(keyword)
+    const observationItems = observationItemsByCase.value.get(item.caseId) ?? []
+    return filterObservationBrowseItems(observationItems, normalizedObservationFilters.value).length > 0
   })
 })
 
@@ -135,13 +208,7 @@ const totalObservationCount = computed(() => {
   return caseEvidenceEntries.value.reduce((total, item) => total + item.observationCount, 0)
 })
 
-const activeCaseEvidenceEntry = computed(() => {
-  if (!activeCase.value) {
-    return null
-  }
-
-  return caseEvidenceEntries.value.find((item) => item.caseId === activeCase.value?.case_id) ?? null
-})
+const activeObservationDetailCount = computed(() => filteredActiveObservationItems.value.length)
 
 const activeRootCauseList = computed(() => activeCase.value?.ranked_root_causes ?? [])
 
@@ -219,6 +286,38 @@ function formatRunStatus(status: string | undefined | null) {
 
 function formatScore(value: number | null | undefined) {
   return typeof value === 'number' ? value.toFixed(3) : '--'
+}
+
+function formatObservationModalityLabel(value: ObservationModality | null | undefined) {
+  switch (value) {
+    case 'image':
+      return 'image'
+    case 'time_series':
+      return 'time_series'
+    case 'log':
+      return 'log'
+    case 'document':
+      return 'document'
+    default:
+      return '--'
+  }
+}
+
+function readObservationTextField(observation: ObservationBrowseItem | null, key: string, fallback = '--') {
+  if (!observation) {
+    return fallback
+  }
+
+  return normalizeText(observation.rawObservation[key], fallback)
+}
+
+function readObservationNumberField(observation: ObservationBrowseItem | null, key: string) {
+  if (!observation) {
+    return '--'
+  }
+
+  const value = observation.rawObservation[key]
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(3) : '--'
 }
 
 function getRunPhaseLabel(run: RunSummary) {
@@ -318,10 +417,6 @@ function buildCaseEvidenceEntry(caseItem: RunCaseDetail): CaseEvidenceEntry {
   }
 }
 
-function getSupportingEvidenceCount(candidate: RankedRootCause | null) {
-  return Array.isArray(candidate?.supporting_evidence) ? candidate.supporting_evidence.length : 0
-}
-
 function setUploadFile(file: File | null) {
   uploadForm.file = file
 }
@@ -366,10 +461,155 @@ function handleUploadDrop(event: DragEvent) {
   resetUploadDragState()
 }
 
+function syncImportedSessionState() {
+  importedSessionMeta.value = getLocalSessionMeta()
+  importedSessionSummary.value = getImportedSessionSummary()
+}
+
+function handleLocalSessionChange() {
+  syncImportedSessionState()
+  void refreshWorkspace()
+}
+
+function resetReplayImportForm() {
+  replayImportForm.runtimeFile = null
+  replayImportForm.graphsFile = null
+  replayImportForm.workspaceFile = null
+  replayWarnings.value = []
+}
+
+function openReplayAssetsModal() {
+  resetReplayImportForm()
+  replayModalVisible.value = true
+}
+
+function setReplayImportFile(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile', file: File | null) {
+  replayImportForm[kind] = file
+}
+
+function handleReplayFileChange(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile', event: Event) {
+  const input = event.target as HTMLInputElement | null
+  setReplayImportFile(kind, input?.files?.[0] ?? null)
+}
+
+function openReplayFilePicker(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile') {
+  if (kind === 'runtimeFile') {
+    replayRuntimeInputRef.value?.click()
+    return
+  }
+
+  if (kind === 'graphsFile') {
+    replayGraphsInputRef.value?.click()
+    return
+  }
+
+  replayWorkspaceInputRef.value?.click()
+}
+
+async function readSessionImportSchema(file: File) {
+  try {
+    const payload = JSON.parse(await file.text()) as Record<string, unknown>
+    return typeof payload.schema_version === 'string' ? payload.schema_version : null
+  } catch {
+    throw new Error('附加恢复文件不是合法 JSON。')
+  }
+}
+
+async function handleReplayImport() {
+  const assetFiles = [replayImportForm.runtimeFile, replayImportForm.graphsFile].filter(
+    (file): file is File => Boolean(file),
+  )
+  const workspaceFile = replayImportForm.workspaceFile
+
+  if (!assetFiles.length && !workspaceFile) {
+    errorMessage.value = '请至少选择一份回放资产或工作区恢复文件。'
+    return
+  }
+
+  replayImportLoading.value = true
+  errorMessage.value = ''
+  uploadMessage.value = ''
+
+  try {
+    const messages: string[] = []
+    const warnings: string[] = []
+
+    if (assetFiles.length) {
+      const importResult = await buildLocalImportResult(assetFiles)
+      saveImportedSession({
+        graphs: importResult.graphs,
+        runtime: importResult.runtime,
+        summary: `导入回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
+        importSummary: importResult.summary,
+      })
+      syncImportedSessionState()
+      messages.push(
+        `已导入回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
+      )
+      warnings.push(...importResult.summary.warnings)
+    }
+
+    if (workspaceFile) {
+      const schemaVersion = await readSessionImportSchema(workspaceFile)
+      if (assetFiles.length && schemaVersion === 'rootlens-session-export.v1') {
+        throw new Error('完整 session bundle 请单独导入，不要与 runtime/graphs 原始资产混合。')
+      }
+
+      const restoreResult = await restoreSessionImportFile(workspaceFile)
+      syncImportedSessionState()
+      messages.push(restoreResult.summary)
+      warnings.push(...restoreResult.warnings)
+    }
+
+    replayWarnings.value = warnings
+    replayModalVisible.value = false
+    uploadMessage.value = [
+      messages.join(' '),
+      warnings.length ? `警告：${warnings.join('；')}` : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+
+    await refreshWorkspace()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    replayImportLoading.value = false
+  }
+}
+
+async function handleSwitchToLiveUpload() {
+  if (!isReplaySessionActive.value) {
+    return
+  }
+
+  clearImportedSession()
+  syncImportedSessionState()
+  replayWarnings.value = []
+  uploadMessage.value = '已退出回放会话，恢复当前实时/演示数据视图。'
+  await refreshWorkspace()
+}
+
+function setSelectedObservation(observationId: string | null) {
+  updateState({
+    selectedObservationId: observationId,
+  })
+}
+
+function openObservationDetail(observationId: string | null) {
+  if (!observationId) {
+    return
+  }
+
+  setSelectedObservation(observationId)
+  observationDetailModalVisible.value = true
+}
+
 function setSelectedRun(runId: string) {
   updateState({
     selectedRunId: runId,
     selectedCaseId: null,
+    selectedObservationId: null,
     selectedCandidateId: null,
     selectedPathId: null,
     selectedReviewTargetKey: null,
@@ -383,6 +623,7 @@ function setSelectedRun(runId: string) {
 function setSelectedCase(caseId: string | null) {
   updateState({
     selectedCaseId: caseId,
+    selectedObservationId: null,
     selectedCandidateId: null,
     selectedPathId: null,
     selectedReviewTargetKey: null,
@@ -448,6 +689,7 @@ async function loadRun(runId: string) {
 }
 
 async function refreshWorkspace() {
+  syncImportedSessionState()
   loading.value = true
   errorMessage.value = ''
 
@@ -512,7 +754,7 @@ async function handleUpload() {
   }
 }
 
-function openGraphExplore(caseId: string) {
+function openGraphExplore(caseId: string, observationId: string | null = null) {
   const runId = activeRun.value?.run_id ?? selectedRunId.value
   if (!runId) {
     return
@@ -521,6 +763,8 @@ function openGraphExplore(caseId: string) {
   updateState({
     selectedRunId: runId,
     selectedCaseId: caseId,
+    selectedObservationId:
+      observationId ?? (caseId === activeCase.value?.case_id ? selectedObservationId.value : null),
     selectedGraphNodeId: null,
     subgraphMode: 'path',
     selectedSubgraphNodeId: null,
@@ -552,8 +796,44 @@ watch(
   },
 )
 
+
+watch(
+  () => [
+    evidenceFilter.graph,
+    evidenceFilter.modality,
+    evidenceFilter.source,
+    evidenceFilter.keyword,
+    evidenceFilter.confidenceBand,
+    evidenceFilter.timeFrom,
+    evidenceFilter.timeTo,
+  ],
+  () => {
+    updateState({
+      evidenceFilterGraph: normalizedObservationFilters.value.graph,
+      evidenceFilterModality: normalizedObservationFilters.value.modality,
+      evidenceFilterSource: normalizedObservationFilters.value.source,
+      evidenceFilterKeyword: normalizedObservationFilters.value.keyword,
+      evidenceFilterConfidenceBand: normalizedObservationFilters.value.confidenceBand,
+      evidenceFilterTimeFrom: normalizedObservationFilters.value.timeFrom,
+      evidenceFilterTimeTo: normalizedObservationFilters.value.timeTo,
+    })
+  },
+)
+
+watch(activeObservationItems, (items) => {
+  if (selectedObservationId.value && !items.some((item) => item.id === selectedObservationId.value)) {
+    updateState({ selectedObservationId: null })
+  }
+})
+
 onMounted(() => {
+  syncImportedSessionState()
+  window.addEventListener(getLocalSessionEventName(), handleLocalSessionChange as EventListener)
   void refreshWorkspace()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(getLocalSessionEventName(), handleLocalSessionChange as EventListener)
 })
 </script>
 
@@ -595,13 +875,87 @@ onMounted(() => {
                   }}
                 </p>
               </div>
-              <a-tag :color="isMockMode ? 'gold' : 'green'">
-                {{ isMockMode ? '论文演示模式' : formatUploadModeLabel(uploadForm.mode) }}
+              <a-tag :color="isReplaySessionActive ? 'arcoblue' : isMockMode ? 'gold' : 'green'">
+                {{ isReplaySessionActive ? '回放会话' : isMockMode ? '论文演示模式' : formatUploadModeLabel(uploadForm.mode) }}
               </a-tag>
             </header>
             <div class="rl-section-card__body workspace-split-card workspace-split-card--run-status workspace-run-card__body">
-              <section v-if="isMockMode" class="workspace-stack workspace-stack--fill workspace-upload-form-stack">
-                <div class="rl-section-card workspace-demo-mode-card">
+              <section class="workspace-stack workspace-stack--fill workspace-upload-form-stack">
+                <div class="workspace-session-source-strip" role="tablist" aria-label="切换 Evidence 会话来源">
+                  <button
+                    type="button"
+                    class="workspace-session-source-strip__item"
+                    :class="{ 'workspace-session-source-strip__item--active': !isReplaySessionActive }"
+                    @click="handleSwitchToLiveUpload"
+                  >
+                    实时上传
+                  </button>
+                  <button
+                    type="button"
+                    class="workspace-session-source-strip__item"
+                    :class="{ 'workspace-session-source-strip__item--active': isReplaySessionActive }"
+                    @click="openReplayAssetsModal"
+                  >
+                    回放资产
+                  </button>
+                </div>
+
+                <div class="workspace-claim-note workspace-claim-note--compact">
+                  <span class="workspace-summary-label">
+                    <icon-info-circle />
+                    <span>Claim boundary</span>
+                  </span>
+                  <strong>{{ evidenceClaimBoundaryCopy }}</strong>
+                </div>
+
+                <div v-if="isReplaySessionActive" class="rl-section-card workspace-session-card">
+                  <div class="rl-section-card__body workspace-stack workspace-stack--tight">
+                    <div class="workspace-summary-list workspace-summary-list--two-col">
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-storage />
+                          <span>Source mode</span>
+                        </span>
+                        <strong>{{ replaySourceModeLabel }}</strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-relation />
+                          <span>Datasets</span>
+                        </span>
+                        <strong>{{ importedSessionSummary?.datasets.length ?? 0 }}</strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-bulb />
+                          <span>Cases</span>
+                        </span>
+                        <strong>{{ importedSessionSummary?.cases.length ?? 0 }}</strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-info-circle />
+                          <span>Imported at</span>
+                        </span>
+                        <strong>{{ formatDateTime(importedSessionMeta?.updatedAt ?? null) }}</strong>
+                      </div>
+                    </div>
+
+                    <a-alert
+                      v-if="(importedSessionSummary?.warnings.length ?? 0) || replayWarnings.length"
+                      type="warning"
+                      :show-icon="false"
+                      :title="[...(importedSessionSummary?.warnings ?? []), ...replayWarnings].join('；')"
+                    />
+
+                    <div class="rl-form-actions rl-form-actions--dual">
+                      <a-button size="small" @click="openReplayAssetsModal">替换回放资产</a-button>
+                      <a-button size="small" status="warning" @click="handleSwitchToLiveUpload">退出回放</a-button>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else-if="isMockMode" class="rl-section-card workspace-demo-mode-card">
                   <div class="rl-section-card__body workspace-stack workspace-stack--fill">
                     <div class="workspace-claim-note">
                       <span class="workspace-summary-label">
@@ -632,97 +986,96 @@ onMounted(() => {
                     />
                   </div>
                 </div>
-              </section>
 
-              <section v-else class="workspace-stack workspace-stack--fill workspace-upload-form-stack">
-                <div class="workspace-form-row workspace-form-row--three">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-storage />
-                      <span>模式</span>
-                    </span>
-                    <a-select v-model="uploadForm.mode">
-                      <a-option v-for="item in bootstrap?.upload_modes ?? []" :key="item.mode" :value="item.mode">
-                        {{ formatUploadModeLabel(item.mode) }}
-                      </a-option>
-                    </a-select>
+                <div v-else class="workspace-stack workspace-stack--fill workspace-upload-form-stack">
+                  <div class="workspace-form-row workspace-form-row--three">
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-storage />
+                        <span>模式</span>
+                      </span>
+                      <a-select v-model="uploadForm.mode">
+                        <a-option v-for="item in bootstrap?.upload_modes ?? []" :key="item.mode" :value="item.mode">
+                          {{ formatUploadModeLabel(item.mode) }}
+                        </a-option>
+                      </a-select>
+                    </div>
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-relation />
+                        <span>数据集</span>
+                      </span>
+                      <a-select v-model="uploadForm.dataset" allow-clear>
+                        <a-option value="">自动</a-option>
+                        <a-option v-for="dataset in bootstrap?.supported_datasets ?? []" :key="dataset" :value="dataset">
+                          {{ dataset }}
+                        </a-option>
+                      </a-select>
+                    </div>
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-bulb />
+                        <span>候选数</span>
+                      </span>
+                      <a-input-number v-model="uploadForm.topK" :min="1" :max="20" />
+                    </div>
                   </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-relation />
-                      <span>数据集</span>
-                    </span>
-                    <a-select v-model="uploadForm.dataset" allow-clear>
-                      <a-option value="">自动</a-option>
-                      <a-option v-for="dataset in bootstrap?.supported_datasets ?? []" :key="dataset" :value="dataset">
-                        {{ dataset }}
-                      </a-option>
-                    </a-select>
-                  </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-bulb />
-                      <span>候选数</span>
-                    </span>
-                    <a-input-number v-model="uploadForm.topK" :min="1" :max="20" />
-                  </div>
-                </div>
 
-                <div v-if="uploadForm.mode === 'image'" class="workspace-form-row workspace-form-row--three">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-storage />
-                      <span>对象</span>
-                    </span>
-                    <a-input v-model="uploadForm.objectName" placeholder="例如 bottle" />
+                  <div v-if="uploadForm.mode === 'image'" class="workspace-form-row workspace-form-row--three">
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-storage />
+                        <span>对象</span>
+                      </span>
+                      <a-input v-model="uploadForm.objectName" placeholder="例如 bottle" />
+                    </div>
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-info-circle />
+                        <span>缺陷类型</span>
+                      </span>
+                      <a-input v-model="uploadForm.defectType" placeholder="例如 scratch" />
+                    </div>
+                    <div class="rl-form-field">
+                      <span class="workspace-field-label">
+                        <icon-bulb />
+                        <span>预设</span>
+                      </span>
+                      <a-input v-model="uploadForm.modelPreset" placeholder="auto" />
+                    </div>
                   </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-info-circle />
-                      <span>缺陷类型</span>
-                    </span>
-                    <a-input v-model="uploadForm.defectType" placeholder="例如 scratch" />
-                  </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-bulb />
-                      <span>预设</span>
-                    </span>
-                    <a-input v-model="uploadForm.modelPreset" placeholder="auto" />
-                  </div>
-                </div>
 
-                <div class="rl-form-field workspace-dropzone-field">
-                  <span class="workspace-field-label">
-                    <icon-upload />
-                    <span>文件</span>
-                  </span>
-                  <div
-                    class="rl-file-dropzone rl-file-dropzone--fill"
-                    :class="{ 'rl-file-dropzone--active': uploadDragActive }"
-                    @dragenter="handleUploadDragEnter"
-                    @dragover="handleUploadDragOver"
-                    @dragleave="handleUploadDragLeave"
-                    @drop="handleUploadDrop"
-                  >
-                    <input
-                      ref="uploadInputRef"
-                      class="rl-file-input-native"
-                      type="file"
-                      :accept="uploadAccept"
-                      @change="handleUploadFileChange"
-                    />
-                    <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
-                      <div class="rl-file-dropzone__copy">
-                        <strong>{{ uploadForm.file?.name ?? '拖动文件到这里，或点击按钮选择文件' }}</strong>
-                        <span>{{ uploadAccept || '支持 JSON / JSONL / CSV / 图像输入' }}</span>
+                  <div class="rl-form-field workspace-dropzone-field">
+                    <span class="workspace-field-label">
+                      <icon-upload />
+                      <span>文件</span>
+                    </span>
+                    <div
+                      class="rl-file-dropzone rl-file-dropzone--fill"
+                      :class="{ 'rl-file-dropzone--active': uploadDragActive }"
+                      @dragenter="handleUploadDragEnter"
+                      @dragover="handleUploadDragOver"
+                      @dragleave="handleUploadDragLeave"
+                      @drop="handleUploadDrop"
+                    >
+                      <input
+                        ref="uploadInputRef"
+                        class="rl-file-input-native"
+                        type="file"
+                        :accept="uploadAccept"
+                        @change="handleUploadFileChange"
+                      />
+                      <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
+                        <div class="rl-file-dropzone__copy">
+                          <strong>{{ uploadForm.file?.name ?? '拖动文件到这里，或点击按钮选择文件' }}</strong>
+                          <span>{{ uploadAccept || '支持 JSON / JSONL / CSV / 图像输入' }}</span>
+                        </div>
+                        <a-button size="small" @click="openUploadPicker">选择文件</a-button>
                       </div>
-                      <a-button size="small" @click="openUploadPicker">选择文件</a-button>
                     </div>
                   </div>
                 </div>
               </section>
-
               <section class="workspace-run-list-panel">
                 <div class="workspace-run-list-panel__header">
                   <strong class="workspace-title-with-icon workspace-run-list-panel__title">
@@ -754,13 +1107,19 @@ onMounted(() => {
                   </div>
                 </div>
                 <div class="rl-form-actions workspace-run-list-panel__actions">
-                  <span v-if="isMockMode" class="workspace-subtle">mock 模式固定为 1 个论文演示 run</span>
-                  <a-button type="primary" :loading="uploadLoading" :disabled="isMockMode" @click="handleUpload">
-                    <template #icon>
-                      <icon-upload />
-                    </template>
-                    {{ isMockMode ? '切到 Backend 后可上传' : '上传并生成 Run' }}
-                  </a-button>
+                  <template v-if="isReplaySessionActive">
+                    <span class="workspace-subtle">当前正在浏览回放会话；切回“实时上传”后恢复当前实时/演示数据视图。</span>
+                    <a-button size="small" status="warning" @click="handleSwitchToLiveUpload">退出回放</a-button>
+                  </template>
+                  <template v-else>
+                    <span v-if="isMockMode" class="workspace-subtle">mock 模式固定为 1 个论文演示 run</span>
+                    <a-button type="primary" :loading="uploadLoading" :disabled="isMockMode" @click="handleUpload">
+                      <template #icon>
+                        <icon-upload />
+                      </template>
+                      {{ isMockMode ? '切到 Backend 后可上传' : '上传并生成 Run' }}
+                    </a-button>
+                  </template>
                 </div>
               </section>
             </div>
@@ -829,22 +1188,56 @@ onMounted(() => {
                 </div>
                 <div class="rl-form-field">
                   <span class="workspace-field-label">
-                    <icon-storage />
-                    <span>Facet</span>
+                    <icon-bulb />
+                    <span>Modality</span>
                   </span>
-                  <a-select v-model="evidenceFilter.facet">
+                  <a-select v-model="evidenceFilter.modality">
                     <a-option value="all">全部</a-option>
-                    <a-option value="variable">variable</a-option>
-                    <a-option value="image_defect">image_defect</a-option>
-                    <a-option value="log_event">log_event</a-option>
+                    <a-option v-for="modality in observationModalityOptions" :key="modality" :value="modality">
+                      {{ formatObservationModalityLabel(modality) }}
+                    </a-option>
                   </a-select>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-storage />
+                    <span>Source</span>
+                  </span>
+                  <a-select v-model="evidenceFilter.source">
+                    <a-option value="all">全部来源</a-option>
+                    <a-option v-for="source in observationSourceOptions" :key="source" :value="source">
+                      {{ source }}
+                    </a-option>
+                  </a-select>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label">
+                    <icon-info-circle />
+                    <span>Confidence</span>
+                  </span>
+                  <a-select v-model="evidenceFilter.confidenceBand">
+                    <a-option value="all">全部</a-option>
+                    <a-option value="high">高</a-option>
+                    <a-option value="medium">中</a-option>
+                    <a-option value="low">低</a-option>
+                  </a-select>
+                </div>
+                <div class="rl-form-field workspace-inline-filters__wide">
+                  <span class="workspace-field-label">
+                    <icon-storage />
+                    <span>时间范围</span>
+                  </span>
+                  <div class="workspace-form-row workspace-form-row--two">
+                    <a-input v-model="evidenceFilter.timeFrom" type="datetime-local" placeholder="开始时间" />
+                    <a-input v-model="evidenceFilter.timeTo" type="datetime-local" placeholder="结束时间" />
+                  </div>
                 </div>
                 <div class="rl-form-field workspace-inline-filters__wide">
                   <span class="workspace-field-label">
                     <icon-info-circle />
                     <span>关键字</span>
                   </span>
-                  <a-input v-model="evidenceFilter.keyword" placeholder="搜索 case / evidence / hint / root cause" />
+                  <a-input v-model="evidenceFilter.keyword" placeholder="搜索 obs / source / hint / ref / variable / event" />
                 </div>
               </div>
 
@@ -904,58 +1297,68 @@ onMounted(() => {
             </div>
           </article>
 
-          <article class="rl-section-card workspace-root-cause-summary-card">
+          <article class="rl-section-card workspace-root-cause-summary-card workspace-observation-card">
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title workspace-title-with-icon">
                   <icon-info-circle />
-                  <span>当前根因摘要</span>
+                  <span>Observation Drilldown</span>
                 </h3>
-                <p class="rl-section-card__desc">默认展示当前 Case 的已选候选；若未点选则展示 Top1。</p>
+                <p class="rl-section-card__desc">按当前过滤条件查看当前 Case 的 observation；点选后可打开详情，并带着上下文跳转图谱探索。</p>
+              </div>
+              <div class="rl-inline-tags">
+                <a-tag color="arcoblue">{{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}</a-tag>
+                <a-tag color="gold">{{ activeObservationDetailCount }}</a-tag>
               </div>
             </header>
-            <div class="rl-section-card__body rl-kv-grid workspace-root-cause-summary-card__body">
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-bulb />
-                  <span>Candidate</span>
-                </span>
-                <strong>{{ activeCandidate?.candidate_name ?? '--' }}</strong>
+            <div class="rl-section-card__body workspace-observation-card__body">
+              <div class="workspace-summary-list workspace-summary-list--two-col">
+                <div class="workspace-summary-list__item">
+                  <span class="workspace-summary-label">
+                    <icon-relation />
+                    <span>Current Case</span>
+                  </span>
+                  <strong>{{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}</strong>
+                </div>
+                <div class="workspace-summary-list__item">
+                  <span class="workspace-summary-label">
+                    <icon-bulb />
+                    <span>Selected Obs</span>
+                  </span>
+                  <strong>{{ activeObservation?.id ?? '--' }}</strong>
+                </div>
               </div>
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-info-circle />
-                  <span>Score</span>
-                </span>
-                <strong>{{ formatScore(activeCandidate?.score) }}</strong>
+
+              <div class="workspace-scroll-list workspace-scroll-list--fill workspace-scroll-list--observation">
+                <button
+                  v-for="item in filteredActiveObservationItems"
+                  :key="item.id"
+                  type="button"
+                  class="workspace-basic-list-item workspace-basic-list-item--observation"
+                  :class="{ 'workspace-basic-list-item--active': item.id === selectedObservationId }"
+                  @click="setSelectedObservation(item.id)"
+                >
+                  <div class="workspace-basic-list-item__head">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ formatScore(item.confidence) }}</span>
+                  </div>
+                  <div class="workspace-basic-list-item__meta">
+                    <span>{{ formatObservationModalityLabel(item.modality) }}</span>
+                    <span>{{ item.source }}</span>
+                    <span>{{ item.timeLabel }}</span>
+                  </div>
+                  <div class="workspace-basic-list-item__meta workspace-basic-list-item__meta--observation">
+                    <span>{{ item.linkedEntityCount }} linked</span>
+                    <span>{{ item.rawRefCount }} refs</span>
+                    <a-button size="mini" type="text" @click.stop="openObservationDetail(item.id)">详情</a-button>
+                  </div>
+                </button>
+                <a-empty v-if="!filteredActiveObservationItems.length">当前 Case 没有匹配的 observation</a-empty>
               </div>
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-storage />
-                  <span>Method</span>
-                </span>
-                <strong>{{ formatScoringMethodLabel(activeCandidate?.scoring_method) }}</strong>
-              </div>
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-relation />
-                  <span>Role</span>
-                </span>
-                <strong>{{ normalizeText(activeCandidate?.candidate_role, 'candidate') }}</strong>
-              </div>
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-upload />
-                  <span>Supporting Evidence</span>
-                </span>
-                <strong>{{ getSupportingEvidenceCount(activeCandidate) }}</strong>
-              </div>
-              <div>
-                <span class="workspace-summary-label">
-                  <icon-info-circle />
-                  <span>Case</span>
-                </span>
-                <strong>{{ activeCaseEvidenceEntry?.caseLabel ?? '--' }}</strong>
+
+              <div class="rl-form-actions rl-form-actions--dual">
+                <a-button size="small" :disabled="!activeObservation" @click="openObservationDetail(activeObservation?.id ?? null)">查看详情</a-button>
+                <a-button size="small" :disabled="!activeObservation || !activeCase" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation?.id ?? null)">图谱探索</a-button>
               </div>
             </div>
           </article>
@@ -963,4 +1366,191 @@ onMounted(() => {
       </div>
     </section>
   </div>
+
+  <a-modal
+    v-model:visible="replayModalVisible"
+    title="导入回放资产"
+    :footer="false"
+    :mask-closable="!replayImportLoading"
+    :esc-to-close="!replayImportLoading"
+    class="workspace-replay-modal"
+  >
+    <div class="workspace-stack workspace-stack--tight">
+      <div class="workspace-replay-import-field">
+        <div>
+          <strong>rootlens-runtime.json</strong>
+          <span>可选；用于恢复 case、evidence 与 RCA 运行时。</span>
+        </div>
+        <input ref="replayRuntimeInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('runtimeFile', $event)" />
+        <a-button size="small" @click="openReplayFilePicker('runtimeFile')">{{ replayImportForm.runtimeFile?.name ?? '选择文件' }}</a-button>
+      </div>
+
+      <div class="workspace-replay-import-field">
+        <div>
+          <strong>unified-graphs.json</strong>
+          <span>可选；用于恢复图谱探索工作台。</span>
+        </div>
+        <input ref="replayGraphsInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('graphsFile', $event)" />
+        <a-button size="small" @click="openReplayFilePicker('graphsFile')">{{ replayImportForm.graphsFile?.name ?? '选择文件' }}</a-button>
+      </div>
+
+      <div class="workspace-replay-import-field">
+        <div>
+          <strong>workspace export / session bundle</strong>
+          <span>可选；支持恢复 analyst workspace，或单独导入完整 bundle。</span>
+        </div>
+        <input ref="replayWorkspaceInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('workspaceFile', $event)" />
+        <a-button size="small" @click="openReplayFilePicker('workspaceFile')">{{ replayImportForm.workspaceFile?.name ?? '选择文件' }}</a-button>
+      </div>
+
+      <a-alert
+        type="info"
+        :show-icon="false"
+        title="若同时导入 runtime/graphs 与 workspace export，会先恢复回放资产，再叠加 workspace；完整 session bundle 请单独导入。"
+      />
+
+      <div class="rl-form-actions rl-form-actions--dual">
+        <a-button type="primary" :loading="replayImportLoading" @click="handleReplayImport">导入并切换到回放</a-button>
+        <a-button :disabled="replayImportLoading" @click="replayModalVisible = false">取消</a-button>
+      </div>
+    </div>
+  </a-modal>
+
+  <a-modal
+    v-model:visible="observationDetailModalVisible"
+    title="Observation 详情"
+    :footer="false"
+    width="880px"
+    class="workspace-observation-modal"
+  >
+    <div v-if="activeObservation" class="workspace-stack workspace-stack--tight">
+      <div class="workspace-summary-list workspace-summary-list--two-col">
+        <div class="workspace-summary-list__item">
+          <span class="workspace-summary-label">
+            <icon-storage />
+            <span>Obs ID</span>
+          </span>
+          <strong>{{ activeObservation.id }}</strong>
+        </div>
+        <div class="workspace-summary-list__item">
+          <span class="workspace-summary-label">
+            <icon-bulb />
+            <span>Modality</span>
+          </span>
+          <strong>{{ formatObservationModalityLabel(activeObservation.modality) }}</strong>
+        </div>
+        <div class="workspace-summary-list__item">
+          <span class="workspace-summary-label">
+            <icon-relation />
+            <span>Source</span>
+          </span>
+          <strong>{{ activeObservation.source }}</strong>
+        </div>
+        <div class="workspace-summary-list__item">
+          <span class="workspace-summary-label">
+            <icon-info-circle />
+            <span>Confidence</span>
+          </span>
+          <strong>{{ formatScore(activeObservation.confidence) }}</strong>
+        </div>
+      </div>
+
+      <template v-if="activeObservation.modality === 'image'">
+        <div class="workspace-summary-list workspace-summary-list--two-col">
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-storage /><span>Object</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'object') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-info-circle /><span>Anomaly</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'anomaly_type') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-relation /><span>Location</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'location') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-bulb /><span>Severity</span></span>
+            <strong>{{ readObservationNumberField(activeObservation, 'severity') }}</strong>
+          </div>
+        </div>
+        <div v-if="selectedObservationVisualEvidence.length" class="workspace-observation-visual-grid">
+          <div v-for="item in selectedObservationVisualEvidence" :key="item.artifact_id" class="rl-visual-card">
+            <img v-if="item.preview_path || item.url" :src="item.preview_path || item.url || undefined" :alt="item.title" />
+            <div>
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.kind }}</span>
+            </div>
+          </div>
+        </div>
+        <a-empty v-else>当前 observation 暂无可视资源</a-empty>
+      </template>
+
+      <template v-else-if="activeObservation.modality === 'time_series'">
+        <div class="workspace-summary-list workspace-summary-list--two-col">
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-storage /><span>Variable</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'variable_name') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-info-circle /><span>Direction</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'direction') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-bulb /><span>Contribution</span></span>
+            <strong>{{ readObservationNumberField(activeObservation, 'contribution') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-relation /><span>Time Window</span></span>
+            <strong>{{ activeObservation.timeLabel }}</strong>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="activeObservation.modality === 'log'">
+        <div class="workspace-summary-list workspace-summary-list--two-col">
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-storage /><span>Event Code</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'event_code') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-info-circle /><span>Event Type</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'event_type') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-relation /><span>Equipment</span></span>
+            <strong>{{ readObservationTextField(activeObservation, 'equipment') }}</strong>
+          </div>
+          <div class="workspace-summary-list__item">
+            <span class="workspace-summary-label"><icon-bulb /><span>Time</span></span>
+            <strong>{{ activeObservation.timeLabel }}</strong>
+          </div>
+        </div>
+        <div class="workspace-claim-note workspace-claim-note--compact">
+          <span class="workspace-summary-label"><icon-info-circle /><span>Message</span></span>
+          <strong>{{ readObservationTextField(activeObservation, 'message') }}</strong>
+        </div>
+      </template>
+
+      <div class="workspace-claim-note workspace-claim-note--compact">
+        <span class="workspace-summary-label"><icon-bulb /><span>Linked entity hints</span></span>
+        <strong>{{ activeObservation.linkedEntityHints.length ? activeObservation.linkedEntityHints.join(', ') : '—' }}</strong>
+      </div>
+
+      <div v-if="activeObservation.rawEvidenceRefs.length" class="workspace-observation-ref-list">
+        <div v-for="refItem in activeObservation.rawEvidenceRefs" :key="refItem.refId" class="workspace-observation-ref">
+          <strong>{{ refItem.label }}</strong>
+          <span>{{ refItem.role }}</span>
+          <span>{{ refItem.filePath }}</span>
+        </div>
+      </div>
+      <a-empty v-else>当前 observation 没有 raw refs</a-empty>
+
+      <div class="rl-form-actions rl-form-actions--dual">
+        <a-button type="primary" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation.id)">图谱探索</a-button>
+        <a-button @click="observationDetailModalVisible = false">关闭</a-button>
+      </div>
+    </div>
+    <a-empty v-else>当前没有选中的 observation</a-empty>
+  </a-modal>
 </template>

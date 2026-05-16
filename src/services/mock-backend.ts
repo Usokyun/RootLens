@@ -40,13 +40,14 @@ import type {
   VisualEvidenceItem,
   WhatIfRequest,
 } from '@/api/contracts'
-import { loadBundledRootLensRuntime } from '@/services/rootlens-data'
+import { getLocalSessionMeta, getStoredImportedRuntime, loadBundledRootLensRuntime } from '@/services/rootlens-data'
 import type { RootKGDCandidate, RootLensRuntimeCase, RootLensRuntimeFile, RankedPath } from '@/types/rootlens'
 import heroImage from '@/assets/hero.png'
 
 const CLAIM_BOUNDARY = 'candidate/plausible explanation only; not a verified root-cause label'
 const MOCK_STORAGE_KEY = 'rootlens.mock-backend-state'
 const PAPER_DEMO_RUN_ID = 'paper-demo-curated'
+const IMPORTED_REPLAY_RUN_ID = 'imported-runtime-replay'
 const PAPER_DEMO_CASE_IDS = [
   'mvtec_fixture_clean_scratch',
   'mvtec_noisy_0001',
@@ -810,6 +811,29 @@ function buildSeedRuns(runtime: RootLensRuntimeFile): RunDetail[] {
     }),
   ]
 }
+function buildImportedReplayRuns(runtime: RootLensRuntimeFile): RunDetail[] {
+  if (!runtime.cases.length) {
+    return []
+  }
+
+  const datasets = [...new Set(runtime.cases.map((caseItem) => caseItem.dataset))]
+  const sessionMeta = getLocalSessionMeta()
+
+  return [
+    buildRunDetail({
+      runId: IMPORTED_REPLAY_RUN_ID,
+      createdAt: sessionMeta?.updatedAt ?? runtime.generated_at,
+      mode: 'evidence',
+      sourceFilename: 'rootlens-runtime.json',
+      label: sessionMeta?.summary ?? `回放资产会话（${runtime.cases.length} cases）`,
+      topK: 5,
+      dataset: datasets.length === 1 ? datasets[0] : null,
+      cases: runtime.cases,
+      modelBackend: runtime.generator,
+    }),
+  ]
+}
+
 
 function parseCsvRecords(text: string): Record<string, string>[] {
   return parseCsv(text, {
@@ -1053,6 +1077,18 @@ async function loadCurrentState() {
 }
 
 function mergedRuns(seed: SeedBundle): RunDetail[] {
+  const sessionMeta = getLocalSessionMeta()
+
+  if (sessionMeta?.source === 'import') {
+    const importedRuntime = getStoredImportedRuntime()
+    return buildImportedReplayRuns(importedRuntime ?? {
+      schema_version: 'rootlens-runtime.v1',
+      generated_at: sessionMeta.updatedAt,
+      generator: 'browser-import',
+      cases: [],
+    }).sort((left, right) => right.run.created_at.localeCompare(left.run.created_at))
+  }
+
   return [...seed.runs].sort((left, right) =>
     right.run.created_at.localeCompare(left.run.created_at),
   )

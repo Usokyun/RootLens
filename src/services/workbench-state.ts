@@ -1,8 +1,11 @@
 import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 
+import type { ObservationConfidenceBand, ObservationModality } from '@/services/evidence-observation'
+
 export interface WorkbenchState {
   selectedRunId: string | null
   selectedCaseId: string | null
+  selectedObservationId: string | null
   selectedPathId: string | null
   selectedCandidateId: string | null
   selectedReviewTargetKey: string | null
@@ -11,6 +14,13 @@ export interface WorkbenchState {
   selectedSubgraphNodeId: string | null
   selectedSubgraphEdgeId: string | null
   selectedConstructionRunId: string | null
+  evidenceFilterGraph: string | null
+  evidenceFilterModality: ObservationModality | null
+  evidenceFilterSource: string | null
+  evidenceFilterKeyword: string | null
+  evidenceFilterConfidenceBand: ObservationConfidenceBand
+  evidenceFilterTimeFrom: string | null
+  evidenceFilterTimeTo: string | null
 }
 
 interface WorkbenchStateApi {
@@ -25,6 +35,7 @@ const WORKBENCH_STATE_UPDATED_EVENT = 'rootlens:workbench-state-updated'
 const DEFAULT_WORKBENCH_STATE: WorkbenchState = {
   selectedRunId: null,
   selectedCaseId: null,
+  selectedObservationId: null,
   selectedPathId: null,
   selectedCandidateId: null,
   selectedReviewTargetKey: null,
@@ -33,6 +44,13 @@ const DEFAULT_WORKBENCH_STATE: WorkbenchState = {
   selectedSubgraphNodeId: null,
   selectedSubgraphEdgeId: null,
   selectedConstructionRunId: null,
+  evidenceFilterGraph: null,
+  evidenceFilterModality: null,
+  evidenceFilterSource: null,
+  evidenceFilterKeyword: null,
+  evidenceFilterConfidenceBand: 'all',
+  evidenceFilterTimeFrom: null,
+  evidenceFilterTimeTo: null,
 }
 
 function canUseStorage() {
@@ -48,10 +66,21 @@ function normalizeString(value: unknown): string | null {
   return normalized.length ? normalized : null
 }
 
+function normalizeObservationModality(value: unknown): ObservationModality | null {
+  return value === 'image' || value === 'time_series' || value === 'log' || value === 'document'
+    ? value
+    : null
+}
+
+function normalizeConfidenceBand(value: unknown): ObservationConfidenceBand {
+  return value === 'high' || value === 'medium' || value === 'low' ? value : 'all'
+}
+
 function normalizeWorkbenchState(candidate?: Partial<WorkbenchState> | null): WorkbenchState {
   return {
     selectedRunId: normalizeString(candidate?.selectedRunId),
     selectedCaseId: normalizeString(candidate?.selectedCaseId),
+    selectedObservationId: normalizeString(candidate?.selectedObservationId),
     selectedPathId: normalizeString(candidate?.selectedPathId),
     selectedCandidateId: normalizeString(candidate?.selectedCandidateId),
     selectedReviewTargetKey: normalizeString(candidate?.selectedReviewTargetKey),
@@ -60,6 +89,13 @@ function normalizeWorkbenchState(candidate?: Partial<WorkbenchState> | null): Wo
     selectedSubgraphNodeId: normalizeString(candidate?.selectedSubgraphNodeId),
     selectedSubgraphEdgeId: normalizeString(candidate?.selectedSubgraphEdgeId),
     selectedConstructionRunId: normalizeString(candidate?.selectedConstructionRunId),
+    evidenceFilterGraph: normalizeString(candidate?.evidenceFilterGraph),
+    evidenceFilterModality: normalizeObservationModality(candidate?.evidenceFilterModality),
+    evidenceFilterSource: normalizeString(candidate?.evidenceFilterSource),
+    evidenceFilterKeyword: normalizeString(candidate?.evidenceFilterKeyword),
+    evidenceFilterConfidenceBand: normalizeConfidenceBand(candidate?.evidenceFilterConfidenceBand),
+    evidenceFilterTimeFrom: normalizeString(candidate?.evidenceFilterTimeFrom),
+    evidenceFilterTimeTo: normalizeString(candidate?.evidenceFilterTimeTo),
   }
 }
 

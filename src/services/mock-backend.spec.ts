@@ -69,4 +69,32 @@ describe('mock backend paper demo mode', () => {
       }),
     ).rejects.toThrow('论文演示 mock 模式不支持上传')
   })
+
+
+  it('uses imported runtime sessions as the active replay run source', async () => {
+    const [{ loadBundledRootLensRuntime, saveImportedSession }, { mockBackend }] = await Promise.all([
+      import('@/services/rootlens-data'),
+      import('@/services/mock-backend'),
+    ])
+
+    const bundledRuntime = await loadBundledRootLensRuntime()
+    saveImportedSession({
+      graphs: null,
+      runtime: {
+        ...bundledRuntime,
+        generator: 'browser-import',
+        cases: bundledRuntime.cases.slice(0, 1),
+      },
+      summary: '导入回放测试',
+    })
+
+    const runs = await mockBackend.listRuns()
+    expect(runs).toHaveLength(1)
+    expect(runs[0].run_id).toBe('imported-runtime-replay')
+
+    const detail = await mockBackend.getRun(runs[0].run_id)
+    expect(detail.cases).toHaveLength(1)
+    expect(detail.run.label).toContain('导入回放测试')
+  })
+
 })
