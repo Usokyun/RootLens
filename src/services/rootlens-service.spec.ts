@@ -9,7 +9,7 @@ describe('review target feedback gating', () => {
     expect(canSubmitReviewTargetType('correction')).toBe(true)
   })
 
-  it('keeps root cause candidate feedback disabled until backend enums catch up', () => {
-    expect(canSubmitReviewTargetType('root_cause_candidate')).toBe(false)
+  it('allows root cause candidate feedback once backend mode catches up', () => {
+    expect(canSubmitReviewTargetType('root_cause_candidate')).toBe(true)
   })
 })

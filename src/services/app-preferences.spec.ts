@@ -25,6 +25,15 @@ describe('app preferences', () => {
     })
   })
 
+  it('migrates legacy local backend ports to 8081', () => {
+    updateAppPreferences({
+      dataSourceMode: 'backend',
+      apiBaseUrl: 'http://127.0.0.1:8001',
+    })
+
+    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8081')
+  })
+
   it('restores defaults after reset', () => {
     updateAppPreferences({
       dataSourceMode: 'backend',
@@ -33,6 +42,6 @@ describe('app preferences', () => {
 
     expect(resetAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
     expect(getAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
-    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8001')
+    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8081')
   })
 })

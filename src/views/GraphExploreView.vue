@@ -21,6 +21,7 @@ import type {
 } from "@/api/contracts";
 import KnowledgeForceGraph from "@/components/graphs/KnowledgeForceGraph.vue";
 import RunPathGraph from "@/components/graphs/RunPathGraph.vue";
+import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import WorkbenchHero from "@/components/layout/WorkbenchHero.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import {
@@ -587,6 +588,18 @@ const activeTraceEntityLink = computed(() => {
 const activeSubmitTarget = computed(() => {
   const reviewTargets =
     activeCase.value?.review_targets ?? runDetail.value?.review_targets ?? [];
+  const selectedTarget =
+    reviewTargets.find(
+      (item) =>
+        item.target_key === workbenchState.value.selectedReviewTargetKey &&
+        canSubmitReviewTargetType(item.target_type),
+    ) ?? null;
+  const candidateTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "root_cause_candidate",
+      activeCandidate.value?.ranking_id ?? activeCandidate.value?.candidate_id,
+    ) ?? null;
   const edgeTarget =
     findReviewTargetInList(
       reviewTargets,
@@ -602,6 +615,14 @@ const activeSubmitTarget = computed(() => {
   const pathTarget =
     findReviewTargetInList(reviewTargets, "path", activePath.value?.path_id) ??
     null;
+
+  if (selectedTarget) {
+    return selectedTarget;
+  }
+
+  if (candidateTarget && canSubmitReviewTargetType(candidateTarget.target_type)) {
+    return candidateTarget;
+  }
 
   if (edgeTarget && canSubmitReviewTargetType(edgeTarget.target_type)) {
     return edgeTarget;
@@ -782,10 +803,27 @@ const ledgerBoundedTargetOptions = computed(() => [
   { value: "edge", label: formatReviewLedgerTargetType("edge") },
   { value: "entity_link", label: formatReviewLedgerTargetType("entity_link") },
   { value: "correction", label: formatReviewLedgerTargetType("correction") },
+  { value: "root_cause_candidate", label: formatReviewLedgerTargetType("root_cause_candidate") },
 ]);
 
 const ledgerIntroCopy =
-  "本账本只包含 path / edge / entity_link / correction 的 append-only review 记录；candidate quick review 不纳入正式 ledger。";
+  "本账本包含 path / edge / entity_link / correction / root_cause_candidate 的 append-only review 记录。";
+
+const feedbackCardHintTooltip = computed(() => {
+  if (feedbackCardTab.value === "rca") {
+    return "candidate / path / edge / entity_link / correction 反馈都会进入正式 bounded ledger。";
+  }
+
+  if (feedbackCardTab.value === "curation") {
+    return "当前 tab 只编辑本地 draft overlay，不直接改写原始图谱。";
+  }
+
+  if (feedbackCardTab.value === "ledger") {
+    return ledgerIntroCopy;
+  }
+
+  return "当前 tab 主要用于 evidence → entity → path → candidate 的 linked inspection。";
+});
 
 const feedbackCardBadge = computed(() => {
   if (feedbackCardTab.value === "rca") {
@@ -900,6 +938,20 @@ const localGraphDescription = computed(() => {
 
   return "默认展示当前 case 的 path_graph union 子图；点击总图节点可切换为邻域子图。";
 });
+
+const totalGraphHelp =
+  "点击总图节点可切到对应的一阶邻域子图；右侧根因候选若能映射到图谱节点，也会复用同一套联动逻辑。";
+
+const localGraphHelp = computed(() => [localGraphDescription.value]);
+
+const feedbackCardHelp = computed(() => [
+  "在同一卡片中切换 RCA 反馈、图谱策展、推理链路与 Review Ledger。",
+  graphClaimBoundaryCopy.value,
+  feedbackCardHintTooltip.value,
+]);
+
+const graphRootCauseHelp =
+  "顶部保留 Run / Case 切换；点击候选会联动总图与局部子图，再次点击同一项可取消选择。";
 
 const edgeDecisionModel = computed<GraphCurationDecision>({
   get() {
@@ -1373,7 +1425,7 @@ function buildLedgerFriendlyError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   if (preferences.value.dataSourceMode === "backend") {
     return message.includes("404") || message.includes("405")
-      ? "当前后端暂未提供 review ledger 列表接口；Mock / replay 模式可完整演示。"
+      ? "当前后端 review ledger 读取失败，请检查接口或当前 case 上下文。"
       : message;
   }
 
@@ -2150,13 +2202,11 @@ onMounted(() => {
         <article class="rl-section-card">
           <header class="rl-section-card__header">
             <div>
-              <h3 class="rl-section-card__title workspace-title-with-icon">
-                <icon-relation />
-                <span>总图谱</span>
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle title="总图谱" :help="totalGraphHelp">
+                  <icon-relation />
+                </SectionCardTitle>
               </h3>
-              <p class="rl-section-card__desc">
-                点击总图节点可切到对应的一阶邻域子图；右侧根因候选若能映射到图谱节点，也会复用同一套联动逻辑。
-              </p>
             </div>
             <div class="rl-inline-tags">
               <a-tag color="green"
@@ -2191,14 +2241,14 @@ onMounted(() => {
         <section
           class="workspace-bottom-grid workspace-bottom-grid--graphs-main"
         >
-          <article class="rl-section-card">
+          <article class="rl-section-card workspace-graph-bottom-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-relation />
-                  <span>局部子图</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="局部子图" :help="localGraphHelp">
+                    <icon-relation />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">{{ localGraphDescription }}</p>
               </div>
             </header>
             <div
@@ -2228,22 +2278,20 @@ onMounted(() => {
             </div>
           </article>
 
-          <article class="rl-section-card workspace-feedback-card">
+          <article class="rl-section-card workspace-feedback-card workspace-graph-bottom-card">
             <header
               class="rl-section-card__header workspace-feedback-card__header"
             >
-              <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle title="审阅与策展卡" :help="feedbackCardHelp">
                   <icon-info-circle />
-                  <span>审阅与策展卡</span>
-                </h3>
-                <p class="rl-section-card__desc">
-                  更紧凑地承载 RCA 反馈与图谱策展，减少冗余状态块。
-                </p>
-              </div>
-              <span class="workspace-feedback-card__badge">{{
-                feedbackCardBadge
-              }}</span>
+                </SectionCardTitle>
+              </h3>
+              <a-tooltip :content="feedbackCardBadge" position="left">
+                <span class="workspace-feedback-card__badge">
+                  {{ feedbackCardBadge }}
+                </span>
+              </a-tooltip>
             </header>
             <div class="rl-section-card__body workspace-feedback-card__body">
               <div
@@ -2258,9 +2306,10 @@ onMounted(() => {
                     'workspace-feedback-tabs__item--active':
                       feedbackCardTab === 'rca',
                   }"
+                  title="RCA 反馈"
                   @click="feedbackCardTab = 'rca'"
                 >
-                  RCA 反馈
+                  RCA
                 </button>
                 <button
                   type="button"
@@ -2269,9 +2318,10 @@ onMounted(() => {
                     'workspace-feedback-tabs__item--active':
                       feedbackCardTab === 'curation',
                   }"
+                  title="图谱策展"
                   @click="feedbackCardTab = 'curation'"
                 >
-                  图谱策展
+                  策展
                 </button>
                 <button
                   type="button"
@@ -2280,9 +2330,10 @@ onMounted(() => {
                     'workspace-feedback-tabs__item--active':
                       feedbackCardTab === 'trace',
                   }"
+                  title="推理链路"
                   @click="feedbackCardTab = 'trace'"
                 >
-                  推理链路
+                  链路
                 </button>
                 <button
                   type="button"
@@ -2291,49 +2342,53 @@ onMounted(() => {
                     'workspace-feedback-tabs__item--active':
                       feedbackCardTab === 'ledger',
                   }"
+                  title="Review Ledger"
                   @click="feedbackCardTab = 'ledger'"
                 >
-                  Review Ledger
+                  Ledger
                 </button>
               </div>
 
-              <div class="workspace-claim-note workspace-claim-note--compact">
-                <span class="workspace-summary-label">
-                  <icon-info-circle />
-                  <span>Claim boundary</span>
-                </span>
-                <strong>{{ graphClaimBoundaryCopy }}</strong>
-              </div>
 
               <template v-if="feedbackCardTab === 'rca'">
-                <section class="workspace-feedback-compact">
+                <section
+                  class="workspace-feedback-compact workspace-feedback-compact--dense"
+                >
                   <div
-                    class="workspace-summary-list workspace-summary-list--two-col"
+                    class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list workspace-feedback-compact__summary"
                   >
                     <div class="workspace-summary-list__item">
                       <span class="workspace-summary-label">
                         <icon-bulb />
                         <span>当前候选</span>
                       </span>
-                      <strong>{{
-                        activeCandidate?.candidate_name ?? "--"
-                      }}</strong>
+                      <strong
+                        :title="activeCandidate?.candidate_name ?? '--'"
+                        >{{ activeCandidate?.candidate_name ?? "--" }}</strong
+                      >
                     </div>
                     <div class="workspace-summary-list__item">
                       <span class="workspace-summary-label">
                         <icon-relation />
                         <span>当前路径</span>
                       </span>
-                      <strong>{{ activePath?.path_id ?? "--" }}</strong>
+                      <strong :title="activePath?.path_id ?? '--'">{{
+                        activePath?.path_id ?? "--"
+                      }}</strong>
                     </div>
                     <div class="workspace-summary-list__item">
                       <span class="workspace-summary-label">
                         <icon-info-circle />
                         <span>反馈目标</span>
                       </span>
-                      <strong>{{
-                        activeSubmitTarget?.target_type ?? "--"
-                      }}</strong>
+                      <strong
+                        :title="
+                          activeSubmitTarget?.label ??
+                          activeSubmitTarget?.target_type ??
+                          '--'
+                        "
+                        >{{ activeSubmitTarget?.target_type ?? "--" }}</strong
+                      >
                     </div>
                     <div class="workspace-summary-list__item">
                       <span class="workspace-summary-label">
@@ -2368,15 +2423,15 @@ onMounted(() => {
                     </a-button>
                   </div>
 
-                  <div class="rl-form-field workspace-feedback-compact__field">
+                  <div class="rl-form-field workspace-feedback-compact__field workspace-feedback-compact__field--grow">
                     <span class="workspace-field-label">
                       <icon-info-circle />
                       <span>备注</span>
                     </span>
                     <a-textarea
                       v-model="feedbackForm.note"
-                      :auto-size="{ minRows: 4, maxRows: 6 }"
-                      placeholder="记录你的审阅判断和上下文。"
+                      class="workspace-feedback-compact__textarea"
+                      placeholder="记录备注"
                     />
                   </div>
 
@@ -2410,22 +2465,17 @@ onMounted(() => {
                   <div
                     class="workspace-feedback-pane__section workspace-feedback-pane__section--trace"
                   >
-                    <div class="workspace-feedback-pane__section-head">
-                      <strong>推理链路检查</strong>
-                      <div class="workspace-feedback-pane__section-actions">
-                        <span>{{
-                          activeReasoningInspection.candidate
-                            ? "candidate + evidence linked inspection"
-                            : "先从右侧选择根因候选"
-                        }}</span>
-                        <a-button
-                          size="small"
-                          :disabled="!activeReasoningInspection.candidate"
-                          @click="openCrossCaseCompare"
-                        >
-                          Cross-case Compare
-                        </a-button>
-                      </div>
+                    <div
+                      class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                    >
+                      <strong>推理链路</strong>
+                      <a-button
+                        size="mini"
+                        :disabled="!activeReasoningInspection.candidate"
+                        @click="openCrossCaseCompare"
+                      >
+                        Compare
+                      </a-button>
                     </div>
 
                     <template v-if="activeReasoningInspection.candidate">
@@ -2434,30 +2484,40 @@ onMounted(() => {
                           <div
                             class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
                           >
-                            <strong>Candidate 概览</strong>
-                            <span>{{
-                              activeReasoningInspection.candidate
-                                .selectedPathId ?? "--"
-                            }}</span>
+                            <strong>Candidate</strong>
+                            <span
+                              :title="
+                                activeReasoningInspection.candidate
+                                  .selectedPathId ?? '--'
+                              "
+                              >{{
+                                activeReasoningInspection.candidate
+                                  .selectedPathId ?? "--"
+                              }}</span
+                            >
                           </div>
                           <div
-                            class="workspace-summary-list workspace-summary-list--two-col"
+                            class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
                           >
                             <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-bulb />
-                                <span>Candidate</span>
-                              </span>
-                              <strong>{{
-                                activeReasoningInspection.candidate
-                                  .candidateName
-                              }}</strong>
+                              <span class="workspace-summary-label"
+                                >Candidate</span
+                              >
+                              <strong
+                                :title="
+                                  activeReasoningInspection.candidate
+                                    .candidateName
+                                "
+                                >{{
+                                  activeReasoningInspection.candidate
+                                    .candidateName
+                                }}</strong
+                              >
                             </div>
                             <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-storage />
-                                <span>Rank / Score</span>
-                              </span>
+                              <span class="workspace-summary-label"
+                                >Rank / Score</span
+                              >
                               <strong
                                 >#{{
                                   activeReasoningInspection.candidate.rank ??
@@ -2472,48 +2532,41 @@ onMounted(() => {
                               >
                             </div>
                             <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-relation />
-                                <span>Scoring</span>
-                              </span>
-                              <strong>{{
-                                formatScoringMethodLabel(
+                              <span class="workspace-summary-label"
+                                >Method / Role</span
+                              >
+                              <strong
+                                :title="`${formatScoringMethodLabel(activeReasoningInspection.candidate.scoringMethod)} · ${normalizeText(activeReasoningInspection.candidate.role, 'candidate')}`"
+                                >{{
+                                  formatScoringMethodLabel(
+                                    activeReasoningInspection.candidate
+                                      .scoringMethod,
+                                  )
+                                }}
+                                ·
+                                {{
+                                  normalizeText(
+                                    activeReasoningInspection.candidate.role,
+                                    "candidate",
+                                  )
+                                }}</strong
+                              >
+                            </div>
+                            <div class="workspace-summary-list__item">
+                              <span class="workspace-summary-label"
+                                >Obs / Links</span
+                              >
+                              <strong
+                                >{{
                                   activeReasoningInspection.candidate
-                                    .scoringMethod,
-                                )
-                              }}</strong>
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-info-circle />
-                                <span>Role</span>
-                              </span>
-                              <strong>{{
-                                normalizeText(
-                                  activeReasoningInspection.candidate.role,
-                                  "candidate",
-                                )
-                              }}</strong>
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-info-circle />
-                                <span>Supporting obs</span>
-                              </span>
-                              <strong>{{
-                                activeReasoningInspection.candidate
-                                  .supportingObservationCount
-                              }}</strong>
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label">
-                                <icon-relation />
-                                <span>Linked entities</span>
-                              </span>
-                              <strong>{{
-                                activeReasoningInspection.candidate
-                                  .linkedEntityCount
-                              }}</strong>
+                                    .supportingObservationCount
+                                }}
+                                /
+                                {{
+                                  activeReasoningInspection.candidate
+                                    .linkedEntityCount
+                                }}</strong
+                              >
                             </div>
                           </div>
                         </section>
@@ -2651,15 +2704,6 @@ onMounted(() => {
                                 >
                               </div>
                             </button>
-                            <div
-                              v-if="
-                                activeReasoningInspection.supportingObservations
-                                  .length === 1
-                              "
-                              class="workspace-reasoning-trace__hint"
-                            >
-                              当前候选只有 1 个显式 supporting observation。
-                            </div>
                           </div>
                           <a-empty
                             v-else
@@ -2916,31 +2960,36 @@ onMounted(() => {
                 <section
                   class="workspace-feedback-pane workspace-feedback-pane--ledger"
                 >
-                  <div class="workspace-feedback-pane__section">
-                    <div class="workspace-feedback-pane__section-head">
+                  <div class="workspace-feedback-pane__section workspace-feedback-pane__section--ledger">
+                    <div
+                      class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                    >
                       <strong>Review Ledger</strong>
-                      <span>{{
-                        activeCase?.case_label ?? activeCase?.case_id ?? "--"
-                      }}</span>
+                      <span
+                        :title="
+                          activeCase?.case_label ?? activeCase?.case_id ?? '--'
+                        "
+                        >{{
+                          activeCase?.case_label ?? activeCase?.case_id ?? "--"
+                        }}</span
+                      >
                     </div>
 
                     <div
-                      class="workspace-claim-note workspace-claim-note--compact"
+                      class="workspace-feedback-toolbar workspace-feedback-toolbar--ledger"
                     >
-                      <span class="workspace-summary-label">
-                        <icon-info-circle />
-                        <span>Ledger policy</span>
-                      </span>
-                      <strong>{{ ledgerIntroCopy }}</strong>
-                    </div>
-
-                    <div class="workspace-form-row workspace-form-row--two">
-                      <div class="rl-form-field">
-                        <span class="workspace-field-label">
-                          <icon-relation />
-                          <span>Target type</span>
-                        </span>
-                        <a-select v-model="ledgerTargetTypeFilter">
+                      <div class="workspace-feedback-toolbar__group">
+                        <a-tooltip :content="ledgerIntroCopy" position="top">
+                          <span class="workspace-feedback-toolbar__pill">
+                            bounded only
+                          </span>
+                        </a-tooltip>
+                      </div>
+                      <div
+                        class="rl-form-field workspace-feedback-toolbar__field"
+                      >
+                        <span class="workspace-field-label">Target</span>
+                        <a-select v-model="ledgerTargetTypeFilter" size="small">
                           <a-option
                             v-for="option in ledgerBoundedTargetOptions"
                             :key="option.value"
@@ -2975,7 +3024,10 @@ onMounted(() => {
                         class="workspace-basic-list-item workspace-basic-list-item--ledger"
                         @click="handleLedgerRecordClick(item)"
                       >
-                        <div class="workspace-basic-list-item__primary">
+                        <div
+                          class="workspace-basic-list-item__primary"
+                          :title="item.title"
+                        >
                           {{ item.title }}
                         </div>
                         <div
@@ -2990,13 +3042,19 @@ onMounted(() => {
                             {{ item.reviewer ?? "anonymous" }}</span
                           >
                           <span>{{ formatDateTime(item.created_at) }}</span>
-                          <span>{{ graphClaimBoundaryCopy }}</span>
                         </div>
-                        <p class="workspace-ledger-record__subtitle">
+                        <p
+                          class="workspace-ledger-record__subtitle"
+                          :title="item.subtitle"
+                        >
                           {{ item.subtitle }}
                         </p>
-                        <p class="workspace-ledger-record__note">
-                          {{ item.note ?? "无备注" }}
+                        <p
+                          v-if="item.note"
+                          class="workspace-ledger-record__note"
+                          :title="item.note"
+                        >
+                          {{ item.note }}
                         </p>
                         <div
                           class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
@@ -3042,10 +3100,10 @@ onMounted(() => {
                       }}</strong>
                       <span>{{
                         activeCurationEdge
-                          ? "已选中边"
+                          ? "边"
                           : activeCurationNode
-                            ? "已选中节点"
-                            : "等待在左侧子图中选择节点或边"
+                            ? "节点"
+                            : "待选"
                       }}</span>
                     </div>
 
@@ -3054,21 +3112,36 @@ onMounted(() => {
                       class="workspace-curation-panel"
                     >
                       <div class="workspace-curation-meta">
-                        <div class="workspace-claim-note">
-                          <span class="workspace-summary-label">
-                            <icon-info-circle />
-                            <span>Evidence</span>
-                          </span>
-                          <strong>{{
+                        <a-tooltip
+                          :content="
                             normalizeText(
                               readStringAttribute(
                                 activeCurationEdge.attributes,
-                                "evidence",
+                                'evidence',
                               ),
-                              "当前边没有附带 evidence snippet。",
+                              '当前边没有附带 evidence snippet。',
                             )
-                          }}</strong>
-                        </div>
+                          "
+                          position="top"
+                        >
+                          <div
+                            class="workspace-claim-note workspace-feedback-snippet-card"
+                          >
+                            <span class="workspace-summary-label">
+                              <icon-info-circle />
+                              <span>Evidence</span>
+                            </span>
+                            <strong class="workspace-feedback-snippet">{{
+                              normalizeText(
+                                readStringAttribute(
+                                  activeCurationEdge.attributes,
+                                  "evidence",
+                                ),
+                                "当前边没有附带 evidence snippet。",
+                              )
+                            }}</strong>
+                          </div>
+                        </a-tooltip>
                         <a-button
                           size="small"
                           @click="openSelectedEdgeProvenance"
@@ -3118,14 +3191,14 @@ onMounted(() => {
                         </div>
                       </div>
 
-                      <div class="rl-form-field">
+                      <div class="rl-form-field workspace-curation-panel__field workspace-curation-panel__field--grow">
                         <span class="workspace-field-label">
                           <icon-info-circle />
                           <span>Note</span>
                         </span>
                         <a-textarea
                           v-model="edgeNoteModel"
-                          :auto-size="{ minRows: 4, maxRows: 6 }"
+                          class="workspace-curation-panel__textarea"
                           placeholder="记录为什么接受、拒绝或修订这条边。"
                         />
                       </div>
@@ -3136,7 +3209,7 @@ onMounted(() => {
                       class="workspace-curation-panel"
                     >
                       <div
-                        class="workspace-summary-list workspace-summary-list--two-col"
+                        class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
                       >
                         <div class="workspace-summary-list__item">
                           <span class="workspace-summary-label">
@@ -3203,14 +3276,14 @@ onMounted(() => {
                         </div>
                       </div>
 
-                      <div class="rl-form-field">
+                      <div class="rl-form-field workspace-curation-panel__field workspace-curation-panel__field--grow">
                         <span class="workspace-field-label">
                           <icon-bulb />
                           <span>Description</span>
                         </span>
                         <a-textarea
                           v-model="nodeDescriptionModel"
-                          :auto-size="{ minRows: 4, maxRows: 6 }"
+                          class="workspace-curation-panel__textarea"
                           placeholder="补充节点说明或更保守的解释文案。"
                         />
                       </div>
@@ -3258,15 +3331,15 @@ onMounted(() => {
                       <template #icon>
                         <icon-save />
                       </template>
-                      保存本地草稿
+                      保存草稿
                     </a-button>
                     <a-button
                       :disabled="!canRevertCurrentSelection"
                       @click="revertCurrentSelectionDraft"
-                      >撤销当前修改</a-button
+                      >撤销修改</a-button
                     >
                     <a-button status="warning" @click="resetCurrentCaseDraft"
-                      >重置当前 case 草稿</a-button
+                      >重置草稿</a-button
                     >
                   </div>
 
@@ -3315,14 +3388,11 @@ onMounted(() => {
         <article class="rl-section-card workspace-root-cause-aside-card">
           <header class="rl-section-card__header">
             <div>
-              <h3 class="rl-section-card__title workspace-title-with-icon">
-                <icon-bulb />
-                <span>根因列表</span>
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle title="根因列表" :help="graphRootCauseHelp">
+                  <icon-bulb />
+                </SectionCardTitle>
               </h3>
-              <p class="rl-section-card__desc">
-                顶部保留 Run / Case
-                切换；点击候选会联动总图与局部子图，再次点击同一项可取消选择。
-              </p>
             </div>
             <a-tag color="green">{{
               activeCase?.ranked_root_causes?.length ?? 0

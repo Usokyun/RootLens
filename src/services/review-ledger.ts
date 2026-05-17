@@ -9,7 +9,8 @@ export type BoundedReviewTargetType =
   | "path"
   | "edge"
   | "entity_link"
-  | "correction";
+  | "correction"
+  | "root_cause_candidate";
 export type ReviewLedgerTargetFilter = "all" | BoundedReviewTargetType;
 
 export interface ReviewLedgerDisplayItem extends ReviewLedgerRecord {
@@ -45,7 +46,8 @@ export function isBoundedReviewTargetType(
     value === "path" ||
     value === "edge" ||
     value === "entity_link" ||
-    value === "correction"
+    value === "correction" ||
+    value === "root_cause_candidate"
   );
 }
 
@@ -59,6 +61,8 @@ export function formatReviewLedgerTargetType(value: ReviewTargetType | string) {
       return "Entity Link";
     case "correction":
       return "Correction";
+    case "root_cause_candidate":
+      return "Candidate";
     default:
       return value;
   }
@@ -206,6 +210,40 @@ function resolveEntityLinkTitle(
   };
 }
 
+function resolveRootCauseCandidateTitle(
+  caseDetail: RunCaseDetail | null | undefined,
+  targetId: string,
+) {
+  const candidate =
+    (Array.isArray(caseDetail?.ranked_root_causes)
+      ? caseDetail?.ranked_root_causes.find(
+          (item) =>
+            item.ranking_id === targetId || item.candidate_id === targetId,
+        )
+      : null) ?? null;
+
+  if (candidate) {
+    return {
+      title:
+        normalizeText(candidate.candidate_name) ||
+        normalizeText(candidate.candidate_label) ||
+        targetId,
+      subtitle:
+        normalizeText(candidate.scoring_method) ||
+        normalizeText(candidate.candidate_role) ||
+        targetId,
+      targetAvailable: true,
+    };
+  }
+
+  return {
+    title: targetId,
+    subtitle: "该 candidate 已不在当前 case 结果中。",
+    targetAvailable: false,
+  };
+}
+
+
 function resolveCorrectionTitle(
   caseDetail: RunCaseDetail | null | undefined,
   targetId: string,
@@ -248,7 +286,9 @@ export function buildReviewLedgerDisplayItems(
             ? resolveEdgeTitle(caseDetail, item.target_id)
             : item.target_type === "entity_link"
               ? resolveEntityLinkTitle(caseDetail, item.target_id)
-              : resolveCorrectionTitle(caseDetail, item.target_id);
+              : item.target_type === "root_cause_candidate"
+                ? resolveRootCauseCandidateTitle(caseDetail, item.target_id)
+                : resolveCorrectionTitle(caseDetail, item.target_id);
 
       return {
         ...item,

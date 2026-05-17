@@ -3,7 +3,20 @@ import type {
   AnalyzeEnvelope,
   AnalyzeRequest,
   DashboardBootstrap,
+  KGDraftListRequest,
+  KGDraftListResponse,
   KGDraftRequest,
+  KGMaterialBuildSourcesRequest,
+  KGMaterialBuildSourcesResponse,
+  KGMaterialChunkListResponse,
+  KGMaterialDetailResponse,
+  KGMaterialExtractRequest,
+  KGMaterialExtractResponse,
+  KGMaterialExtractionArtifactListResponse,
+  KGMaterialExtractionRunListResponse,
+  KGMaterialListResponse,
+  KGMaterialMutationResponse,
+  KGMaterialRegisterUrlRequest,
   KGSourceDraftRequest,
   KGSourceDraftResponse,
   KGStudioPayload,
@@ -48,9 +61,43 @@ export interface RootLensService {
   submitKGDraft: (
     request: KGDraftRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
+  listKGDrafts: (
+    request?: KGDraftListRequest,
+  ) => Promise<KGDraftListResponse>;
   generateKGSourceDraft: (
     request: KGSourceDraftRequest,
   ) => Promise<KGSourceDraftResponse>;
+  listKGMaterials: () => Promise<KGMaterialListResponse>;
+  getKGMaterial: (materialId: string) => Promise<KGMaterialDetailResponse>;
+  uploadKGMaterial: (input: {
+    file: File;
+    title?: string;
+    scenario?: string;
+    source_type?: string;
+    notes?: string;
+    metadata?: Record<string, unknown>;
+    material_id?: string;
+    overwrite?: boolean;
+  }) => Promise<KGMaterialMutationResponse>;
+  registerKGMaterialUrl: (
+    request: KGMaterialRegisterUrlRequest,
+  ) => Promise<KGMaterialMutationResponse>;
+  extractKGMaterial: (
+    materialId: string,
+    request?: KGMaterialExtractRequest,
+  ) => Promise<KGMaterialExtractResponse>;
+  buildKGMaterialSources: (
+    request: KGMaterialBuildSourcesRequest,
+  ) => Promise<KGMaterialBuildSourcesResponse>;
+  getKGMaterialChunks: (
+    materialId: string,
+  ) => Promise<KGMaterialChunkListResponse>;
+  getKGMaterialExtractions: (
+    materialId: string,
+  ) => Promise<KGMaterialExtractionRunListResponse>;
+  getKGMaterialArtifacts: (
+    materialId: string,
+  ) => Promise<KGMaterialExtractionArtifactListResponse>;
   buildKGConstruction: (
     request: KGConstructionBuildRequest,
   ) => Promise<KGConstructionBuildResponse>;

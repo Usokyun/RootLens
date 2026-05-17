@@ -4,7 +4,25 @@ import type {
   AnalyzeEnvelope,
   AnalyzeRequest,
   DashboardBootstrap,
+  KGDraftListRequest,
+  KGDraftListResponse,
+  KGDraftRecord,
   KGDraftRequest,
+  KGMaterialBuildSourcesRequest,
+  KGMaterialBuildSourcesResponse,
+  KGMaterialChunkListResponse,
+  KGMaterialChunkRecord,
+  KGMaterialDetailResponse,
+  KGMaterialExtractRequest,
+  KGMaterialExtractResponse,
+  KGMaterialExtractionArtifactListResponse,
+  KGMaterialExtractionArtifactRecord,
+  KGMaterialExtractionRunListResponse,
+  KGMaterialExtractionRunRecord,
+  KGMaterialListResponse,
+  KGMaterialMutationResponse,
+  KGMaterialRecord,
+  KGMaterialRegisterUrlRequest,
   KGSourceDraftEdge,
   KGSourceDraftRequest,
   KGSourceDraftResponse,
@@ -72,6 +90,7 @@ const REVIEWABLE_FEEDBACK_TARGETS = new Set<ReviewTargetType>([
   "edge",
   "entity_link",
   "correction",
+  "root_cause_candidate",
 ]);
 
 interface MockFeedbackRecord {
@@ -100,6 +119,10 @@ interface MockPersistentState {
   kg_draft_records: MockDraftRecord[];
   source_uploads: KGConstructionUploadedSource[];
   construction_builds: MockConstructionBuild[];
+  material_records: KGMaterialRecord[];
+  material_chunks: KGMaterialChunkRecord[];
+  material_extraction_runs: KGMaterialExtractionRunRecord[];
+  material_artifacts: KGMaterialExtractionArtifactRecord[];
 }
 
 interface SeedBundle {
@@ -181,6 +204,10 @@ function readPersistentState(): MockPersistentState {
       kg_draft_records: [],
       source_uploads: [],
       construction_builds: [],
+      material_records: [],
+      material_chunks: [],
+      material_extraction_runs: [],
+      material_artifacts: [],
     };
   }
 
@@ -193,6 +220,10 @@ function readPersistentState(): MockPersistentState {
         kg_draft_records: [],
         source_uploads: [],
         construction_builds: [],
+        material_records: [],
+        material_chunks: [],
+        material_extraction_runs: [],
+        material_artifacts: [],
       };
     }
 
@@ -213,6 +244,18 @@ function readPersistentState(): MockPersistentState {
       construction_builds: Array.isArray(parsed.construction_builds)
         ? (parsed.construction_builds as MockConstructionBuild[])
         : [],
+      material_records: Array.isArray(parsed.material_records)
+        ? (parsed.material_records as KGMaterialRecord[])
+        : [],
+      material_chunks: Array.isArray(parsed.material_chunks)
+        ? (parsed.material_chunks as KGMaterialChunkRecord[])
+        : [],
+      material_extraction_runs: Array.isArray(parsed.material_extraction_runs)
+        ? (parsed.material_extraction_runs as KGMaterialExtractionRunRecord[])
+        : [],
+      material_artifacts: Array.isArray(parsed.material_artifacts)
+        ? (parsed.material_artifacts as KGMaterialExtractionArtifactRecord[])
+        : [],
     };
   } catch {
     return {
@@ -221,6 +264,10 @@ function readPersistentState(): MockPersistentState {
       kg_draft_records: [],
       source_uploads: [],
       construction_builds: [],
+      material_records: [],
+      material_chunks: [],
+      material_extraction_runs: [],
+      material_artifacts: [],
     };
   }
 }
@@ -1772,6 +1819,249 @@ function mergedConstructionBuilds(
   );
 }
 
+function inferMockMaterialSourceFormat(value: string | null | undefined) {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized.endsWith(".jsonl")) {
+    return "jsonl" as const;
+  }
+  if (normalized.endsWith(".json")) {
+    return "json" as const;
+  }
+  return "csv" as const;
+}
+
+function listMockMaterialRecords(persistentState: MockPersistentState) {
+  return [...persistentState.material_records].sort((left, right) => {
+    const leftTime = Date.parse(left.updated_at ?? left.created_at ?? "");
+    const rightTime = Date.parse(right.updated_at ?? right.created_at ?? "");
+    if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) {
+      return (right.updated_at ?? right.created_at ?? "").localeCompare(
+        left.updated_at ?? left.created_at ?? "",
+      );
+    }
+    return rightTime - leftTime;
+  });
+}
+
+function findMockMaterialRecord(
+  persistentState: MockPersistentState,
+  materialId: string,
+) {
+  const material = persistentState.material_records.find(
+    (item) => item.material_id === materialId,
+  );
+  if (!material) {
+    throw new Error(`未找到素材：${materialId}`);
+  }
+  return material;
+}
+
+function persistMockMaterialRecord(record: KGMaterialRecord) {
+  const state = readPersistentState();
+  state.material_records = uniqueByKey(
+    [record, ...state.material_records],
+    (item) => item.material_id,
+  );
+  writePersistentState(state);
+}
+
+function replaceMockMaterialDerivedState(input: {
+  materialId: string;
+  chunks?: KGMaterialChunkRecord[];
+  extractionRuns?: KGMaterialExtractionRunRecord[];
+  artifacts?: KGMaterialExtractionArtifactRecord[];
+}) {
+  const state = readPersistentState();
+  if (input.chunks) {
+    state.material_chunks = [
+      ...state.material_chunks.filter((item) => item.material_id !== input.materialId),
+      ...input.chunks,
+    ];
+  }
+  if (input.extractionRuns) {
+    state.material_extraction_runs = [
+      ...state.material_extraction_runs.filter(
+        (item) => item.material_id !== input.materialId,
+      ),
+      ...input.extractionRuns,
+    ];
+  }
+  if (input.artifacts) {
+    state.material_artifacts = [
+      ...state.material_artifacts.filter((item) => item.material_id !== input.materialId),
+      ...input.artifacts,
+    ];
+  }
+  writePersistentState(state);
+}
+
+function listMockMaterialChunks(
+  persistentState: MockPersistentState,
+  materialId: string,
+) {
+  return persistentState.material_chunks
+    .filter((item) => item.material_id === materialId)
+    .sort((left, right) => left.chunk_index - right.chunk_index);
+}
+
+function listMockMaterialExtractions(
+  persistentState: MockPersistentState,
+  materialId: string,
+) {
+  return persistentState.material_extraction_runs
+    .filter((item) => item.material_id === materialId)
+    .sort((left, right) =>
+      (right.started_at ?? right.completed_at ?? "").localeCompare(
+        left.started_at ?? left.completed_at ?? "",
+      ),
+    );
+}
+
+function listMockMaterialArtifacts(
+  persistentState: MockPersistentState,
+  materialId: string,
+) {
+  return persistentState.material_artifacts
+    .filter((item) => item.material_id === materialId)
+    .sort((left, right) =>
+      (right.created_at ?? "").localeCompare(left.created_at ?? ""),
+    );
+}
+
+function buildMockMaterialRecord(config: {
+  materialId: string;
+  title: string;
+  scenario: string;
+  sourceType: string;
+  sourceKind: string;
+  sourceUri: string;
+  filename?: string | null;
+  contentType?: string | null;
+  sizeBytes?: number;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  extraction?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  status?: string;
+}) {
+  const createdAt = config.createdAt ?? new Date().toISOString();
+  const updatedAt = config.updatedAt ?? createdAt;
+  const extraction = isRecord(config.extraction) ? config.extraction : {};
+  const metadata: Record<string, unknown> = {
+    ...(isRecord(config.metadata) ? config.metadata : {}),
+    ...(config.notes ? { notes: config.notes } : {}),
+  };
+  return {
+    status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
+    material_id: config.materialId,
+    title: config.title,
+    scenario: config.scenario,
+    material_type: config.sourceType,
+    source_kind: config.sourceKind,
+    source_uri: config.sourceUri,
+    metadata_path: `mock://materials/${config.materialId}/metadata.json`,
+    registered_at: createdAt,
+    updated_at: updatedAt,
+    original_filename: config.filename ?? null,
+    content_type: config.contentType ?? null,
+    size_bytes: config.sizeBytes ?? 0,
+    metadata,
+    extraction,
+    claim_boundary:
+      "source materials are provenance inputs for candidate KG construction; registration or upload does not verify industrial facts or publish KG rows",
+    source_type: config.sourceType,
+    source_format:
+      typeof extraction.source_format === "string"
+        ? extraction.source_format
+        : config.sourceKind === "url"
+          ? null
+          : inferMockMaterialSourceFormat(config.filename ?? config.sourceUri),
+    path: config.sourceKind === "url" ? null : config.sourceUri,
+    url: config.sourceKind === "url" ? config.sourceUri : null,
+    uri: config.sourceUri,
+    filename: config.filename ?? null,
+    processing_status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
+    extraction_status:
+      typeof extraction.status === "string" ? extraction.status : "not_started",
+    chunk_count:
+      typeof metadata.chunk_count === "number" ? metadata.chunk_count : null,
+    page_count:
+      typeof metadata.page_count === "number" ? metadata.page_count : null,
+    source_id:
+      typeof extraction.source_id === "string" ? extraction.source_id : null,
+    notes: config.notes ?? null,
+    created_at: createdAt,
+  } satisfies KGMaterialRecord;
+}
+
+function buildMockDraftRecord(draft: MockDraftRecord): KGDraftRecord {
+  const targetKey =
+    draft.request.target_key ?? `edge:${draft.request.target_id}`;
+  return {
+    draft_id: draft.draft_id,
+    created_at: draft.created_at,
+    target_type: "edge",
+    target_id: draft.request.target_id,
+    target_key: targetKey,
+    draft_action: draft.request.draft_action,
+    proposed_relation: draft.request.proposed_relation ?? null,
+    proposed_evidence: draft.request.proposed_evidence ?? null,
+    proposed_confidence: draft.request.proposed_confidence ?? null,
+    note: draft.request.note ?? null,
+    reviewer: draft.request.reviewer ?? null,
+    source: draft.request.source,
+    metadata: draft.request.metadata ?? {},
+    review_decision: {
+      action: draft.request.draft_action,
+      target_id: draft.request.target_id,
+      target_key: targetKey,
+      note: draft.request.note ?? null,
+      reviewer: draft.request.reviewer ?? null,
+      source: draft.request.source,
+      proposed_payload: {
+        ...(draft.request.proposed_relation
+          ? { relation: draft.request.proposed_relation }
+          : {}),
+        ...(draft.request.proposed_evidence
+          ? { evidence: draft.request.proposed_evidence }
+          : {}),
+        ...(typeof draft.request.proposed_confidence === "number"
+          ? { confidence: draft.request.proposed_confidence }
+          : {}),
+      },
+      metadata: draft.request.metadata ?? {},
+    },
+  };
+}
+
+function listMockDraftRecords(
+  persistentState: MockPersistentState,
+  request?: KGDraftListRequest,
+) {
+  const records = persistentState.kg_draft_records
+    .map((item) => buildMockDraftRecord(item))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at));
+  return records.filter((record) => {
+    if (request?.target_type && record.target_type !== request.target_type) {
+      return false;
+    }
+    if (request?.target_id && record.target_id !== request.target_id) {
+      return false;
+    }
+    if (request?.target_key && record.target_key !== request.target_key) {
+      return false;
+    }
+    if (request?.reviewer && record.reviewer !== request.reviewer) {
+      return false;
+    }
+    if (request?.source && record.source !== request.source) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export const mockBackend = {
   async bootstrap(): Promise<DashboardBootstrap> {
     const { seed } = await loadCurrentState();
@@ -1850,6 +2140,319 @@ export const mockBackend = {
       offset,
       limit,
       claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async listKGMaterials(): Promise<KGMaterialListResponse> {
+    const { persistentState } = await loadCurrentState();
+    const materials = listMockMaterialRecords(persistentState);
+    return {
+      status: "ok",
+      material_dir: "mock://materials",
+      material_root: "mock://materials",
+      count: materials.length,
+      materials,
+      note: "模拟素材库已准备完毕。",
+    };
+  },
+  async getKGMaterial(materialId: string): Promise<KGMaterialDetailResponse> {
+    const { persistentState } = await loadCurrentState();
+    return {
+      status: "ok",
+      material: deepClone(findMockMaterialRecord(persistentState, materialId)),
+    };
+  },
+  async uploadKGMaterial(input: {
+    file: File;
+    title?: string;
+    scenario?: string;
+    source_type?: string;
+    notes?: string;
+    metadata?: Record<string, unknown>;
+    material_id?: string;
+    overwrite?: boolean;
+  }): Promise<KGMaterialMutationResponse> {
+    const materialId = normalizeText(
+      input.material_id,
+      `mock_material_${Date.now()}`,
+    );
+    const sourceText = await input.file.text();
+    const now = new Date().toISOString();
+    const record = buildMockMaterialRecord({
+      materialId,
+      title: normalizeText(input.title, input.file.name),
+      scenario: normalizeText(input.scenario, "shared"),
+      sourceType: normalizeText(input.source_type, "text"),
+      sourceKind: "uploaded_file",
+      sourceUri: `mock://materials/${materialId}/${input.file.name}`,
+      filename: input.file.name,
+      contentType: input.file.type || "text/plain",
+      sizeBytes: input.file.size,
+      notes: normalizeText(input.notes) || null,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        ...(input.metadata ?? {}),
+        source_text: sourceText,
+      },
+      status: "uploaded",
+    });
+    persistMockMaterialRecord(record);
+    replaceMockMaterialDerivedState({
+      materialId,
+      chunks: [],
+      extractionRuns: [],
+      artifacts: [],
+    });
+    return {
+      status: "uploaded",
+      material: record,
+      note: record.claim_boundary ?? CLAIM_BOUNDARY,
+    };
+  },
+  async registerKGMaterialUrl(
+    request: KGMaterialRegisterUrlRequest,
+  ): Promise<KGMaterialMutationResponse> {
+    const materialId = normalizeText(
+      request.material_id,
+      `mock_material_${Date.now()}`,
+    );
+    const now = new Date().toISOString();
+    const record = buildMockMaterialRecord({
+      materialId,
+      title: normalizeText(request.title, request.url),
+      scenario: normalizeText(request.scenario, "shared"),
+      sourceType: normalizeText(request.source_type, "webpage"),
+      sourceKind: "url",
+      sourceUri: request.url,
+      notes: normalizeText(request.notes) || null,
+      createdAt: now,
+      updatedAt: now,
+      metadata: request.metadata ?? {},
+      status: "registered",
+    });
+    persistMockMaterialRecord(record);
+    replaceMockMaterialDerivedState({
+      materialId,
+      chunks: [],
+      extractionRuns: [],
+      artifacts: [],
+    });
+    return {
+      status: "registered",
+      material: record,
+      note: record.claim_boundary ?? CLAIM_BOUNDARY,
+    };
+  },
+  async extractKGMaterial(
+    materialId: string,
+    request?: KGMaterialExtractRequest,
+  ): Promise<KGMaterialExtractResponse> {
+    const { persistentState } = await loadCurrentState();
+    const base = findMockMaterialRecord(persistentState, materialId);
+    const now = new Date().toISOString();
+    const sourceText =
+      normalizeText(base.metadata?.source_text) ||
+      normalizeText(base.notes) ||
+      `${base.title} source chunk`;
+    const chunk: KGMaterialChunkRecord = {
+      chunk_id: `${materialId}_chunk_0000`,
+      material_id: materialId,
+      chunk_index: 0,
+      source_locator: `chars=0-${sourceText.length}`,
+      text_content: sourceText,
+      char_start: 0,
+      char_end: sourceText.length,
+      metadata: {
+        source_id: base.source_id ?? materialId,
+        scenario: base.scenario,
+      },
+      created_at: now,
+    };
+    const structuredRecordsPath = `mock://materials/${materialId}/structured_records.jsonl`;
+    const extractionRecord: KGMaterialExtractionRunRecord = {
+      extraction_run_id: `extract-${Date.now()}`,
+      material_id: materialId,
+      status: "extracted",
+      provider: request?.provider ?? "openai",
+      source_format: request?.source_format ?? "jsonl",
+      structured_records_path: structuredRecordsPath,
+      source_id: materialId,
+      extractor_name: "mock_document_ie",
+      extractor_version: "v1",
+      record_count: 3,
+      error_message: null,
+      started_at: now,
+      completed_at: now,
+      parameters: {
+        max_chars: request?.max_chars ?? 2000,
+        overlap_chars: request?.overlap_chars ?? 200,
+        overwrite: request?.overwrite ?? false,
+      },
+      result_summary: {
+        record_count: 3,
+        structured_records_path: structuredRecordsPath,
+      },
+    };
+    const artifact: KGMaterialExtractionArtifactRecord = {
+      artifact_id: `artifact-${Date.now()}`,
+      material_id: materialId,
+      extraction_run_id: extractionRecord.extraction_run_id,
+      artifact_type: "structured_records",
+      uri: structuredRecordsPath,
+      media_type: "application/jsonl",
+      payload: {
+        record_count: 3,
+        source_text_preview: sourceText,
+      },
+      created_at: now,
+    };
+    const extractedRecord = buildMockMaterialRecord({
+      materialId,
+      title: base.title,
+      scenario: base.scenario,
+      sourceType: base.source_type,
+      sourceKind: base.source_kind ?? (base.url ? "url" : "uploaded_file"),
+      sourceUri: base.uri ?? base.url ?? base.path ?? `mock://materials/${materialId}`,
+      filename: base.filename ?? null,
+      contentType: base.content_type ?? null,
+      sizeBytes: base.size_bytes ?? 0,
+      notes: base.notes ?? null,
+      createdAt: base.created_at ?? now,
+      updatedAt: now,
+      metadata: {
+        ...(base.metadata ?? {}),
+        source_text: sourceText,
+        chunk_count: 1,
+      },
+      extraction: {
+        status: "extracted",
+        structured_records_path: structuredRecordsPath,
+        source_format: request?.source_format ?? "jsonl",
+        source_id: materialId,
+        extractor_name: "mock_document_ie",
+        extractor_version: "v1",
+        extracted_at: now,
+        record_count: 3,
+      },
+      status: "extracted",
+    });
+    persistMockMaterialRecord(extractedRecord);
+    replaceMockMaterialDerivedState({
+      materialId,
+      chunks: [chunk],
+      extractionRuns: [extractionRecord],
+      artifacts: [artifact],
+    });
+    return {
+      status: "extracted",
+      material: extractedRecord,
+      structured_records_path: structuredRecordsPath,
+      record_count: 3,
+      claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async buildKGMaterialSources(
+    request: KGMaterialBuildSourcesRequest,
+  ): Promise<KGMaterialBuildSourcesResponse> {
+    const { persistentState } = await loadCurrentState();
+    const materials = request.material_ids.map((materialId) => {
+      const material = findMockMaterialRecord(persistentState, materialId);
+      if (material.extraction_status !== "extracted") {
+        throw new Error(`素材尚未完成 extract：${materialId}`);
+      }
+      return material;
+    });
+    const sources = materials.map((material) => ({
+      source_id: material.source_id ?? material.material_id,
+      source_type: (request.source_type ?? "structured_records") as "structured_records" | "manual_table",
+      scenario: material.scenario,
+      path:
+        typeof material.extraction?.structured_records_path === "string"
+          ? material.extraction.structured_records_path
+          : `mock://materials/${material.material_id}/structured_records.jsonl`,
+      source_format:
+        typeof material.extraction?.source_format === "string"
+          ? (material.extraction.source_format as "csv" | "json" | "jsonl")
+          : "jsonl",
+      metadata: {
+        material_id: material.material_id,
+        material_title: material.title,
+        material_source_kind: material.source_kind,
+      },
+    }));
+    return {
+      status: "ready",
+      material_root: "mock://materials",
+      request,
+      materials,
+      sources,
+      construction_request: {
+        sources,
+        output_name: request.output_name,
+        overwrite: request.overwrite,
+        run_id: request.run_id ?? undefined,
+      },
+      claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async getKGMaterialChunks(
+    materialId: string,
+  ): Promise<KGMaterialChunkListResponse> {
+    const { persistentState } = await loadCurrentState();
+    const material = findMockMaterialRecord(persistentState, materialId);
+    const chunks = listMockMaterialChunks(persistentState, materialId);
+    return {
+      status: "ok",
+      material: deepClone(material),
+      count: chunks.length,
+      chunks: deepClone(chunks),
+      claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async getKGMaterialExtractions(
+    materialId: string,
+  ): Promise<KGMaterialExtractionRunListResponse> {
+    const { persistentState } = await loadCurrentState();
+    const material = findMockMaterialRecord(persistentState, materialId);
+    const runs = listMockMaterialExtractions(persistentState, materialId);
+    return {
+      status: "ok",
+      material: deepClone(material),
+      count: runs.length,
+      runs: deepClone(runs),
+      claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async getKGMaterialArtifacts(
+    materialId: string,
+  ): Promise<KGMaterialExtractionArtifactListResponse> {
+    const { persistentState } = await loadCurrentState();
+    const material = findMockMaterialRecord(persistentState, materialId);
+    const artifacts = listMockMaterialArtifacts(persistentState, materialId);
+    return {
+      status: "ok",
+      material: deepClone(material),
+      count: artifacts.length,
+      artifacts: deepClone(artifacts),
+      claim_boundary: CLAIM_BOUNDARY,
+    };
+  },
+  async listKGDrafts(
+    request?: KGDraftListRequest,
+  ): Promise<KGDraftListResponse> {
+    const { persistentState } = await loadCurrentState();
+    const records = listMockDraftRecords(persistentState, request);
+    const offset = request?.offset ?? 0;
+    const limit = request?.limit ?? 50;
+    const paged = records.slice(offset, offset + limit);
+    return {
+      records: paged,
+      total_count: records.length,
+      returned_count: paged.length,
+      offset,
+      limit,
+      claim_boundary:
+        "KG draft records are append-only candidate review adjustments; they do not mutate candidate CSV files or publish KG rows",
     };
   },
   async kgStudio(): Promise<KGStudioPayload> {

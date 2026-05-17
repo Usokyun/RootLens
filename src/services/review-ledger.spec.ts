@@ -119,6 +119,15 @@ const caseDetail: RunCaseDetail = {
       reason: "ScratchDefect HAS_MORPHOLOGY LinearMorphology",
     },
   ],
+  ranked_root_causes: [
+    {
+      ranking_id: "candidate-1",
+      rank: 1,
+      candidate_id: "MechanicalContact",
+      candidate_name: "Mechanical contact",
+      scoring_method: "relation_weighted_path",
+    },
+  ],
   path_graph: {
     paths: [
       {
@@ -158,14 +167,16 @@ describe("review ledger helpers", () => {
   it("recognizes bounded review target types and formats labels", () => {
     expect(isBoundedReviewTargetType("path")).toBe(true);
     expect(isBoundedReviewTargetType("entity_link")).toBe(true);
-    expect(isBoundedReviewTargetType("root_cause_candidate")).toBe(false);
+    expect(isBoundedReviewTargetType("root_cause_candidate")).toBe(true);
     expect(formatReviewLedgerTargetType("correction")).toBe("Correction");
+    expect(formatReviewLedgerTargetType("root_cause_candidate")).toBe("Candidate");
     expect(formatReviewLedgerAction("accept")).toBe("接受");
   });
 
   it("filters to bounded targets and sorts by created_at descending", () => {
     const filtered = filterReviewLedgerRecords(records, "all");
     expect(filtered.map((item) => item.feedback_id)).toEqual([
+      "feedback-candidate-1",
       "feedback-correction-1",
       "feedback-path-1",
       "feedback-link-1",
@@ -186,24 +197,30 @@ describe("review ledger helpers", () => {
     );
 
     expect(displayItems[0]).toMatchObject({
+      target_type: "root_cause_candidate",
+      title: "Mechanical contact",
+      subtitle: "relation_weighted_path",
+      targetAvailable: true,
+    });
+    expect(displayItems[1]).toMatchObject({
       target_type: "correction",
       title: "Linear morphology",
       subtitle: "ScratchDefect HAS_MORPHOLOGY LinearMorphology",
       targetAvailable: true,
     });
-    expect(displayItems[1]).toMatchObject({
+    expect(displayItems[2]).toMatchObject({
       target_type: "path",
       title: "Mechanical contact",
       subtitle: "HAS_PLAUSIBLE_CAUSE",
       targetAvailable: true,
     });
-    expect(displayItems[2]).toMatchObject({
+    expect(displayItems[3]).toMatchObject({
       target_type: "entity_link",
       title: "Scratch defect",
       subtitle: "anomaly_type · scratch",
       targetAvailable: true,
     });
-    expect(displayItems[3]).toMatchObject({
+    expect(displayItems[4]).toMatchObject({
       target_type: "edge",
       title: "ScratchDefect —HAS_PLAUSIBLE_CAUSE→ MechanicalContact",
       targetAvailable: true,

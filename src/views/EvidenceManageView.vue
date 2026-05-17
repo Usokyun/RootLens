@@ -19,6 +19,7 @@ import type {
   RunSummary,
   UploadMode,
 } from '@/api/contracts'
+import SectionCardTitle from '@/components/layout/SectionCardTitle.vue'
 import WorkbenchHero from '@/components/layout/WorkbenchHero.vue'
 import { useAppPreferences } from '@/services/app-preferences'
 import { buildLocalImportResult } from '@/services/browser-runtime'
@@ -232,6 +233,21 @@ const heroMetrics = computed(() => [
     tone: 'amber' as const,
   },
 ])
+
+const runStatusHelp = computed(() => [
+  isMockMode.value
+    ? '当前为论文演示 mock 模式：左侧仅保留预设 case 说明，右侧固定展示唯一 demo run。'
+    : '左侧提交 record，右侧用紧凑列表切换当前 Run。',
+  evidenceClaimBoundaryCopy.value,
+])
+
+const rootCauseListHelp = '跟随当前 Case 切换候选根因，点击后同步当前选择。'
+
+const caseEvidenceListHelp =
+  '一行一个 Case 入口，hover 查看 evidence 明细，点击即可联动根因区。'
+
+const observationDrilldownHelp =
+  '按当前过滤条件查看当前 Case 的 observation；点选后可打开详情，并带着上下文跳转图谱探索。'
 
 const mockPresetCaseCount = computed(() => caseEvidenceEntries.value.length)
 
@@ -863,17 +879,11 @@ onBeforeUnmount(() => {
           <article class="rl-section-card workspace-run-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-upload />
-                  <span>上传与运行状态</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="上传与运行状态" :help="runStatusHelp">
+                    <icon-upload />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">
-                  {{
-                    isMockMode
-                      ? '当前为论文演示 mock 模式：左侧仅保留预设 case 说明，右侧固定展示唯一 demo run。'
-                      : '左侧提交 record，右侧用紧凑列表切换当前 Run。'
-                  }}
-                </p>
               </div>
               <a-tag :color="isReplaySessionActive ? 'arcoblue' : isMockMode ? 'gold' : 'green'">
                 {{ isReplaySessionActive ? '回放会话' : isMockMode ? '论文演示模式' : formatUploadModeLabel(uploadForm.mode) }}
@@ -900,13 +910,6 @@ onBeforeUnmount(() => {
                   </button>
                 </div>
 
-                <div class="workspace-claim-note workspace-claim-note--compact">
-                  <span class="workspace-summary-label">
-                    <icon-info-circle />
-                    <span>Claim boundary</span>
-                  </span>
-                  <strong>{{ evidenceClaimBoundaryCopy }}</strong>
-                </div>
 
                 <div v-if="isReplaySessionActive" class="rl-section-card workspace-session-card">
                   <div class="rl-section-card__body workspace-stack workspace-stack--tight">
@@ -1128,11 +1131,11 @@ onBeforeUnmount(() => {
           <article class="rl-section-card workspace-root-cause-card workspace-root-cause-card--evidence">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-bulb />
-                  <span>根因列表</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="根因列表" :help="rootCauseListHelp">
+                    <icon-bulb />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">跟随当前 Case 切换候选根因，点击后同步当前选择。</p>
               </div>
               <div class="rl-inline-tags">
                 <a-tag color="arcoblue">{{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}</a-tag>
@@ -1164,11 +1167,14 @@ onBeforeUnmount(() => {
           <article class="rl-section-card workspace-evidence-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-relation />
-                  <span>Case / Evidence 列表</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle
+                    title="Case / Evidence 列表"
+                    :help="caseEvidenceListHelp"
+                  >
+                    <icon-relation />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">一行一个 Case 入口，hover 查看 evidence 明细，点击即可联动根因区。</p>
               </div>
               <a-tag color="green">{{ filteredCaseEvidenceEntries.length }}</a-tag>
             </header>
@@ -1300,11 +1306,14 @@ onBeforeUnmount(() => {
           <article class="rl-section-card workspace-root-cause-summary-card workspace-observation-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-info-circle />
-                  <span>Observation Drilldown</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle
+                    title="Observation Drilldown"
+                    :help="observationDrilldownHelp"
+                  >
+                    <icon-info-circle />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">按当前过滤条件查看当前 Case 的 observation；点选后可打开详情，并带着上下文跳转图谱探索。</p>
               </div>
               <div class="rl-inline-tags">
                 <a-tag color="arcoblue">{{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}</a-tag>

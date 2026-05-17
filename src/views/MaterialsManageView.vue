@@ -10,17 +10,22 @@ import {
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import type {
+  KGDraftListRequest,
+  KGDraftRecord,
+  KGMaterialBuildSourcesResponse,
+  KGMaterialChunkRecord,
+  KGMaterialExtractionArtifactRecord,
+  KGMaterialExtractionRunRecord,
+  KGMaterialRecord,
+  KGSourceDraftResponse,
   KGConstructionBuildDetail,
   KGConstructionBuildListResponse,
   KGConstructionBuildValidationResponse,
   KGConstructionReviewQueueEdge,
   KGConstructionReviewQueueResponse,
-  KGConstructionSourceFormat,
-  KGConstructionSourceInput,
-  KGConstructionSourceListResponse,
-  KGConstructionSourceType,
   KGStudioPayload,
 } from "@/api/contracts";
+import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import WorkbenchHero from "@/components/layout/WorkbenchHero.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import { useAppPreferences } from "@/services/app-preferences";
@@ -34,21 +39,6 @@ import {
 import { downloadJsonFile } from "@/services/session-export";
 import { formatClaimBoundaryCopy } from "@/services/ui-copy";
 import { useWorkbenchState } from "@/services/workbench-state";
-
-interface MaterialRecord {
-  id: string;
-  title: string;
-  type: string;
-  role: string;
-  dataset: string;
-  status: string;
-  updatedAt: string;
-  note: string;
-  path: string;
-  sourceType: KGConstructionSourceType;
-  sourceFormat: KGConstructionSourceFormat;
-  buildSource: KGConstructionSourceInput;
-}
 
 interface RootLensKGBuildExportV1 {
   schema_version: "rootlens-kg-build-export.v1";
@@ -67,9 +57,28 @@ const loading = ref(false);
 const errorMessage = ref("");
 const actionMessage = ref("");
 
-const kgStudio = ref<KGStudioPayload | null>(null);
+const materials = ref<KGMaterialRecord[]>([]);
 const builds = ref<KGConstructionBuildListResponse | null>(null);
 const buildDetail = ref<KGConstructionBuildDetail | null>(null);
+const buildSourcesPreview = ref<KGMaterialBuildSourcesResponse | null>(null);
+const kgStudio = ref<KGStudioPayload | null>(null);
+const draftHistory = ref<KGDraftRecord[]>([]);
+
+const selectedMaterialId = ref<string | null>(null);
+const selectedMaterialIds = ref<string[]>([]);
+const selectedMaterialTab = ref<
+  "detail" | "chunks" | "extractions" | "artifacts" | "drafts" | "preview"
+>("detail");
+const materialDetail = ref<KGMaterialRecord | null>(null);
+const materialChunks = ref<KGMaterialChunkRecord[]>([]);
+const materialExtractions = ref<KGMaterialExtractionRunRecord[]>([]);
+const materialArtifacts = ref<KGMaterialExtractionArtifactRecord[]>([]);
+const sourceDraftPreview = ref<KGSourceDraftResponse | null>(null);
+
+const materialDetailLoading = ref(false);
+const materialMutationLoading = ref(false);
+const materialExtractLoading = ref(false);
+const sourceDraftLoading = ref(false);
 
 const buildDetailModalVisible = ref(false);
 const buildDetailModalLoading = ref(false);
@@ -80,15 +89,6 @@ const buildDetailModalError = ref("");
 const provenanceInspectorVisible = ref(false);
 const provenanceInspectorState = ref<ProvenanceInspectorState | null>(null);
 const buildReviewActionTargetKey = ref<string | null>(null);
-const sourceList = ref<KGConstructionSourceListResponse | null>(null);
-const sourceUploadInputRef = ref<HTMLInputElement | null>(null);
-const sourceUploadDragActive = ref(false);
-const sourceUploadDragDepth = ref(0);
-
-const selectedMaterialId = ref<string | null>(null);
-const selectedMaterialIds = ref<string[]>([]);
-const hiddenMaterialIds = ref<string[]>([]);
-const materialOverrides = ref<Record<string, Partial<MaterialRecord>>>({});
 
 const filters = reactive({
   search: "",
@@ -99,57 +99,169 @@ const filters = reactive({
   sortOrder: "desc" as "asc" | "desc",
 });
 
-const sourceUpload = reactive({
+const uploadForm = reactive({
   file: null as File | null,
-  source_id: "uploaded_source",
-  source_type: "manual_table" as KGConstructionSourceType,
+  title: "",
   scenario: "shared",
-  source_format: "csv" as KGConstructionSourceFormat,
+  sourceType: "text",
+  notes: "",
+  materialId: "",
 });
 
-const materialEditor = reactive({
+const registerUrlForm = reactive({
+  url: "",
   title: "",
-  dataset: "",
-  role: "",
-  note: "",
+  scenario: "shared",
+  sourceType: "webpage",
+  notes: "",
+  materialId: "",
+});
+
+const sourceDraftForm = reactive({
+  defaultScenario: "shared",
+  confidence: 0.55,
 });
 
 const buildForm = reactive({
   output_name: "workspace-build",
-  scenario: "shared",
+  source_type: "structured_records" as "structured_records" | "manual_table",
 });
+
+const uploadInputRef = ref<HTMLInputElement | null>(null);
+const uploadDragActive = ref(false);
+const uploadDragDepth = ref(0);
+const uploadAccept = ".pdf,.txt,.md,.csv,.json,.jsonl";
 
 const selectedBuildRunId = computed(
   () => workbenchState.value.selectedConstructionRunId,
 );
-const sourceUploadAccept = ".csv,.json,.jsonl";
 
-const materialsClaimBoundaryCopy = computed(() =>
-  formatClaimBoundaryCopy(buildDetail.value?.build.claim_boundary),
+const selectedMaterial = computed(() => {
+  return (
+    filteredMaterials.value.find((item) => item.material_id === selectedMaterialId.value) ??
+    filteredMaterials.value[0] ??
+    null
+  );
+});
+
+const selectedMaterials = computed(() =>
+  materials.value.filter((item) => selectedMaterialIds.value.includes(item.material_id)),
+);
+
+const materialClaimBoundaryCopy = computed(() =>
+  formatClaimBoundaryCopy(
+    materialDetail.value?.claim_boundary ??
+      buildDetail.value?.build.claim_boundary ??
+      kgStudio.value?.claim_boundary,
+  ),
 );
 
 const canExportBuild = computed(() => !!buildDetail.value);
-
+const extractedMaterialCount = computed(
+  () => materials.value.filter((item) => item.extraction_status === "extracted").length,
+);
 const heroMetrics = computed(() => [
   {
     label: "素材数",
     value: materials.value.length,
-    hint: "筛选前可管理的素材总数",
+    hint: "后端 material library 中可管理的素材数",
     tone: "blue" as const,
   },
   {
-    label: "选中素材",
-    value: selectedMaterials.value.length,
-    hint: "构图配方当前选中的素材数",
+    label: "已抽取",
+    value: extractedMaterialCount.value,
+    hint: "已经生成 structured records 的素材数",
     tone: "teal" as const,
   },
   {
     label: "构图记录",
     value: builds.value?.builds.length ?? 0,
-    hint: "已生成的图谱构建批次",
+    hint: "现有 candidate KG 构图批次",
     tone: "amber" as const,
   },
 ]);
+
+const materialsLibraryHelp =
+  "backend mode 下优先展示真实素材库，再从 extract 推进到 build-sources。";
+
+const selectedMaterialHelp = computed(() => [
+  "聚合展示 detail / chunks / extractions / artifacts / draft history。",
+  materialClaimBoundaryCopy.value,
+]);
+
+const uploadSourceHelp = [
+  "优先走 material library，再进入 extract / build-sources。",
+  "将远程来源先登记到 material library，再单独执行抽取。",
+];
+
+const buildResultsHelp =
+  "保留现有 candidate KG build / QA / review queue 能力。";
+
+const buildRecipeHelp = computed(() => [
+  "先走 build-sources，再复用现有 construction build。",
+  materialClaimBoundaryCopy.value,
+]);
+
+const filteredMaterials = computed(() => {
+  const keyword = filters.search.trim().toLowerCase();
+  const list = materials.value.filter((item) => {
+    if (filters.dataset !== "all" && item.scenario !== filters.dataset) {
+      return false;
+    }
+    if (filters.type !== "all" && item.source_type !== filters.type) {
+      return false;
+    }
+    if (
+      filters.status !== "all" &&
+      item.processing_status !== filters.status &&
+      item.extraction_status !== filters.status
+    ) {
+      return false;
+    }
+    if (!keyword) {
+      return true;
+    }
+
+    return [
+      item.title,
+      item.material_id,
+      item.source_type,
+      item.notes,
+      item.path,
+      item.url,
+      item.uri,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(keyword);
+  });
+
+  return list.sort((left, right) => {
+    const direction = filters.sortOrder === "asc" ? 1 : -1;
+
+    if (filters.sortField === "updatedAt") {
+      const leftTime = Date.parse(left.updated_at ?? left.created_at ?? "");
+      const rightTime = Date.parse(right.updated_at ?? right.created_at ?? "");
+      return ((Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime)) * direction;
+    }
+
+    if (filters.sortField === "title") {
+      return left.title.localeCompare(right.title) * direction;
+    }
+
+    return left.source_type.localeCompare(right.source_type) * direction;
+  });
+});
+
+const provenanceSourceMaterials = computed<ProvenanceSourceMaterial[]>(() =>
+  materials.value.map((item) => ({
+    sourceId: item.source_id ?? item.material_id,
+    title: item.title,
+    path: item.url ?? item.path ?? item.uri ?? "--",
+    sourceType: item.source_type,
+    note: item.notes ?? "",
+  })),
+);
 
 function formatDateTime(value: string | undefined | null) {
   if (!value) {
@@ -164,259 +276,94 @@ function formatDateTime(value: string | undefined | null) {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
-function inferSourceFormat(path: string): KGConstructionSourceFormat {
-  if (path.endsWith(".jsonl")) {
-    return "jsonl";
-  }
-  if (path.endsWith(".json")) {
-    return "json";
-  }
-  return "csv";
+function formatJsonPreview(value: unknown) {
+  return JSON.stringify(value ?? {}, null, 2);
 }
 
-function normalizeSourceType(value: string): KGConstructionSourceType {
-  if (
-    value === "manual_table" ||
-    value === "structured_records" ||
-    value === "tep_semantic_lift" ||
-    value === "tep_variable_mapping"
-  ) {
-    return value;
+function formatMaterialLocation(material: KGMaterialRecord | null | undefined) {
+  if (!material) {
+    return "--";
   }
 
-  return "structured_records";
+  return material.url ?? material.path ?? material.uri ?? "--";
 }
 
-const materials = computed<MaterialRecord[]>(() => {
-  const seeded: MaterialRecord[] = (kgStudio.value?.sources ?? []).map(
-    (source) => {
-      const sourceType = normalizeSourceType(source.source_type);
-      const sourceFormat = inferSourceFormat(source.path_or_url);
-      return {
-        id: `seed:${source.source_id}`,
-        title: source.title,
-        type: source.source_type,
-        role: source.used_for,
-        dataset: "shared",
-        status: "内置",
-        updatedAt: "",
-        note: source.notes,
-        path: source.path_or_url,
-        sourceType,
-        sourceFormat,
-        buildSource: {
-          source_id: source.source_id,
-          source_type: sourceType,
-          scenario: "shared",
-          path: source.path_or_url,
-          source_format: sourceFormat,
-        },
-      };
-    },
-  );
+function formatMaterialStatus(material: KGMaterialRecord | null | undefined) {
+  if (!material) {
+    return "--";
+  }
 
-  const uploaded: MaterialRecord[] = (sourceList.value?.sources ?? []).map(
-    (source) => ({
-      id: `uploaded:${source.source_id}`,
-      title: source.filename,
-      type: source.source_type,
-      role: source.source_id,
-      dataset: source.scenario,
-      status: "已上传",
-      updatedAt: source.uploaded_at,
-      note: source.path,
-      path: source.path,
-      sourceType: source.source_type,
-      sourceFormat: source.source_format,
-      buildSource: source.build_source,
-    }),
-  );
+  if (material.extraction_status === "extracted") {
+    return "已抽取";
+  }
 
-  const merged = [...seeded, ...uploaded]
-    .filter((item) => !hiddenMaterialIds.value.includes(item.id))
-    .map((item) => ({
-      ...item,
-      ...materialOverrides.value[item.id],
-    }));
+  if (material.extraction_status === "failed") {
+    return "抽取失败";
+  }
 
-  return merged;
-});
-
-const filteredMaterials = computed(() => {
-  const keyword = filters.search.trim().toLowerCase();
-  const list = materials.value.filter((item) => {
-    if (filters.dataset !== "all" && item.dataset !== filters.dataset) {
-      return false;
-    }
-    if (filters.type !== "all" && item.type !== filters.type) {
-      return false;
-    }
-    if (filters.status !== "all" && item.status !== filters.status) {
-      return false;
-    }
-    if (!keyword) {
-      return true;
-    }
-
-    return [item.title, item.role, item.note, item.path]
-      .join(" ")
-      .toLowerCase()
-      .includes(keyword);
-  });
-
-  return list.sort((left, right) => {
-    const direction = filters.sortOrder === "asc" ? 1 : -1;
-
-    if (filters.sortField === "updatedAt") {
-      const leftTime = left.updatedAt ? new Date(left.updatedAt).getTime() : 0;
-      const rightTime = right.updatedAt
-        ? new Date(right.updatedAt).getTime()
-        : 0;
-      return (leftTime - rightTime) * direction;
-    }
-
-    if (filters.sortField === "title") {
-      return left.title.localeCompare(right.title) * direction;
-    }
-
-    return left.type.localeCompare(right.type) * direction;
-  });
-});
-
-const selectedMaterial = computed(() => {
-  return (
-    filteredMaterials.value.find(
-      (item) => item.id === selectedMaterialId.value,
-    ) ??
-    filteredMaterials.value[0] ??
-    null
-  );
-});
-
-const selectedMaterials = computed(() => {
-  return materials.value.filter((item) =>
-    selectedMaterialIds.value.includes(item.id),
-  );
-});
-
-const provenanceSourceMaterials = computed<ProvenanceSourceMaterial[]>(() =>
-  materials.value.map((item) => ({
-    sourceId: item.buildSource.source_id,
-    title: item.title,
-    path: item.path,
-    sourceType: item.type,
-    note: item.note,
-  })),
-);
-
-function syncEditorFromSelectedMaterial() {
-  materialEditor.title = selectedMaterial.value?.title ?? "";
-  materialEditor.dataset = selectedMaterial.value?.dataset ?? "";
-  materialEditor.role = selectedMaterial.value?.role ?? "";
-  materialEditor.note = selectedMaterial.value?.note ?? "";
+  return material.processing_status;
 }
 
-function setSourceUploadFile(file: File | null) {
-  sourceUpload.file = file;
+function setUploadFile(file: File | null) {
+  uploadForm.file = file;
 }
 
-function handleSourceUploadFileChange(event: Event) {
+function handleUploadFileChange(event: Event) {
   const input = event.target as HTMLInputElement | null;
-  setSourceUploadFile(input?.files?.[0] ?? null);
+  setUploadFile(input?.files?.[0] ?? null);
 }
 
-function openSourceUploadPicker() {
-  sourceUploadInputRef.value?.click();
+function openUploadPicker() {
+  uploadInputRef.value?.click();
 }
 
-function resetSourceUploadDragState() {
-  sourceUploadDragDepth.value = 0;
-  sourceUploadDragActive.value = false;
+function resetUploadDragState() {
+  uploadDragDepth.value = 0;
+  uploadDragActive.value = false;
 }
 
-function handleSourceUploadDragEnter(event: DragEvent) {
+function handleUploadDragEnter(event: DragEvent) {
   event.preventDefault();
-  sourceUploadDragDepth.value += 1;
-  sourceUploadDragActive.value = true;
+  uploadDragDepth.value += 1;
+  uploadDragActive.value = true;
 }
 
-function handleSourceUploadDragOver(event: DragEvent) {
+function handleUploadDragOver(event: DragEvent) {
   event.preventDefault();
-  sourceUploadDragActive.value = true;
+  uploadDragActive.value = true;
 }
 
-function handleSourceUploadDragLeave(event: DragEvent) {
+function handleUploadDragLeave(event: DragEvent) {
   event.preventDefault();
-  sourceUploadDragDepth.value = Math.max(0, sourceUploadDragDepth.value - 1);
-  if (sourceUploadDragDepth.value === 0) {
-    sourceUploadDragActive.value = false;
+  uploadDragDepth.value = Math.max(0, uploadDragDepth.value - 1);
+  if (uploadDragDepth.value === 0) {
+    uploadDragActive.value = false;
   }
 }
 
-function handleSourceUploadDrop(event: DragEvent) {
+function handleUploadDrop(event: DragEvent) {
   event.preventDefault();
   const [file] = event.dataTransfer?.files ?? [];
-  setSourceUploadFile(file ?? null);
-  resetSourceUploadDragState();
+  setUploadFile(file ?? null);
+  resetUploadDragState();
 }
 
 function toggleMaterialSelection(materialId: string, checked: boolean) {
   if (checked) {
-    selectedMaterialIds.value = [
-      ...new Set([...selectedMaterialIds.value, materialId]),
-    ];
+    selectedMaterialIds.value = [...new Set([...selectedMaterialIds.value, materialId])];
     return;
   }
 
-  selectedMaterialIds.value = selectedMaterialIds.value.filter(
-    (item) => item !== materialId,
-  );
-}
-
-function applyMaterialEdit() {
-  if (!selectedMaterial.value) {
-    return;
-  }
-
-  materialOverrides.value = {
-    ...materialOverrides.value,
-    [selectedMaterial.value.id]: {
-      title: materialEditor.title,
-      dataset: materialEditor.dataset,
-      role: materialEditor.role,
-      note: materialEditor.note,
-    },
-  };
-  actionMessage.value = `已更新素材展示信息：${materialEditor.title || selectedMaterial.value.title}`;
-}
-
-function deleteMaterialFromView() {
-  if (!selectedMaterial.value) {
-    return;
-  }
-
-  hiddenMaterialIds.value = [
-    ...new Set([...hiddenMaterialIds.value, selectedMaterial.value.id]),
-  ];
-  selectedMaterialIds.value = selectedMaterialIds.value.filter(
-    (item) => item !== selectedMaterial.value?.id,
-  );
-  selectedMaterialId.value = null;
-  actionMessage.value = "素材已从当前视图移除。";
+  selectedMaterialIds.value = selectedMaterialIds.value.filter((item) => item !== materialId);
 }
 
 async function loadBuildDetail(runId: string) {
   try {
-    buildDetail.value =
-      await getRootLensService().getKGConstructionBuild(runId);
+    buildDetail.value = await getRootLensService().getKGConstructionBuild(runId);
     updateState({ selectedConstructionRunId: runId });
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   }
-}
-
-function formatJsonPreview(value: unknown) {
-  return JSON.stringify(value ?? {}, null, 2);
 }
 
 function openMaterialsProvenance(state: ProvenanceInspectorState | null) {
@@ -434,7 +381,7 @@ function openBuildProvenance() {
       buildDetail: buildDetail.value,
       buildValidation: buildValidation.value,
       materials: provenanceSourceMaterials.value,
-      claimBoundary: materialsClaimBoundaryCopy.value,
+      claimBoundary: materialClaimBoundaryCopy.value,
     }),
   );
 }
@@ -445,7 +392,7 @@ function openBuildReviewEdgeProvenance(edge: KGConstructionReviewQueueEdge) {
       buildDetail: buildDetail.value,
       edge,
       materials: provenanceSourceMaterials.value,
-      claimBoundary: materialsClaimBoundaryCopy.value,
+      claimBoundary: materialClaimBoundaryCopy.value,
     }),
   );
 }
@@ -529,20 +476,67 @@ async function handleBuildReviewAction(
   }
 }
 
+async function loadSelectedMaterialState(materialId: string) {
+  materialDetailLoading.value = true;
+  sourceDraftPreview.value = null;
+
+  try {
+    const [detail, chunks, extractions, artifacts] = await Promise.all([
+      getRootLensService().getKGMaterial(materialId),
+      getRootLensService().getKGMaterialChunks(materialId),
+      getRootLensService().getKGMaterialExtractions(materialId),
+      getRootLensService().getKGMaterialArtifacts(materialId),
+    ]);
+    materialDetail.value = detail.material;
+    materialChunks.value = chunks.chunks;
+    materialExtractions.value = extractions.runs;
+    materialArtifacts.value = artifacts.artifacts;
+  } catch (error) {
+    materialDetail.value = null;
+    materialChunks.value = [];
+    materialExtractions.value = [];
+    materialArtifacts.value = [];
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    materialDetailLoading.value = false;
+  }
+}
+
 async function refreshWorkspace() {
   loading.value = true;
   errorMessage.value = "";
 
   try {
-    const [kgStudioPayload, buildList, sources] = await Promise.all([
-      getRootLensService().kgStudio(),
-      getRootLensService().listKGConstructionBuilds(),
-      getRootLensService().listKGConstructionSources(),
-    ]);
+    const [materialsResponse, buildList, kgStudioPayload, draftHistoryResponse] =
+      await Promise.all([
+        getRootLensService().listKGMaterials(),
+        getRootLensService().listKGConstructionBuilds(),
+        getRootLensService().kgStudio(),
+        getRootLensService().listKGDrafts({ limit: 50 } as KGDraftListRequest),
+      ]);
 
-    kgStudio.value = kgStudioPayload;
+    materials.value = materialsResponse.materials;
     builds.value = buildList;
-    sourceList.value = sources;
+    kgStudio.value = kgStudioPayload;
+    draftHistory.value = draftHistoryResponse.records;
+
+    selectedMaterialIds.value = selectedMaterialIds.value.filter((materialId) =>
+      materialsResponse.materials.some((item) => item.material_id === materialId),
+    );
+
+    const nextMaterialId =
+      materialsResponse.materials.find(
+        (item) => item.material_id === selectedMaterialId.value,
+      )?.material_id ?? materialsResponse.materials[0]?.material_id ?? null;
+    selectedMaterialId.value = nextMaterialId;
+    if (nextMaterialId) {
+      await loadSelectedMaterialState(nextMaterialId);
+    } else {
+      materialDetail.value = null;
+      materialChunks.value = [];
+      materialExtractions.value = [];
+      materialArtifacts.value = [];
+    }
 
     const nextBuildId =
       buildList.builds.find((item) => item.run_id === selectedBuildRunId.value)
@@ -555,10 +549,6 @@ async function refreshWorkspace() {
     } else {
       buildDetail.value = null;
     }
-
-    if (!selectedMaterialId.value) {
-      selectedMaterialId.value = materials.value[0]?.id ?? null;
-    }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   } finally {
@@ -566,34 +556,139 @@ async function refreshWorkspace() {
   }
 }
 
-async function handleSourceUpload() {
-  if (!sourceUpload.file) {
-    actionMessage.value = "请选择待上传的来源文件。";
+async function handleMaterialUpload() {
+  if (!uploadForm.file) {
+    actionMessage.value = "请选择待上传的素材文件。";
     return;
   }
 
+  materialMutationLoading.value = true;
   actionMessage.value = "";
   errorMessage.value = "";
 
   try {
-    await getRootLensService().uploadKGConstructionSource({
-      file: sourceUpload.file,
-      source_id: sourceUpload.source_id,
-      source_type: sourceUpload.source_type,
-      scenario: sourceUpload.scenario,
-      source_format: sourceUpload.source_format,
+    const response = await getRootLensService().uploadKGMaterial({
+      file: uploadForm.file,
+      title: uploadForm.title || undefined,
+      scenario: uploadForm.scenario || undefined,
+      source_type: uploadForm.sourceType || undefined,
+      notes: uploadForm.notes || undefined,
+      material_id: uploadForm.materialId || undefined,
     });
-    actionMessage.value = "素材已上传并加入当前工坊。";
+    actionMessage.value = `素材已上传：${response.material.material_id}`;
+    uploadForm.file = null;
+    uploadForm.title = "";
+    uploadForm.notes = "";
+    uploadForm.materialId = "";
     await refreshWorkspace();
-    selectedMaterialId.value = `uploaded:${sourceUpload.source_id}`;
+    selectedMaterialId.value = response.material.material_id;
+    await loadSelectedMaterialState(response.material.material_id);
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    materialMutationLoading.value = false;
+  }
+}
+
+async function handleRegisterUrl() {
+  if (!registerUrlForm.url.trim()) {
+    actionMessage.value = "请输入待注册的 URL。";
+    return;
+  }
+
+  materialMutationLoading.value = true;
+  actionMessage.value = "";
+  errorMessage.value = "";
+
+  try {
+    const response = await getRootLensService().registerKGMaterialUrl({
+      url: registerUrlForm.url,
+      title: registerUrlForm.title || undefined,
+      scenario: registerUrlForm.scenario || undefined,
+      source_type: registerUrlForm.sourceType || undefined,
+      notes: registerUrlForm.notes || undefined,
+      material_id: registerUrlForm.materialId || undefined,
+    });
+    actionMessage.value = `URL 已注册：${response.material.material_id}`;
+    registerUrlForm.url = "";
+    registerUrlForm.title = "";
+    registerUrlForm.notes = "";
+    registerUrlForm.materialId = "";
+    await refreshWorkspace();
+    selectedMaterialId.value = response.material.material_id;
+    await loadSelectedMaterialState(response.material.material_id);
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    materialMutationLoading.value = false;
+  }
+}
+
+async function handleMaterialExtract() {
+  if (!selectedMaterial.value) {
+    actionMessage.value = "请先选择一份素材。";
+    return;
+  }
+
+  materialExtractLoading.value = true;
+  actionMessage.value = "";
+  errorMessage.value = "";
+
+  try {
+    const response = await getRootLensService().extractKGMaterial(
+      selectedMaterial.value.material_id,
+      { overwrite: true },
+    );
+    actionMessage.value = `已完成 extract：${response.material.material_id}`;
+    await refreshWorkspace();
+    selectedMaterialId.value = response.material.material_id;
+    await loadSelectedMaterialState(response.material.material_id);
+    selectedMaterialTab.value = "extractions";
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    materialExtractLoading.value = false;
+  }
+}
+
+async function handleGenerateSourceDraftPreview() {
+  if (!selectedMaterial.value) {
+    actionMessage.value = "请先选择一份素材。";
+    return;
+  }
+
+  if (!materialChunks.value.length) {
+    actionMessage.value = "请先对当前素材执行抽取，再生成预览。";
+    return;
+  }
+
+  sourceDraftLoading.value = true;
+  actionMessage.value = "";
+  errorMessage.value = "";
+
+  try {
+    sourceDraftPreview.value = await getRootLensService().generateKGSourceDraft({
+      source_id: selectedMaterial.value.source_id ?? selectedMaterial.value.material_id,
+      source_text: materialChunks.value
+        .slice(0, 5)
+        .map((chunk) => chunk.text_content)
+        .join("\n"),
+      provider: "heuristic",
+      default_scenario:
+        sourceDraftForm.defaultScenario || selectedMaterial.value.scenario,
+      confidence: sourceDraftForm.confidence,
+    });
+    selectedMaterialTab.value = "preview";
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    sourceDraftLoading.value = false;
   }
 }
 
 async function handleBuild() {
   if (!selectedMaterials.value.length) {
-    actionMessage.value = "请先勾选至少一份素材。";
+    actionMessage.value = "请先勾选至少一份已抽取素材。";
     return;
   }
 
@@ -601,14 +696,16 @@ async function handleBuild() {
   errorMessage.value = "";
 
   try {
-    const response = await getRootLensService().buildKGConstruction({
+    const buildSourcesResponse = await getRootLensService().buildKGMaterialSources({
+      material_ids: selectedMaterials.value.map((item) => item.material_id),
       output_name: buildForm.output_name,
       overwrite: false,
-      sources: selectedMaterials.value.map((item) => ({
-        ...item.buildSource,
-        scenario: item.buildSource.scenario || buildForm.scenario,
-      })),
+      source_type: buildForm.source_type,
     });
+    buildSourcesPreview.value = buildSourcesResponse;
+    const response = await getRootLensService().buildKGConstruction(
+      buildSourcesResponse.construction_request,
+    );
     actionMessage.value = `图谱已生成：${response.run_id}`;
     await refreshWorkspace();
     await loadBuildDetail(response.run_id);
@@ -646,19 +743,34 @@ watch(
   },
 );
 
+watch(selectedMaterialId, (materialId) => {
+  if (!materialId) {
+    materialDetail.value = null;
+    materialChunks.value = [];
+    materialExtractions.value = [];
+    materialArtifacts.value = [];
+    sourceDraftPreview.value = null;
+    return;
+  }
+
+  void loadSelectedMaterialState(materialId);
+});
+
+watch(selectedMaterial, (material) => {
+  if (material?.scenario) {
+    sourceDraftForm.defaultScenario = material.scenario;
+  }
+});
+
 watch(filteredMaterials, (list) => {
   if (!list.length) {
     selectedMaterialId.value = null;
     return;
   }
 
-  if (!list.some((item) => item.id === selectedMaterialId.value)) {
-    selectedMaterialId.value = list[0].id;
+  if (!list.some((item) => item.material_id === selectedMaterialId.value)) {
+    selectedMaterialId.value = list[0].material_id;
   }
-});
-
-watch(selectedMaterial, () => {
-  syncEditorFromSelectedMaterial();
 });
 
 watch(buildDetailModalVisible, (visible) => {
@@ -680,7 +792,7 @@ onMounted(() => {
   >
     <WorkbenchHero
       eyebrow="图谱工坊"
-      title="图谱素材、构图配方与构建结果"
+      title="素材库、抽取链路与候选图谱构建"
       :metrics="heroMetrics"
       tone="amber"
     >
@@ -713,26 +825,19 @@ onMounted(() => {
           <article class="rl-section-card workspace-materials-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-relation />
-                  <span>素材列表</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="Material Library" :help="materialsLibraryHelp">
+                    <icon-relation />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">
-                  优先表格视图，支持选择、编辑、删除和批量构图。
-                </p>
               </div>
               <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
             </header>
-            <div
-              class="rl-section-card__body workspace-table-card workspace-table-card--fill"
-            >
+            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
               <div class="workspace-filter-row">
-                <a-input
-                  v-model="filters.search"
-                  placeholder="搜索素材名称 / 路径 / 说明"
-                />
+                <a-input v-model="filters.search" placeholder="搜索 material / 路径 / 说明" />
                 <a-select v-model="filters.dataset">
-                  <a-option value="all">全部数据集</a-option>
+                  <a-option value="all">全部场景</a-option>
                   <a-option value="shared">shared</a-option>
                   <a-option value="tep">tep</a-option>
                   <a-option value="mvtec">mvtec</a-option>
@@ -740,21 +845,19 @@ onMounted(() => {
                 </a-select>
                 <a-select v-model="filters.type">
                   <a-option value="all">全部类型</a-option>
-                  <a-option value="manual_table">manual_table</a-option>
-                  <a-option value="structured_records"
-                    >structured_records</a-option
-                  >
-                  <a-option value="tep_semantic_lift"
-                    >tep_semantic_lift</a-option
-                  >
-                  <a-option value="tep_variable_mapping"
-                    >tep_variable_mapping</a-option
-                  >
+                  <a-option value="text">text</a-option>
+                  <a-option value="markdown">markdown</a-option>
+                  <a-option value="webpage">webpage</a-option>
+                  <a-option value="pdf">pdf</a-option>
+                  <a-option value="csv">csv</a-option>
+                  <a-option value="json">json</a-option>
+                  <a-option value="jsonl">jsonl</a-option>
                 </a-select>
                 <a-select v-model="filters.status">
                   <a-option value="all">全部状态</a-option>
-                  <a-option value="内置">内置</a-option>
-                  <a-option value="已上传">已上传</a-option>
+                  <a-option value="registered">registered</a-option>
+                  <a-option value="uploaded">uploaded</a-option>
+                  <a-option value="extracted">extracted</a-option>
                 </a-select>
                 <a-select v-model="filters.sortField">
                   <a-option value="updatedAt">按更新时间</a-option>
@@ -767,57 +870,58 @@ onMounted(() => {
                 </a-select>
               </div>
 
-              <div
-                class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill"
-              >
+              <div class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill">
                 <table class="workspace-table">
                   <thead>
                     <tr>
                       <th>选择</th>
                       <th>名称</th>
                       <th>类型</th>
-                      <th>角色</th>
-                      <th>数据集</th>
-                      <th>更新时间</th>
+                      <th>场景</th>
+                      <th>source_id</th>
                       <th>状态</th>
+                      <th>更新时间</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody v-if="filteredMaterials.length">
                     <tr
                       v-for="material in filteredMaterials"
-                      :key="material.id"
+                      :key="material.material_id"
                       :class="{
                         'workspace-table__row--active':
-                          material.id === selectedMaterial?.id,
+                          material.material_id === selectedMaterial?.material_id,
                       }"
-                      @click="selectedMaterialId = material.id"
+                      @click="selectedMaterialId = material.material_id"
                     >
                       <td>
                         <input
                           type="checkbox"
-                          :checked="selectedMaterialIds.includes(material.id)"
+                          :checked="selectedMaterialIds.includes(material.material_id)"
                           @click.stop
-                          @change="
-                            toggleMaterialSelection(
-                              material.id,
-                              ($event.target as HTMLInputElement).checked,
-                            )
-                          "
+                          @change="toggleMaterialSelection(material.material_id, ($event.target as HTMLInputElement).checked)"
                         />
                       </td>
                       <td>
                         <strong>{{ material.title }}</strong>
                       </td>
-                      <td>{{ material.type }}</td>
-                      <td>{{ material.role }}</td>
-                      <td>{{ material.dataset }}</td>
-                      <td>{{ formatDateTime(material.updatedAt) }}</td>
-                      <td>{{ material.status }}</td>
+                      <td>{{ material.source_type }}</td>
+                      <td>{{ material.scenario }}</td>
+                      <td>{{ material.source_id ?? '--' }}</td>
+                      <td>{{ formatMaterialStatus(material) }}</td>
+                      <td>{{ formatDateTime(material.updated_at ?? material.created_at) }}</td>
+                    </tr>
+                  </tbody>
+                  <tbody v-else>
+                    <tr class="workspace-table__row--empty">
+                      <td colspan="7">
+                        <div class="workspace-table__empty-state">
+                          <a-empty>当前 backend material library 为空</a-empty>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <a-empty v-if="!filteredMaterials.length">暂无素材</a-empty>
             </div>
           </article>
 
@@ -825,173 +929,239 @@ onMounted(() => {
             <article class="rl-section-card workspace-material-editor-card">
               <header class="rl-section-card__header">
                 <div>
-                  <h3 class="rl-section-card__title workspace-title-with-icon">
-                    <icon-storage />
-                    <span>当前选中素材</span>
+                  <h3 class="rl-section-card__title">
+                    <SectionCardTitle title="当前选中素材" :help="selectedMaterialHelp">
+                      <icon-storage />
+                    </SectionCardTitle>
                   </h3>
-                  <p class="rl-section-card__desc">
-                    先以 UI 层编辑为主，便于 mock / backend 双模式演示。
-                  </p>
                 </div>
+                <a-tag color="arcoblue">{{ selectedMaterial?.material_id ?? '未选择' }}</a-tag>
               </header>
-              <div
-                class="rl-section-card__body workspace-stack workspace-material-editor-form"
-              >
-                <div class="rl-form-field">
-                  <span class="workspace-field-label">
-                    <icon-info-circle />
-                    <span>名称</span>
-                  </span>
-                  <a-input v-model="materialEditor.title" />
+              <div class="rl-section-card__body workspace-stack workspace-stack--tight">
+                <div class="workspace-summary-list workspace-summary-list--two-col">
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-info-circle />
+                      <span>类型</span>
+                    </span>
+                    <strong>{{ selectedMaterial?.source_type ?? '--' }}</strong>
+                  </div>
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-bulb />
+                      <span>场景</span>
+                    </span>
+                    <strong>{{ selectedMaterial?.scenario ?? '--' }}</strong>
+                  </div>
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-storage />
+                      <span>状态</span>
+                    </span>
+                    <strong>{{ formatMaterialStatus(selectedMaterial) }}</strong>
+                  </div>
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-relation />
+                      <span>Source ID</span>
+                    </span>
+                    <strong>{{ selectedMaterial?.source_id ?? '--' }}</strong>
+                  </div>
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-upload />
+                      <span>Chunks</span>
+                    </span>
+                    <strong>{{ materialChunks.length }}</strong>
+                  </div>
+                  <div class="workspace-summary-list__item">
+                    <span class="workspace-summary-label">
+                      <icon-info-circle />
+                      <span>Extractions</span>
+                    </span>
+                    <strong>{{ materialExtractions.length }}</strong>
+                  </div>
                 </div>
+
+
+                <div class="workspace-summary-list__item">
+                  <span class="workspace-summary-label">
+                    <icon-info-circle />
+                    <span>Location</span>
+                  </span>
+                  <strong :title="formatMaterialLocation(selectedMaterial)">{{ formatMaterialLocation(selectedMaterial) }}</strong>
+                </div>
+
+                <div class="rl-form-actions rl-form-actions--dual">
+                  <a-button size="small" :disabled="!selectedMaterial" @click="selectedMaterial?.material_id && loadSelectedMaterialState(selectedMaterial.material_id)">
+                    刷新详情
+                  </a-button>
+                  <a-button type="primary" size="small" :disabled="!selectedMaterial" :loading="materialExtractLoading" @click="handleMaterialExtract">
+                    执行抽取
+                  </a-button>
+                  <a-button size="small" :disabled="!selectedMaterial || !materialChunks.length" :loading="sourceDraftLoading" @click="handleGenerateSourceDraftPreview">
+                    生成预览
+                  </a-button>
+                </div>
+
                 <div class="workspace-form-row workspace-form-row--two">
                   <div class="rl-form-field">
                     <span class="workspace-field-label">
-                      <icon-relation />
-                      <span>数据集</span>
+                      <icon-bulb />
+                      <span>Preview scenario</span>
                     </span>
-                    <a-input v-model="materialEditor.dataset" />
+                    <a-input v-model="sourceDraftForm.defaultScenario" />
                   </div>
                   <div class="rl-form-field">
                     <span class="workspace-field-label">
-                      <icon-bulb />
-                      <span>角色</span>
+                      <icon-info-circle />
+                      <span>Preview confidence</span>
                     </span>
-                    <a-input v-model="materialEditor.role" />
+                    <a-input-number v-model="sourceDraftForm.confidence" :min="0" :max="1" :step="0.05" />
                   </div>
                 </div>
-                <div class="rl-form-field">
-                  <span class="workspace-field-label">
-                    <icon-info-circle />
-                    <span>说明</span>
-                  </span>
-                  <a-textarea
-                    v-model="materialEditor.note"
-                    :auto-size="{ minRows: 3, maxRows: 5 }"
-                  />
-                </div>
-                <div class="rl-form-actions">
-                  <a-button
-                    type="primary"
-                    :disabled="!selectedMaterial"
-                    @click="applyMaterialEdit"
-                    >保存展示修改</a-button
-                  >
-                  <a-button
-                    status="danger"
-                    :disabled="!selectedMaterial"
-                    @click="deleteMaterialFromView"
-                    >从视图删除</a-button
-                  >
-                </div>
+
+                <a-spin v-if="materialDetailLoading" />
+
+                <a-tabs v-else v-model:active-key="selectedMaterialTab">
+                  <a-tab-pane key="detail" title="Detail">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(materialDetail ?? selectedMaterial) }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="chunks" title="Chunks">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(materialChunks) }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="extractions" title="Extractions">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(materialExtractions) }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="artifacts" title="Artifacts">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(materialArtifacts) }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="drafts" title="Draft History">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(draftHistory) }}</pre>
+                  </a-tab-pane>
+                  <a-tab-pane key="preview" title="Source Draft Preview">
+                    <pre class="rl-json-preview">{{ formatJsonPreview(sourceDraftPreview) }}</pre>
+                  </a-tab-pane>
+                </a-tabs>
               </div>
             </article>
 
             <article class="rl-section-card workspace-upload-source-card">
               <header class="rl-section-card__header">
                 <div>
-                  <h3 class="rl-section-card__title workspace-title-with-icon">
-                    <icon-upload />
-                    <span>上传 / 新建素材</span>
+                  <h3 class="rl-section-card__title">
+                    <SectionCardTitle title="上传 / 注册素材" :help="uploadSourceHelp">
+                      <icon-upload />
+                    </SectionCardTitle>
                   </h3>
-                  <p class="rl-section-card__desc">
-                    先用现有 backend
-                    接口完成上传；编辑与删除先在前端视图层生效。
-                  </p>
                 </div>
               </header>
-              <div
-                class="rl-section-card__body workspace-stack workspace-stack--fill"
-              >
-                <div class="rl-form-field">
-                  <span class="workspace-field-label">
-                    <icon-storage />
-                    <span>来源 ID</span>
-                  </span>
-                  <a-input v-model="sourceUpload.source_id" />
-                </div>
-                <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-relation />
-                      <span>类型</span>
-                    </span>
-                    <a-select v-model="sourceUpload.source_type">
-                      <a-option value="manual_table">manual_table</a-option>
-                      <a-option value="structured_records"
-                        >structured_records</a-option
-                      >
-                      <a-option value="tep_semantic_lift"
-                        >tep_semantic_lift</a-option
-                      >
-                      <a-option value="tep_variable_mapping"
-                        >tep_variable_mapping</a-option
-                      >
-                    </a-select>
-                  </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-info-circle />
-                      <span>格式</span>
-                    </span>
-                    <a-select v-model="sourceUpload.source_format">
-                      <a-option value="csv">csv</a-option>
-                      <a-option value="json">json</a-option>
-                      <a-option value="jsonl">jsonl</a-option>
-                    </a-select>
-                  </div>
-                </div>
-                <div class="rl-form-field">
-                  <span class="workspace-field-label">
-                    <icon-bulb />
-                    <span>场景</span>
-                  </span>
-                  <a-input v-model="sourceUpload.scenario" />
-                </div>
+              <div class="rl-section-card__body workspace-stack workspace-stack--tight">
                 <div class="rl-form-field workspace-dropzone-field">
                   <span class="workspace-field-label">
                     <icon-upload />
-                    <span>文件</span>
+                    <span>本地文件</span>
                   </span>
                   <div
                     class="rl-file-dropzone rl-file-dropzone--fill"
-                    :class="{
-                      'rl-file-dropzone--active': sourceUploadDragActive,
-                    }"
-                    @dragenter="handleSourceUploadDragEnter"
-                    @dragover="handleSourceUploadDragOver"
-                    @dragleave="handleSourceUploadDragLeave"
-                    @drop="handleSourceUploadDrop"
+                    :class="{ 'rl-file-dropzone--active': uploadDragActive }"
+                    @dragenter="handleUploadDragEnter"
+                    @dragover="handleUploadDragOver"
+                    @dragleave="handleUploadDragLeave"
+                    @drop="handleUploadDrop"
                   >
                     <input
-                      ref="sourceUploadInputRef"
+                      ref="uploadInputRef"
                       class="rl-file-input-native"
                       type="file"
-                      :accept="sourceUploadAccept"
-                      @change="handleSourceUploadFileChange"
+                      :accept="uploadAccept"
+                      @change="handleUploadFileChange"
                     />
-                    <div
-                      class="rl-file-dropzone__content rl-file-dropzone__content--fill"
-                    >
+                    <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
                       <div class="rl-file-dropzone__copy">
-                        <strong>{{
-                          sourceUpload.file?.name ??
-                          "拖动来源文件到这里，或点击按钮选择文件"
-                        }}</strong>
-                        <span>{{ sourceUploadAccept }}</span>
+                        <strong>{{ uploadForm.file?.name ?? '拖动素材文件到这里，或点击选择文件' }}</strong>
+                        <span>{{ uploadAccept }}</span>
                       </div>
-                      <a-button size="small" @click="openSourceUploadPicker"
-                        >选择文件</a-button
-                      >
+                      <a-button size="small" @click="openUploadPicker">选择文件</a-button>
                     </div>
                   </div>
                 </div>
+
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-info-circle /><span>标题</span></span>
+                    <a-input v-model="uploadForm.title" />
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-storage /><span>material_id</span></span>
+                    <a-input v-model="uploadForm.materialId" />
+                  </div>
+                </div>
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-bulb /><span>场景</span></span>
+                    <a-input v-model="uploadForm.scenario" />
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-relation /><span>类型</span></span>
+                    <a-select v-model="uploadForm.sourceType">
+                      <a-option value="text">text</a-option>
+                      <a-option value="markdown">markdown</a-option>
+                      <a-option value="webpage">webpage</a-option>
+                      <a-option value="pdf">pdf</a-option>
+                      <a-option value="csv">csv</a-option>
+                      <a-option value="json">json</a-option>
+                      <a-option value="jsonl">jsonl</a-option>
+                      <a-option value="other">other</a-option>
+                    </a-select>
+                  </div>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label"><icon-info-circle /><span>备注</span></span>
+                  <a-textarea v-model="uploadForm.notes" :auto-size="{ minRows: 2, maxRows: 4 }" />
+                </div>
                 <div class="rl-form-actions">
-                  <a-button type="primary" @click="handleSourceUpload">
-                    <template #icon>
-                      <icon-upload />
-                    </template>
+                  <a-button type="primary" :loading="materialMutationLoading" @click="handleMaterialUpload">
                     上传素材
+                  </a-button>
+                </div>
+
+
+                <div class="rl-form-field">
+                  <span class="workspace-field-label"><icon-storage /><span>URL</span></span>
+                  <a-input v-model="registerUrlForm.url" placeholder="https://example.com/doc" />
+                </div>
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-info-circle /><span>标题</span></span>
+                    <a-input v-model="registerUrlForm.title" />
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-storage /><span>material_id</span></span>
+                    <a-input v-model="registerUrlForm.materialId" />
+                  </div>
+                </div>
+                <div class="workspace-form-row workspace-form-row--two">
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-bulb /><span>场景</span></span>
+                    <a-input v-model="registerUrlForm.scenario" />
+                  </div>
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label"><icon-relation /><span>类型</span></span>
+                    <a-select v-model="registerUrlForm.sourceType">
+                      <a-option value="webpage">webpage</a-option>
+                      <a-option value="pdf">pdf</a-option>
+                      <a-option value="other">other</a-option>
+                    </a-select>
+                  </div>
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label"><icon-info-circle /><span>备注</span></span>
+                  <a-textarea v-model="registerUrlForm.notes" :auto-size="{ minRows: 2, maxRows: 4 }" />
+                </div>
+                <div class="rl-form-actions">
+                  <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
+                    注册 URL 素材
                   </a-button>
                 </div>
               </div>
@@ -1003,22 +1173,19 @@ onMounted(() => {
           <article class="rl-section-card workspace-builds-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-relation />
-                  <span>构图结果 / 已生成图谱</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle
+                    title="构图结果 / 已生成图谱"
+                    :help="buildResultsHelp"
+                  >
+                    <icon-relation />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">
-                  查看构图批次、节点边数量以及当前默认批次。
-                </p>
               </div>
               <a-tag color="gold">{{ builds?.builds.length ?? 0 }} 次</a-tag>
             </header>
-            <div
-              class="rl-section-card__body workspace-table-card workspace-table-card--fill"
-            >
-              <div
-                class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill"
-              >
+            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
+              <div class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill">
                 <table class="workspace-table">
                   <thead>
                     <tr>
@@ -1034,106 +1201,70 @@ onMounted(() => {
                     <tr
                       v-for="build in builds?.builds ?? []"
                       :key="build.run_id"
-                      :class="{
-                        'workspace-table__row--active':
-                          build.run_id === buildDetail?.build.run_id,
-                      }"
+                      :class="{ 'workspace-table__row--active': build.run_id === buildDetail?.build.run_id }"
                       @click="loadBuildDetail(build.run_id)"
                     >
-                      <td>
-                        <strong>{{ build.run_id }}</strong>
-                      </td>
+                      <td><strong>{{ build.run_id }}</strong></td>
                       <td>{{ build.source_count }}</td>
                       <td>{{ build.node_count }} / {{ build.edge_count }}</td>
                       <td>{{ build.status }}</td>
                       <td>{{ formatDateTime(build.created_at) }}</td>
                       <td>
-                        <a-button
-                          size="mini"
-                          type="text"
-                          @click.stop="openBuildDetailModal(build.run_id)"
-                          >查看详情</a-button
-                        >
+                        <a-button size="mini" type="text" @click.stop="openBuildDetailModal(build.run_id)">查看详情</a-button>
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+              <a-empty v-if="!(builds?.builds.length ?? 0)">暂无构图结果</a-empty>
             </div>
           </article>
 
           <article class="rl-section-card workspace-build-recipe-card">
             <header class="rl-section-card__header">
               <div>
-                <h3 class="rl-section-card__title workspace-title-with-icon">
-                  <icon-bulb />
-                  <span>构图配方</span>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="Build Recipe" :help="buildRecipeHelp">
+                    <icon-bulb />
+                  </SectionCardTitle>
                 </h3>
-                <p class="rl-section-card__desc">
-                  基于当前勾选素材生成图谱批次，并支持导出当前 build bundle。
-                </p>
               </div>
-              <a-tag color="arcoblue"
-                >{{ selectedMaterials.length }} 份已选</a-tag
-              >
+              <a-tag color="arcoblue">{{ selectedMaterials.length }} 份已选</a-tag>
             </header>
             <div class="rl-section-card__body workspace-stack">
-              <div class="workspace-claim-note workspace-claim-note--compact">
-                <span class="workspace-summary-label">
-                  <icon-info-circle />
-                  <span>Claim boundary</span>
-                </span>
-                <strong>{{ materialsClaimBoundaryCopy }}</strong>
-              </div>
 
-              <div
-                class="workspace-summary-list workspace-summary-list--two-col"
-              >
+              <div class="workspace-summary-list workspace-summary-list--two-col">
                 <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-upload />
-                    <span>已选素材</span>
-                  </span>
+                  <span class="workspace-summary-label"><icon-upload /><span>已选素材</span></span>
                   <strong>{{ selectedMaterials.length }}</strong>
                 </div>
                 <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-storage />
-                    <span>默认图谱</span>
-                  </span>
-                  <strong>{{ buildDetail?.build.run_id ?? "未选择" }}</strong>
+                  <span class="workspace-summary-label"><icon-storage /><span>默认图谱</span></span>
+                  <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
                 </div>
               </div>
-              <div class="rl-form-field">
-                <span class="workspace-field-label">
-                  <icon-info-circle />
-                  <span>输出图谱名</span>
-                </span>
-                <a-input v-model="buildForm.output_name" />
+
+              <div class="workspace-form-row workspace-form-row--two">
+                <div class="rl-form-field">
+                  <span class="workspace-field-label"><icon-info-circle /><span>输出图谱名</span></span>
+                  <a-input v-model="buildForm.output_name" />
+                </div>
+                <div class="rl-form-field">
+                  <span class="workspace-field-label"><icon-relation /><span>source_type</span></span>
+                  <a-select v-model="buildForm.source_type">
+                    <a-option value="structured_records">structured_records</a-option>
+                    <a-option value="manual_table">manual_table</a-option>
+                  </a-select>
+                </div>
               </div>
-              <div class="rl-form-field">
-                <span class="workspace-field-label">
-                  <icon-bulb />
-                  <span>场景</span>
-                </span>
-                <a-input v-model="buildForm.scenario" />
-              </div>
+
               <div class="rl-form-actions rl-form-actions--dual">
-                <a-button type="primary" @click="handleBuild"
-                  >生成图谱</a-button
-                >
-                <a-button :disabled="!canExportBuild" @click="handleExportBuild"
-                  >导出到本地</a-button
-                >
-                <a-button
-                  :disabled="!buildDetail"
-                  @click="
-                    buildDetail?.build.run_id &&
-                    openBuildDetailModal(buildDetail.build.run_id)
-                  "
-                  >查看构图详情</a-button
-                >
+                <a-button type="primary" @click="handleBuild">生成构图</a-button>
+                <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
+                <a-button :disabled="!buildDetail" @click="buildDetail?.build.run_id && openBuildDetailModal(buildDetail.build.run_id)">构图详情</a-button>
               </div>
+
+              <pre class="rl-json-preview">{{ formatJsonPreview(buildSourcesPreview) }}</pre>
             </div>
           </article>
         </section>
@@ -1176,10 +1307,7 @@ onMounted(() => {
             <icon-relation />
             <span>Nodes / Edges</span>
           </span>
-          <strong
-            >{{ buildDetail?.build.node_count ?? 0 }} /
-            {{ buildDetail?.build.edge_count ?? 0 }}</strong
-          >
+          <strong>{{ buildDetail?.build.node_count ?? 0 }} / {{ buildDetail?.build.edge_count ?? 0 }}</strong>
         </div>
       </div>
 
@@ -1188,7 +1316,7 @@ onMounted(() => {
           <icon-info-circle />
           <span>Claim boundary</span>
         </span>
-        <strong>{{ materialsClaimBoundaryCopy }}</strong>
+        <strong>{{ materialClaimBoundaryCopy }}</strong>
       </div>
 
       <a-alert
@@ -1198,10 +1326,7 @@ onMounted(() => {
         :title="buildDetailModalError"
       />
 
-      <div
-        v-if="buildDetailModalLoading"
-        class="workspace-build-detail-modal__loading"
-      >
+      <div v-if="buildDetailModalLoading" class="workspace-build-detail-modal__loading">
         <a-spin />
       </div>
 
@@ -1214,87 +1339,50 @@ onMounted(() => {
                   <icon-upload />
                   <span>Source IDs</span>
                 </span>
-                <strong>{{
-                  buildDetail?.build.source_ids?.join(", ") || "--"
-                }}</strong>
+                <strong>{{ buildDetail?.build.source_ids?.join(', ') || '--' }}</strong>
               </div>
               <div class="workspace-summary-list__item">
                 <span class="workspace-summary-label">
                   <icon-relation />
                   <span>Manifest Path</span>
                 </span>
-                <strong>{{ buildDetail?.build.manifest_path ?? "--" }}</strong>
+                <strong>{{ buildDetail?.build.manifest_path ?? '--' }}</strong>
               </div>
             </div>
             <div class="workspace-feedback-pane__footer">
-              <a-button size="small" @click="openBuildProvenance">
-                Inspect Build Provenance
-              </a-button>
+              <a-button size="small" @click="openBuildProvenance">Inspect Build Provenance</a-button>
             </div>
-            <pre class="rl-json-preview">{{
-              formatJsonPreview(buildDetail?.manifest ?? {})
-            }}</pre>
+            <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.manifest ?? {}) }}</pre>
           </div>
         </a-tab-pane>
 
         <a-tab-pane key="qa" title="QA / Summary">
           <div class="workspace-stack workspace-stack--tight">
-            <pre class="rl-json-preview">{{
-              formatJsonPreview(buildDetail?.summary ?? {})
-            }}</pre>
-            <pre class="rl-json-preview">{{
-              formatJsonPreview(
-                buildValidation?.qa_report ?? {
-                  note: "暂无 QA 详情（mock 占位）",
-                },
-              )
-            }}</pre>
+            <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.summary ?? {}) }}</pre>
+            <pre class="rl-json-preview">{{ formatJsonPreview(buildValidation?.qa_report ?? { note: '暂无 QA 详情（mock 占位）' }) }}</pre>
           </div>
         </a-tab-pane>
 
         <a-tab-pane key="queue" title="Review Queue">
-          <div
-            v-if="buildReviewQueue?.edges.length"
-            class="workspace-scroll-list workspace-scroll-list--fill workspace-build-review-queue"
-          >
-            <div
-              class="workspace-build-review-edge"
-              v-for="edge in buildReviewQueue.edges"
-              :key="edge.target_key"
-            >
+          <div v-if="buildReviewQueue?.edges.length" class="workspace-scroll-list workspace-scroll-list--fill workspace-build-review-queue">
+            <div class="workspace-build-review-edge" v-for="edge in buildReviewQueue.edges" :key="edge.target_key">
               <div class="workspace-build-review-edge__head">
-                <strong
-                  >{{ edge.head }} —{{ edge.relation }}→ {{ edge.tail }}</strong
-                >
+                <strong>{{ edge.head }} —{{ edge.relation }}→ {{ edge.tail }}</strong>
                 <span>{{ edge.review_status }}</span>
               </div>
               <div class="workspace-build-review-edge__meta">
                 <span>{{ edge.source }}</span>
                 <span>confidence {{ edge.confidence.toFixed(2) }}</span>
               </div>
-              <p>{{ edge.evidence || "当前边没有附带 evidence snippet。" }}</p>
+              <p>{{ edge.evidence || '当前边没有附带 evidence snippet。' }}</p>
               <div class="workspace-build-review-edge__actions">
-                <a-button
-                  size="mini"
-                  type="text"
-                  @click="openBuildReviewEdgeProvenance(edge)"
-                >
+                <a-button size="mini" type="text" @click="openBuildReviewEdgeProvenance(edge)">
                   Provenance
                 </a-button>
-                <a-button
-                  size="mini"
-                  type="primary"
-                  :loading="buildReviewActionTargetKey === edge.target_key"
-                  @click="handleBuildReviewAction(edge.target_key, 'accept')"
-                >
+                <a-button size="mini" type="primary" :loading="buildReviewActionTargetKey === edge.target_key" @click="handleBuildReviewAction(edge.target_key, 'accept')">
                   接受
                 </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  :loading="buildReviewActionTargetKey === edge.target_key"
-                  @click="handleBuildReviewAction(edge.target_key, 'reject')"
-                >
+                <a-button size="mini" status="danger" :loading="buildReviewActionTargetKey === edge.target_key" @click="handleBuildReviewAction(edge.target_key, 'reject')">
                   拒绝
                 </a-button>
               </div>

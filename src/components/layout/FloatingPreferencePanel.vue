@@ -159,13 +159,13 @@ onBeforeUnmount(() => {
           <section class="floating-preference-panel__section">
             <div class="floating-preference-panel__section-heading">
               <span class="floating-preference-panel__section-label">后端地址</span>
-              <a-tooltip content="后端模式会使用这里的地址；默认值指向本地 FastAPI 8000 端口。">
+              <a-tooltip content="后端模式会使用这里的地址；默认值指向本地 FastAPI 8081 端口。">
                 <span class="floating-preference-panel__info"><icon-info-circle /></span>
               </a-tooltip>
             </div>
             <a-input
               :model-value="preferences.apiBaseUrl"
-              placeholder="http://127.0.0.1:8000"
+              placeholder="http://127.0.0.1:8081"
               @change="handleApiBaseChange"
             />
           </section>

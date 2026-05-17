@@ -11,7 +11,7 @@ import {
   IconStorage,
 } from '@arco-design/web-vue/es/icon'
 import type { Component } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAppPreferences } from '@/services/app-preferences'
@@ -44,6 +44,11 @@ const navItems: NavItem[] = [
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
+const backendConfigModalVisible = ref(false)
+const backendConfigForm = reactive({
+  host: '127.0.0.1',
+  port: '8081',
+})
 const { preferences, updatePreferences } = useAppPreferences()
 const { state: workbenchState } = useWorkbenchState()
 
@@ -73,6 +78,27 @@ const apiBaseLabel = computed(() => {
   return preferences.value.apiBaseUrl.replace(/^https?:\/\//, '')
 })
 
+const backendConfigPreview = computed(() => {
+  const host = backendConfigForm.host.trim() || '127.0.0.1'
+  const port = backendConfigForm.port.trim() || '8081'
+  return `http://${host}:${port}`
+})
+
+function parseApiBaseUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return {
+      host: url.hostname || '127.0.0.1',
+      port: url.port || '8081',
+    }
+  } catch {
+    return {
+      host: '127.0.0.1',
+      port: '8081',
+    }
+  }
+}
+
 function handleNavigate(key: string | number) {
   const target = String(key) as NavItem['name']
   void router.push({
@@ -84,6 +110,29 @@ function handleSourceModeChange(mode: 'mock' | 'backend') {
   updatePreferences({
     dataSourceMode: mode,
   })
+}
+
+function openBackendConfigModal() {
+  const parsed = parseApiBaseUrl(preferences.value.apiBaseUrl)
+  backendConfigForm.host = parsed.host
+  backendConfigForm.port = parsed.port
+  backendConfigModalVisible.value = true
+}
+
+function handleBackendConfigReset() {
+  backendConfigForm.host = '127.0.0.1'
+  backendConfigForm.port = '8081'
+}
+
+function handleBackendConfigSave() {
+  const host = backendConfigForm.host.trim() || '127.0.0.1'
+  const parsedPort = Number.parseInt(backendConfigForm.port.trim(), 10)
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : '8081'
+
+  updatePreferences({
+    apiBaseUrl: `http://${host}:${port}`,
+  })
+  backendConfigModalVisible.value = false
 }
 </script>
 
@@ -121,7 +170,18 @@ function handleSourceModeChange(mode: 'mock' | 'backend') {
           <icon-apps />
           <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '模拟模式' }}</span>
         </a-tag>
-        <a-tag size="small" color="green">
+        <button
+          v-if="preferences.dataSourceMode === 'backend'"
+          type="button"
+          class="ocean-header__api-base-trigger"
+          @click="openBackendConfigModal"
+        >
+          <a-tag size="small" color="green">
+            <icon-bulb />
+            <span>{{ apiBaseLabel }}</span>
+          </a-tag>
+        </button>
+        <a-tag v-else size="small" color="green">
           <icon-bulb />
           <span>{{ apiBaseLabel }}</span>
         </a-tag>
@@ -172,5 +232,39 @@ function handleSourceModeChange(mode: 'mock' | 'backend') {
         <RouterView />
       </a-layout-content>
     </a-layout>
+
+    <a-modal
+      v-model:visible="backendConfigModalVisible"
+      title="修改后端地址"
+      width="420px"
+      @ok="handleBackendConfigSave"
+    >
+      <div class="ocean-header__modal-stack">
+        <div class="rl-form-field">
+          <span class="workspace-field-label">
+            <icon-storage />
+            <span>域名 / IP</span>
+          </span>
+          <a-input v-model="backendConfigForm.host" placeholder="127.0.0.1" />
+        </div>
+        <div class="rl-form-field">
+          <span class="workspace-field-label">
+            <icon-bulb />
+            <span>端口</span>
+          </span>
+          <a-input v-model="backendConfigForm.port" placeholder="8081" />
+        </div>
+        <div class="workspace-claim-note workspace-claim-note--compact">
+          <span class="workspace-summary-label">
+            <icon-info-circle />
+            <span>预览</span>
+          </span>
+          <strong>{{ backendConfigPreview }}</strong>
+        </div>
+        <div class="rl-form-actions rl-form-actions--dual">
+          <a-button size="small" @click="handleBackendConfigReset">恢复默认 127.0.0.1:8081</a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>

@@ -296,7 +296,204 @@ export interface ReviewLedgerListResponse {
   claim_boundary: string;
 }
 
+export interface KGMaterialRecord {
+  status: string;
+  material_id: string;
+  title: string;
+  scenario: string;
+  material_type?: string;
+  source_kind?: string;
+  source_uri?: string;
+  metadata_path?: string;
+  registered_at?: string;
+  updated_at?: string;
+  original_filename?: string | null;
+  content_type?: string | null;
+  size_bytes?: number;
+  metadata?: Record<string, unknown>;
+  extraction?: Record<string, unknown>;
+  claim_boundary?: string;
+  source_type: string;
+  source_format?: string | null;
+  path?: string | null;
+  url?: string | null;
+  uri?: string | null;
+  filename?: string | null;
+  processing_status: string;
+  extraction_status?: string | null;
+  chunk_count?: number | null;
+  page_count?: number | null;
+  source_id?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+}
+
+export interface KGMaterialListResponse {
+  status: string;
+  material_dir: string;
+  material_root: string;
+  count: number;
+  materials: KGMaterialRecord[];
+  note: string;
+}
+
+export interface KGMaterialDetailResponse {
+  status: string;
+  material: KGMaterialRecord;
+}
+
+export interface KGMaterialChunkRecord {
+  chunk_id: string;
+  material_id: string;
+  chunk_index: number;
+  source_locator: string | null;
+  text_content: string;
+  char_start: number | null;
+  char_end: number | null;
+  metadata: Record<string, unknown>;
+  created_at: string | null;
+}
+
+export interface KGMaterialChunkListResponse {
+  status: string;
+  material: KGMaterialRecord;
+  count: number;
+  chunks: KGMaterialChunkRecord[];
+  claim_boundary: string;
+}
+
+export interface KGMaterialExtractionRunRecord {
+  extraction_run_id: string;
+  material_id: string;
+  status: string;
+  provider: string | null;
+  source_format: string | null;
+  structured_records_path: string | null;
+  source_id: string | null;
+  extractor_name: string | null;
+  extractor_version: string | null;
+  record_count: number | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  parameters: Record<string, unknown>;
+  result_summary: Record<string, unknown>;
+}
+
+export interface KGMaterialExtractionRunListResponse {
+  status: string;
+  material: KGMaterialRecord;
+  count: number;
+  runs: KGMaterialExtractionRunRecord[];
+  claim_boundary: string;
+}
+
+export interface KGMaterialExtractionArtifactRecord {
+  artifact_id: string;
+  material_id: string;
+  extraction_run_id: string | null;
+  artifact_type: string;
+  uri: string | null;
+  media_type: string | null;
+  payload: Record<string, unknown>;
+  created_at: string | null;
+}
+
+export interface KGMaterialExtractionArtifactListResponse {
+  status: string;
+  material: KGMaterialRecord;
+  count: number;
+  artifacts: KGMaterialExtractionArtifactRecord[];
+  claim_boundary: string;
+}
+
+export interface KGMaterialRegisterUrlRequest {
+  url: string;
+  title?: string | null;
+  scenario?: string;
+  source_type?: string;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+  material_id?: string | null;
+}
+
+export interface KGMaterialMutationResponse {
+  status: string;
+  material: KGMaterialRecord;
+  note: string;
+}
+
+export interface KGMaterialExtractRequest {
+  provider?: "openai";
+  max_chars?: number;
+  overlap_chars?: number;
+  source_format?: "jsonl";
+  overwrite?: boolean;
+}
+
+export interface KGMaterialExtractResponse {
+  status: string;
+  material: KGMaterialRecord;
+  structured_records_path: string;
+  record_count: number;
+  claim_boundary: string;
+}
+
+export interface KGMaterialBuildSourcesRequest {
+  material_ids: string[];
+  output_name: string;
+  overwrite: boolean;
+  run_id?: string | null;
+  source_type?: "structured_records" | "manual_table";
+}
+
+export interface KGMaterialBuildSourcesResponse {
+  status: string;
+  material_root: string;
+  request: KGMaterialBuildSourcesRequest;
+  materials: KGMaterialRecord[];
+  sources: KGConstructionSourceInput[];
+  construction_request: KGConstructionBuildRequest;
+  claim_boundary: string;
+}
+
 export type KGDraftAction = "keep" | "revise" | "reject" | "promote_later";
+
+export interface KGDraftRecord {
+  draft_id: string;
+  created_at: string;
+  target_type: "edge";
+  target_id: string;
+  target_key: string;
+  draft_action: KGDraftAction;
+  proposed_relation?: string | null;
+  proposed_evidence?: string | null;
+  proposed_confidence?: number | null;
+  note?: string | null;
+  reviewer?: string | null;
+  source: string;
+  metadata: Record<string, unknown>;
+  review_decision: Record<string, unknown>;
+}
+
+export interface KGDraftListRequest {
+  target_type?: "edge";
+  target_id?: string;
+  target_key?: string;
+  reviewer?: string;
+  source?: string;
+  offset?: number;
+  limit?: number;
+}
+
+export interface KGDraftListResponse {
+  records: KGDraftRecord[];
+  total_count: number;
+  returned_count: number;
+  offset: number;
+  limit: number;
+  claim_boundary: string;
+}
 
 export interface KGDraftRequest {
   target_type: "edge";

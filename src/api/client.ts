@@ -2,7 +2,20 @@ import type {
   AnalyzeEnvelope,
   AnalyzeRequest,
   DashboardBootstrap,
+  KGDraftListRequest,
+  KGDraftListResponse,
   KGDraftRequest,
+  KGMaterialBuildSourcesRequest,
+  KGMaterialBuildSourcesResponse,
+  KGMaterialChunkListResponse,
+  KGMaterialDetailResponse,
+  KGMaterialExtractRequest,
+  KGMaterialExtractResponse,
+  KGMaterialExtractionArtifactListResponse,
+  KGMaterialExtractionRunListResponse,
+  KGMaterialListResponse,
+  KGMaterialMutationResponse,
+  KGMaterialRegisterUrlRequest,
   KGSourceDraftRequest,
   KGSourceDraftResponse,
   KGStudioPayload,
@@ -28,7 +41,7 @@ import type {
 } from "@/api/contracts";
 
 const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8001";
+  import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8081";
 const BACKEND_PROXY_TARGET =
   import.meta.env.VITE_BACKEND_PROXY_TARGET ?? DEFAULT_API_BASE_URL;
 
@@ -149,9 +162,43 @@ export interface ApiClient {
   submitKGDraft: (
     request: KGDraftRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
+  listKGDrafts: (
+    request?: KGDraftListRequest,
+  ) => Promise<KGDraftListResponse>;
   generateKGSourceDraft: (
     request: KGSourceDraftRequest,
   ) => Promise<KGSourceDraftResponse>;
+  listKGMaterials: () => Promise<KGMaterialListResponse>;
+  getKGMaterial: (materialId: string) => Promise<KGMaterialDetailResponse>;
+  uploadKGMaterial: (input: {
+    file: File;
+    title?: string;
+    scenario?: string;
+    source_type?: string;
+    notes?: string;
+    metadata?: Record<string, unknown>;
+    material_id?: string;
+    overwrite?: boolean;
+  }) => Promise<KGMaterialMutationResponse>;
+  registerKGMaterialUrl: (
+    request: KGMaterialRegisterUrlRequest,
+  ) => Promise<KGMaterialMutationResponse>;
+  extractKGMaterial: (
+    materialId: string,
+    request?: KGMaterialExtractRequest,
+  ) => Promise<KGMaterialExtractResponse>;
+  buildKGMaterialSources: (
+    request: KGMaterialBuildSourcesRequest,
+  ) => Promise<KGMaterialBuildSourcesResponse>;
+  getKGMaterialChunks: (
+    materialId: string,
+  ) => Promise<KGMaterialChunkListResponse>;
+  getKGMaterialExtractions: (
+    materialId: string,
+  ) => Promise<KGMaterialExtractionRunListResponse>;
+  getKGMaterialArtifacts: (
+    materialId: string,
+  ) => Promise<KGMaterialExtractionArtifactListResponse>;
   buildKGConstruction: (
     request: KGConstructionBuildRequest,
   ) => Promise<KGConstructionBuildResponse>;
@@ -248,11 +295,88 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
         "/api/kg/drafts",
         jsonInit("POST", request),
       ),
+    listKGDrafts: (request) => {
+      const search = new URLSearchParams();
+      if (request?.target_type) search.set("target_type", request.target_type);
+      if (request?.target_id) search.set("target_id", request.target_id);
+      if (request?.target_key) search.set("target_key", request.target_key);
+      if (request?.reviewer) search.set("reviewer", request.reviewer);
+      if (request?.source) search.set("source", request.source);
+      if (typeof request?.offset === "number") search.set("offset", String(request.offset));
+      if (typeof request?.limit === "number") search.set("limit", String(request.limit));
+      return requestJson<KGDraftListResponse>(
+        baseUrl,
+        "/api/kg/drafts",
+        undefined,
+        search,
+      );
+    },
     generateKGSourceDraft: (request) =>
       requestJson<KGSourceDraftResponse>(
         baseUrl,
         "/api/kg/source-draft",
         jsonInit("POST", request),
+      ),
+    listKGMaterials: () =>
+      requestJson<KGMaterialListResponse>(baseUrl, "/api/kg/materials"),
+    getKGMaterial: (materialId) =>
+      requestJson<KGMaterialDetailResponse>(
+        baseUrl,
+        `/api/kg/materials/${materialId}`,
+      ),
+    uploadKGMaterial: (input) => {
+      const form = new FormData();
+      form.append("file", input.file);
+      if (input.title) form.append("title", input.title);
+      if (input.scenario) form.append("scenario", input.scenario);
+      if (input.source_type) form.append("source_type", input.source_type);
+      if (input.notes) form.append("notes", input.notes);
+      if (input.material_id) form.append("material_id", input.material_id);
+      if (typeof input.overwrite === "boolean") form.append("overwrite", String(input.overwrite));
+      if (input.metadata && Object.keys(input.metadata).length) {
+        form.append("metadata", JSON.stringify(input.metadata));
+      }
+      return requestJson<KGMaterialMutationResponse>(
+        baseUrl,
+        "/api/kg/materials/upload",
+        {
+          method: "POST",
+          body: form,
+        },
+      );
+    },
+    registerKGMaterialUrl: (request) =>
+      requestJson<KGMaterialMutationResponse>(
+        baseUrl,
+        "/api/kg/materials/register-url",
+        jsonInit("POST", request),
+      ),
+    extractKGMaterial: (materialId, request) =>
+      requestJson<KGMaterialExtractResponse>(
+        baseUrl,
+        `/api/kg/materials/${materialId}/extract`,
+        request ? jsonInit("POST", request) : { method: "POST" },
+      ),
+    buildKGMaterialSources: (request) =>
+      requestJson<KGMaterialBuildSourcesResponse>(
+        baseUrl,
+        "/api/kg/materials/build-sources",
+        jsonInit("POST", request),
+      ),
+    getKGMaterialChunks: (materialId) =>
+      requestJson<KGMaterialChunkListResponse>(
+        baseUrl,
+        `/api/kg/materials/${materialId}/chunks`,
+      ),
+    getKGMaterialExtractions: (materialId) =>
+      requestJson<KGMaterialExtractionRunListResponse>(
+        baseUrl,
+        `/api/kg/materials/${materialId}/extractions`,
+      ),
+    getKGMaterialArtifacts: (materialId) =>
+      requestJson<KGMaterialExtractionArtifactListResponse>(
+        baseUrl,
+        `/api/kg/materials/${materialId}/artifacts`,
       ),
     buildKGConstruction: (request) =>
       requestJson<KGConstructionBuildResponse>(
