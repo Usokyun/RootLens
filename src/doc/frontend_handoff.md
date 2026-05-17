@@ -104,9 +104,9 @@ uv run python scripts/run_web_api.py
 
 后端地址：
 
-- API: `http://127.0.0.1:8081`
-- Swagger: `http://127.0.0.1:8081/docs`
-- OpenAPI: `http://127.0.0.1:8081/openapi.json`
+- API: `http://127.0.0.1:8000`
+- Swagger: `http://127.0.0.1:8000/docs`
+- OpenAPI: `http://127.0.0.1:8000/openapi.json`
 
 如果本地数据库未起，需要先启动 Neo4j / Postgres。项目 README 当前建议：
 

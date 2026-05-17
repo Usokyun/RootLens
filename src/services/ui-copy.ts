@@ -32,7 +32,7 @@ export interface RunReasoningSummary {
   requestedAdapter: string | null
   fallbackApplied: boolean
   fallbackReason: string | null
-  source: 'case' | 'summary' | 'analysis' | 'none'
+  source: 'case' | 'summary' | 'analysis' | 'run' | 'none'
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -107,6 +107,10 @@ function readRunAnalysisReasoningMetadata(runDetail: RunDetail | null | undefine
   return readReasoningMetadata(isRecord(runDetail?.analysis) ? runDetail?.analysis.reasoning_metadata : null)
 }
 
+function readRunTopLevelReasoningMetadata(runDetail: RunDetail | null | undefined) {
+  return readReasoningMetadata(runDetail?.reasoning_metadata)
+}
+
 export function formatClaimBoundaryCopy(value: string | null | undefined) {
   if (!value) {
     return '候选结论边界加载中'
@@ -159,9 +163,13 @@ export function resolveRunReasoningSummary(
   const caseMetadata = readReasoningMetadata(caseDetail?.reasoning_metadata)
   const summaryMetadata = readRunSummaryReasoningMetadata(runDetail)
   const analysisMetadata = readRunAnalysisReasoningMetadata(runDetail)
+  const runMetadata = readRunTopLevelReasoningMetadata(runDetail)
   const merged = mergeReasoningMetadata(
-    mergeReasoningMetadata(caseMetadata, summaryMetadata),
-    analysisMetadata,
+    mergeReasoningMetadata(
+      mergeReasoningMetadata(caseMetadata, summaryMetadata),
+      analysisMetadata,
+    ),
+    runMetadata,
   )
 
   let source: RunReasoningSummary['source'] = 'none'
@@ -171,6 +179,8 @@ export function resolveRunReasoningSummary(
     source = 'summary'
   } else if (hasReasoningMetadataValue(analysisMetadata)) {
     source = 'analysis'
+  } else if (hasReasoningMetadataValue(runMetadata)) {
+    source = 'run'
   }
 
   return {

@@ -29,17 +29,17 @@ const visibleModel = computed({
 function formatTargetKind(value: ProvenanceTargetKind | null | undefined) {
   switch (value) {
     case "path":
-      return "Path";
+      return "路径";
     case "edge":
-      return "Edge";
+      return "边";
     case "entity_link":
-      return "Entity Link";
+      return "实体链接";
     case "correction":
-      return "Correction";
+      return "修正建议";
     case "build":
-      return "Build";
+      return "构图批次";
     case "build_edge":
-      return "Build Edge";
+      return "构图边";
     default:
       return "--";
   }
@@ -48,27 +48,27 @@ function formatTargetKind(value: ProvenanceTargetKind | null | undefined) {
 function formatSourceType(value: ProvenanceSourceType) {
   switch (value) {
     case "raw_evidence_ref":
-      return "Raw ref";
+      return "原始证据引用";
     case "visual_evidence":
-      return "Visual evidence";
+      return "可视证据";
     case "edge_provenance":
-      return "Edge provenance";
+      return "边来源";
     case "entity_link":
-      return "Entity link";
+      return "实体链接";
     case "correction":
-      return "Correction";
+      return "修正建议";
     case "edge_metadata":
-      return "Edge metadata";
+      return "边元数据";
     case "manifest":
-      return "Manifest";
+      return "构图清单";
     case "summary":
-      return "Summary";
+      return "构图摘要";
     case "qa_report":
-      return "QA report";
+      return "质检报告";
     case "review_queue":
-      return "Review queue";
+      return "审阅队列";
     case "source_material":
-      return "Source material";
+      return "来源素材";
     default:
       return value;
   }
@@ -91,6 +91,20 @@ function resolveTagColor(tag: string) {
   }
 }
 
+
+function formatTagLabel(tag: string) {
+  switch (tag) {
+    case "projected":
+      return "投影";
+    case "generated":
+      return "生成产物";
+    case "source-grounded":
+      return "来源锚定";
+    default:
+      return tag;
+  }
+}
+
 function shouldShowVisual(record: ProvenanceRecord) {
   return !!record.previewUrl && record.sourceType === "visual_evidence";
 }
@@ -100,7 +114,7 @@ function shouldShowVisual(record: ProvenanceRecord) {
   <a-drawer
     v-model:visible="visibleModel"
     width="460px"
-    title="Provenance Inspector"
+    title="溯源检查器"
     :footer="false"
   >
     <div class="workspace-provenance-drawer">
@@ -109,19 +123,19 @@ function shouldShowVisual(record: ProvenanceRecord) {
         class="workspace-summary-list workspace-summary-list--two-col"
       >
         <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">Target</span>
+          <span class="workspace-summary-label">目标</span>
           <strong>{{ state.summary }}</strong>
         </div>
         <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">Type</span>
+          <span class="workspace-summary-label">类型</span>
           <strong>{{ formatTargetKind(state.targetKind) }}</strong>
         </div>
         <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">Context</span>
+          <span class="workspace-summary-label">上下文</span>
           <strong>{{ state.contextLabel }}</strong>
         </div>
         <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">Review target</span>
+          <span class="workspace-summary-label">审阅目标</span>
           <strong>{{ state.linkedReviewTarget ?? "--" }}</strong>
         </div>
       </div>
@@ -130,7 +144,7 @@ function shouldShowVisual(record: ProvenanceRecord) {
         v-if="state"
         class="workspace-claim-note workspace-claim-note--compact"
       >
-        <span class="workspace-summary-label">Claim boundary</span>
+        <span class="workspace-summary-label">断言边界</span>
         <strong>{{ state.claimBoundary }}</strong>
       </div>
 
@@ -143,7 +157,7 @@ function shouldShowVisual(record: ProvenanceRecord) {
           :key="note"
           class="workspace-claim-note workspace-claim-note--compact workspace-provenance-note"
         >
-          <span class="workspace-summary-label">Semantic note</span>
+          <span class="workspace-summary-label">语义说明</span>
           <strong>{{ note }}</strong>
         </div>
       </div>
@@ -152,7 +166,7 @@ function shouldShowVisual(record: ProvenanceRecord) {
         <div
           class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
         >
-          <strong>Provenance records</strong>
+          <strong>溯源记录</strong>
           <span>{{ state.records.length }} 项</span>
         </div>
 
@@ -177,7 +191,7 @@ function shouldShowVisual(record: ProvenanceRecord) {
                   size="small"
                   :color="resolveTagColor(tag)"
                 >
-                  {{ tag }}
+                  {{ formatTagLabel(tag) }}
                 </a-tag>
               </div>
             </div>
@@ -185,9 +199,9 @@ function shouldShowVisual(record: ProvenanceRecord) {
             <div class="workspace-provenance-record__meta">
               <span>{{ record.sourcePathOrId }}</span>
               <span v-if="record.reviewTargetKey"
-                >review {{ record.reviewTargetKey }}</span
+                >审阅 {{ record.reviewTargetKey }}</span
               >
-              <span>confidence {{ formatScore(record.confidence) }}</span>
+              <span>置信度 {{ formatScore(record.confidence) }}</span>
             </div>
 
             <div
@@ -212,10 +226,10 @@ function shouldShowVisual(record: ProvenanceRecord) {
         </div>
         <a-empty
           v-else
-          description="当前 target 没有可展示的 provenance records。"
+          description="当前目标没有可展示的溯源记录。"
         />
       </section>
-      <a-empty v-else description="当前未选择 provenance target。" />
+      <a-empty v-else description="当前未选择溯源目标。" />
     </div>
   </a-drawer>
 </template>

@@ -288,7 +288,7 @@ describe("provenance inspector builders", () => {
     });
 
     expect(result?.semanticNotes).toContain(
-      "Explanatory projection / FaultAnchor 视图，不等于原始工艺层级或已验证因果方向。",
+      "当前为解释性投影视图 / FaultAnchor 视图，不等于原始工艺层级，也不代表已验证的因果方向。",
     );
     expect(result?.records.map((item) => item.sourceType)).toEqual(
       expect.arrayContaining([
@@ -309,7 +309,7 @@ describe("provenance inspector builders", () => {
 
     expect(result?.summary).toBe("Component_A (组分 A)");
     expect(result?.semanticNotes).toContain(
-      "当前 entity link 仍属弱匹配/歧义匹配，只能作为候选 grounding 线索。",
+      "当前实体链接仍属弱匹配/歧义匹配，只能作为候选映射线索。",
     );
     expect(result?.records.map((item) => item.sourceType)).toEqual(
       expect.arrayContaining([
@@ -328,7 +328,7 @@ describe("provenance inspector builders", () => {
     });
 
     expect(result?.semanticNotes).toContain(
-      "Explanatory projection / FaultAnchor 视图，不等于原始工艺层级或已验证因果方向。",
+      "当前为解释性投影视图 / FaultAnchor 视图，不等于原始工艺层级，也不代表已验证的因果方向。",
     );
     expect(result?.records.map((item) => item.sourceType)).toEqual(
       expect.arrayContaining(["edge_metadata", "edge_provenance"]),
@@ -364,7 +364,7 @@ describe("provenance inspector builders", () => {
     });
 
     expect(result?.semanticNotes).toContain(
-      "当前 provenance 主要来自生成产物（manifest / summary / QA / review queue）及其关联 source metadata。",
+      "当前溯源主要来自构图生成产物（清单 / 摘要 / QA / 审阅队列）及其关联来源元数据。",
     );
     expect(result?.records.map((item) => item.sourceType)).toEqual(
       expect.arrayContaining([
@@ -373,6 +373,9 @@ describe("provenance inspector builders", () => {
         "qa_report",
         "source_material",
       ]),
+    );
+    expect(result?.records.map((item) => item.sourceLabel)).toEqual(
+      expect.arrayContaining(["构图清单", "构图摘要", "质检报告"]),
     );
   });
 

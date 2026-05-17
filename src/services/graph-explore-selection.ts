@@ -23,6 +23,11 @@ export interface LocalGraphSelectionPayload {
   id: string
 }
 
+interface LocalGraphCurationTabBehaviorOptions {
+  hasActiveCandidate: boolean
+  payload: LocalGraphSelectionPayload | null
+}
+
 export function resolveSelectedRootCause(
   list: RankedRootCause[] | null | undefined,
   selectedCandidateId: string | null | undefined,
@@ -244,6 +249,13 @@ export function buildLocalGraphSelectionPatch(
     selectedSubgraphNodeId: null,
     selectedSubgraphEdgeId: payload.id,
   }
+}
+
+export function shouldAutoOpenCurationTabOnLocalGraphSelect({
+  hasActiveCandidate,
+  payload,
+}: LocalGraphCurationTabBehaviorOptions) {
+  return Boolean(payload) && !hasActiveCandidate
 }
 
 function findGraphNodeIdForCandidate(

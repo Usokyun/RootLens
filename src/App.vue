@@ -26,17 +26,17 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     name: 'evidence',
-    label: '证据与审阅',
+    label: '运行与证据',
     icon: IconDashboard,
   },
   {
     name: 'graphs',
-    label: '图谱探索',
+    label: '根因与图谱',
     icon: IconRelation,
   },
   {
     name: 'materials',
-    label: '图谱工坊',
+    label: '素材与构图',
     icon: IconExperiment,
   },
 ]
@@ -47,7 +47,7 @@ const collapsed = ref(false)
 const backendConfigModalVisible = ref(false)
 const backendConfigForm = reactive({
   host: '127.0.0.1',
-  port: '8081',
+  port: '8000',
 })
 const { preferences, updatePreferences } = useAppPreferences()
 const { state: workbenchState } = useWorkbenchState()
@@ -80,7 +80,7 @@ const apiBaseLabel = computed(() => {
 
 const backendConfigPreview = computed(() => {
   const host = backendConfigForm.host.trim() || '127.0.0.1'
-  const port = backendConfigForm.port.trim() || '8081'
+  const port = backendConfigForm.port.trim() || '8000'
   return `http://${host}:${port}`
 })
 
@@ -89,12 +89,12 @@ function parseApiBaseUrl(value: string) {
     const url = new URL(value)
     return {
       host: url.hostname || '127.0.0.1',
-      port: url.port || '8081',
+      port: url.port || '8000',
     }
   } catch {
     return {
       host: '127.0.0.1',
-      port: '8081',
+      port: '8000',
     }
   }
 }
@@ -121,13 +121,13 @@ function openBackendConfigModal() {
 
 function handleBackendConfigReset() {
   backendConfigForm.host = '127.0.0.1'
-  backendConfigForm.port = '8081'
+  backendConfigForm.port = '8000'
 }
 
 function handleBackendConfigSave() {
   const host = backendConfigForm.host.trim() || '127.0.0.1'
   const parsedPort = Number.parseInt(backendConfigForm.port.trim(), 10)
-  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : '8081'
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : '8000'
 
   updatePreferences({
     apiBaseUrl: `http://${host}:${port}`,
@@ -252,7 +252,7 @@ function handleBackendConfigSave() {
             <icon-bulb />
             <span>端口</span>
           </span>
-          <a-input v-model="backendConfigForm.port" placeholder="8081" />
+          <a-input v-model="backendConfigForm.port" placeholder="8000" />
         </div>
         <div class="workspace-claim-note workspace-claim-note--compact">
           <span class="workspace-summary-label">
@@ -262,7 +262,7 @@ function handleBackendConfigSave() {
           <strong>{{ backendConfigPreview }}</strong>
         </div>
         <div class="rl-form-actions rl-form-actions--dual">
-          <a-button size="small" @click="handleBackendConfigReset">恢复默认 127.0.0.1:8081</a-button>
+          <a-button size="small" @click="handleBackendConfigReset">恢复默认 127.0.0.1:8000</a-button>
         </div>
       </div>
     </a-modal>

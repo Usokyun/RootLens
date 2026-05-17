@@ -1,0 +1,1 @@
+participant_id,session_type,role_group,years_experience,study_mode,condition_order,domain_order,task_id,case_pack,case_id,workspace,start_ts,end_ts,completed,assistance_level,evidence_grounding_score,hypothesis_inspection_score,claim_boundary_score,review_action_score,curation_score,participant_confidence,notable_quote,moderator_notes

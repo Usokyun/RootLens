@@ -19,11 +19,16 @@ interface AppPreferencesApi {
 }
 
 const APP_PREFERENCES_STORAGE_KEY = 'rootlens.app-preferences'
+const APP_PREFERENCES_STORAGE_VERSION = 2
 const APP_PREFERENCES_UPDATED_EVENT = 'rootlens:app-preferences-updated'
-const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8081'
+
+interface StoredAppPreferences extends Partial<AppPreferences> {
+  schemaVersion?: number
+}
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 const LEGACY_LOCAL_API_BASE_URLS = new Set([
-  'http://127.0.0.1:8000',
-  'http://localhost:8000',
+  'http://127.0.0.1:8081',
+  'http://localhost:8081',
   'http://127.0.0.1:8001',
   'http://localhost:8001',
 ])
@@ -41,7 +46,10 @@ function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
 
-function normalizeApiBaseUrl(value: unknown): string {
+function normalizeApiBaseUrl(
+  value: unknown,
+  options?: { migrateLegacyLocalUrls?: boolean },
+): string {
   if (typeof value !== 'string') {
     return DEFAULT_API_BASE_URL
   }
@@ -51,15 +59,20 @@ function normalizeApiBaseUrl(value: unknown): string {
     return DEFAULT_API_BASE_URL
   }
 
-  return LEGACY_LOCAL_API_BASE_URLS.has(normalized)
-    ? DEFAULT_API_BASE_URL
-    : normalized
+  if (options?.migrateLegacyLocalUrls && LEGACY_LOCAL_API_BASE_URLS.has(normalized)) {
+    return DEFAULT_API_BASE_URL
+  }
+
+  return normalized
 }
 
-function normalizeAppPreferences(candidate?: Partial<AppPreferences> | null): AppPreferences {
+function normalizeAppPreferences(
+  candidate?: Partial<AppPreferences> | null,
+  options?: { migrateLegacyLocalUrls?: boolean },
+): AppPreferences {
   return {
     dataSourceMode: candidate?.dataSourceMode === 'backend' ? 'backend' : 'mock',
-    apiBaseUrl: normalizeApiBaseUrl(candidate?.apiBaseUrl),
+    apiBaseUrl: normalizeApiBaseUrl(candidate?.apiBaseUrl, options),
     assetLayoutMode: candidate?.assetLayoutMode === 'list' ? 'list' : 'grid',
     autoSwitchAssetLayoutOnNarrowViewport: candidate?.autoSwitchAssetLayoutOnNarrowViewport !== false,
     enablePageEntranceMotion: candidate?.enablePageEntranceMotion !== false,
@@ -78,7 +91,16 @@ function readStoredAppPreferences(): AppPreferences {
       return { ...DEFAULT_APP_PREFERENCES }
     }
 
-    return normalizeAppPreferences(JSON.parse(rawValue) as Partial<AppPreferences>)
+    const parsed = JSON.parse(rawValue) as StoredAppPreferences
+    const nextPreferences = normalizeAppPreferences(parsed, {
+      migrateLegacyLocalUrls: (parsed.schemaVersion ?? 0) < APP_PREFERENCES_STORAGE_VERSION,
+    })
+
+    if ((parsed.schemaVersion ?? 0) < APP_PREFERENCES_STORAGE_VERSION) {
+      writeStoredAppPreferences(nextPreferences)
+    }
+
+    return nextPreferences
   } catch {
     return { ...DEFAULT_APP_PREFERENCES }
   }
@@ -89,7 +111,13 @@ function writeStoredAppPreferences(preferences: AppPreferences) {
     return
   }
 
-  window.localStorage.setItem(APP_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+  window.localStorage.setItem(
+    APP_PREFERENCES_STORAGE_KEY,
+    JSON.stringify({
+      ...preferences,
+      schemaVersion: APP_PREFERENCES_STORAGE_VERSION,
+    } satisfies StoredAppPreferences),
+  )
   window.dispatchEvent(new CustomEvent(APP_PREFERENCES_UPDATED_EVENT))
 }
 

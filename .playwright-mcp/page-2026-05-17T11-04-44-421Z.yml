@@ -1,0 +1,41 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "RootLens 工作台" [level=1] [ref=e10]:
+        - img [ref=e11]
+        - generic [ref=e14]: RootLens 工作台
+    - generic [ref=e15]:
+      - tablist "切换数据源模式" [ref=e16]:
+        - button "Demo" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e23]: Demo
+        - button "Backend" [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e27]: Backend
+      - generic [ref=e28]:
+        - img [ref=e29]
+        - generic [ref=e31]: 内置 Demo
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e35]: 内置资产
+    - generic [ref=e36]:
+      - generic [ref=e37]: 当前上下文
+      - generic [ref=e38]: paper-demo-curated / mvtec_fixture_clean_scratch
+  - generic [ref=e39]:
+    - generic [ref=e41]:
+      - generic [ref=e43]:
+        - generic [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e49]: 证据与审阅
+        - generic [ref=e50] [cursor=pointer]:
+          - img [ref=e52]
+          - generic [ref=e55]: 图谱探索
+        - generic [ref=e56] [cursor=pointer]:
+          - img [ref=e58]
+          - generic [ref=e60]: 图谱工坊
+      - button "收起侧边栏" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+    - main [ref=e64]

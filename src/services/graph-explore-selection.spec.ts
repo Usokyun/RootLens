@@ -6,6 +6,7 @@ import {
   buildLocalGraphSelectionPatch,
   buildTotalGraphSelectionPatch,
   resolveSelectedRootCause,
+  shouldAutoOpenCurationTabOnLocalGraphSelect,
   type GraphExploreSelectionState,
 } from '@/services/graph-explore-selection'
 import type { UnifiedGraphDataset } from '@/types/graph'
@@ -349,5 +350,46 @@ describe('graph explore selection helpers', () => {
       selectedSubgraphNodeId: null,
       selectedSubgraphEdgeId: null,
     })
+  })
+
+  it('does not auto-open the curation tab for local graph clicks while a root cause is active', () => {
+    expect(
+      shouldAutoOpenCurationTabOnLocalGraphSelect({
+        hasActiveCandidate: true,
+        payload: {
+          type: 'node',
+          id: 'node-a',
+        },
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldAutoOpenCurationTabOnLocalGraphSelect({
+        hasActiveCandidate: true,
+        payload: {
+          type: 'edge',
+          id: 'edge-1',
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('auto-opens the curation tab for local graph clicks only when no root cause is active', () => {
+    expect(
+      shouldAutoOpenCurationTabOnLocalGraphSelect({
+        hasActiveCandidate: false,
+        payload: {
+          type: 'node',
+          id: 'node-a',
+        },
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldAutoOpenCurationTabOnLocalGraphSelect({
+        hasActiveCandidate: false,
+        payload: null,
+      }),
+    ).toBe(false)
   })
 })

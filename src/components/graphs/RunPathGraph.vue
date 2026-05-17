@@ -6,6 +6,7 @@ import type { UnifiedGraphDataset } from '@/types/graph'
 withDefaults(
   defineProps<{
     dataset: UnifiedGraphDataset | null
+    renderKey?: string | null
     mode?: GraphSubgraphMode
     focusedNodeIds?: string[]
     focusedEdgeIds?: string[]
@@ -13,6 +14,7 @@ withDefaults(
     selectedEdgeId?: string | null
   }>(),
   {
+    renderKey: null,
     mode: 'path',
     focusedNodeIds: () => [],
     focusedEdgeIds: () => [],
@@ -63,6 +65,7 @@ function handleSelect(
   <div v-else class="run-path-graph">
     <KnowledgeForceGraph
       :dataset="dataset"
+      :render-key="renderKey"
       :show-labels="true"
       :search-term="''"
       :focused-node-ids="focusedNodeIds"

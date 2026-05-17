@@ -28,10 +28,10 @@ import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventNa
 import { getRootLensService } from '@/services/rootlens-service'
 import { restoreSessionImportFile } from '@/services/session-export'
 import { filterObservationBrowseItems, buildObservationBrowseItems, collectObservationModalities, collectObservationSources, findObservationBrowseItem, selectVisualEvidenceForObservation, type ObservationBrowseItem, type ObservationConfidenceBand, type ObservationModality } from '@/services/evidence-observation'
+import { extractFirstFileFromDataTransfer, markDragEventHandled } from '@/services/file-drop'
 import {
   formatClaimBoundaryCopy,
   formatReasonerAdapterLabel,
-  formatReasoningSelectionModeLabel,
   formatScoringMethodLabel,
   resolveRunReasoningSummary,
   resolveVisualEvidenceUrl,
@@ -281,7 +281,7 @@ const caseEvidenceListHelp =
   '一行一个 Case 入口，hover 查看 evidence 明细，点击即可联动根因区。'
 
 const observationDrilldownHelp =
-  '按当前过滤条件查看当前 Case 的 observation；点选后可打开详情，并带着上下文跳转图谱探索。'
+  '按当前过滤条件查看当前 Case 的 observation；点选后可打开详情，并带着上下文跳转根因与图谱。'
 
 const mockPresetCaseCount = computed(() => caseEvidenceEntries.value.length)
 
@@ -486,18 +486,18 @@ function resetUploadDragState() {
 }
 
 function handleUploadDragEnter(event: DragEvent) {
-  event.preventDefault()
+  markDragEventHandled(event)
   uploadDragDepth.value += 1
   uploadDragActive.value = true
 }
 
 function handleUploadDragOver(event: DragEvent) {
-  event.preventDefault()
+  markDragEventHandled(event, { dropEffect: 'copy' })
   uploadDragActive.value = true
 }
 
 function handleUploadDragLeave(event: DragEvent) {
-  event.preventDefault()
+  markDragEventHandled(event)
   uploadDragDepth.value = Math.max(0, uploadDragDepth.value - 1)
   if (uploadDragDepth.value === 0) {
     uploadDragActive.value = false
@@ -505,9 +505,8 @@ function handleUploadDragLeave(event: DragEvent) {
 }
 
 function handleUploadDrop(event: DragEvent) {
-  event.preventDefault()
-  const [file] = event.dataTransfer?.files ?? []
-  setUploadFile(file ?? null)
+  markDragEventHandled(event, { dropEffect: 'copy' })
+  setUploadFile(extractFirstFileFromDataTransfer(event.dataTransfer))
   resetUploadDragState()
 }
 
@@ -908,8 +907,8 @@ onBeforeUnmount(() => {
 <template>
   <div class="rl-page rl-screen" :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }">
     <WorkbenchHero
-      eyebrow="证据与审阅"
-      title="上传运行并快速筛选 Evidence"
+      eyebrow="运行与证据"
+      title="上传运行、导入回放与浏览证据"
       :metrics="heroMetrics"
     >
       <template #actions>
@@ -1148,19 +1147,6 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                 </div>
-
-                <div v-if="runDetail" class="workspace-claim-note workspace-claim-note--compact">
-                  <span class="workspace-summary-label">
-                    <icon-bulb />
-                    <span>Effective reasoning</span>
-                  </span>
-                  <span class="rl-inline-tags">
-                    <a-tag size="small" color="purple">Adapter · {{ formatReasonerAdapterLabel(activeReasoningSummary.adapter) }}</a-tag>
-                    <a-tag size="small" color="arcoblue">Profile · {{ activeReasoningSummary.profileId ?? '--' }}</a-tag>
-                    <a-tag size="small" color="gold">Mode · {{ formatReasoningSelectionModeLabel(activeReasoningSummary.selectionMode) }}</a-tag>
-                  </span>
-                </div>
-
                 <a-alert
                   v-if="activeReasoningSummary.fallbackApplied"
                   type="info"
@@ -1384,7 +1370,7 @@ onBeforeUnmount(() => {
                     <template #icon>
                       <icon-launch />
                     </template>
-                    图谱探索
+                    根因与图谱
                   </a-button>
                 </div>
                 <a-empty v-if="!filteredCaseEvidenceEntries.length">没有匹配的 Case / Evidence 条目</a-empty>
@@ -1456,7 +1442,7 @@ onBeforeUnmount(() => {
 
               <div class="rl-form-actions rl-form-actions--dual">
                 <a-button size="small" :disabled="!activeObservation" @click="openObservationDetail(activeObservation?.id ?? null)">查看详情</a-button>
-                <a-button size="small" :disabled="!activeObservation || !activeCase" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation?.id ?? null)">图谱探索</a-button>
+                <a-button size="small" :disabled="!activeObservation || !activeCase" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation?.id ?? null)">根因与图谱</a-button>
               </div>
             </div>
           </article>
@@ -1486,7 +1472,7 @@ onBeforeUnmount(() => {
       <div class="workspace-replay-import-field">
         <div>
           <strong>unified-graphs.json</strong>
-          <span>必选；需与 rootlens-runtime.json 一起导入，用于恢复图谱探索工作台。</span>
+          <span>必选；需与 rootlens-runtime.json 一起导入，用于恢复“根因与图谱”工作台。</span>
         </div>
         <input ref="replayGraphsInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('graphsFile', $event)" />
         <a-button size="small" @click="openReplayFilePicker('graphsFile')">{{ replayImportForm.graphsFile?.name ?? '选择文件' }}</a-button>
@@ -1645,7 +1631,7 @@ onBeforeUnmount(() => {
       <a-empty v-else>当前 observation 没有 raw refs</a-empty>
 
       <div class="rl-form-actions rl-form-actions--dual">
-        <a-button type="primary" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation.id)">图谱探索</a-button>
+        <a-button type="primary" @click="activeCase?.case_id && openGraphExplore(activeCase.case_id, activeObservation.id)">根因与图谱</a-button>
         <a-button @click="observationDetailModalVisible = false">关闭</a-button>
       </div>
     </div>

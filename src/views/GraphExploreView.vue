@@ -48,6 +48,7 @@ import {
   findBestPathForCandidateInGraph,
   findReviewTargetInList,
   resolveSelectedRootCause,
+  shouldAutoOpenCurationTabOnLocalGraphSelect,
 } from "@/services/graph-explore-selection";
 import {
   getLocalSessionMeta,
@@ -239,6 +240,45 @@ function resolveCaseGraphDatasetId(
 
   const value = (evidence as Record<string, unknown>).graph_dataset_id;
   return typeof value === "string" && value.trim().length ? value.trim() : null;
+}
+
+function buildGraphRenderKey(dataset: UnifiedGraphDataset | null) {
+  if (!dataset) {
+    return null;
+  }
+
+  const nodeSignature = dataset.nodes
+    .map((node) => {
+      const attrs = node.attributes ?? {};
+      return [
+        node.id,
+        node.name,
+        node.category,
+        node.kind,
+        String(attrs.curation_status ?? ""),
+        String(attrs.curation_updated_at ?? ""),
+      ].join(":");
+    })
+    .join("|");
+
+  const edgeSignature = dataset.edges
+    .map((edge) => {
+      const attrs = edge.attributes ?? {};
+      return [
+        edge.id,
+        edge.source,
+        edge.target,
+        edge.relation,
+        edge.label,
+        String(edge.confidence ?? ""),
+        String(attrs.review_status ?? ""),
+        String(attrs.curation_decision ?? ""),
+        String(attrs.curation_updated_at ?? ""),
+      ].join(":");
+    })
+    .join("|");
+
+  return [dataset.id, nodeSignature, edgeSignature].join("||");
 }
 
 function buildKGStudioDataset(
@@ -480,6 +520,10 @@ const activeLocalGraphDataset = computed(() => {
   }
   return pathSubgraphDataset.value;
 });
+
+const localGraphRenderKey = computed(() =>
+  buildGraphRenderKey(activeLocalGraphDataset.value),
+);
 
 const selectedGraphNode = computed(() => {
   if (!totalGraphDataset.value || !workbenchState.value.selectedGraphNodeId) {
@@ -1822,7 +1866,12 @@ function handleTotalGraphSelect(payload: GraphSelectPayload) {
 function handleLocalGraphSelect(payload: LocalGraphSelectPayload) {
   updateState(buildLocalGraphSelectionPatch(workbenchState.value, payload));
 
-  if (payload) {
+  if (
+    shouldAutoOpenCurationTabOnLocalGraphSelect({
+      hasActiveCandidate: Boolean(activeCandidate.value),
+      payload,
+    })
+  ) {
     feedbackCardTab.value = "curation";
   }
 }
@@ -2170,8 +2219,8 @@ onMounted(() => {
     :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
   >
     <WorkbenchHero
-      eyebrow="图谱探索"
-      title="总图谱、局部子图与审阅策展"
+      eyebrow="根因与图谱"
+      title="根因候选、图谱联动与反馈审阅"
       :metrics="heroMetrics"
     >
       <template #badges>
@@ -2192,7 +2241,7 @@ onMounted(() => {
           刷新视图
         </a-button>
         <a-button size="small" @click="router.push({ name: 'evidence' })"
-          >返回证据与审阅</a-button
+          >返回运行与证据</a-button
         >
       </template>
     </WorkbenchHero>
@@ -2264,6 +2313,7 @@ onMounted(() => {
               <RunPathGraph
                 v-if="activeLocalGraphDataset"
                 :dataset="activeLocalGraphDataset"
+                :render-key="localGraphRenderKey"
                 :mode="activeSubgraphMode"
                 :focused-node-ids="localGraphFocusedNodeIds"
                 :focused-edge-ids="localGraphFocusedEdgeIds"

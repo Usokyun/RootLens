@@ -69,6 +69,7 @@ const layoutCache = new Map<string, Map<string, LayoutSnapshot>>()
 
 const props = defineProps<{
   dataset: UnifiedGraphDataset
+  renderKey?: string | null
   showLabels: boolean
   searchTerm: string
   focusedNodeIds?: string[]
@@ -927,7 +928,7 @@ async function renderGraph() {
 }
 
 watch(
-  () => props.dataset,
+  () => props.renderKey ?? props.dataset,
   () => {
     emit('hover', null)
     scheduleRenderGraph()

@@ -85,11 +85,11 @@ const OBSERVATION_FIELD_ORDER = [
   "log_event",
 ];
 const TEP_PROJECTION_NOTE =
-  "Explanatory projection / FaultAnchor 视图，不等于原始工艺层级或已验证因果方向。";
+  "当前为解释性投影视图 / FaultAnchor 视图，不等于原始工艺层级，也不代表已验证的因果方向。";
 const AMBIGUOUS_LINK_NOTE =
-  "当前 entity link 仍属弱匹配/歧义匹配，只能作为候选 grounding 线索。";
+  "当前实体链接仍属弱匹配/歧义匹配，只能作为候选映射线索。";
 const GENERATED_BUILD_NOTE =
-  "当前 provenance 主要来自生成产物（manifest / summary / QA / review queue）及其关联 source metadata。";
+  "当前溯源主要来自构图生成产物（清单 / 摘要 / QA / 审阅队列）及其关联来源元数据。";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -301,12 +301,12 @@ function buildRawRefRecord(input: {
     recordId: input.recordId,
     sourceType: "raw_evidence_ref",
     sourceLabel: isPlaceholder
-      ? "Runtime evidence placeholder"
-      : label || "Raw evidence ref",
+      ? "运行时证据占位"
+      : label || "原始证据引用",
     sourcePathOrId: path || input.rawRef.refId || input.observationId,
     snippetOrPreview: isPlaceholder
-      ? `Observation ${input.observationId} 当前没有可回跳的外部文件，只保留 runtime 占位 evidence ref。`
-      : `role=${input.rawRef.role}${input.rawRef.line !== null ? ` · line ${input.rawRef.line}` : ""}`,
+      ? `观测 ${input.observationId} 当前没有可回跳的外部文件，仅保留运行时占位证据引用。`
+      : `角色=${input.rawRef.role}${input.rawRef.line !== null ? ` · 行 ${input.rawRef.line}` : ""}`,
     previewUrl: null,
     confidence: null,
     claimBoundary: input.claimBoundary,
@@ -493,7 +493,7 @@ function buildPathEdgeRecords(input: {
     records.push({
       recordId: `path-edge:${edgeId}`,
       sourceType: "edge_provenance",
-      sourceLabel: normalizeText(edge.relation, "Path edge"),
+      sourceLabel: normalizeText(edge.relation, "路径边"),
       sourcePathOrId,
       snippetOrPreview: snippet,
       previewUrl: null,
@@ -624,7 +624,7 @@ export function buildGraphEntityLinkProvenance(input: {
         normalizeText(link.selected_entity_id, input.linkId),
       ),
       sourcePathOrId: normalizeText(link.selected_entity_id, input.linkId),
-      snippetOrPreview: `${normalizeText(link.field, "field")} · ${normalizeText(link.mention, "--")} · ${normalizeText(link.match_type, "match")} · score ${normalizeNumber(link.score)?.toFixed(2) ?? "--"}`,
+      snippetOrPreview: `字段 ${normalizeText(link.field, "字段")} · 提及 ${normalizeText(link.mention, "--")} · 匹配方式 ${normalizeText(link.match_type, "匹配")} · 分数 ${normalizeNumber(link.score)?.toFixed(2) ?? "--"}`,
       previewUrl: null,
       confidence: normalizeNumber(link.score),
       claimBoundary: input.claimBoundary,
@@ -761,7 +761,7 @@ function buildSourceMaterialRecords(input: {
       sourceLabel: material?.title ?? sourceId,
       sourcePathOrId: material?.path ?? sourceId,
       snippetOrPreview:
-        material?.note ?? material?.sourceType ?? "linked source material",
+        material?.note ?? material?.sourceType ?? "关联来源素材",
       previewUrl: null,
       confidence: null,
       claimBoundary: input.claimBoundary,
@@ -813,7 +813,7 @@ export function buildGraphCorrectionProvenance(input: {
         correction.suggested_entity_id,
         input.correctionId,
       ),
-      snippetOrPreview: `${normalizeText(correction.reason, "correction")} · ${JSON.stringify(correction.original_value ?? null)} -> ${normalizeText(correction.suggested_value, input.correctionId)}`,
+      snippetOrPreview: `${normalizeText(correction.reason, "修正建议")} · ${JSON.stringify(correction.original_value ?? null)} → ${normalizeText(correction.suggested_value, input.correctionId)}`,
       previewUrl: null,
       confidence: normalizeNumber(correction.score),
       claimBoundary: input.claimBoundary,
@@ -899,7 +899,7 @@ export function buildMaterialsBuildProvenance(input: {
     {
       recordId: `build-manifest:${build.run_id}`,
       sourceType: "manifest",
-      sourceLabel: "Build manifest",
+      sourceLabel: "构图清单",
       sourcePathOrId: build.manifest_path,
       snippetOrPreview: formatJsonSnippet(input.buildDetail.manifest),
       previewUrl: null,
@@ -912,7 +912,7 @@ export function buildMaterialsBuildProvenance(input: {
     {
       recordId: `build-summary:${build.run_id}`,
       sourceType: "summary",
-      sourceLabel: "Build summary",
+      sourceLabel: "构图摘要",
       sourcePathOrId: build.summary_path,
       snippetOrPreview: formatJsonSnippet(input.buildDetail.summary),
       previewUrl: null,
@@ -928,7 +928,7 @@ export function buildMaterialsBuildProvenance(input: {
     records.push({
       recordId: `build-qa:${build.run_id}`,
       sourceType: "qa_report",
-      sourceLabel: "QA report",
+      sourceLabel: "质检报告",
       sourcePathOrId: `${build.run_id}:qa_report`,
       snippetOrPreview: formatJsonSnippet(input.buildValidation.qa_report),
       previewUrl: null,
@@ -952,7 +952,7 @@ export function buildMaterialsBuildProvenance(input: {
     targetKind: "build",
     targetId: build.run_id,
     summary: build.run_id,
-    contextLabel: `${build.source_count} source(s) · ${build.node_count} node(s) / ${build.edge_count} edge(s)`,
+    contextLabel: `${build.source_count} 份来源素材 · ${build.node_count} 个节点 / ${build.edge_count} 条边`,
     linkedReviewTarget: null,
     claimBoundary: input.claimBoundary,
     records: uniqueStable(records, (item) => item.recordId),
@@ -998,7 +998,7 @@ export function buildMaterialsBuildEdgeProvenance(input: {
       sourceLabel: material.title,
       sourcePathOrId: material.path ?? material.sourceId,
       snippetOrPreview:
-        material.note ?? material.sourceType ?? "linked source material",
+        material.note ?? material.sourceType ?? "关联来源素材",
       previewUrl: null,
       confidence: null,
       claimBoundary: input.claimBoundary,

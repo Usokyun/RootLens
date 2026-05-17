@@ -185,6 +185,7 @@ export interface RunDetail {
   correction_candidates: Array<Record<string, unknown>>;
   top_k_paths: Array<Record<string, unknown>>;
   ranked_root_causes: RankedRootCause[];
+  reasoning_metadata?: RunReasoningMetadata | null;
   path_graph: PathGraph;
   source_edge_provenance: Array<Record<string, unknown>>;
   review_targets: ReviewTarget[];

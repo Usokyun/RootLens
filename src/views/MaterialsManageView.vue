@@ -29,6 +29,7 @@ import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import WorkbenchHero from "@/components/layout/WorkbenchHero.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import { useAppPreferences } from "@/services/app-preferences";
+import { extractFirstFileFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
 import { getRootLensService } from "@/services/rootlens-service";
 import {
   buildMaterialsBuildEdgeProvenance,
@@ -323,18 +324,18 @@ function resetUploadDragState() {
 }
 
 function handleUploadDragEnter(event: DragEvent) {
-  event.preventDefault();
+  markDragEventHandled(event);
   uploadDragDepth.value += 1;
   uploadDragActive.value = true;
 }
 
 function handleUploadDragOver(event: DragEvent) {
-  event.preventDefault();
+  markDragEventHandled(event, { dropEffect: "copy" });
   uploadDragActive.value = true;
 }
 
 function handleUploadDragLeave(event: DragEvent) {
-  event.preventDefault();
+  markDragEventHandled(event);
   uploadDragDepth.value = Math.max(0, uploadDragDepth.value - 1);
   if (uploadDragDepth.value === 0) {
     uploadDragActive.value = false;
@@ -342,9 +343,8 @@ function handleUploadDragLeave(event: DragEvent) {
 }
 
 function handleUploadDrop(event: DragEvent) {
-  event.preventDefault();
-  const [file] = event.dataTransfer?.files ?? [];
-  setUploadFile(file ?? null);
+  markDragEventHandled(event, { dropEffect: "copy" });
+  setUploadFile(extractFirstFileFromDataTransfer(event.dataTransfer));
   resetUploadDragState();
 }
 
@@ -791,8 +791,8 @@ onMounted(() => {
     :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
   >
     <WorkbenchHero
-      eyebrow="图谱工坊"
-      title="素材库、抽取链路与候选图谱构建"
+      eyebrow="素材与构图"
+      title="素材管理、抽取链路与候选图谱构建"
       :metrics="heroMetrics"
       tone="amber"
     >
@@ -1197,7 +1197,7 @@ onMounted(() => {
                       <th>操作</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody v-if="builds?.builds.length ?? 0">
                     <tr
                       v-for="build in builds?.builds ?? []"
                       :key="build.run_id"
@@ -1214,9 +1214,17 @@ onMounted(() => {
                       </td>
                     </tr>
                   </tbody>
+                  <tbody v-else>
+                    <tr class="workspace-table__row--empty">
+                      <td colspan="6">
+                        <div class="workspace-table__empty-state">
+                          <a-empty>暂无构图结果</a-empty>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
               </div>
-              <a-empty v-if="!(builds?.builds.length ?? 0)">暂无构图结果</a-empty>
             </div>
           </article>
 

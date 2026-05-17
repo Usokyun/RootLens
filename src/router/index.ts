@@ -12,9 +12,9 @@ export const router = createRouter({
       name: 'evidence',
       component: () => import('@/views/EvidenceManageView.vue'),
       meta: {
-        label: '证据与审阅',
-        description: '上传 record、查看运行状态，并按 run / graph 筛选 Evidence。',
-        tags: ['Run Upload', 'Evidence Filter', 'Case Review'],
+        label: '运行与证据',
+        description: '上传运行、浏览 run / case / observation，并导入回放资产。',
+        tags: ['Run Upload', 'Observation Browse', 'Replay Import'],
       },
     },
     {
@@ -22,9 +22,9 @@ export const router = createRouter({
       name: 'graphs',
       component: () => import('@/views/GraphExploreView.vue'),
       meta: {
-        label: '图谱探索',
-        description: '总图谱、path_graph 子图、根因列表与反馈卡。',
-        tags: ['Total Graph', 'Path Graph', 'Feedback Review'],
+        label: '根因与图谱',
+        description: '围绕根因候选浏览总图、子图、路径与反馈链路。',
+        tags: ['Root Cause', 'Graph Explore', 'Feedback Review'],
       },
     },
     {
@@ -32,9 +32,9 @@ export const router = createRouter({
       name: 'materials',
       component: () => import('@/views/MaterialsManageView.vue'),
       meta: {
-        label: '图谱工坊',
-        description: '管理图谱素材、排序筛选、批量构图与构建结果。',
-        tags: ['Materials CRUD', 'Graph Build', 'Build Result'],
+        label: '素材与构图',
+        description: '管理素材、执行抽取与构图，并查看构图结果与审阅队列。',
+        tags: ['Material Library', 'Graph Build', 'Review Queue'],
       },
     },
   ],
