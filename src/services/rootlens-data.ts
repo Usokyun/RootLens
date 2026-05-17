@@ -279,7 +279,7 @@ export async function loadRootLensRuntime(): Promise<RootLensRuntimeFile> {
     runtimePromise = localPayload
       ? Promise.resolve(parseRootLensRuntimeFile(localPayload))
       : isImportedSessionActive()
-        ? Promise.reject(new Error('当前本地导入会话未包含 rootlens-runtime.json 或 evidence，RCA 工作台不可用。'))
+        ? Promise.reject(new Error('当前回放会话未包含 rootlens-runtime.json，Evidence 与 RCA 工作台不可用。'))
         : fetchJson('/generated/rootlens-runtime.json').then(parseRootLensRuntimeFile)
   }
 

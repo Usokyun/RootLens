@@ -4,11 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:graphs": "python3 scripts/build-graphs.py",
-    "build:evidence": "python3 scripts/build-evidence.py --tep-max-cases 100",
-    "build:runtime": "node scripts/build-unified-graphs.mjs && python3 scripts/build-runtime.py",
-    "dev": "npm run build:graphs && npm run build:evidence && npm run build:runtime && vite",
-    "build": "npm run build:graphs && npm run build:evidence && npm run build:runtime && vue-tsc -b && vite build",
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },

@@ -128,7 +128,7 @@ describe("mock backend paper demo mode", () => {
         mode: "evidence",
         top_k: 5,
       }),
-    ).rejects.toThrow("论文演示 mock 模式不支持上传");
+    ).rejects.toThrow("内置 Demo 模式不支持上传");
   });
 
   it("uses imported runtime sessions as the active replay run source", async () => {

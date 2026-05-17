@@ -1,5 +1,11 @@
 # RootLens 论文第 5 节与当前前端能力差异、前端设计方案与分期路线
 
+> **历史文档说明（2026-05-17）**
+>
+> 本文记录的是 RootLens 早期“前端承接本地建图 / 本地推理 / 对齐规划”的阶段性设计或交接语义，**已不代表当前实现边界**。
+> 当前请优先以 `src/doc/backend-integration-current.md` 为真值；RootLens 现仅保留 backend-first 工作台、内置 Demo 与成品回放导入。
+
+
 > 文档定位：**审阅稿 / 决策稿**
 >
 > 目标：基于论文 PDF `src/doc/RootLens_ChinaVis_2026 (2).pdf` 的 **Section 5: Visual Analytics System**，对照当前仓库里真实存在的前端页面与交互，梳理差异（difference），并给出：

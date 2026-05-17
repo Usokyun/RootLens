@@ -1,5 +1,11 @@
 # RCA 推理引擎：Evidence + KG → 根因候选
 
+> **历史文档说明（2026-05-17）**
+>
+> 本文记录的是 RootLens 早期“前端承接本地建图 / 本地推理 / 对齐规划”的阶段性设计或交接语义，**已不代表当前实现边界**。
+> 当前请优先以 `src/doc/backend-integration-current.md` 为真值；RootLens 现仅保留 backend-first 工作台、内置 Demo 与成品回放导入。
+
+
 这份文档描述模块三的设计：**如何把统一 Evidence JSON 和知识图谱结合起来，进行根因推理分析**。这是 RootLens 三条模块链中的最后一环——前两个模块（图谱构建、证据构建）为它提供输入，它产出两条路线各自独立的推理结果供可视化工作台融合呈现。
 
 > 设计原则：**尽量保留 TEP_KG 的 Root-KGD 推理语义和 KGTraceVis 的 pipeline 推理语义。两条路线独立运行、共享同一张图谱和同一份 Evidence。RootLens 当前以“离线生成 parity runtime + 前端消费展示”为主，融合统一由前端可视化工作台完成。**

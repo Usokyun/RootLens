@@ -53,7 +53,7 @@ const { preferences, updatePreferences } = useAppPreferences()
 const { state: workbenchState } = useWorkbenchState()
 
 const sourceModeOptions = [
-  { value: 'mock', label: 'Mock', icon: IconStorage },
+  { value: 'mock', label: 'Demo', icon: IconStorage },
   { value: 'backend', label: 'Backend', icon: IconCloud },
 ] as const
 
@@ -168,7 +168,7 @@ function handleBackendConfigSave() {
         </div>
         <a-tag size="small" color="arcoblue">
           <icon-apps />
-          <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '模拟模式' }}</span>
+          <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '内置 Demo' }}</span>
         </a-tag>
         <button
           v-if="preferences.dataSourceMode === 'backend'"

@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 
 import type {
   DashboardBootstrap,
+  DashboardReasoningProfileOption,
   RankedRootCause,
   RunCaseDetail,
   RunDetail,
@@ -27,7 +28,14 @@ import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventNa
 import { getRootLensService } from '@/services/rootlens-service'
 import { restoreSessionImportFile } from '@/services/session-export'
 import { filterObservationBrowseItems, buildObservationBrowseItems, collectObservationModalities, collectObservationSources, findObservationBrowseItem, selectVisualEvidenceForObservation, type ObservationBrowseItem, type ObservationConfidenceBand, type ObservationModality } from '@/services/evidence-observation'
-import { formatClaimBoundaryCopy, formatScoringMethodLabel } from '@/services/ui-copy'
+import {
+  formatClaimBoundaryCopy,
+  formatReasonerAdapterLabel,
+  formatReasoningSelectionModeLabel,
+  formatScoringMethodLabel,
+  resolveRunReasoningSummary,
+  resolveVisualEvidenceUrl,
+} from '@/services/ui-copy'
 import { useWorkbenchState } from '@/services/workbench-state'
 
 interface CaseEvidenceEntry {
@@ -89,6 +97,7 @@ const uploadForm = reactive({
   objectName: '',
   defectType: '',
   modelPreset: 'auto',
+  reasoningProfileId: '',
 })
 
 const evidenceFilter = reactive({
@@ -106,9 +115,9 @@ const isReplaySessionActive = computed(() => importedSessionMeta.value?.source =
 const replaySourceModeLabel = computed(() => {
   switch (importedSessionSummary.value?.sourceMode) {
     case 'graphs+evidence':
-      return '图谱 + Evidence'
+      return '历史导入格式'
     case 'graphs-only':
-      return '仅图谱'
+      return '图谱不完整'
     case 'runtime':
       return '完整回放'
     default:
@@ -190,6 +199,27 @@ const uploadAccept = computed(() => {
   return modeConfig?.accepted_extensions.join(',') ?? ''
 })
 
+const uploadReasoningProfileOptions = computed<DashboardReasoningProfileOption[]>(() => {
+  const dataset = uploadForm.dataset.trim()
+  if (!dataset) {
+    return []
+  }
+
+  return bootstrap.value?.reasoning_profile_options?.[dataset] ?? []
+})
+
+const uploadReasoningHelp = computed(() => {
+  if (!uploadForm.dataset) {
+    return '如需显式选择，请先指定 dataset'
+  }
+
+  if (!uploadReasoningProfileOptions.value.length) {
+    return '当前 dataset 未返回显式 profile，继续使用 Auto'
+  }
+
+  return '留空则按后端默认；仅展示当前 dataset 可用 profiles'
+})
+
 const caseEvidenceEntriesObservationItems = computed(() =>
   (runDetail.value?.cases ?? []).flatMap((caseItem) => buildObservationBrowseItems(caseItem)),
 )
@@ -212,6 +242,10 @@ const totalObservationCount = computed(() => {
 const activeObservationDetailCount = computed(() => filteredActiveObservationItems.value.length)
 
 const activeRootCauseList = computed(() => activeCase.value?.ranked_root_causes ?? [])
+
+const activeReasoningSummary = computed(() =>
+  resolveRunReasoningSummary(runDetail.value, activeCase.value),
+)
 
 const heroMetrics = computed(() => [
   {
@@ -236,7 +270,7 @@ const heroMetrics = computed(() => [
 
 const runStatusHelp = computed(() => [
   isMockMode.value
-    ? '当前为论文演示 mock 模式：左侧仅保留预设 case 说明，右侧固定展示唯一 demo run。'
+    ? '当前为内置 Demo 模式：左侧展示预设 case，右侧固定展示唯一演示 run。'
     : '左侧提交 record，右侧用紧凑列表切换当前 Run。',
   evidenceClaimBoundaryCopy.value,
 ])
@@ -538,7 +572,7 @@ async function handleReplayImport() {
   const workspaceFile = replayImportForm.workspaceFile
 
   if (!assetFiles.length && !workspaceFile) {
-    errorMessage.value = '请至少选择一份回放资产或工作区恢复文件。'
+    errorMessage.value = '请至少选择一份完整回放资产或工作区恢复文件。'
     return
   }
 
@@ -555,12 +589,12 @@ async function handleReplayImport() {
       saveImportedSession({
         graphs: importResult.graphs,
         runtime: importResult.runtime,
-        summary: `导入回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
+        summary: `导入完整回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
         importSummary: importResult.summary,
       })
       syncImportedSessionState()
       messages.push(
-        `已导入回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
+        `已导入完整回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
       )
       warnings.push(...importResult.summary.warnings)
     }
@@ -736,7 +770,7 @@ async function refreshWorkspace() {
 
 async function handleUpload() {
   if (isMockMode.value) {
-    uploadMessage.value = '论文演示 mock 模式不开放上传，请切换到 backend 模式后再提交真实数据。'
+    uploadMessage.value = '内置 Demo 模式不开放上传，请切换到 backend 模式后再提交真实数据。'
     return
   }
 
@@ -757,6 +791,7 @@ async function handleUpload() {
       object_name: uploadForm.objectName || undefined,
       defect_type: uploadForm.defectType || undefined,
       model_preset: uploadForm.modelPreset || undefined,
+      reasoning_profile_id: uploadForm.reasoningProfileId || undefined,
       top_k: uploadForm.topK,
     })
 
@@ -812,6 +847,23 @@ watch(
   },
 )
 
+watch(
+  () => [uploadForm.dataset, uploadReasoningProfileOptions.value.map((item) => item.profile_id).join('|')],
+  () => {
+    if (!uploadForm.dataset) {
+      uploadForm.reasoningProfileId = ''
+      return
+    }
+
+    if (!uploadForm.reasoningProfileId) {
+      return
+    }
+
+    if (!uploadReasoningProfileOptions.value.some((item) => item.profile_id === uploadForm.reasoningProfileId)) {
+      uploadForm.reasoningProfileId = ''
+    }
+  },
+)
 
 watch(
   () => [
@@ -886,7 +938,7 @@ onBeforeUnmount(() => {
                 </h3>
               </div>
               <a-tag :color="isReplaySessionActive ? 'arcoblue' : isMockMode ? 'gold' : 'green'">
-                {{ isReplaySessionActive ? '回放会话' : isMockMode ? '论文演示模式' : formatUploadModeLabel(uploadForm.mode) }}
+                {{ isReplaySessionActive ? '回放会话' : isMockMode ? '内置 Demo' : formatUploadModeLabel(uploadForm.mode) }}
               </a-tag>
             </header>
             <div class="rl-section-card__body workspace-split-card workspace-split-card--run-status workspace-run-card__body">
@@ -963,9 +1015,9 @@ onBeforeUnmount(() => {
                     <div class="workspace-claim-note">
                       <span class="workspace-summary-label">
                         <icon-storage />
-                        <span>Mock Mode</span>
+                        <span>Demo Mode</span>
                       </span>
-                      <strong>当前为论文演示静态快照，不开放上传。</strong>
+                      <strong>当前为内置 Demo 静态快照，不开放上传。</strong>
                     </div>
                     <div class="workspace-summary-list workspace-summary-list--two-col">
                       <div class="workspace-summary-list__item">
@@ -1024,6 +1076,24 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
 
+                  <div class="rl-form-field">
+                    <span class="workspace-field-label">
+                      <icon-bulb />
+                      <span>Reasoning Profile</span>
+                    </span>
+                    <a-select v-model="uploadForm.reasoningProfileId" :disabled="!uploadForm.dataset">
+                      <a-option value="">自动（按数据集默认）</a-option>
+                      <a-option
+                        v-for="option in uploadReasoningProfileOptions"
+                        :key="option.profile_id"
+                        :value="option.profile_id"
+                      >
+                        {{ option.profile_id }} · {{ formatReasonerAdapterLabel(option.reasoner_adapter) }}
+                      </a-option>
+                    </a-select>
+                    <span class="workspace-subtle">{{ uploadReasoningHelp }}</span>
+                  </div>
+
                   <div v-if="uploadForm.mode === 'image'" class="workspace-form-row workspace-form-row--three">
                     <div class="rl-form-field">
                       <span class="workspace-field-label">
@@ -1078,6 +1148,25 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                 </div>
+
+                <div v-if="runDetail" class="workspace-claim-note workspace-claim-note--compact">
+                  <span class="workspace-summary-label">
+                    <icon-bulb />
+                    <span>Effective reasoning</span>
+                  </span>
+                  <span class="rl-inline-tags">
+                    <a-tag size="small" color="purple">Adapter · {{ formatReasonerAdapterLabel(activeReasoningSummary.adapter) }}</a-tag>
+                    <a-tag size="small" color="arcoblue">Profile · {{ activeReasoningSummary.profileId ?? '--' }}</a-tag>
+                    <a-tag size="small" color="gold">Mode · {{ formatReasoningSelectionModeLabel(activeReasoningSummary.selectionMode) }}</a-tag>
+                  </span>
+                </div>
+
+                <a-alert
+                  v-if="activeReasoningSummary.fallbackApplied"
+                  type="info"
+                  :show-icon="false"
+                  :title="activeReasoningSummary.fallbackReason ? `当前结果已回退到通用路径推理：${activeReasoningSummary.fallbackReason}` : '当前结果已回退到通用路径推理'"
+                />
               </section>
               <section class="workspace-run-list-panel">
                 <div class="workspace-run-list-panel__header">
@@ -1115,12 +1204,12 @@ onBeforeUnmount(() => {
                     <a-button size="small" status="warning" @click="handleSwitchToLiveUpload">退出回放</a-button>
                   </template>
                   <template v-else>
-                    <span v-if="isMockMode" class="workspace-subtle">mock 模式固定为 1 个论文演示 run</span>
+                    <span v-if="isMockMode" class="workspace-subtle">Demo 模式固定为 1 个内置演示 run</span>
                     <a-button type="primary" :loading="uploadLoading" :disabled="isMockMode" @click="handleUpload">
                       <template #icon>
                         <icon-upload />
                       </template>
-                      {{ isMockMode ? '切到 Backend 后可上传' : '上传并生成 Run' }}
+                      {{ isMockMode ? '切到后端模式后可上传' : '上传并生成 Run' }}
                     </a-button>
                   </template>
                 </div>
@@ -1388,7 +1477,7 @@ onBeforeUnmount(() => {
       <div class="workspace-replay-import-field">
         <div>
           <strong>rootlens-runtime.json</strong>
-          <span>可选；用于恢复 case、evidence 与 RCA 运行时。</span>
+          <span>必选；需与 unified-graphs.json 一起导入，用于恢复 case、evidence 与 RCA 结果。</span>
         </div>
         <input ref="replayRuntimeInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('runtimeFile', $event)" />
         <a-button size="small" @click="openReplayFilePicker('runtimeFile')">{{ replayImportForm.runtimeFile?.name ?? '选择文件' }}</a-button>
@@ -1397,7 +1486,7 @@ onBeforeUnmount(() => {
       <div class="workspace-replay-import-field">
         <div>
           <strong>unified-graphs.json</strong>
-          <span>可选；用于恢复图谱探索工作台。</span>
+          <span>必选；需与 rootlens-runtime.json 一起导入，用于恢复图谱探索工作台。</span>
         </div>
         <input ref="replayGraphsInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('graphsFile', $event)" />
         <a-button size="small" @click="openReplayFilePicker('graphsFile')">{{ replayImportForm.graphsFile?.name ?? '选择文件' }}</a-button>
@@ -1406,7 +1495,7 @@ onBeforeUnmount(() => {
       <div class="workspace-replay-import-field">
         <div>
           <strong>workspace export / session bundle</strong>
-          <span>可选；支持恢复 analyst workspace，或单独导入完整 bundle。</span>
+          <span>可选；支持恢复 analyst workspace，或单独导入完整 session bundle。</span>
         </div>
         <input ref="replayWorkspaceInputRef" class="rl-file-input-native" type="file" accept=".json" @change="handleReplayFileChange('workspaceFile', $event)" />
         <a-button size="small" @click="openReplayFilePicker('workspaceFile')">{{ replayImportForm.workspaceFile?.name ?? '选择文件' }}</a-button>
@@ -1415,7 +1504,7 @@ onBeforeUnmount(() => {
       <a-alert
         type="info"
         :show-icon="false"
-        title="若同时导入 runtime/graphs 与 workspace export，会先恢复回放资产，再叠加 workspace；完整 session bundle 请单独导入。"
+        title="资产导入仅支持完整回放（runtime + graphs）；若同时导入 workspace export，会先恢复回放资产，再叠加 workspace。完整 session bundle 请单独导入。"
       />
 
       <div class="rl-form-actions rl-form-actions--dual">
@@ -1485,7 +1574,7 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="selectedObservationVisualEvidence.length" class="workspace-observation-visual-grid">
           <div v-for="item in selectedObservationVisualEvidence" :key="item.artifact_id" class="rl-visual-card">
-            <img v-if="item.preview_path || item.url" :src="item.preview_path || item.url || undefined" :alt="item.title" />
+            <img v-if="resolveVisualEvidenceUrl(item)" :src="resolveVisualEvidenceUrl(item) ?? undefined" :alt="item.title" />
             <div>
               <strong>{{ item.title }}</strong>
               <span>{{ item.kind }}</span>

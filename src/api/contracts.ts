@@ -118,6 +118,22 @@ export interface RankedRootCause {
   [key: string]: unknown;
 }
 
+export interface DashboardReasoningProfileOption {
+  profile_id: string;
+  reasoner_adapter: string;
+  default: boolean;
+}
+
+export interface RunReasoningMetadata {
+  reasoning_profile_id?: string | null;
+  reasoner_adapter?: string | null;
+  selection_mode?: string | null;
+  requested_reasoning_profile_id?: string | null;
+  requested_reasoner_adapter?: string | null;
+  fallback_applied?: boolean | null;
+  fallback_reason?: string | null;
+}
+
 export interface VisualEvidenceItem {
   artifact_id: string;
   case_id: string;
@@ -151,6 +167,7 @@ export interface RunCaseDetail {
   path_graph?: PathGraph;
   review_targets?: ReviewTarget[];
   visual_evidence?: VisualEvidenceItem[];
+  reasoning_metadata?: RunReasoningMetadata | null;
   [key: string]: unknown;
 }
 
@@ -191,54 +208,12 @@ export interface DashboardBootstrap {
   supported_feedback_targets: string[];
   supported_feedback_actions: string[];
   upload_modes: UploadModeInfo[];
+  reasoning_profile_options: Record<string, DashboardReasoningProfileOption[]>;
   mvtec_model_presets: {
     default_preset: string;
     presets: Array<Record<string, unknown>>;
   };
   recent_runs: RunSummary[];
-}
-
-export interface AnalyzeEnvelope {
-  case: Record<string, unknown> | null;
-  evidence: Record<string, unknown>;
-  analysis: Record<string, unknown>;
-  evidence_with_analysis: Record<string, unknown>;
-  workflow_steps: WorkflowStep[];
-  claim_boundary: string;
-}
-
-export interface AnalyzeEvidenceInput {
-  case_id?: string;
-  dataset: string;
-  source: string;
-  object?: string | null;
-  anomaly_type?: string | null;
-  location?: string | null;
-  morphology?: string | null;
-  severity?: number | null;
-  confidence?: number | null;
-  timestamp?: string | null;
-  raw_evidence?: Record<string, unknown>;
-  normalized_evidence?: Record<string, unknown>;
-  kg_analysis?: Record<string, unknown>;
-}
-
-export interface AnalyzeRequest {
-  case_id?: string;
-  evidence?: AnalyzeEvidenceInput;
-  top_k: number;
-}
-
-export interface WhatIfRequest {
-  case_id: string;
-  anomaly_type: string;
-  location?: string | null;
-  morphology?: string | null;
-  variables?: string[];
-  log_events?: string[];
-  severity?: number | null;
-  confidence?: number | null;
-  top_k: number;
 }
 
 export interface UploadRequest {
@@ -248,6 +223,7 @@ export interface UploadRequest {
   object_name?: string;
   defect_type?: string;
   model_preset?: string;
+  reasoning_profile_id?: string;
   top_k: number;
 }
 

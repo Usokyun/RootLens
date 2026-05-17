@@ -12,8 +12,8 @@ describe('generated runtime contract', () => {
 
     const parsed = parseRootLensRuntimeFile(raw)
 
-    expect(parsed.cases.length).toBeGreaterThanOrEqual(100)
-    expect(parsed.cases.some((item) => item.analysis.route1 !== null)).toBe(true)
-    expect(parsed.cases.some((item) => item.analysis.route2 !== null)).toBe(true)
+    expect(parsed.cases).toHaveLength(4)
+    expect(parsed.cases.every((item) => item.analysis.route1 !== null)).toBe(true)
+    expect(parsed.cases.some((item) => item.dataset === 'tep')).toBe(true)
   })
 })

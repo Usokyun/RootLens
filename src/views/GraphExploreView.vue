@@ -84,7 +84,10 @@ import {
 } from "@/services/review-ledger";
 import {
   formatClaimBoundaryCopy,
+  formatReasonerAdapterLabel,
+  formatReasoningSelectionModeLabel,
   formatScoringMethodLabel,
+  resolveRunReasoningSummary,
 } from "@/services/ui-copy";
 import {
   useWorkbenchState,
@@ -730,6 +733,10 @@ const graphClaimBoundaryCopy = computed(() =>
   formatClaimBoundaryCopy(
     runDetail.value?.claim_boundary ?? kgStudio.value?.claim_boundary,
   ),
+);
+
+const activeReasoningSummary = computed(() =>
+  resolveRunReasoningSummary(runDetail.value, activeCase.value),
 );
 
 const activeObservationContext = computed(() => {
@@ -3440,6 +3447,30 @@ onMounted(() => {
                   </a-option>
                 </a-select>
               </div>
+              <div class="workspace-claim-note workspace-claim-note--compact">
+                <span class="workspace-summary-label">
+                  <icon-info-circle />
+                  <span>Effective reasoning</span>
+                </span>
+                <span class="rl-inline-tags">
+                  <a-tag size="small" color="purple"
+                    >Adapter · {{ formatReasonerAdapterLabel(activeReasoningSummary.adapter) }}</a-tag
+                  >
+                  <a-tag size="small" color="arcoblue"
+                    >Profile · {{ activeReasoningSummary.profileId ?? "--" }}</a-tag
+                  >
+                  <a-tag size="small" color="gold"
+                    >Mode · {{ formatReasoningSelectionModeLabel(activeReasoningSummary.selectionMode) }}</a-tag
+                  >
+                </span>
+              </div>
+
+              <a-alert
+                v-if="activeReasoningSummary.fallbackApplied"
+                type="info"
+                :show-icon="false"
+                :title="activeReasoningSummary.fallbackReason ? `当前结果已回退到通用路径推理：${activeReasoningSummary.fallbackReason}` : '当前结果已回退到通用路径推理'"
+              />
             </section>
 
             <section class="workspace-root-cause-aside-card__list">

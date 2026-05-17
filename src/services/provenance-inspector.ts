@@ -10,6 +10,7 @@ import {
   findObservationBrowseItem,
   type ObservationBrowseItem,
 } from "@/services/evidence-observation";
+import { resolveVisualEvidenceUrl } from "@/services/ui-copy";
 import type { JsonValue, UnifiedGraphEdge } from "@/types/graph";
 
 export type ProvenanceTargetKind =
@@ -335,7 +336,7 @@ function buildVisualEvidenceRecords(input: {
       sourceLabel: item.title,
       sourcePathOrId: item.source_path ?? item.source_key,
       snippetOrPreview: item.note,
-      previewUrl: item.preview_path ?? item.url,
+      previewUrl: resolveVisualEvidenceUrl(item),
       confidence: null,
       claimBoundary: input.claimBoundary,
       reviewTargetKey: input.reviewTargetKey,

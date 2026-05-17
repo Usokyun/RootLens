@@ -1,9 +1,8 @@
 import { parse as parseCsv } from "csv-parse/browser/esm/sync";
 
 import type {
-  AnalyzeEnvelope,
-  AnalyzeRequest,
   DashboardBootstrap,
+  DashboardReasoningProfileOption,
   KGDraftListRequest,
   KGDraftListResponse,
   KGDraftRecord,
@@ -55,11 +54,11 @@ import type {
   ReviewTargetType,
   RunCaseDetail,
   RunDetail,
+  RunReasoningMetadata,
   RunSummary,
   UploadMode,
   UploadRequest,
   VisualEvidenceItem,
-  WhatIfRequest,
 } from "@/api/contracts";
 import {
   getLocalSessionMeta,
@@ -92,6 +91,38 @@ const REVIEWABLE_FEEDBACK_TARGETS = new Set<ReviewTargetType>([
   "correction",
   "root_cause_candidate",
 ]);
+
+const MOCK_REASONING_PROFILE_OPTIONS: Record<
+  string,
+  DashboardReasoningProfileOption[]
+> = {
+  mvtec: [
+    {
+      profile_id: "generic_graph_path_default",
+      reasoner_adapter: "generic_graph_path",
+      default: true,
+    },
+  ],
+  wafer: [
+    {
+      profile_id: "generic_graph_path_default",
+      reasoner_adapter: "generic_graph_path",
+      default: true,
+    },
+  ],
+  tep: [
+    {
+      profile_id: "tep_root_kgd_default",
+      reasoner_adapter: "tep_root_kgd",
+      default: true,
+    },
+    {
+      profile_id: "generic_graph_path_default",
+      reasoner_adapter: "generic_graph_path",
+      default: false,
+    },
+  ],
+};
 
 interface MockFeedbackRecord {
   feedback_id: string;
@@ -146,12 +177,102 @@ function compactList<T>(items: Array<T | null | undefined>): T[] {
   return items.filter((item): item is T => item !== null && item !== undefined);
 }
 
-function normalizeScore(value: unknown, fallback = 0): number {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return fallback;
+function normalizeNullableText(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length ? value.trim() : null;
+}
+
+function normalizeNullableBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+function readReasoningMetadata(value: unknown): RunReasoningMetadata | null {
+  if (!isRecord(value)) {
+    return null;
   }
 
-  return value;
+  return {
+    reasoning_profile_id: normalizeNullableText(value.reasoning_profile_id),
+    reasoner_adapter: normalizeNullableText(value.reasoner_adapter),
+    selection_mode: normalizeNullableText(value.selection_mode),
+    requested_reasoning_profile_id: normalizeNullableText(
+      value.requested_reasoning_profile_id,
+    ),
+    requested_reasoner_adapter: normalizeNullableText(
+      value.requested_reasoner_adapter,
+    ),
+    fallback_applied: normalizeNullableBoolean(value.fallback_applied),
+    fallback_reason: normalizeNullableText(value.fallback_reason),
+  };
+}
+
+function inferReasoningProfileForDataset(dataset: string | null | undefined) {
+  const normalized = normalizeText(dataset).toLowerCase();
+  if (normalized === "tep") {
+    return {
+      reasoning_profile_id: "tep_root_kgd_default",
+      reasoner_adapter: "tep_root_kgd",
+    } satisfies Pick<
+      RunReasoningMetadata,
+      "reasoning_profile_id" | "reasoner_adapter"
+    >;
+  }
+
+  return {
+    reasoning_profile_id: "generic_graph_path_default",
+    reasoner_adapter: "generic_graph_path",
+  } satisfies Pick<
+    RunReasoningMetadata,
+    "reasoning_profile_id" | "reasoner_adapter"
+  >;
+}
+
+function buildCaseReasoningMetadata(
+  caseItem: RootLensRuntimeCase,
+): RunReasoningMetadata {
+  const caseRecord = caseItem as unknown as Record<string, unknown>;
+  const caseLevel = readReasoningMetadata(caseRecord.reasoning_metadata);
+  const analysisLevel = readReasoningMetadata(
+    isRecord(caseRecord.analysis) ? caseRecord.analysis.reasoning_metadata : null,
+  );
+  const inferred = inferReasoningProfileForDataset(caseItem.dataset);
+
+  return {
+    reasoning_profile_id:
+      caseLevel?.reasoning_profile_id ??
+      analysisLevel?.reasoning_profile_id ??
+      inferred.reasoning_profile_id,
+    reasoner_adapter:
+      caseLevel?.reasoner_adapter ??
+      analysisLevel?.reasoner_adapter ??
+      inferred.reasoner_adapter,
+    selection_mode:
+      caseLevel?.selection_mode ?? analysisLevel?.selection_mode ?? "default",
+    requested_reasoning_profile_id:
+      caseLevel?.requested_reasoning_profile_id ??
+      analysisLevel?.requested_reasoning_profile_id ??
+      null,
+    requested_reasoner_adapter:
+      caseLevel?.requested_reasoner_adapter ??
+      analysisLevel?.requested_reasoner_adapter ??
+      null,
+    fallback_applied:
+      caseLevel?.fallback_applied ?? analysisLevel?.fallback_applied ?? false,
+    fallback_reason:
+      caseLevel?.fallback_reason ?? analysisLevel?.fallback_reason ?? null,
+  };
+}
+
+function buildRunReasoningMetadata(caseDetails: RunCaseDetail[]) {
+  const firstCaseMetadata = caseDetails[0]?.reasoning_metadata ?? null;
+  const inferred = inferReasoningProfileForDataset(caseDetails[0]?.dataset);
+
+  return {
+    reasoning_profile_id:
+      firstCaseMetadata?.reasoning_profile_id ?? inferred.reasoning_profile_id,
+    reasoner_adapter:
+      firstCaseMetadata?.reasoner_adapter ?? inferred.reasoner_adapter,
+    selection_mode: firstCaseMetadata?.selection_mode ?? "default",
+  };
 }
 
 function normalizeText(value: unknown, fallback = ""): string {
@@ -686,6 +807,7 @@ function buildCaseDetail(caseItem: RootLensRuntimeCase): RunCaseDetail {
     rankedRootCauses,
   });
   const visualEvidence = buildVisualEvidence(caseItem);
+  const reasoningMetadata = buildCaseReasoningMetadata(caseItem);
 
   return {
     case_id: caseItem.case_id,
@@ -707,6 +829,7 @@ function buildCaseDetail(caseItem: RootLensRuntimeCase): RunCaseDetail {
     path_graph: pathGraph,
     review_targets: reviewTargets,
     visual_evidence: visualEvidence,
+    reasoning_metadata: reasoningMetadata,
     analysis_notes: caseItem.analysis.notes,
   };
 }
@@ -862,6 +985,7 @@ function buildRunDetail(config: {
 }): RunDetail {
   const caseDetails = config.cases.map((caseItem) => buildCaseDetail(caseItem));
   const aggregate = aggregateCases(caseDetails);
+  const runReasoningMetadata = buildRunReasoningMetadata(caseDetails);
   const run = buildRunSummary({
     runId: config.runId,
     createdAt: config.createdAt,
@@ -910,6 +1034,7 @@ function buildRunDetail(config: {
     analysis: {
       top_k_paths: aggregate.topKPaths,
       ranked_root_causes: aggregate.rankedRootCauses,
+      reasoning_metadata: runReasoningMetadata,
     },
     summary: {
       run_id: run.run_id,
@@ -917,6 +1042,7 @@ function buildRunDetail(config: {
       evidence_count: run.evidence_count,
       review_target_count: aggregate.reviewTargets.length,
       path_count: aggregate.topKPaths.length,
+      pipeline: runReasoningMetadata,
     },
     cases: caseDetails,
     linked_entities: aggregate.linkedEntities,
@@ -947,7 +1073,7 @@ function selectCuratedRuntimeCases(
     const missing = PAPER_DEMO_CASE_IDS.filter(
       (caseId) => !casesById.has(caseId),
     );
-    throw new Error(`论文演示 mock 缺少预设 case：${missing.join(", ")}`);
+    throw new Error(`内置 Demo 缺少预设 case：${missing.join(", ")}`);
   }
 
   return selected;
@@ -1241,6 +1367,7 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
             required_fields: ["dataset", "object_name", "model_preset"],
           },
         ],
+        reasoning_profile_options: deepClone(MOCK_REASONING_PROFILE_OPTIONS),
         mvtec_model_presets: {
           default_preset: "mock-default",
           presets: [
@@ -1293,21 +1420,6 @@ function mergedRuns(seed: SeedBundle): RunDetail[] {
   );
 }
 
-function selectSeedRun(
-  seedRuns: RunDetail[],
-  options: { dataset?: string; mode?: UploadMode },
-): RunDetail {
-  return (
-    seedRuns.find(
-      (run) =>
-        run.run.dataset === options.dataset && run.run.mode === options.mode,
-    ) ??
-    seedRuns.find((run) => run.run.dataset === options.dataset) ??
-    seedRuns.find((run) => run.run.mode === options.mode) ??
-    seedRuns[0]
-  );
-}
-
 function findRunById(runs: RunDetail[], runId: string): RunDetail {
   const run = runs.find((item) => item.run.run_id === runId);
   if (!run) {
@@ -1315,117 +1427,6 @@ function findRunById(runs: RunDetail[], runId: string): RunDetail {
   }
 
   return deepClone(run);
-}
-
-function findCaseById(runs: RunDetail[], caseId: string): RunCaseDetail | null {
-  for (const run of runs) {
-    const match = run.cases.find((caseItem) => caseItem.case_id === caseId);
-    if (match) {
-      return deepClone(match);
-    }
-  }
-
-  return null;
-}
-
-function buildEnvelopeFromCase(
-  caseDetail: RunCaseDetail,
-  note?: string,
-): AnalyzeEnvelope {
-  const evidence = deepClone(
-    (caseDetail.generated_evidence ?? {}) as Record<string, unknown>,
-  );
-  const analysis = {
-    linked_entities: caseDetail.linked_entities ?? [],
-    correction_candidates: caseDetail.correction_candidates ?? [],
-    top_k_paths: caseDetail.top_k_paths ?? [],
-    ranked_root_causes: caseDetail.ranked_root_causes ?? [],
-    note: note ?? null,
-  };
-
-  return {
-    case: {
-      case_id: caseDetail.case_id,
-      dataset: caseDetail.dataset,
-      label: caseDetail.case_label ?? caseDetail.label ?? caseDetail.case_id,
-      observation_count: Array.isArray(evidence.observations)
-        ? evidence.observations.length
-        : 0,
-    },
-    evidence,
-    analysis,
-    evidence_with_analysis: {
-      ...evidence,
-      kg_analysis: analysis,
-    },
-    workflow_steps: [
-      {
-        step_id: "analysis",
-        title: "模拟分析",
-        status: "completed",
-        summary: note ?? "模拟分析接口已返回可复核的结果载荷。",
-        details: {
-          case_id: caseDetail.case_id,
-        },
-      },
-    ],
-    claim_boundary: CLAIM_BOUNDARY,
-  };
-}
-
-function applyMockWhatIf(
-  caseDetail: RunCaseDetail,
-  request: WhatIfRequest,
-): AnalyzeEnvelope {
-  const envelope = buildEnvelopeFromCase(
-    caseDetail,
-    "模拟假设分析已重新计算并返回可复核的结果载荷。",
-  );
-  envelope.evidence = {
-    ...envelope.evidence,
-    anomaly_type: request.anomaly_type,
-    location:
-      request.location ?? (envelope.evidence.location as string | null) ?? null,
-    morphology:
-      request.morphology ??
-      (envelope.evidence.morphology as string | null) ??
-      null,
-    severity:
-      request.severity ?? (envelope.evidence.severity as number | null) ?? null,
-    confidence:
-      request.confidence ??
-      (envelope.evidence.confidence as number | null) ??
-      null,
-    raw_evidence: {
-      ...(isRecord(envelope.evidence.raw_evidence)
-        ? envelope.evidence.raw_evidence
-        : {}),
-      variables: request.variables ?? [],
-      log_events: request.log_events ?? [],
-    },
-  };
-  envelope.evidence_with_analysis = {
-    ...envelope.evidence,
-    kg_analysis: envelope.analysis,
-  };
-
-  const rankedRootCauses = Array.isArray(envelope.analysis.ranked_root_causes)
-    ? deepClone(envelope.analysis.ranked_root_causes as RankedRootCause[])
-    : [];
-  if (rankedRootCauses.length > 1) {
-    const [first, second, ...rest] = rankedRootCauses;
-    envelope.analysis.ranked_root_causes = [
-      { ...second, rank: 1, score: normalizeScore(second.score, 0) + 0.03 },
-      {
-        ...first,
-        rank: 2,
-        score: Math.max(0, normalizeScore(first.score, 0) - 0.02),
-      },
-      ...rest.map((item, index) => ({ ...item, rank: index + 3 })),
-    ];
-  }
-
-  return envelope;
 }
 
 function parseDraftLines(request: KGSourceDraftRequest): KGSourceDraftEdge[] {
@@ -2080,30 +2081,8 @@ export const mockBackend = {
   },
   async uploadRun(_request: UploadRequest): Promise<RunDetail> {
     throw new Error(
-      "论文演示 mock 模式不支持上传，请切换到 backend 模式后再上传真实数据。",
+      "内置 Demo 模式不支持上传，请切换到 backend 模式后再上传真实数据。",
     );
-  },
-  async analyze(request: AnalyzeRequest): Promise<AnalyzeEnvelope> {
-    const { seed } = await loadCurrentState();
-    const runs = mergedRuns(seed);
-    if (request.case_id) {
-      const caseDetail = findCaseById(runs, request.case_id);
-      if (caseDetail) {
-        return buildEnvelopeFromCase(caseDetail);
-      }
-    }
-    const seedRun = selectSeedRun(runs, {
-      dataset: request.evidence?.dataset ?? undefined,
-    });
-    return buildEnvelopeFromCase(seedRun.cases[0]);
-  },
-  async whatIf(request: WhatIfRequest): Promise<AnalyzeEnvelope> {
-    const { seed } = await loadCurrentState();
-    const caseDetail = findCaseById(mergedRuns(seed), request.case_id);
-    if (!caseDetail) {
-      throw new Error(`未找到模拟案例：${request.case_id}`);
-    }
-    return applyMockWhatIf(caseDetail, request);
   },
   async submitReview(
     request: ReviewRequest,

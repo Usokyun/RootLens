@@ -1,6 +1,4 @@
 import type {
-  AnalyzeEnvelope,
-  AnalyzeRequest,
   DashboardBootstrap,
   KGDraftListRequest,
   KGDraftListResponse,
@@ -37,7 +35,6 @@ import type {
   RunDetail,
   RunSummary,
   UploadRequest,
-  WhatIfRequest,
 } from "@/api/contracts";
 
 const DEFAULT_API_BASE_URL =
@@ -151,8 +148,6 @@ export interface ApiClient {
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
-  analyze: (request: AnalyzeRequest) => Promise<AnalyzeEnvelope>;
-  whatIf: (request: WhatIfRequest) => Promise<AnalyzeEnvelope>;
   submitReview: (
     request: ReviewRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
@@ -247,24 +242,14 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
       if (request.defect_type) form.append("defect_type", request.defect_type);
       if (request.model_preset)
         form.append("model_preset", request.model_preset);
+      if (request.reasoning_profile_id)
+        form.append("reasoning_profile_id", request.reasoning_profile_id);
 
       return requestJson<RunDetail>(baseUrl, "/api/runs/upload", {
         method: "POST",
         body: form,
       });
     },
-    analyze: (request) =>
-      requestJson<AnalyzeEnvelope>(
-        baseUrl,
-        "/api/analyze",
-        jsonInit("POST", request),
-      ),
-    whatIf: (request) =>
-      requestJson<AnalyzeEnvelope>(
-        baseUrl,
-        "/api/what-if",
-        jsonInit("POST", request),
-      ),
     submitReview: (request) =>
       requestJson<{ status: string; record: Record<string, unknown> }>(
         baseUrl,

@@ -1,7 +1,5 @@
 import { createApiClient, type ApiClient } from "@/api/client";
 import type {
-  AnalyzeEnvelope,
-  AnalyzeRequest,
   DashboardBootstrap,
   KGDraftListRequest,
   KGDraftListResponse,
@@ -38,7 +36,6 @@ import type {
   RunDetail,
   RunSummary,
   UploadRequest,
-  WhatIfRequest,
 } from "@/api/contracts";
 import { getAppPreferences } from "@/services/app-preferences";
 import { getLocalSessionMeta } from "@/services/rootlens-data";
@@ -50,8 +47,6 @@ export interface RootLensService {
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
-  analyze: (request: AnalyzeRequest) => Promise<AnalyzeEnvelope>;
-  whatIf: (request: WhatIfRequest) => Promise<AnalyzeEnvelope>;
   submitReview: (
     request: ReviewRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
@@ -158,8 +153,6 @@ function withImportedReplayOverrides(
     bootstrap: replayService.bootstrap,
     listRuns: replayService.listRuns,
     getRun: replayService.getRun,
-    analyze: replayService.analyze,
-    whatIf: replayService.whatIf,
     submitReview: replayService.submitReview,
     listReviewLedger: replayService.listReviewLedger,
   };

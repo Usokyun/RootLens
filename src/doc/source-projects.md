@@ -2,6 +2,11 @@
 
 这份文档是给后续 LLM/Agent 使用的长期上下文入口，目标是避免每次都重新扫描两个上游项目。
 
+> **当前边界说明（2026-05-17）**
+>
+> 当前 RootLens 前端以 `src/doc/backend-integration-current.md` 为真值：真实建图、Evidence 处理与 RCA 推理由后端仓库承接；RootLens 仅保留 backend-first 工作台、内置 Demo 与成品回放导入。
+> `module-1/2/3` 等文档可继续作为历史背景资料阅读，但不再代表当前前端实现边界。
+
 ---
 
 ## 1. 主要路径
@@ -32,17 +37,20 @@
 
 如果后续 LLM 需要理解整体项目，请按这个顺序读取：
 
-1. RootLens：`src/doc/system-design.md`
-2. RootLens：`src/doc/module-1-graph-construction.md`
-3. RootLens：`src/doc/module-2-unified-evidence.md`
-4. RootLens：`src/doc/module-3-rca-engine.md`
-5. RootLens：`src/doc/source-projects.md`
-6. `TEP_KG/docs/Root-KGD.md`
-7. `TEP_KG/docs/kg-build-status.md`
-8. `MVTec/KGTraceVis/README.md`
-9. `MVTec/KGTraceVis/docs/project_design.md`
-10. `MVTec/KGTraceVis/docs/evidence_schema.md`
-11. 再进入对应 `src/` 和 `scripts/`
+1. RootLens：`src/doc/backend-integration-current.md`
+2. RootLens：`src/doc/source-projects.md`
+3. `TEP_KG/docs/Root-KGD.md`
+4. `TEP_KG/docs/kg-build-status.md`
+5. `MVTec/KGTraceVis/README.md`
+6. `MVTec/KGTraceVis/docs/project_design.md`
+7. `MVTec/KGTraceVis/docs/evidence_schema.md`
+8. 需要理解历史设计背景时，再读 RootLens：
+   - `src/doc/module-1-graph-construction.md`
+   - `src/doc/module-2-unified-evidence.md`
+   - `src/doc/module-3-rca-engine.md`
+   - `src/doc/frontend_handoff.md`
+   - 其他 roadmap / acceptance 文档
+9. 再进入对应 `src/` 和 `scripts/`
 
 原则：
 
@@ -133,15 +141,15 @@
 | 统一 Evidence | MVTec `evidence_schema.py` + adapters；TEP_KG `rbc.py` + `tep_variables.py` | `module-2-unified-evidence.md` |
 | 路线 1：多模态线索组织 | MVTec `pipeline.py` / `entity_linker.py` / path ranking | `module-3-rca-engine.md` §3 |
 | 路线 2：过程故障分析 | TEP_KG `root_kgd.py` / `rbc.py` / RFPA propagation | `module-3-rca-engine.md` §4 |
-| RootLens 可视化工作台 | 当前仓库 `src/views/` + MVTec `web/src`（借结构，不借 React 实现） | `system-design.md` §6 |
-| Paper Runtime | MVTec `paper/` + TEP_KG `docs/` | `system-design.md` |
+| RootLens 可视化工作台 | 当前仓库 `src/views/` + MVTec `web/src`（借结构，不借 React 实现） | `backend-integration-current.md` |
+| Paper Runtime | MVTec `paper/` + TEP_KG `docs/` | `backend-integration-current.md` + 上游 docs |
 
 ---
 
 ## 6. 给未来 LLM 的操作规则
 
 1. 不要把 `outputs/`、`runs/`、`data/external/` 直接当作项目事实源。
-2. 先读 `docs/`、`README.md`、`project_design.md`、`system-design.md`。
+2. 先读 `docs/`、`README.md`、`project_design.md`、`backend-integration-current.md`。
 3. 需要改接口时，先对齐 `schema`、`core`、`service`，不要直接从页面实现倒推。
 4. MVTec 的外层路径不是实际项目根，真正工作路径是：
    `'/Users/bytedance/my_project/MVTec/KGTraceVis'`

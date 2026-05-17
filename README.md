@@ -1,22 +1,57 @@
 # RootLens
 
-An interactive, knowledge graph-based visual analytics prototype for multi-source industrial root-cause analysis.
+RootLens 是一个面向工业异常分析的前端工作台，当前以 **backend-first** 方式运行：
 
----
+- 前端负责上传、浏览、筛选、联动展示、反馈与图谱工坊 UI
+- 后端负责真实的图谱构建、Evidence 处理、RCA 推理与持久化
 
-- 系统名：RootLens
-- 论文标题：*A Knowledge Graph-Based Method for Industrial Anomaly Detection and Root-Cause Analysis with Multi-Source Heterogeneous Evidence*
-- 投稿目标：ChinaVis
-- 技术栈：Vue 3 + TypeScript + Vite + Arco Design
+## 当前运行模式
+
+- **Backend**：连接真实后端 API（推荐）
+- **Demo**：使用仓库内置的演示快照
+- **Replay**：导入成品回放资产
+
+当前仅支持两类回放输入：
+
+1. `rootlens-runtime.json` + `unified-graphs.json`
+2. `rootlens-session-export.v1`
+
+不再支持从 `nodes/edges/evidence` 在浏览器端临时组装 runtime。
+
+## 开发
+
+```bash
+npm ci
+npm run dev
+```
+
+构建：
+
+```bash
+npm run build
+```
+
+测试：
+
+```bash
+npm test
+```
+
+默认后端地址为 `http://127.0.0.1:8081`，可在页面顶部切换数据源模式并修改地址。
 
 ## 文档
 
-设计文档见 `src/doc/`：
+优先阅读：
 
-- `framework.md` — 框架草案、分层设计、两条推理路线
-- `paper-meta.md` — 论文标题与 abstract
-- `graph-construction.md` — 图谱构建流程
-- `unified-evidence.md` — 统一 Evidence 构造
-- `graph-unification.md` — 图谱统一（可视化）
-- `pipeline-overview.md` — 端到端融合流程
-- `source-projects.md` — 上游项目路径与资产索引
+- `src/doc/backend-integration-current.md` — 当前有效的集成边界与运行模式
+- `src/doc/source-projects.md` — 上游项目路径、资产索引与阅读顺序
+
+历史背景文档：
+
+- `src/doc/module-1-graph-construction.md`
+- `src/doc/module-2-unified-evidence.md`
+- `src/doc/module-3-rca-engine.md`
+- `src/doc/frontend_handoff.md`
+- 其余 roadmap / acceptance 文档
+
+上述历史文档仅作背景参考，不代表当前前端实现边界。
