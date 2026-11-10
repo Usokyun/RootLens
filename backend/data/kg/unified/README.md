@@ -25,3 +25,20 @@ stored, but is not silently promoted to a source-supported cause discriminator.
 The raw public PDF, parsed text, model responses, failed builds and actual runs
 are local experiment artifacts under `backend/runs/unified_reasoning/`, not bundled
 training data. See the execution record and the final reproducibility guide.
+
+## Process-window seed
+
+`tep-working-graph.v2.json` uses exactly the same IR, core and global weights.
+Its original sources are the variable/disturbance documentation in `teprob.f`
+and actual controller code in `temain_mod.f` from the
+[public Braatz process archive](https://github.com/camaramm/tennessee-eastman-profBraatz).
+These describe process/control relationships, not a verified configuration of
+every downloaded data sequence. Thresholds absent from sources are declared
+heuristics. Controller comments are not treated as fault ground truth.
+
+The first source-generated graph missed cooling manifestations by requiring
+alternative changes simultaneously. The revised build permits alternatives;
+all three pre-fault windows returned no match, and the known fault families
+appeared among candidates for the tested post-fault windows. **Top-ranked families
+were not the known injected faults**. This seed demonstrates executable, traceable
+comparison, not fault-identification accuracy. The negative runs are retained.

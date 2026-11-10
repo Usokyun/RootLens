@@ -1354,6 +1354,7 @@ onMounted(() => {
                 <a-select v-model="buildForm.capability" aria-label="构图执行契约" style="width: 190px">
                   <a-option value="legacy">现有画像契约</a-option>
                   <a-option value="visual-region-v2">统一推理 · 图像 ROI</a-option>
+                  <a-option value="process-window-v2">统一推理 · 过程窗口</a-option>
                 </a-select>
                 <a-button type="primary" @click="handleBuild">生成构图</a-button>
                 <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>

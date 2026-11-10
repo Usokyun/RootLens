@@ -93,4 +93,81 @@ def visual_capabilities(objects=("bottle",)) -> CapabilityManifest:
 def capability_manifest(identity: str) -> CapabilityManifest:
     if identity == "visual-region-v2":
         return visual_capabilities()
+    if identity == "process-window-v2":
+        return process_capabilities()
     raise ValueError(f"unknown adapter capability: {identity}")
+
+
+def process_capabilities() -> CapabilityManifest:
+    return CapabilityManifest(
+        capability_id="process-window-v2",
+        observation_contract="process-measurements.v1",
+        target_role="mechanism",
+        context_external_ids=["Tennessee Eastman Process"],
+        variable_namespace="tep_braatz.channel",
+        variable_external_ids=[f"xmeas_{i}" for i in range(1, 42)]
+        + [f"xmv_{i}" for i in range(1, 12)],
+        scopes=["task_scope"],
+        features=[
+            _feature(
+                "detection.anomaly_present",
+                "boolean",
+                "Window PCA residual energy exceeds matched normal-data 99th-percentile limit.",
+            ),
+            _feature(
+                "statistics.mean_z",
+                "number",
+                "Window mean of (x-normal_mean)/normal_scale.",
+                "1",
+                True,
+            ),
+            _feature(
+                "statistics.std_z",
+                "number",
+                "Population std(ddof=0) of standardized samples in the window.",
+                "1",
+                True,
+            ),
+            _feature(
+                "statistics.slope_z",
+                "number",
+                "OLS slope of standardized samples against sample index.",
+                "1/sample",
+                True,
+            ),
+            _feature(
+                "residual.contribution",
+                "number",
+                "Normalized squared PCA residual share; complete vector retained, "
+                "not a cause probability.",
+                "1",
+                True,
+            ),
+            _feature(
+                "residual.energy",
+                "number",
+                "Mean squared PCA reconstruction residual energy in this window.",
+                "1",
+                True,
+            ),
+            _feature(
+                "residual.normal_limit",
+                "number",
+                "Matched normal-data 99th-percentile residual energy limit.",
+                "1",
+                True,
+            ),
+            _feature(
+                "series.raw_values",
+                "array_ref",
+                "Raw physical-unit channel samples; supporting asset, not a final-rank feature.",
+            ),
+        ],
+        notes=(
+            "One equipment/window query, all channels retained. Fit on separate normal data. "
+            "All statistics require that actual reference. Unspecified thresholds are heuristics. "
+            "Closed-loop control may maintain temperature while an actuator changes; do not demand "
+            "every connected mean must shift. Compare source-supported mechanism families, "
+            "not fault IDs. No case fault label or test values are provided to construction."
+        ),
+    )

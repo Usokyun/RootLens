@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import csv
 import json
+import uuid
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -183,6 +184,9 @@ def build_tep_dat_records(
         f.write(",".join(columns) + "\n")
         np.savetxt(f, normal, delimiter=",")
     reference = fit_tep_fault_free_profile(normal_csv, row_stride=1, n_components=n_components)
+    # This new producer publishes a distinct fitted-reference identity. The
+    # historical CSV producer's reference/entry contract remains unchanged.
+    reference = replace(reference, reference_id="normal-fit:" + uuid.uuid4().hex)
     _write_profile(reference, output / "normal_reference_profile.json")
     records = []
     for start, end in windows:
@@ -210,6 +214,16 @@ def build_tep_dat_records(
         record["extra"]["normal_reference_profile_path"] = str(
             output / "normal_reference_profile.json"
         )
+        window_path = output / f"window_{start}_{end}.npy"
+        np.save(window_path, window.rows, allow_pickle=False)
+        record["extra"]["window_array_path"] = str(window_path)
+        record["extra"]["normal_reference_assets"] = {
+            "reference_id": reference.reference_id,
+            "normal_uri": str(normal_csv),
+            "scaler_uri": str(output / "normal_reference_profile.json"),
+            "shape": [reference.n_rows, len(columns)],
+            "columns": columns,
+        }
         records.append(record)
     return records
 

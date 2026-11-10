@@ -90,7 +90,8 @@ def visual_frames(evidence: Evidence) -> list[EvidenceFrame]:
             observations.append(
                 {
                     "obs_id": (observation.obs_id if observation else evidence.case_id)
-                    + ":" + feature,
+                    + ":"
+                    + feature,
                     "subject_id": subject,
                     "feature_id": feature,
                     "value": value,
@@ -177,6 +178,10 @@ def visual_frames(evidence: Evidence) -> list[EvidenceFrame]:
 
 def evidence_frames(evidence: Evidence) -> list[EvidenceFrame]:
     contracts = {obs.value_type for obs in evidence.observations}
+    if "process-measurements.v1" in contracts:
+        from kgtracevis.adapters.unified_process import process_frames
+
+        return process_frames(evidence)
     if (
         "visual_region.v1" in contracts
         or evidence.source == "image"

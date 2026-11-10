@@ -84,6 +84,21 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
     }
     if len(candidate_keys) > 6:
         raise ValueError("at most 6 distinct candidates; group indistinguishable detailed causes")
+    conflicts = []
+    for signature in blueprint.signatures:
+        modes = {}
+        for cause in signature.causes:
+            modes.setdefault(cause.mechanism_key, set()).add(cause.mode)
+        for key, values in modes.items():
+            if len(values) > 1:
+                conflicts.append(
+                    f"signature={signature.signature_key}, mechanism={key}, modes={sorted(values)}"
+                )
+    if conflicts:
+        raise ValueError(
+            "One shared mechanism/signature has ONE expectation mode; harmonize all groups: "
+            + "; ".join(conflicts)
+        )
     for namespace, identifiers, kind in (
         (capabilities.context_namespace, capabilities.context_external_ids, "Object"),
         (capabilities.variable_namespace, capabilities.variable_external_ids, "Variable"),

@@ -48,12 +48,22 @@ defect/variable/spatial pattern, NEVER a mechanism-specific appearance invented 
 separate two causes. When several defect names describe alternative manifestations
 of the same process, prefer ONE signature with an ANY or intersects candidate-set
 condition rather than making the mechanism expect every alternative simultaneously.
+Conjunction is a physical assertion, not a way to make a rule look sophisticated.
+Do not require independent parallel circuits or alternative symptoms to change
+simultaneously. A persistent level shift does not require a nonzero slope in every
+window: level and slope are often ALTERNATIVE signatures, not mandatory AND inputs.
+Use any/at_least when sources support alternatives; all only for genuinely joint
+conditions. The compiler already joins every signature with the actual anomaly gate.
 Each signature declares context_external_id,
 observable conditions, and competing upstream CAUSES. Causes are not defect names:
 broken/chipped finish are signatures, while handling/thermal conditions are causes.
 Competing causes may share mechanism_key and mechanism_label (e.g. fracture) and
 remain tied when the adapter cannot distinguish them. Never invent discriminating
 measurements. Missing force/temperature/process observations go in unsupported_claims.
+Across the ENTIRE output use at most six candidate_key values, not six per signature.
+Within EACH signature, causes sharing mechanism_key MUST use the SAME mode, because
+one mechanism-to-signature relation has one expectation strength. Use expected for
+the common diagnostic effects. This mode is not your confidence in a root cause.
 Use exactly the manifest feature IDs, namespaces/subject IDs, units and named zones.
 Do NOT add detection.anomaly_present as a condition: the compiler adds that mandatory
 prerequisite itself to EVERY signature. Include meaningful appearance/geometry,
