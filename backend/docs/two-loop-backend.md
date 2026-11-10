@@ -48,7 +48,7 @@ RootKGD 图传播复用 `simulate_propagation`、`trace_path`、完整向量余�
 
 ### 服务与消费方
 
-API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **7365**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
+API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **10919**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
 
 前端owner已收到契约、真实RootKGD Run和媒体字段。demo owner已冻结13样本／3工作图与准备复演脚本，17个“样本×引擎”的中间入口API结果与独立CLI完全一致；实际视觉正负结果都保留。Git按后端、冻结演示、最终前端／验收分阶段本地提交，不push。
 
@@ -202,3 +202,15 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 最后完整候选（含演示caller的6项新回归）为 **566 passed / 4既有optional skipped，11.37s**；命令仍为`UV_CACHE_DIR=/private/tmp/rootlens-plan-uv-cache uv run --offline --no-sync pytest -q -ra`，日志`/private/tmp/rootlens-final-all-callers-pytest.log`。全部改变的Python／新测试Ruff、diff-check通过；未新增skip/xfail、未删有效断言，未同步／重装环境。
 
 确认94项任务均无queued/running后，仅手动重载专用作业为PID7365，health=ok；实际GET已确认推荐16／硬32／每签名32、两个presence角色及operator过滤。演示owner随后正式导入并启用恢复图`graph_538efc4369b64b46a879dd5a30652bc1`，任务`task_7898d4c1f0464b5287de779a7a47e7d3`→Run `c846c64a-2388-4c3a-9827-25c4cb770496`：`insufficient_evidence`、0排名，fine两项unobserved、presence两真、媒体可用、value_bindings为空。零新增模型／LLM调用，原构图task仍failed；消费证据`current-llm-contract/offline-recovery-api/`。这验证了资料恢复到可编辑／启用和真实否定推理，而不是用泛存在条件凑出Finish支持。
+
+## 最终操作态P1：推荐样例必须有配套图身份
+
+只读fresh context复现发现，新启用的严格源图被旧`syncGraph`作为隐式默认；加载推荐006 Frame后仍留在严格源图，和推荐就绪图结果不同。严格源图本身有效，不通过删除／禁用它掩盖问题。
+
+`GET /api/demo-library`新增group与sample级`graph_ref`。匹配使用白名单`working_graph`包与registry内已就绪的完整canonical知识，只有`graph_id`身份差异被忽略，不忽略条件、绑定、成本、别名或来源。原包身份只有内容仍一致时才优先；否则唯一启用内容匹配可用，多个同内容可用副本明确ambiguous，没有配套明确missing／disabled。资产或registry不可读为unavailable，GET不导入／改写图，下载不依赖registry可用。
+
+新增6项直接API回归：最新不同严格源图不冒充推荐图，内容一致的审核副本不越过原包身份，修改过的同ID图不匹配，disabled原图不被绕过，多副本歧义不猜，registry故障时下载仍可用。实际只读registry核对三个配套均ready：Bottle为7718原图（另有审核同内容副本），TEP为c6d唯一匹配，Wafer为5c3启用图（另有disabled副本）；不在代码写死这些UUID。
+
+当前完整默认pytest为 **572 passed / 4既有optional skipped，10.76s**，Ruff／diff-check通过。日志`/private/tmp/rootlens-demo-pairing-final-pytest.log`。既有模型、13Frame和默认3图未重跑或修改；前端明确区分隐式默认与手选／route意图后独立做GET-only实屏消费。
+
+核对95项已存任务均无进行中后，专用API手动重载为PID10919且health=ok。真实GET已确认三组配套都ready、13个平铺sample都有graph_ref；严格源图538仍启用，不是靠删图／禁用掩盖。前端随后消费此live合同验证隐式配对和显式保留。

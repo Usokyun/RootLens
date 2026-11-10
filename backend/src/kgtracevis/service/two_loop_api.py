@@ -21,6 +21,7 @@ from kgtracevis.adapters.unified_capabilities import (
     spatial_capabilities,
     visual_capabilities,
 )
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.service.candidate_conditions import (
     CandidateConditionRequest,
     condition_options,
@@ -395,9 +396,96 @@ def asset_path(asset):
     return path
 
 
+def demo_graph_reference(asset, records):
+    """Resolve the managed package by exact knowledge, never by recency or scenario alone."""
+    reference = {
+        "graph_id": None,
+        "title": "演示配套知识图谱",
+        "state": "unavailable",
+        "ready": False,
+        "enabled": False,
+        "available": False,
+        "note": "配套图包不可用。",
+        "asset_id": asset.get("asset_id") if isinstance(asset, dict) else None,
+        "download_url": asset.get("download_url") if isinstance(asset, dict) else None,
+        "candidates": [],
+    }
+    if not isinstance(asset, dict):
+        return reference
+    try:
+        package = UnifiedWorkingGraphPackage.model_validate_json(asset_path(asset).read_text())
+    except (OSError, ValueError):
+        reference.update(note="配套v2图包缺失或不可读，请检查演示资产。", download_url=None)
+        return reference
+    reference["title"] = package.title
+    if records is None:
+        reference["note"] = "工作图目录暂不可读，无法确认安装状态；配套图包仍可下载。"
+        return reference
+    expected = package.knowledge.model_dump(mode="json", exclude={"graph_id"})
+    matches = [
+        record
+        for record in records
+        if record.status == "ready"
+        and record.dataset == package.dataset
+        and record.knowledge is not None
+        and record.knowledge.model_dump(mode="json", exclude={"graph_id"}) == expected
+    ]
+    reference["candidates"] = [
+        {"graph_id": r.graph_id, "title": r.title, "ready": True, "enabled": r.enabled}
+        for r in sorted(matches, key=lambda r: r.graph_id)
+    ]
+    # A copied logical ID alone is not identity: the original reference is used
+    # only after the complete executable/source package content matched.
+    original_ids = {package.graph_id, package.knowledge.graph_id} - {None}
+    original = [r for r in matches if r.graph_id in original_ids]
+    usable = [r for r in matches if r.enabled]
+    choices = original if original else (usable if usable else matches)
+    if not choices:
+        reference.update(
+            state="missing", note="尚未安装内容一致的就绪配套图；请导入图包或明确选择其它图。"
+        )
+    elif len(choices) > 1:
+        reference.update(
+            state="ambiguous", note="存在多个同内容配套图，请明确选择；未按最新时间猜测。"
+        )
+    else:
+        chosen = choices[0]
+        reference.update(
+            graph_id=chosen.graph_id,
+            title=chosen.title,
+            ready=True,
+            enabled=chosen.enabled,
+            available=chosen.enabled,
+            state="ready" if chosen.enabled else "disabled",
+            note="已找到内容一致且已启用的演示配套图。"
+            if chosen.enabled
+            else "内容一致的配套图尚未投入使用，请先启用或明确选择其它图。",
+        )
+    return reference
+
+
+def library_with_graph_references():
+    manifest = read_library()
+    try:
+        records = working_graph_store().list_ready()
+    except WorkingGraphStorageError:
+        records = None  # Explicit unavailable state, not a false claim of missing installation.
+    for demo in manifest["demos"]:
+        reference = demo_graph_reference(demo.get("working_graph"), records)
+        demo["graph_ref"] = reference
+        for sample in demo["samples"]:
+            sample["graph_ref"] = copy.deepcopy(reference)
+    manifest["samples"] = [
+        {**sample, "demo_id": demo["id"]}
+        for demo in manifest["demos"]
+        for sample in demo["samples"]
+    ]
+    return manifest
+
+
 @router.get("/demo-library")
 def demo_library():
-    return call(read_library)
+    return call(library_with_graph_references)
 
 
 @router.get("/demo-library/assets/{asset_id}")

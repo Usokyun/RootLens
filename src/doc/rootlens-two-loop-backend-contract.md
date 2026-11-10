@@ -103,6 +103,8 @@ Source Blueprint将presence/context条件提到ALL前置，原ANY或at_least仅�
 - `GET /api/analyses/{run_id}/artifacts/{name}`：原图／mask／heatmap／输入等实际文件。
 - `GET /api/demo-library` → `{samples:[{sample_id,title,dataset,input_mode,description,source,available,...}]}`，仅列受管的公开演示资产。
 - 同时返回 `demos[]`（分组素材、图包、样本、配套数组、模型及来源）；每个资产有 `asset_id/download_url/available`。
+- 每个group、嵌套sample及平铺sample都有`graph_ref`：`{graph_id,title,state,ready,enabled,available,note,asset_id,download_url,candidates}`。`state=ready/disabled/missing/ambiguous/unavailable`；只有`ready`且`available=true`可在无明确选图意图时自动使用。匹配读取注册图包与现存canonical知识，除graph身份外完整内容必须相同；原包身份只有内容仍相同时优先，否则只选唯一启用匹配，多份无法确定则ambiguous，不按latest／同场景猜。GET不导图、不启用或覆盖图；registry不可读明确unavailable，白名单资产下载仍独立可用。
+- 推荐样例在前端只覆盖隐式默认选图；用户手选／route明确的图保留，并提示与配套图不同及切换动作。缺配套图时提示导入／启用或明确选图，不以最新启用的严格源图替代就绪演示图；源图对照仍可显式选择。
 - `GET /api/demo-library/assets/{asset_id}`：白名单资产下载，`Content-Disposition` 明确保留真实安全文件名与后缀（例如 `.jsonl`），可原名重新上传。
 - `POST /api/demo-library/{demo_id}/materials`：把原始资料实际登记到素材库，返回 `{materials:[...]}`；不偷偷导入预制图。重复点击复用同一素材，不覆盖原文件。
 
