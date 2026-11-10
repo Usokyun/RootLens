@@ -45,6 +45,9 @@ def test_raw_process_to_exported_frame_has_identical_rootkgd_result_without_back
     original = manager.store.analyses[task["result"]["run_id"]]
     assert original["cases"][0]["results"][0]["ranked_root_causes"]
     assert len(original["cases"][0]["process_trends"]) == 52
+    diagnostics = original["cases"][0]["results"][0]["authoring_diagnostics"]
+    assert diagnostics["grouping_basis"] == "actual_structural_projection"
+    assert diagnostics["evidence_usage"]["score_input_observation_count"] == 52
     reimport = {
         **request,
         "input_mode": "evidence",
@@ -81,6 +84,9 @@ def test_native_frame_never_reads_unmanaged_local_media_uri(tmp_path, monkeypatc
     assert task["status"] == "completed", task["error"]
     run = manager.store.analyses[task["result"]["run_id"]]
     assert run["cases"][0]["results"][0]["ranked_root_causes"]
+    diagnostics = run["cases"][0]["results"][0]["authoring_diagnostics"]
+    assert diagnostics["grouping_basis"] == "reachable_expectation_conditions"
+    assert diagnostics["grouping_status"] == "available"
     assert run["cases"][0]["media_status"] == "not_attached"
     assert run["cases"][0]["media_note"] == "只有统计与引用，原始媒体未附带。"
     assert run["cases"][0]["visual_evidence"] == []

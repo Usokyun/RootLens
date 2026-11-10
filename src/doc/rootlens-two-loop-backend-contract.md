@@ -98,6 +98,16 @@ unified 结果保留当前 `UnifiedReasoner.analyze` 的完整结果（U/C/A/J�
 
 RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution_mass / uncovered_contribution_mass / propagation_entropy / active_channel_count / coverage_penalty / entropy_penalty / structural_score / observed_channel_vector[52] / propagated_channel_vector[52] / channel_order`，实际复用原 `ranking_score`：`cosine - 0.12*covered_mass - 0.03*entropy`。没有旧 memory 或按 fault family 的加分。`propagation.graph_channel_coverage` 明示图上不可达通道与其残差贡献质量。
 
+### 本次知识可分辨性与观测覆盖
+
+新任务的每项`cases[].results[]`保存`authoring_diagnostics`（`schema_version=rootlens-candidate-discriminability.v1`），严格由该run的知识快照、Frame和实际推理结果生成，不改变候选或分数。历史run没有此字段时显示“未生成”，GET不会拿当前工作图补算。
+
+- `grouping_status=available/unavailable/incomplete`与`issues[]`说明诊断是否完整；搜索预算不足不把有效推理任务变失败。
+- unified的`grouping_basis=reachable_expectation_conditions`：`equivalence_groups[]`按可达`(pattern_id,mode)`签名分组；不同假设cost仍可同组，`cost_priors`单独显示先验，不能将分数差误认为数据区分。
+- RootKGD只用该次实际完整通道向量和评分分解分组，`grouping_basis=actual_structural_projection`；缺输入为`structural_inputs_unavailable`，不拿逻辑条件组替代传播评分。
+- `evidence_usage`保留总观测、已观测、条件grounding数与真实评分输入数，并列出`unreferenced_features`和`not_scored_features`。`condition_reference_status`与`score_input_status`区分完整、未知、正常门控未排名，未知不冒充0覆盖。
+- `candidate_checks`列出本次已有expectation/predicate checks；RootKGD明确`condition_checks_used_for_score=false`，这些条件仅供作者检查，不影响传播分数。
+
 ## 存储与运行
 
 任务和新分析使用指定 PG 的增量表，不重建既有表；输入／构图产物保留在 `backend/runs/two_loop_tasks`。工作图继续 PG canonical 包＋Neo4j 隔离投影。API 仍运行 8012，仅使用独立 PG 55433／Neo4j 57687，不操作普通库。

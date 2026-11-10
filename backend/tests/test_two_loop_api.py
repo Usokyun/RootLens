@@ -79,6 +79,23 @@ def test_inference_requires_enabled_graph_and_compatible_engine(client_runtime):
     assert "TEP" in response.json()["detail"]
 
 
+def test_history_without_diagnostics_is_not_enriched_from_current_graph(
+    client_runtime, monkeypatch
+):
+    client, manager, _ = client_runtime
+    historical = {"run_id": "old", "cases": [{"results": [{"outcome": "no_match"}]}]}
+    manager.store.save_analysis(historical)
+
+    def forbidden():
+        raise AssertionError("historical run must not load current graph")
+
+    monkeypatch.setattr(api, "working_graph_store", forbidden)
+    response = client.get("/api/analyses/old")
+    assert response.status_code == 200
+    assert response.json() == historical
+    assert "authoring_diagnostics" not in response.json()["cases"][0]["results"][0]
+
+
 def test_invalid_process_windows_rejected_before_running_backbone(client_runtime):
     client, manager, _ = client_runtime
     response = client.post(

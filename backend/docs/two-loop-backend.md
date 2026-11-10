@@ -135,3 +135,13 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 - 新回归实际走完整图API：导入副本→无绑定不匹配→PUT绑定→回读→新pipeline匹配且原值不变→删除→下次不匹配；已有pipeline快照不变。均为受控内存store／repository，不改演示图或真实数据库。
 
 服务重载前与前端协调空窗，并只读确认79个已存任务均无queued/running；专用作业重载后PID96453、health=ok，新目录HTTP实际可读。前端随后消费该接口，不重复调用模型。
+
+## 同次快照的可分辨性诊断
+
+独立方法owner实现纯模块`core/candidate_discriminability.py`；后端只在`two_loop_runtime.infer`的解释完成后调用并将`result.authoring_diagnostics`随run持久化。模块不读数据库、不调用模型、不重新运行推理，要求知识graph ID与Frame case ID对应本次结果。
+
+统一引擎按可达条件／期待模式签名显示数据无法区分的候选组，cost先验分开。RootKGD按真实52维传播／观测向量及结构评分项分组，作者条件检查不参与其评分。未生成完整结构输入时明确unavailable；诊断展开预算不足明确incomplete，不推翻已有推理。覆盖统计将条件grounding与实际评分输入区分，正常门控标记未排名。
+
+独立模块22项单测加运行时集成覆盖同签名不同成本、方向／std／slope条件、正常门控、缺向量、搜索不足、快照／Frame错配。原始过程→Frame导出→原生重传的结果（含新诊断）仍精确相等，RootKGD实际评分输入数为52。历史run GET保持原JSON，不用当前图补诊断，另有直接回归。
+
+最终候选的默认完整离线pytest为 **512 passed / 4 skipped，10.95s**，四项仍为上述既有外部opt-in验证。日志`/private/tmp/rootlens-two-hour-final-pytest.log`；修改代码及新测试Ruff、diff-check通过。依照当前AGENTS，仅用项目原生pytest/Ruff，跳过skill附带的bootstrap、telemetry、全局安装及flush，不执行或重试外部上报。未使用新增skip/xfail、付费模型或真实数据库测试来获得此结果。

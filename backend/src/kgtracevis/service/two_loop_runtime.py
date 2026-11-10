@@ -11,6 +11,7 @@ from pathlib import Path
 
 from kgtracevis.adapters.batch import evidence_from_records, load_records
 from kgtracevis.adapters.unified import evidence_frames
+from kgtracevis.core.candidate_discriminability import analyze_candidate_discriminability
 from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
@@ -147,6 +148,9 @@ def infer(context, request):
         for frame in group["frames"]:
             result = reasoner.analyze(frame, top_k=request.get("top_k", 5))
             result = explain_result(result, frame, package)
+            result["authoring_diagnostics"] = analyze_candidate_discriminability(
+                package.knowledge, frame, result, reasoner_id=request["reasoner_id"]
+            )
             results.append(result)
             completed += 1
             context.progress(
