@@ -160,6 +160,7 @@ def build_tep_dat_records(
     sampling_interval_seconds=180.0,
     fault_start_sample=None,
     n_components=18,
+    progress=None,
 ):
     """Braatz 52-channel reference .dat input; explicit one-based inclusive windows.
 
@@ -189,6 +190,14 @@ def build_tep_dat_records(
     reference = replace(reference, reference_id="normal-fit:" + uuid.uuid4().hex)
     _write_profile(reference, output / "normal_reference_profile.json")
     records = []
+    if progress:
+        progress(
+            "measurement",
+            "正常参考拟合完成；开始测量过程窗口",
+            completed=0,
+            total=len(windows),
+            unit="窗口",
+        )
     for start, end in windows:
         if start < 1 or end < start or end > len(sequence):
             raise ValueError("process window is outside the sequence")
@@ -225,6 +234,14 @@ def build_tep_dat_records(
             "columns": columns,
         }
         records.append(record)
+        if progress:
+            progress(
+                "measurement",
+                f"已测量样本 {start}–{end}",
+                completed=len(records),
+                total=len(windows),
+                unit="窗口",
+            )
     return records
 
 

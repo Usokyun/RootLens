@@ -160,6 +160,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    from kgtracevis.service.two_loop_api import router as two_loop_router
+
+    app.include_router(two_loop_router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

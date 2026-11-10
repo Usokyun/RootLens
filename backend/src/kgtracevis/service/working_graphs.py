@@ -40,6 +40,7 @@ class WorkingGraphRecord(BaseModel):
     knowledge: KnowledgePackage | None = None
     error: str = ""
     last_backup_path: str | None = None
+    enabled: bool = False
 
     @model_validator(mode="after")
     def one_executable_contract(self):

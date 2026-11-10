@@ -83,18 +83,29 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
     candidate_keys = {
         (s.context_external_id, c.candidate_key) for s in blueprint.signatures for c in s.causes
     }
-    if (
-        len(candidate_keys) > capabilities.max_candidates
-        or len(blueprint.signatures) > capabilities.max_signatures
-    ):
+    budget_errors = []
+    if len(candidate_keys) > capabilities.max_candidates:
+        budget_errors.append(
+            f"candidate_count={len(candidate_keys)} > allowed={capabilities.max_candidates}; "
+            f"candidate_keys={sorted(candidate_keys)}"
+        )
+    if len(blueprint.signatures) > capabilities.max_signatures:
+        budget_errors.append(
+            f"signature_count={len(blueprint.signatures)} > allowed={capabilities.max_signatures}"
+        )
+    if budget_errors:
         raise ValueError(
-            "exceeds capability authoring limits; group indistinguishable detailed candidates"
+            "exceeds capability authoring limits: "
+            + "; ".join(budget_errors)
+            + "; group source-indistinguishable detailed candidates; never drop source facts"
         )
     conflicts = []
     for signature in blueprint.signatures:
         if len(signature.causes) > capabilities.max_hypotheses_per_signature:
             raise ValueError(
-                "too many hypotheses per signature; compare classes via separate signatures"
+                f"signature={signature.signature_key}: hypotheses={len(signature.causes)} "
+                f"> allowed={capabilities.max_hypotheses_per_signature}; "
+                "group indistinguishable hypotheses, or compare classes via separate signatures"
             )
         modes = {}
         for cause in signature.causes:

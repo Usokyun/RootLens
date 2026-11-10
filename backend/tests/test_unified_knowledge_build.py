@@ -244,3 +244,36 @@ def test_authoring_scalar_membership_is_typed_lowering_not_an_ir_fallback(inputs
     condition["op"] = "candidate_contains"
     with pytest.raises(ValueError, match="candidate_set"):
         KnowledgePackage.model_validate(proposal["knowledge"])
+
+
+def test_progress_exposes_first_validation_error_and_unique_repair(inputs, tmp_path):
+    units, cap, valid = inputs
+    llm, events = FakeLLM(["{}", json.dumps(valid)]), []
+    compile_unified_knowledge(
+        units,
+        cap,
+        llm_client=llm,
+        output_dir=tmp_path / "visible-repair",
+        title="中文知识",
+        dataset="mvtec",
+        max_repairs=1,
+        progress=lambda stage, label, **details: events.append((stage, label, details)),
+    )
+    calls = [e for e in events if e[0] == "llm"]
+    assert len(calls) == 2 and llm.calls == 2
+    assert calls[0][2]["max_calls"] == 2
+    assert calls[1][2]["attempt"] == 2
+    assert "唯一一次" in calls[1][1]
+    failures = [e for e in events if "validation_error" in e[2]]
+    assert len(failures) == 1
+    assert failures[0][0] == "validation"
+    assert events[-1][0] == "compilation"
+
+
+def test_new_authoring_budgets_cover_source_families_without_silent_truncation():
+    from kgtracevis.adapters.unified_capabilities import process_capabilities
+
+    for capability in (visual_capabilities(), process_capabilities()):
+        assert capability.max_candidates == 16
+        assert capability.max_hypotheses_per_signature == 16
+        assert capability.max_signatures >= 8

@@ -44,6 +44,9 @@ def visual_capabilities(objects=("bottle",)) -> CapabilityManifest:
         target_role="mechanism",
         context_external_ids=list(objects),
         scopes=["task_scope"],
+        max_candidates=16,
+        max_signatures=8,
+        max_hypotheses_per_signature=16,
         features=[
             _feature(
                 "detection.anomaly_present",
@@ -113,6 +116,9 @@ def process_capabilities() -> CapabilityManifest:
         variable_external_ids=[f"xmeas_{i}" for i in range(1, 42)]
         + [f"xmv_{i}" for i in range(1, 12)],
         scopes=["task_scope"],
+        max_candidates=16,
+        max_signatures=12,
+        max_hypotheses_per_signature=16,
         features=[
             _feature(
                 "detection.anomaly_present",
