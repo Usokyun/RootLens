@@ -35,6 +35,20 @@
 
 **验收：**先打开另一场景历史，再选新图并使用，必须进入该图的输入区；后续提交的 graph_id 与用户选择一致，历史结果仍能单独打开。
 
+### `91adaf1` 后追加的 P1：推荐输入不能继承最新启用图
+
+严格源恢复图 `graph_538efc4369b64b46a879dd5a30652bc1` 启用后，又出现一种不同的错配：全新会话默认选到它，加载推荐 006 的 Evidence 后仍保留它，而不是与该样例配套的适配图 `graph_7718009df1d94a288f99d1e428487679`。图名本身可区分，但旧 `loadDemo()` 只切场景、`syncGraph()` 保留当前/首个启用图，没有样例配套身份。此前恢复图对 006 正确返回不足，不能因此让推荐入口默认得到这张不配套图。
+
+这项追加修复分别提交为后端 `b2ae8aa`、前端 `ebbb322`：示例 group/sample 的 `graph_ref` 按配套包的实际 canonical 内容解析，原包身份只有内容仍相同时才优先；不按场景、标题或最新顺序猜测。missing、disabled、ambiguous、unavailable 不回退别的图。前端持久区分 implicit 默认与 explicit 手选/携图意图：推荐输入只自动替换隐式默认；明确指定严格源图仍保留，并提示可能无匹配/证据不足，提供明确切换配套图的动作。没有删除、停用或隐藏严格图与审核副本。
+
+独立新 context、1440×900、GET guard 的最后实屏消费已通过：
+
+- fresh 的隐式初始图虽为 538，推荐 006/Evidence 载入后精确选中 7718，并显示“已选择样例配套图”。
+- 真实下拉选 538，或在图页点击“使用此图分析”明确携带 538，再加载 006，均保持 explicit 538 与不同配套图提示；点击切换后才选 7718，样例、图片和 Evidence 模式均不清除。
+- 普通 Wafer 历史仍恢复原结果；随后进入新分析保留明确 538，不由历史图或推荐默认覆盖。现场三组 13 个样例引用均 ready：Bottle 7718、TEP c6d、Wafer 5c3。异常配套状态使用后端 API 与针对测试的有效证据，没有破坏演示图去重复构造。
+
+最后走查未提交分析、调用模型或产生写请求，也没有 JS 错误；独立浏览器已关闭。修复前证据为 `fresh-demo-selection-check.json`、`12-fresh-recommended-006-selection.png`；修复后为 `demo-graph-intent-after-check.mjs/.json`、`13-fresh-paired-006-after.png`、`14-explicit-strict-006-after.png`、`15-explicit-paired-switch-preserves-input.png`。这些均位于 `backend/runs/two_loop_demo/system-assessment/kg/incremental/`。
+
 ## 2. 概念不匹配要分三类，不能都叫“缺测”或都做别名替换
 
 真实负例是新制作任务 `task_6e68de18e2c74c30b51503b1c851ebe4` 的图 `graph_3a24629…`，在运行 `ab57734f-589c-4b0b-b978-a28de08ab609` 中得到证据不足。
@@ -117,7 +131,7 @@ RootKGD 从当前图提取通道足迹，执行有向衰减传播，将全 52 �
 
 | 次序 | 改什么 | 当前状态与验收重点 |
 | --- | --- | --- |
-| 1 | 新图分析意图优先于历史恢复 | 独立实屏通过：旧 Wafer 历史 → 新玻璃图立即进入该图的新输入区；普通刷新仍恢复原历史。 |
+| 1 | 新图分析意图与推荐配套默认各守其边界 | 独立实屏通过：明确新图不被历史覆盖；推荐 006 的隐式默认精确配 7718，明确 538 仍保留且可主动切换，不清输入。 |
 | 2 | 有限类别共用目录，制作/编辑校验真实取值域 | 已读取实际 API 并实屏确认：形态为 linear/spot/scattered/dense，位置为 edge/surface；开放 appearance 单独提示，不伪装成封闭部位本体。 |
 | 3 | 空图可新增/删除有依据的特征值等价映射 | 作者已走表单新增/保存/运行/删除；独立消费确认当前副本为空，旧运行仍保留已应用绑定及原图快照。映射仅支持 category/candidate_set，后端拒绝数值特征。 |
 | 4 | 候选可分辨性与未引用观测诊断 | 新运行持久化、正例/正常/不足与 RootKGD 实屏已通过：静态同签名组与本次支持状态分开，RootKGD 分开作者条件和完整结构输入；旧运行明确没有诊断，不补算当前图。 |
@@ -209,4 +223,6 @@ RootKGD 从当前图提取通道足迹，执行有向衰减传播，将全 52 �
 
 真实任务阶段及有界修复、缺测/阴性/冲突区分、严格类型/单位/范围绑定、完整 Frame 与图快照、可执行规则表单、持久保存及备份、完整图包交换都已经有用。**当前通用性主要在 typed Evidence、可执行条件、图快照与解释器插件**，不是已解决跨时空关系或真正原因可区分性。上轮 TEP 原始↔Frame 精确复算、MVTec 与 Wafer 源边/媒体证据继续有效；本轮已另外完成 RootKGD v2 的同 Frame、实际路径及原始↔Frame 消费，没有拿旧数值替代。近期应沿这些能力接通“发现不适配 → 定位 → 修改 → 用同一 Evidence 检验”的短路径，建立观测约束下的知识编译与对照验收，而不是推翻三页、先换更大 backbone 或另造推理平台。
 
-测试按阶段区分：`7c5e838` 清零原有实际 23 项失败时为 **478 passed / 4 既有 optional skips**；加入目录、诊断和候选条件后 `13d8d4f` 为 531/4；投影修复 `153eea3` 为 **538 passed / 4 skipped**。最后加入来源预算、presence 安全和 6 项 demo 调用方测试，原 backend owner 全量原生 pytest 为 **566 passed / 4 既有 skips（11.37 秒）**，Ruff 与 whitespace 检查通过。没有删有效测试或新增 skip/xfail；这与较早验收的历史失败不是同一候选。最终前端 `6854ad7` 的原生 Vitest 为 **17 文件 / 84 项通过**，类型与生产构建通过，记录见 `src/doc/rootlens-two-loop-frontend.md`。独立审核复用了这些有效测试结果，只补上述实际 GUI、保存产物、源边和状态消费，没有重复全矩阵。
+测试按阶段区分：`7c5e838` 清零原有实际 23 项失败时为 **478 passed / 4 既有 optional skips**；加入目录、诊断和候选条件后 `13d8d4f` 为 531/4；投影修复 `153eea3` 为 **538 passed / 4 skipped**；加入来源预算、presence 安全和 6 项 demo 调用方测试后为 566/4。前端 `6854ad7` 的 17 文件 / 84 项结果与 `91adaf1` 的文档收口属于追加推荐配套 P1 前的阶段。
+
+`91adaf1` 后的最终配套修复候选：后端 **572 passed / 4 既有 optional skips（10.76 秒）**，Ruff 与 whitespace 检查通过，日志 `/private/tmp/rootlens-demo-pairing-final-pytest.log`；前端 **18 文件 / 97 项 Vitest 通过**，类型与生产构建通过，记录见 `src/doc/rootlens-two-loop-frontend.md`。没有删有效测试或新增 skip/xfail。独立审核复用了这些有效测试结果，只补上述实际 GUI、保存产物、源边和状态消费，没有重复全矩阵。

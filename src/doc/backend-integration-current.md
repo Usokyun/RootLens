@@ -89,6 +89,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 - **快照知识诊断**：解释完成后保存本次条件事实真／假／未知、排名资格、同签名组与真实评分输入；成本先验独立展示。历史 run 缺字段时不以当前知识补算。
 - **任务与分析**：Postgres 增量表保存真实事件、输入及完整结果；重启把未完成任务标成 interrupted，失败／中断手动重试创建新任务，不悄悄重复付费步骤。历史分析固定图快照，不随改图重算。
 - **资产**：`backend/data/demo/two_loop/manifest.json` 是唯一受管演示清单，小包／真实 Frame 入库，大型／受版权约束资料与权重留在忽略目录；准备脚本不改数据库。原模型、原程序、原始 LLM 蓝图、演示适配与真实失败分开保留。
+- **样例与选图**：`/api/demo-library` 的 group／sample `graph_ref` 按完整知识内容解析配套就绪图，不按最新或场景猜。仅隐式默认加载样例时自动配对；手选／携图意图保留并可明确切换。缺失、未启用、歧义或不可读明确显示，不在GET导入或改写图。
 
 玻璃原图的拍摄部位未确认，当前用“玻璃边缘缺损”，不宣称已定位瓶口。厂家 Finish 资料是演示迁移知识，候选仍需工艺证据区分。Wafer 输出图案家族，不直接命名制造原因。数值评分均不是概率；正常、无匹配、证据不足与并列是有效结果。
 
@@ -97,6 +98,8 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 本次方法变更后仅重新验证受影响的4个TEP×RootKGD v2组合：正式API与CLI候选、名次、分数、全部组件及outcome精确一致，52曲线／评分输入和真实连续源路径通过。d04另做当前原始 `.dat`＋正常参考→下载实际Frame→普通上传，三窗口结果与52曲线精确一致。原17项（13统一＋4 Root v1）按历史保留，13个未改动统一组合不重跑；默认13Frame／3图未修改。当前4项新旧排名不变，d01／d05错误仍存在；版本与新Run索引在 `backend/data/demo/two_loop/verification-summary.json`。
 
 本次新公开PDF任务实际2调用后因当时硬16失败；从捕获的17候选最终响应离线恢复时，分别修正预算配置与泛presence充分分支，明确记录 `semantic_change=true`，原task仍失败、无新模型调用。恢复图正式导入／启用后，006 Frame执行为不足而非诊断成功：细Finish条件未知，未加粗→细等价绑定。原始响应、编译变化、当前API事实及尚未覆盖的有限值／binding分支见演示手册；可入库完整对照包在 `backend/data/demo/two_loop/graphs/source-finish-recovered.json`，恢复provenance同目录。独立验证图不替换默认演示图。
+
+当前源码完整原生pytest为 **572 passed／4既有optional skipped**，前端Vitest **18文件／97项通过**、类型与生产构建通过；阶段日志与独立消费见[系统评估](../../backend/docs/two-loop-system-assessment.md)。4项跳过为3项指定隔离数据库opt-in和1项缺本机原TEP_KG对照，不是新屏蔽失败。较早阶段的失败与566／84等结果按原候选保留，不改写为本次复测。
 
 ## 2. 当前输入与分析入口
 

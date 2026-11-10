@@ -214,3 +214,5 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 当前完整默认pytest为 **572 passed / 4既有optional skipped，10.76s**，Ruff／diff-check通过。日志`/private/tmp/rootlens-demo-pairing-final-pytest.log`。既有模型、13Frame和默认3图未重跑或修改；前端明确区分隐式默认与手选／route意图后独立做GET-only实屏消费。
 
 核对95项已存任务均无进行中后，专用API手动重载为PID10919且health=ok。真实GET已确认三组配套都ready、13个平铺sample都有graph_ref；严格源图538仍启用，不是靠删图／禁用掩盖。前端随后消费此live合同验证隐式配对和显式保留。
+
+前端与独立审核已分别完成GET-only实屏消费：fresh严格图538→推荐006改为配套7718，三场景配对、手选／携图保留、明确切换不清输入和普通历史恢复通过，无JS错误或写请求。前端最终完整Vitest为18文件／97项及build通过；backend最终572／4证据复用。后端／前端修复分别提交`b2ae8aa`／`ebbb322`，不重跑模型、改动默认图或追加推送。
