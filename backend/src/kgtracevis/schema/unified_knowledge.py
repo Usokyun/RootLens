@@ -55,6 +55,7 @@ class FeatureDefinition(UnifiedModel):
     unit: Identifier | None = None
     definition: Identifier
     requires_reference: bool = False
+    allowed_values: list[Identifier] | None = None
 
     @model_validator(mode="after")
     def unit_contract(self):
@@ -62,7 +63,21 @@ class FeatureDefinition(UnifiedModel):
             raise ValueError("numeric feature needs an explicit unit")
         if self.value_kind not in {"number", "interval"} and self.unit is not None:
             raise ValueError("non-numeric features do not carry a numeric unit")
+        if self.allowed_values is not None:
+            if self.value_kind not in {"category", "candidate_set"}:
+                raise ValueError("allowed_values requires a categorical feature")
+            if not self.allowed_values or len(set(self.allowed_values)) != len(self.allowed_values):
+                raise ValueError("allowed_values must be a nonempty unique finite vocabulary")
         return self
+
+    def validate_category_values(self, values: list[str], *, subject: str):
+        if self.allowed_values is not None:
+            unknown = sorted(set(values) - set(self.allowed_values))
+            if unknown:
+                raise ValueError(
+                    f"{subject}: feature={self.feature_id}, unknown category values={unknown}; "
+                    f"allowed_values={self.allowed_values}"
+                )
 
 
 class FocusSelector(UnifiedModel):
@@ -286,6 +301,9 @@ class KnowledgePackage(UnifiedModel):
                 binding.feature_id
             ].value_kind not in {"category", "candidate_set"}:
                 raise ValueError("value bindings require a registered categorical feature")
+            features[binding.feature_id].validate_category_values(
+                [binding.canonical_value], subject=f"value binding {binding.binding_id}"
+            )
             for other in self.value_bindings:
                 if (
                     binding.feature_id == other.feature_id
@@ -298,6 +316,16 @@ class KnowledgePackage(UnifiedModel):
             if observable.feature_id not in features:
                 raise ValueError(f"unregistered feature: {observable.feature_id}")
             feature = features[observable.feature_id]
+            category_values = (
+                [observable.operand.category]
+                if observable.operand.kind == "category"
+                else observable.operand.items
+                if observable.operand.kind == "candidate_set"
+                else []
+            )
+            feature.validate_category_values(
+                category_values, subject=f"observable {observable.predicate_id}"
+            )
             if isinstance(observable.subject_selector, EntitySelector):
                 if observable.subject_selector.entity_id not in entities:
                     raise ValueError("unknown observable subject entity")

@@ -277,3 +277,131 @@ def test_new_authoring_budgets_cover_source_families_without_silent_truncation()
         assert capability.max_candidates == 16
         assert capability.max_hypotheses_per_signature == 16
         assert capability.max_signatures >= 8
+
+
+@pytest.mark.parametrize("op", ["eq", "in"])
+def test_finite_category_unknown_operand_rejected_with_feature_and_values(inputs, op):
+    _, _, valid = inputs
+    data = valid["knowledge"]
+    data["observable_definitions"][0].update(
+        feature_id="geometry.morphology",
+        op=op,
+        operand={"kind": "category", "category": "irregular"}
+        if op == "eq"
+        else {"kind": "candidate_set", "items": ["linear", "compact"]},
+    )
+    with pytest.raises(ValueError, match=r"geometry.morphology.*unknown category.*allowed_values"):
+        KnowledgePackage.model_validate(data)
+
+
+def test_finite_category_error_is_visible_and_uses_existing_single_repair(inputs, tmp_path):
+    units, cap, valid = inputs
+    bad = json.loads(json.dumps(valid))
+    bad["knowledge"]["observable_definitions"][0].update(
+        feature_id="geometry.location", op="eq", operand={"kind": "category", "category": "upper"}
+    )
+    events, llm = [], FakeLLM([json.dumps(bad), json.dumps(valid)])
+    compile_unified_knowledge(
+        units,
+        cap,
+        llm_client=llm,
+        output_dir=tmp_path / "finite-repair",
+        title="有限词汇校验",
+        dataset="mvtec",
+        max_repairs=1,
+        progress=lambda stage, label, **details: events.append((stage, label, details)),
+    )
+    failures = [
+        details["validation_error"] for _, _, details in events if "validation_error" in details
+    ]
+    assert len(failures) == 1
+    assert all(term in failures[0] for term in ("geometry.location", "upper", "edge", "surface"))
+    assert llm.calls == 2
+
+
+def test_binding_external_term_is_open_but_finite_canonical_target_is_checked(inputs):
+    _, _, valid = inputs
+    data = valid["knowledge"]
+    data["value_bindings"] = [
+        {
+            "binding_id": "binding:external-line",
+            "feature_id": "geometry.morphology",
+            "external_value": "LegacyLine",
+            "canonical_value": "linear",
+            "source_assertion_ids": [data["source_assertions"][0]["assertion_id"]],
+        }
+    ]
+    assert KnowledgePackage.model_validate(data).value_bindings[0].external_value == "LegacyLine"
+    data["value_bindings"][0]["canonical_value"] = "irregular"
+    with pytest.raises(ValueError, match=r"value binding.*unknown category"):
+        KnowledgePackage.model_validate(data)
+
+
+def test_blueprint_explicit_equivalence_lowers_with_actual_source_locator(tmp_path):
+    source = tmp_path / "glossary.txt"
+    source.write_text(
+        "LegacyScratch and scratch are equivalent names for the same appearance. "
+        "Surface contact can leave a scratch mark."
+    )
+    units = parse_material(source, source_id="glossary", scenario="mvtec").units
+    assertion = dict(
+        text=source.read_text(), origin="source_explicit", source_unit_id=units[0].unit_id
+    )
+    blueprint = KnowledgeBlueprint.model_validate(
+        {
+            "title": "显式术语等价",
+            "signatures": [
+                {
+                    "signature_key": "mark",
+                    "label": "划痕",
+                    "context_external_id": "metal_nut",
+                    "conditions": [
+                        {
+                            "label": "外观",
+                            "feature_id": "appearance.semantic_candidates",
+                            "op": "candidate_contains",
+                            "operand": {"kind": "category", "category": "scratch"},
+                            "assertion": assertion,
+                        }
+                    ],
+                    "causes": [
+                        {
+                            "candidate_key": "contact",
+                            "label": "接触",
+                            "mechanism_key": "mark",
+                            "mechanism_label": "表面痕迹",
+                            "assertion": assertion,
+                        }
+                    ],
+                    "assertion": assertion,
+                }
+            ],
+            "value_bindings": [
+                {
+                    "binding_key": "legacy-scratch",
+                    "relation": "equivalent",
+                    "feature_id": "appearance.semantic_candidates",
+                    "external_value": "LegacyScratch",
+                    "canonical_value": "scratch",
+                    "assertion": assertion,
+                }
+            ],
+        }
+    )
+    cap = visual_capabilities(("metal_nut",))
+    proposal = CompiledProposal.model_validate(lower_blueprint(blueprint, cap, units))
+    validate_proposal(proposal, units, cap)
+    binding = proposal.knowledge.value_bindings[0]
+    assert binding.binding_id == "binding:legacy-scratch"
+    evidence = next(
+        s
+        for s in proposal.knowledge.source_assertions
+        if s.assertion_id in binding.source_assertion_ids
+    )
+    assert (evidence.source_id, evidence.source_unit_id) == ("glossary", units[0].unit_id)
+    assert json.loads(evidence.locator) == units[0].source_span
+    assert binding.external_value == "LegacyScratch" and binding.canonical_value == "scratch"
+    data = blueprint.model_dump(mode="json")
+    data["value_bindings"][0]["assertion"]["origin"] = "llm_proposed"
+    with pytest.raises(ValueError, match="source_explicit"):
+        KnowledgeBlueprint.model_validate(data)

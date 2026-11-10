@@ -48,7 +48,7 @@ RootKGD 图传播复用 `simulate_propagation`、`trace_path`、完整向量余�
 
 ### 服务与消费方
 
-API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **82606**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
+API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **96453**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
 
 前端owner已收到契约、真实RootKGD Run和媒体字段。demo owner已冻结13样本／3工作图与准备复演脚本，17个“样本×引擎”的中间入口API结果与独立CLI完全一致；实际视觉正负结果都保留。Git按后端、冻结演示、最终前端／验收分阶段本地提交，不push。
 
@@ -123,3 +123,15 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 当前四项skip均为既有可选外部验证：3项要求`ROOTLENS_TEST_DATABASES=1`与指定隔离PG／Neo4j，1项比较原TEP_KG checkout但本机未安装。未新增skip。
 
 同一默认离线命令最终为 **478 passed / 4 skipped，8.76s**；修改过的测试文件Ruff通过。全部有效断言保留，原来依赖机器状态的断言改为控制输入／依赖后验证真实行为。日志保存在本机临时目录 `/private/tmp/rootlens-test-cleanup-{before,after,final}.log`，不入库；本轮没有重跑backbone、LLM或数据库集成矩阵。
+
+## 两小时增强：制作词汇与显式等价绑定
+
+用户后续授权先推送验收基线，再按闭环增强；本阶段为2026-11-10 19:35:49–21:35:49 UTC。`a5faf68`已按正常非force流程推到`origin/codex/demo-two-loops`，本阶段后续commit只留本地。测试清零为`7c5e838`。
+
+- `schema/feature_catalog.py`集中维护kind、unit、定义、参考需求和有限类别；掩膜producer使用其中同一组常量，capability与LLM实际prompt复制同一目录，公开`GET /api/authoring/capabilities`供编辑器消费。定义使用中文、机器ID与词值不翻译。
+- 修正旧声明与真实输出漂移：morphology不再声称`irregular/compact`，位置不再声称`upper/lower/...`。有限类别未知operand和绑定canonical目标明确报错，可触发现有唯一修复。开放appearance不设伪枚举，不从粗外观补解剖信息。
+- Blueprint新增来源明确的`equivalent`词汇绑定，确定性降低到既有ValueBinding。实际source/unit/locator随映射保留；`llm_proposed`不能声称词汇等价。人工图编辑仍走完整PUT，不另造规则系统。
+- KnowledgeProgram按feature与procedure model建立绑定索引；条件比较使用映射，保留原观测和实际binding IDs。模型专用映射在同义全局映射上优先记录，但不允许重叠映射给出不同canonical值。
+- 新回归实际走完整图API：导入副本→无绑定不匹配→PUT绑定→回读→新pipeline匹配且原值不变→删除→下次不匹配；已有pipeline快照不变。均为受控内存store／repository，不改演示图或真实数据库。
+
+服务重载前与前端协调空窗，并只读确认79个已存任务均无queued/running；专用作业重载后PID96453、health=ok，新目录HTTP实际可读。前端随后消费该接口，不重复调用模型。

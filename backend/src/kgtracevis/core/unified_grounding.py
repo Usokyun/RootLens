@@ -178,18 +178,11 @@ class Grounding:
         if value is None or value.kind not in {"category", "candidate_set"}:
             return value, []
         procedure = self.procedures[observation.procedure_id]
-        mappings = {}
-        for binding in self.program.package.value_bindings:
-            if binding.feature_id == observation.feature_id and binding.procedure_model_id in {
-                None,
-                procedure.model_id,
-            }:
-                previous = mappings.get(binding.external_value)
-                if previous and previous.canonical_value != binding.canonical_value:
-                    raise ValueError(
-                        "overlapping feature-value bindings disagree for this procedure"
-                    )
-                mappings[binding.external_value] = binding
+        mappings = dict(self.program.value_bindings.get((observation.feature_id, None), {}))
+        if procedure.model_id is not None:
+            mappings.update(
+                self.program.value_bindings.get((observation.feature_id, procedure.model_id), {})
+            )
         values = [value.category] if value.kind == "category" else value.items
         applied = [mappings[v].binding_id for v in values if v in mappings]
         mapped = [mappings[v].canonical_value if v in mappings else v for v in values]

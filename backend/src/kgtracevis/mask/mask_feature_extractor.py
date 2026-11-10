@@ -5,6 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from kgtracevis.schema.feature_catalog import (
+    LOCATION_EDGE,
+    LOCATION_SURFACE,
+    MORPHOLOGY_DENSE,
+    MORPHOLOGY_LINEAR,
+    MORPHOLOGY_SCATTERED,
+    MORPHOLOGY_SPOT,
+)
+
 
 def normalize_mask_stats(
     stats: Mapping[str, Any] | None = None,
@@ -70,8 +79,8 @@ def derive_mask_location(stats: Mapping[str, Any]) -> str | None:
 
     x_norm, y_norm = centroid_norm
     if x_norm <= 0.2 or x_norm >= 0.8 or y_norm <= 0.2 or y_norm >= 0.8:
-        return "edge"
-    return "surface"
+        return LOCATION_EDGE
+    return LOCATION_SURFACE
 
 
 def derive_mask_morphology(stats: Mapping[str, Any]) -> str | None:
@@ -86,15 +95,15 @@ def derive_mask_morphology(stats: Mapping[str, Any]) -> str | None:
     area_ratio = _float_or_none(stats.get("area_ratio"))
 
     if eccentricity is not None and eccentricity >= 0.8:
-        return "linear"
+        return MORPHOLOGY_LINEAR
     if aspect_ratio is not None and aspect_ratio >= 3.0:
-        return "linear"
+        return MORPHOLOGY_LINEAR
     if component_count is not None and component_count >= 4:
-        return "scattered"
+        return MORPHOLOGY_SCATTERED
     if area_ratio is not None and area_ratio >= 0.35:
-        return "dense"
+        return MORPHOLOGY_DENSE
     if area_ratio is not None and area_ratio > 0.0:
-        return "spot"
+        return MORPHOLOGY_SPOT
     return None
 
 

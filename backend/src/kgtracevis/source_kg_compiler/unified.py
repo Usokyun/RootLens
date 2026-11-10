@@ -87,6 +87,9 @@ Within EACH signature, causes sharing mechanism_key MUST use the SAME mode, beca
 one mechanism-to-signature relation has one expectation strength. Use expected for
 the common diagnostic effects. This mode is not your confidence in a root cause.
 Use exactly the manifest feature IDs, namespaces/subject IDs, units and named zones.
+For features with allowed_values, categorical operands MUST use only those exact
+registered values. null allowed_values means an open vocabulary, not an empty
+vocabulary. Geometry location is an image-grid position, never a bottle part.
 Do NOT add detection.anomaly_present as a condition: the compiler adds that mandatory
 prerequisite itself to EVERY signature. Include meaningful appearance/geometry,
 process-variable or spatial conditions that the source and adapter support.
@@ -94,6 +97,13 @@ For an image ROI use subject_external_id=$focus and zone=null. For a process var
 use its exact manifest ID. For spatial densities select a declared zone.
 appearance.semantic_candidates uses op=candidate_contains and operand
 {kind:category,category:<short meaningful appearance label>} -- NOT candidate_set.
+Optional value_bindings may declare ONLY source-explicit vocabulary equivalence
+(relation=equivalent) with an actual located source assertion. Keep this list empty
+when no equivalence is stated. Similarity, causal association, broader/narrower terms
+and a missing anatomical detail are NOT equivalence: never map coarse
+cracked_or_missing_glass to broken_finish or chipped_finish. Bindings translate an
+external producer term to a canonical operand, optionally for an explicitly known
+procedure_model_id; they do not change the original observation or add evidence.
 Do not use arbitrary image position as an anatomical part or invent geometry thresholds
 to distinguish causes with identical observable effects. Use small simple conditions.
 Every assertion cites an actual source_unit_id with a faithful short paraphrase.

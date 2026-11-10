@@ -54,6 +54,11 @@ class KnowledgeProgram:
         self.bindings = {
             (x.namespace, x.external_id): x.target_id for x in self.package.subject_bindings
         }
+        self.value_bindings = {}
+        for binding in self.package.value_bindings:
+            self.value_bindings.setdefault((binding.feature_id, binding.procedure_model_id), {})[
+                binding.external_value
+            ] = binding
         self._branches: dict[str, tuple[ProofBranch, ...]] = {}
         self.projection = project_knowledge(self.package)
         self.edges = {x["edge_id"]: x for x in self.projection["edges"]}

@@ -60,10 +60,28 @@ class UnsupportedDraft(UnifiedModel):
     missing_features: list[str] = Field(min_length=1)
 
 
+class EquivalenceAssertionDraft(AssertionDraft):
+    """Vocabulary equivalence must be stated in the source, not hypothesized."""
+
+    origin: Literal["source_explicit"] = "source_explicit"
+    parameter_origin: Literal["source_explicit"] = "source_explicit"
+
+
+class ValueBindingDraft(UnifiedModel):
+    binding_key: Identifier
+    relation: Literal["equivalent"] = "equivalent"
+    feature_id: Identifier
+    external_value: Identifier
+    canonical_value: Identifier
+    procedure_model_id: Identifier | None = None
+    assertion: EquivalenceAssertionDraft
+
+
 class KnowledgeBlueprint(UnifiedModel):
     title: Identifier
     signatures: list[SignatureDraft] = Field(min_length=1, max_length=16)
     unsupported_claims: list[UnsupportedDraft] = Field(default_factory=list)
+    value_bindings: list[ValueBindingDraft] = Field(default_factory=list)
 
 
 def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
@@ -166,6 +184,18 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
                 return previous["predicate_id"]
         predicates.append(row)
         return row["predicate_id"]
+
+    value_bindings = [
+        {
+            "binding_id": "binding:" + binding.binding_key,
+            "feature_id": binding.feature_id,
+            "external_value": binding.external_value,
+            "canonical_value": binding.canonical_value,
+            "procedure_model_id": binding.procedure_model_id,
+            "source_assertion_ids": assertion(binding.assertion, f"source:value-binding:{i}"),
+        }
+        for i, binding in enumerate(blueprint.value_bindings)
+    ]
 
     seen = set()
     for si, signature in enumerate(blueprint.signatures):
@@ -315,6 +345,7 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
                 "title": blueprint.title,
                 "entities": entities,
                 "subject_bindings": bindings,
+                "value_bindings": value_bindings,
                 "feature_registry": [f.model_dump() for f in capabilities.features],
                 "observable_definitions": predicates,
                 "pattern_definitions": patterns,

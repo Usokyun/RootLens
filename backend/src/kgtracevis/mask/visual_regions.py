@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from kgtracevis.mask.mask_feature_extractor import summarize_mask_features
+from kgtracevis.schema.feature_catalog import MORPHOLOGY_LINEAR, MORPHOLOGY_SPOT
 from kgtracevis.schema.visual_reasoning import VisualRegion
 
 
@@ -76,9 +77,9 @@ def regions_from_mask(
                     "component_count": 1,
                     # Eccentricity .8 still permits a broad 1.67:1 ellipse/crescent.
                     # Reserve "linear" for >=3:1 bounding extent or a thin covariance axis.
-                    "morphology": "linear"
+                    "morphology": MORPHOLOGY_LINEAR
                     if max(x2 - x1, y2 - y1) / min(x2 - x1, y2 - y1) >= 3 or eccentricity >= 0.95
-                    else "spot",
+                    else MORPHOLOGY_SPOT,
                     "location": summary.get("location"),
                     "raw_ref": raw_ref,
                 }

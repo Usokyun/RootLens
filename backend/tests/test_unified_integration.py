@@ -164,6 +164,50 @@ def test_api_typed_contract_and_export(package, storage):
     )
 
 
+def test_value_binding_save_reopen_changes_next_run_not_existing_snapshot(package, storage):
+    from fastapi.testclient import TestClient
+
+    from kgtracevis.service.api import app
+
+    client = TestClient(app)
+    imported = client.post("/api/kg/working-graphs/import", json=package.model_dump(mode="json"))
+    assert imported.status_code == 200, imported.text
+    identity = imported.json()["graph_id"]
+    evidence = visual_evidence()
+    evidence.observations[0].value["semantic_candidates"] = ["LegacyScratch"]
+    old_pipeline = build_pipeline(graph_id=identity)
+    assert not old_pipeline.analyze(evidence).ranked_root_causes
+    exported = client.get(f"/api/kg/working-graphs/{identity}/package").json()
+    exported["knowledge"]["value_bindings"] = [
+        {
+            "binding_id": "alias:legacy-scratch",
+            "feature_id": "appearance.semantic_candidates",
+            "external_value": "LegacyScratch",
+            "canonical_value": "scratch",
+            "procedure_model_id": "vlm:test",
+            "source_assertion_ids": ["s:visual-design"],
+        }
+    ]
+    saved = client.put(f"/api/kg/working-graphs/{identity}/package", json=exported)
+    assert saved.status_code == 200, saved.text
+    reread = client.get(f"/api/kg/working-graphs/{identity}/package").json()
+    assert reread["knowledge"]["value_bindings"] == exported["knowledge"]["value_bindings"]
+    next_pipeline = build_pipeline(graph_id=identity)
+    result = next_pipeline.analyze(evidence)
+    assert len(result.ranked_root_causes) == 2
+    frame = evidence_frames(evidence)[0]
+    native = client.post(f"/api/reasoning/{identity}/analyze", json=frame.model_dump(mode="json"))
+    assert native.status_code == 200, native.text
+    fact = next(f for f in native.json()["grounded_facts"] if f["predicate_id"] == "q:scratch_cue")
+    assert fact["actual_values"][0]["items"] == ["LegacyScratch"]
+    assert fact["applied_value_binding_ids"] == ["alias:legacy-scratch"]
+    assert not old_pipeline.analyze(evidence).ranked_root_causes
+    reread["knowledge"]["value_bindings"] = []
+    assert client.put(f"/api/kg/working-graphs/{identity}/package", json=reread).status_code == 200
+    assert not build_pipeline(graph_id=identity).analyze(evidence).ranked_root_causes
+    assert len(next_pipeline.analyze(evidence).ranked_root_causes) == 2
+
+
 @pytest.mark.skipif(os.getenv("ROOTLENS_TEST_DATABASES") != "1", reason="isolated DB opt-in")
 def test_real_v2_registry_projection_save_and_reopen(package, tmp_path, monkeypatch):
     from urllib.parse import urlparse

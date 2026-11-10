@@ -15,6 +15,11 @@ from fastapi.responses import FileResponse
 from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from kgtracevis.adapters.unified_capabilities import (
+    process_capabilities,
+    spatial_capabilities,
+    visual_capabilities,
+)
 from kgtracevis.service.kg_materials import (
     get_kg_material,
     save_kg_material_upload,
@@ -99,6 +104,21 @@ def public_task(task, after_sequence=0):
 @router.get("/reasoners")
 def reasoners():
     return {"reasoners": REASONERS}
+
+
+@router.get("/authoring/capabilities")
+def authoring_capabilities():
+    """One public authoring contract, also supplied to the actual LLM compiler."""
+    return {
+        "capabilities": {
+            dataset: capability.model_dump(mode="json")
+            for dataset, capability in (
+                ("mvtec", visual_capabilities()),
+                ("tep", process_capabilities()),
+                ("wafer", spatial_capabilities()),
+            )
+        }
+    }
 
 
 @router.get("/tasks")

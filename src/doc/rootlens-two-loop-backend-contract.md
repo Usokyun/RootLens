@@ -13,6 +13,29 @@
 - `POST /api/kg/working-graphs/{graph_id}/enable`，JSON `{ "enabled": true }`：启用／停用。
 - `GET /api/reasoners`：`{reasoners:[{reasoner_id,title,datasets,description}]}`；ID 固定 `unified_abduction`、`tep_rootkgd`。
 
+### 制作能力与词汇绑定
+
+`GET /api/authoring/capabilities` → `{capabilities:{mvtec:CapabilityManifest,tep:CapabilityManifest,wafer:CapabilityManifest}}`。
+与实际LLM构图使用同一目录；`features[]` 给出 `feature_id/value_kind/unit/definition/requires_reference/allowed_values`。
+
+- `allowed_values=null`：开放词汇或非类别特征，不表示空集合。`appearance.semantic_candidates` 始终开放。
+- 有限值：`geometry.morphology=[linear,spot,scattered,dense]`，原始单ROI只产生前两种，外部聚合几何还可产生后两种；`geometry.location=[edge,surface]`，仅是图像网格位置；`classifier.pattern` 为独立模型的八类图案。
+- 新构图的有限类别operand及绑定canonical目标不在目录中时，validation明确报告feature、unknown值与allowed值，走已有一次有界修复，不静默替换或截断。旧包未声明`allowed_values`仍可读，不回写冻结图。
+
+人工绑定继续通过完整包 `knowledge.value_bindings` 新增／删除，再PUT保存。每项为：
+
+```json
+{
+  "binding_id":"alias:legacy-scratch", "feature_id":"appearance.semantic_candidates",
+  "external_value":"LegacyScratch", "canonical_value":"scratch",
+  "procedure_model_id":null, "source_assertion_ids":["source:glossary"]
+}
+```
+
+来源ID必须存在。映射只在同feature及指定模型（null表示全局）内生效，原观测及`actual_values`不改写，事实记录`applied_value_binding_ids`。保存／删除后下一次分析生效；历史运行与已编译快照不变。
+
+LLM Blueprint也可提供`value_bindings[]`：`binding_key/relation=equivalent/feature_id/external_value/canonical_value/procedure_model_id/assertion`；assertion只允许`origin=source_explicit`，由编译器保留实际source ID、unit ID与locator。没有明确等价来源就留空，不把相似、上位词或缺失部位当等价，尤其不将`cracked_or_missing_glass`补成具体`broken_finish/chipped_finish`。代码校验来源身份与可执行类型，等价语义仍需作者据来源判断。
+
 ## 真实异步任务
 
 - `GET /api/tasks?limit=50` → `{tasks:[Task]}`，最近任务优先。
