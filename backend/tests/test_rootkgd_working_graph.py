@@ -21,7 +21,8 @@ def test_current_graph_structural_score_has_full_52_channel_trace(inputs):
     knowledge, frame = inputs
     result = RootKGDReasoner(knowledge).analyze(frame)
     assert result["outcome"] == "supported"
-    assert result["scoring_method"] == "tep_rootkgd_propagation_v1"
+    assert result["scoring_method"] == "tep_rootkgd_propagation_v2"
+    assert result["propagation"]["projection_version"] == "rootkgd-host-channel.v2"
     assert result["propagation"]["fault_label_used"] is False
     assert result["propagation"]["memory_enabled"] is False
     assert len(result["propagation"]["observed_contribution_vector"]) == 52

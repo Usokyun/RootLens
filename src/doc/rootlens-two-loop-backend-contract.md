@@ -61,7 +61,7 @@ LLM Blueprint也可提供`value_bindings[]`：`binding_key/relation=equivalent/f
 
 没有选择来源时明确保存人工`declared_demo_heuristic`，不伪造source/unit/locator。删除移除本束predicate、pattern、expectation和作者assertion，保留借用的gate、既有来源和可复用目录定义；出现额外引用就拒绝删除并说明共享依赖。下次任务使用新快照，历史run不变。
 
-RootKGD不执行这些条件的阈值、AND/OR或mode惩罚；但新增pattern/expectation会改变真实传播结构，即使指向已有通道也可能改变路径权重。不能将“固定拓扑只改阈值分数不变”外推为“新增条件结构对RootKGD无效”。
+RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host／通道的逻辑期待集合化，并消除沿显式effect已被下游同通道期待覆盖的上游重复声明；重复同通道条件、等价pattern拆分不再制造额外信号或shortcut。新增原本未达的通道或显式effect关系仍可改变结构分数，不等于新条件结构一律无效。不同实际作用路径应通过明确mechanism/effect表达，不能靠多写逻辑pattern当成多条物理路径。
 
 ## 真实异步任务
 
@@ -109,7 +109,7 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚；但新增pattern/e
   "cases":[{
     "case_id":"...", "display_name":"样本 161–260", "evidence_frames":[{}],
     "results":[{
-      "case_id":"...", "outcome":"supported", "scoring_method":"tep_rootkgd_propagation_v1",
+      "case_id":"...", "outcome":"supported", "scoring_method":"tep_rootkgd_propagation_v2",
       "ranked_root_causes":[], "grounded_facts":[], "candidate_evaluations":[],
       "proof_graph":{}, "unused_observation_ids":[]
     }],
@@ -124,6 +124,8 @@ unified 结果保留当前 `UnifiedReasoner.analyze` 的完整结果（U/C/A/J�
 每个 case 另有 `media_status=available/not_attached` 与 `media_note`。普通 Frame 上传只含 URI 时不会任意读取本机路径或抓取 URL；未关联受管媒体则明确显示“只有统计与引用，原始媒体未附带”，数值推理仍执行。Demo 与本次原始分析登记的实际资产可关联：`visual_evidence[].url` 为图片／mask 预览，`process_trends=[{channel,samples}]` 为完整通道曲线，`wafer_map` 为原网格。`evidence_download_url` 指向本次 Frame 下载。
 
 RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution_mass / uncovered_contribution_mass / propagation_entropy / active_channel_count / coverage_penalty / entropy_penalty / structural_score / observed_channel_vector[52] / propagated_channel_vector[52] / channel_order`，实际复用原 `ranking_score`：`cosine - 0.12*covered_mass - 0.03*entropy`。没有旧 memory 或按 fault family 的加分。`propagation.graph_channel_coverage` 明示图上不可达通道与其残差贡献质量。
+
+当前`scoring_method=tep_rootkgd_propagation_v2`，`propagation.projection_version=rootkgd-host-channel.v2`。`propagation.projection`给出显式effect边数、规范host／通道集合边数、上游冗余链接数及每条链接的主来源／备选来源；保留真实effect方向和原传播／评分函数。主路径`source_edge_views`始终是实际源边组成的连续路径，`top_k_paths[].source_path_alternatives`单独保留等价或上游冗余声明的完整候选→通道源路径，不伪接到主路径。旧run保持原投影与分数；没有版本字段时仅显示“未记录”。
 
 ### 本次知识可分辨性与观测覆盖
 

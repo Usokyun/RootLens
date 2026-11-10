@@ -9,13 +9,17 @@ residual vector to the graph's expected affected-channel vector.
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 
+from kgtracevis.core.rootkgd_projection import (
+    PROJECTION_VERSION,
+    effect_source_prefixes,
+    project_rootkgd_graph,
+    source_path,
+)
 from kgtracevis.core.unified_grounding import Grounding
 from kgtracevis.kg.unified_compiler import KnowledgeProgram
 from kgtracevis.schema.unified_evidence import EvidenceFrame
 from kgtracevis.workflows.tep_root_kgd.propagation import (
-    default_relation_params,
     simulate_propagation,
     trace_path,
 )
@@ -52,7 +56,7 @@ class RootKGDReasoner:
             "schema_version": "rootlens-reasoning-result.v2",
             "case_id": frame.case_id,
             "graph_id": self.program.package.graph_id,
-            "scoring_method": "tep_rootkgd_propagation_v1",
+            "scoring_method": "tep_rootkgd_propagation_v2",
             "outcome": "no_match",
             "candidate_pool": [h.hypothesis_id for h in hypotheses],
             "grounded_facts": facts,
@@ -65,6 +69,8 @@ class RootKGDReasoner:
             "unused_observations": [],
             "propagation": {
                 "channel_order": CHANNELS,
+                "projection_version": PROJECTION_VERSION,
+                "projection": graph["projection"],
                 "observed_contribution_vector": vector,
                 "reused_functions": [
                     "simulate_propagation",
@@ -275,91 +281,7 @@ class RootKGDReasoner:
         return [values[c] for c in CHANNELS], observed
 
     def _propagation_graph(self, hypotheses):
-        """Collapse logical rule plumbing, preserving exact source projection edge paths.
-
-        Each pattern has one edge per stable channel. Multiple mean/std/slope atoms
-        on that channel are retained as trace alternatives, never added as signals.
-        """
-        nodes = {
-            n["node_id"]: {"entity_id": n["node_id"], **n} for n in self.program.projection["nodes"]
-        }
-        edges, logical = {}, {}
-        channel_entities = {
-            b.target_id
-            for b in self.program.package.subject_bindings
-            if b.namespace == "tep_braatz.channel" and b.external_id in CHANNELS
-        }
-
-        def add(identity, head, tail, family, source_edges, predicates=()):
-            edges[identity] = {
-                "edge_id": identity,
-                "head_id": head,
-                "tail_id": tail,
-                "relation_family": family,
-                "edge_weight": 1.0,
-            }
-            logical[identity] = {"source_edge_ids": source_edges, "predicate_ids": list(predicates)}
-
-        active_effects, active_expectations = set(), set()
-        for h in hypotheses:
-            world = self.program.hypothesis_world(h.hypothesis_id)
-            # The world's rule lists are canonical and source-bound.
-            for e in world[2]:
-                active_effects.add(e.rule_id)
-            for e in world[3]:
-                active_expectations.add(e.rule_id)
-        for rule in self.program.package.effect_rules:
-            if rule.rule_id in active_effects:
-                add(
-                    rule.rule_id,
-                    rule.from_id,
-                    rule.to_id,
-                    "FAULT_SOURCE",
-                    [rule.rule_id + "::from", rule.rule_id + "::to"],
-                )
-        patterns = set()
-        for rule in self.program.package.expectation_rules:
-            if rule.rule_id in active_expectations:
-                add(
-                    rule.rule_id,
-                    rule.from_id,
-                    rule.pattern_id,
-                    "OBSERVATION",
-                    [rule.rule_id + "::from", rule.rule_id + "::to"],
-                )
-                patterns.add(rule.pattern_id)
-        for pattern_id in sorted(patterns):
-            by_channel = defaultdict(list)
-            for predicate in sorted(self.program.footprint(pattern_id)):
-                definition = self.program.observables[predicate]
-                subject = getattr(definition.subject_selector, "entity_id", None)
-                if subject in channel_entities:
-                    by_channel[subject].append(predicate)
-            for subject, predicates in sorted(by_channel.items()):
-                predicate = predicates[0]
-                branch = next(
-                    b for b in self.program.branches(pattern_id) if predicate in b.predicates
-                )
-                _, source_edges = self.program.observation_path(predicate, pattern_id, branch)
-                add(
-                    pattern_id + "::channel::" + subject,
-                    pattern_id,
-                    subject,
-                    "OBSERVATION",
-                    list(reversed(source_edges)) + [predicate + "::binding"],
-                    predicates,
-                )
-        outgoing, incoming = defaultdict(list), defaultdict(list)
-        for edge in edges.values():
-            outgoing[edge["head_id"]].append(edge)
-            incoming[edge["tail_id"]].append(edge)
-        return {
-            "nodes": nodes,
-            "edges": edges,
-            "outgoing": outgoing,
-            "incoming": incoming,
-            "relation_params": default_relation_params(),
-        }, logical
+        return project_rootkgd_graph(self.program, hypotheses, CHANNELS)
 
     def _paths(
         self,
@@ -374,6 +296,7 @@ class RootKGDReasoner:
         propagated,
     ):
         paths = []
+        prefixes = effect_source_prefixes(self.program, hypothesis.hypothesis_id)
         for index in sorted(range(52), key=lambda i: (-vector[i] * propagated[i], CHANNELS[i])):
             channel = CHANNELS[index]
             target = channel_nodes.get(channel)
@@ -388,43 +311,35 @@ class RootKGDReasoner:
             )
             if not reduced:
                 continue
-            views, source_ids, predicates = [], [], []
+            source_ids, predicates, alternatives = [], [], []
             for identity in reduced:
                 step = logical[identity]
                 predicates.extend(step["predicate_ids"])
-                for edge_id in step["source_edge_ids"]:
-                    edge = self.program.edges[edge_id]
-                    reverse = edge["relation"] in {"INPUT_OF", "DEFINES"}
-                    views.append({"edge_id": edge_id, "reverse": reverse})
-                    source_ids.append(edge_id)
-            reduced_nodes = [hypothesis.hypothesis_id]
-            for edge_id in reduced:
-                node_id = graph["edges"][edge_id]["tail_id"]
-                reduced_nodes.append(node_id)
-            full_nodes = [hypothesis.hypothesis_id]
-            for view in views:
-                edge = self.program.edges[view["edge_id"]]
-                head, tail = (
-                    (edge["tail"], edge["head"])
-                    if view["reverse"]
-                    else (edge["head"], edge["tail"])
-                )
-                if head != full_nodes[-1]:
-                    raise ValueError("RootKGD source path is not contiguous")
-                full_nodes.append(tail)
+                source_ids.extend(step["source_edge_ids"])
+                alternatives.extend(step["source_path_alternatives"])
+            primary = source_path(self.program, source_ids, hypothesis.hypothesis_id, target)
+            full_nodes, views = primary["nodes"], primary["source_edge_views"]
             names = [graph["nodes"][n].get("label", n) for n in full_nodes]
-            assertion_ids = set()
-            for rows in (
-                self.program.package.effect_rules,
-                self.program.package.expectation_rules,
-                self.program.package.observable_definitions,
-                self.program.package.pattern_definitions,
-            ):
-                for row in rows:
-                    identity = getattr(row, "rule_id", None) or getattr(row, "predicate_id", None)
-                    identity = identity or getattr(row, "pattern_id", None)
-                    if identity in reduced or identity in predicates or identity in reduced_nodes:
-                        assertion_ids.update(row.source_assertion_ids)
+            source_alternatives, seen = [], {tuple(source_ids)}
+            for alternative in alternatives:
+                # A shared mechanism can have equivalent upstream declarations
+                # from other roots. Never show those as this candidate's path.
+                if alternative["host_id"] not in prefixes:
+                    continue
+                ids = prefixes[alternative["host_id"]] + alternative["source_edge_ids"]
+                if tuple(ids) in seen:
+                    continue
+                seen.add(tuple(ids))
+                expanded = source_path(self.program, ids, hypothesis.hypothesis_id, target)
+                source_alternatives.append(
+                    {
+                        **expanded,
+                        "kind": alternative["kind"],
+                        "expectation_rule_id": alternative["expectation_rule_id"],
+                        "pattern_id": alternative["pattern_id"],
+                        "predicate_ids": alternative["predicate_ids"],
+                    }
+                )
             paths.append(
                 {
                     "path_id": f"rootkgd:{frame.case_id}:{hypothesis.hypothesis_id}:{channel}",
@@ -433,7 +348,9 @@ class RootKGDReasoner:
                     "source_edge_ids": source_ids,
                     "source_edge_views": views,
                     "source_edges": [self.program.edges[i] for i in source_ids],
-                    "source_assertion_ids": sorted(assertion_ids),
+                    "source_assertion_ids": primary["source_assertion_ids"],
+                    "source_path_alternatives": source_alternatives,
+                    "projection_edge_ids": reduced,
                     "support_obs_ids": [observed[channel]],
                     "required_joint_fact_ids": [],
                     "channel": channel,
@@ -442,7 +359,8 @@ class RootKGDReasoner:
                     "observed_contribution": vector[index],
                     "scope_id": frame.task.scope_id,
                     "reason": (
-                        "候选沿当前知识关系传播至此通道；传播向量与全通道残差贡献进行结构比较。"
+                        "候选沿显式效应关系与规范化的host→通道足迹传播；"
+                        "同义逻辑期待只合并来源，不重复加信号。完整向量与残差贡献进行结构比较。"
                     ),
                     "interpretation": "structural_propagation_support_not_joint_condition_proof",
                 }

@@ -48,7 +48,7 @@ RootKGD 图传播复用 `simulate_propagation`、`trace_path`、完整向量余�
 
 ### 服务与消费方
 
-API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **99986**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
+API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **3195**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
 
 前端owner已收到契约、真实RootKGD Run和媒体字段。demo owner已冻结13样本／3工作图与准备复演脚本，17个“样本×引擎”的中间入口API结果与独立CLI完全一致；实际视觉正负结果都保留。Git按后端、冻结演示、最终前端／验收分阶段本地提交，不push。
 
@@ -154,8 +154,25 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 
 19项新测试覆盖三场景、四种signed/std/slope条件、三个现有mode、正常前置、来源和范围错误、依赖保护、完整API保存→同Frame异步推理→拆目标签名→撤销→结果精确恢复，以及历史run快照不变。与既有API/editor集合共 **35 passed / 2既有DB skipped**，不调模型／真实数据库。
 
-RootKGD源码与实算区分两种变动：固定结构只改阈值或mode不改变分数；新增独立pattern路径会改变传播。冻结d04、同一冷却入口温度候选向已有xmeas_9新增路径，结构分数从0.5854474293642781变为0.38634032056418194，即使std阈值1e6为假。新回归同时检查同通道新路径和原先未达通道的真实向量变化，不把逻辑C惩罚混入RootKGD。
+此operator交付时的RootKGD v1暴露表示耦合反例：固定结构只改阈值或mode不改变分数，但新增独立pattern路径会改变传播。冻结d04、同一冷却入口温度候选向已有xmeas_9新增路径，结构分数从0.5854474293642781变为0.38634032056418194，即使std阈值1e6为假。该阶段保留反例，下一节单独修复表示问题，不将逻辑C惩罚混入RootKGD。
 
 前端与reviewer交出无任务窗口后，只读确认80项任务无queued/running，专用作业重载为PID99986、health=ok。实际GET默认TEP目录返回52已绑定通道、中文定义与合法算子；此GET未改默认图。前端／reviewer随后只对副本进行无模型Frame消费。
 
 本operator阶段最终默认全pytest为 **531 passed / 4 skipped，11.00s**；Ruff与diff-check通过，日志`/private/tmp/rootlens-candidate-operator-final-pytest.log`。上述同通道新增路径改变Root评分是保留的表示耦合反例，后续投影归一化作为独立可恢复阶段处理，不把此阶段称为已修复该缺陷。
+
+## RootKGD v2：逻辑改写不再变成物理传播票
+
+独立投影模块`core/rootkgd_projection.py`规范化expectation管线，不改变`simulate_propagation`、有向衰减、完整52维向量、cosine／coverage／entropy或结构评分公式：
+
+1. 保留可达的每条显式effect关系，不将源图因果边消除成逻辑简写，也不只选一棵首次推导树。
+2. 同host／稳定通道的所有expectation、pattern和统计谓词映射为一条集合边，合并实际来源。等价AND拆分、重复pattern或同通道多统计谓词不新增传播票或额外衰减层。
+3. 若上游host的同通道期待已由显式effect严格可达的下游host覆盖，上游声明只作为备选provenance，不生成shortcut；循环host不任意排序或全部消除。不同真实作用关系仍需明确的mechanism／effect表达。
+4. 主路径与备选源路径分开，每条均使用实际连续源边；共享机制上其他候选的上游声明不会冒充当前候选的完整路径。没有按人工／LLM来源类别排除条件，没有使用故障标签选方案。
+
+结果标记`scoring_method=tep_rootkgd_propagation_v2`与`propagation.projection_version=rootkgd-host-channel.v2`；历史run不改写。新7项回归覆盖重复pattern、AND拆分、同通道std谓词、上游冗余期待、未达新通道、显式effect敏感性、循环保留以及主／备选路径连续性。
+
+冻结d04的旧反例在v2中：基线和新增同通道假阈值条件后，全部候选分数／向量／分解**精确一致**，该候选前后均0.5854474293642782。四Frame离线新旧对照保持首位次序：d04冷却入口温度／阀粘滞并列，d01进料温度，d05进料供给损失；正常仍不排名。部分分数有浮点末位变化，不宣称准确率提升。
+
+完整脱敏对照与22条实际连续主／备路径核对记录在`runs/two_loop_demo/rootkgd-representation-v2/projection-checks.json`，各case的v1/v2结果与冗余声明结果同目录；全程无模型调用、数据库写入。旧演示17/17是v1历史证据；受影响的四个TEP×RootKGD组合由演示owner在v2 API恢复后单独更新，不重做13个统一引擎组合或原始模型。
+
+最终投影候选完整默认命令为 **538 passed / 4 skipped，11.01s**；四项外部opt-in skip不变，新代码／测试Ruff与diff-check通过。日志`/private/tmp/rootlens-projection-v2-final-pytest.log`。前端、演示及审核owner均停止提交的窗口内，确认86个已存任务无进行中后，8012手动作业重载为PID3195且health=ok；随后分别交演示／独立审核实际消费，交付与消费证据分开记录。

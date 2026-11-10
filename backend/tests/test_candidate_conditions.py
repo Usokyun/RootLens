@@ -365,11 +365,11 @@ def test_rootkgd_uses_actual_structure_not_threshold_truth_or_expectation_mode()
         for r in same_result["candidate_evaluations"]
         if r["candidate_id"] == request["candidate_id"]
     )
-    # A new direct path may reweight even a previously reachable channel. Editing
-    # a threshold on unchanged topology, in contrast, does not execute its logic.
+    # A redundant upstream expectation is provenance, not a new physical
+    # shortcut to an already-reachable channel.
     assert (
         same_row["scoring_details"]["propagated_channel_vector"]
-        != selected["scoring_details"]["propagated_channel_vector"]
+        == selected["scoring_details"]["propagated_channel_vector"]
     )
     channel = next(
         c
