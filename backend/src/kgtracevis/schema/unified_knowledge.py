@@ -109,6 +109,9 @@ class AtLeastBody(UnifiedModel):
     def possible_count(self):
         if self.count > len(self.of):
             raise ValueError("at_least count exceeds its operands")
+        identities = [x if isinstance(x, str) else x.model_dump_json() for x in self.of]
+        if len(identities) != len(set(identities)):
+            raise ValueError("at_least cannot count duplicate operands as separate conditions")
         return self
 
 

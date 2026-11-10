@@ -125,3 +125,27 @@ def test_declared_boolean_expressions_remain_data_not_executable_code():
     }
     parsed = KnowledgePackage.model_validate(knowledge)
     assert parsed.pattern_definitions[0].body.all[1].any == ["q:scratch_cue", "q:foreign_material"]
+
+
+@pytest.mark.parametrize("index_base", [True, False, 1.0, "1"])
+def test_window_index_identity_does_not_coerce_boolean_or_float(index_base):
+    frame = example("tep-evidence.json")
+    frame["scopes"][0]["index_base"] = index_base
+    with pytest.raises(ValidationError, match="index_base"):
+        EvidenceFrame.model_validate(frame)
+
+
+def test_deep_unknown_ancestor_is_a_validation_error_not_a_runtime_keyerror():
+    frame = example("mvtec-evidence.json")
+    frame["subjects"][0]["parent_id"] = "missing-ancestor"
+    with pytest.raises(ValidationError):
+        EvidenceFrame.model_validate(frame)
+
+
+def test_cardinality_cannot_count_one_condition_twice():
+    knowledge = example("knowledge-package.json")
+    knowledge["pattern_definitions"][0]["body"] = {
+        "at_least": {"count": 2, "of": ["q:elongated", "q:elongated"]}
+    }
+    with pytest.raises(ValidationError, match="duplicate operands"):
+        KnowledgePackage.model_validate(knowledge)

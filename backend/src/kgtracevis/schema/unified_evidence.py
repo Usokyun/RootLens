@@ -115,6 +115,14 @@ class TimeWindowScope(UnifiedModel):
     end_inclusive: StrictBool
     sampling_seconds: Annotated[FiniteNumber, Field(gt=0)]
 
+    @model_validator(mode="before")
+    @classmethod
+    def integer_index_base(cls, value):
+        if isinstance(value, dict) and "index_base" in value:
+            if type(value["index_base"]) is not int:
+                raise ValueError("index_base must be an integer, not a boolean or float")
+        return value
+
     @model_validator(mode="after")
     def time_axis(self):
         count = self.sample_end - self.sample_start + int(self.end_inclusive)
@@ -290,6 +298,7 @@ class EvidenceFrame(UnifiedModel):
                 if parent in seen:
                     raise ValueError("cyclic subject hierarchy")
                 seen.add(parent)
+                require(parent, subjects, "ancestor subject")
                 parent = subjects[parent].parent_id
         for scope in self.scopes:
             require(getattr(scope, "subject_id", None), subjects, "scope subject")
