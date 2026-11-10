@@ -14,9 +14,7 @@ from kgtracevis.service.run_enrichment import (
 )
 
 VALID_DATASETS = {"mvtec", "tep", "wafer"}
-DEFAULT_CLAIM_BOUNDARY = (
-    "candidate/plausible explanation only; not a verified root-cause label"
-)
+DEFAULT_CLAIM_BOUNDARY = "candidate/plausible explanation only; not a verified root-cause label"
 
 
 def detail_payload(
@@ -45,10 +43,10 @@ def detail_payload(
     summary_payload = dict_value(run_row.get("summary"))
     parameters = dict_value(run_row.get("parameters"))
     root_causes_by_case = dict_value(parameters.get("ranked_root_causes_by_case"))
+    complete_links_by_case = dict_value(parameters.get("linked_entities_by_case"))
+    evidence_by_case = dict_value(parameters.get("evidence_by_case"))
     reasoning_metadata_by_case = dict_value(parameters.get("reasoning_metadata_by_case"))
-    run_reasoning_metadata = _reasoning_metadata_value(
-        parameters.get("run_reasoning_metadata")
-    )
+    run_reasoning_metadata = _reasoning_metadata_value(parameters.get("run_reasoning_metadata"))
     analysis_reasoning_metadata = _reasoning_metadata_value(
         parameters.get("analysis_reasoning_metadata")
     )
@@ -56,11 +54,21 @@ def detail_payload(
 
     for row in case_rows:
         case_pk = str(row["case_pk"])
-        evidence = dict_value(row.get("evidence_payload"))
+        evidence = (
+            dict_value(evidence_by_case[str(row.get("case_id"))])
+            if str(row.get("case_id")) in evidence_by_case
+            else dict_value(row.get("evidence_payload"))
+        )
         if not evidence:
             evidence = _evidence_from_case_row(row)
         case_id = str(evidence.get("case_id") or row.get("case_id"))
-        links = links_by_case.get(case_pk, [])
+        # Preserve observation IDs and binding metadata just as candidate payloads are
+        # preserved. Older runs still load their original normalized link columns.
+        links = (
+            list_of_dicts(complete_links_by_case[case_id])
+            if case_id in complete_links_by_case
+            else links_by_case.get(case_pk, [])
+        )
         corrections = corrections_by_case.get(case_pk, [])
         paths = paths_by_case.get(case_pk, [])
         ranked_root_causes = list_of_dicts(root_causes_by_case.get(case_id))
@@ -68,9 +76,11 @@ def detail_payload(
             ranked_root_causes = _ranked_root_causes_from_paths(case_id, paths)
         consistency = consistency_by_case.get(case_pk, {})
         source_edges = unique_source_edges(paths)
-        case_reasoning_metadata = _reasoning_metadata_value(
-            reasoning_metadata_by_case.get(case_id)
-        ) or dict(summary_pipeline) or dict(analysis_reasoning_metadata)
+        case_reasoning_metadata = (
+            _reasoning_metadata_value(reasoning_metadata_by_case.get(case_id))
+            or dict(summary_pipeline)
+            or dict(analysis_reasoning_metadata)
+        )
         analysis = {
             "case_id": case_id,
             "linked_entities": links,
@@ -106,6 +116,10 @@ def detail_payload(
                 ),
             }
         )
+        if case_id in evidence_by_case:
+            # Explicitly mark a complete per-run snapshot. Legacy rows keep their
+            # original file-first recovery contract rather than trusting a mutable catalog.
+            cases[-1]["generated_evidence_full"] = evidence
         aggregate_links.extend(links)
         aggregate_corrections.extend(corrections)
         aggregate_paths.extend(paths)
@@ -130,9 +144,7 @@ def detail_payload(
         }
 
     aggregate_root_causes = [
-        root_cause
-        for case in cases
-        for root_cause in list_of_dicts(case.get("ranked_root_causes"))
+        root_cause for case in cases for root_cause in list_of_dicts(case.get("ranked_root_causes"))
     ]
     if not aggregate_root_causes:
         aggregate_root_causes = _ranked_root_causes_from_paths(
@@ -212,10 +224,7 @@ def _ranked_root_causes_from_paths(
     case_id: str,
     paths: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    return [
-        item.model_dump(mode="json")
-        for item in ranked_root_causes_from_paths(case_id, paths)
-    ]
+    return [item.model_dump(mode="json") for item in ranked_root_causes_from_paths(case_id, paths)]
 
 
 def case_entries(detail: Any) -> list[dict[str, Any]]:
@@ -241,9 +250,7 @@ def case_entries(detail: Any) -> list[dict[str, Any]]:
                     "correction_candidates": list_of_dicts(case.get("correction_candidates")),
                     "top_k_paths": list_of_dicts(case.get("top_k_paths")),
                     "ranked_root_causes": list_of_dicts(case.get("ranked_root_causes")),
-                    "reasoning_metadata": _reasoning_metadata_value(
-                        case.get("reasoning_metadata")
-                    ),
+                    "reasoning_metadata": _reasoning_metadata_value(case.get("reasoning_metadata")),
                 }
             )
     if not entries and detail.evidence:
@@ -263,9 +270,7 @@ def case_entries(detail: Any) -> list[dict[str, Any]]:
                 "correction_candidates": list_of_dicts(analysis.get("correction_candidates")),
                 "top_k_paths": list_of_dicts(analysis.get("top_k_paths")),
                 "ranked_root_causes": list_of_dicts(analysis.get("ranked_root_causes")),
-                "reasoning_metadata": _reasoning_metadata_value(
-                    analysis.get("reasoning_metadata")
-                ),
+                "reasoning_metadata": _reasoning_metadata_value(analysis.get("reasoning_metadata")),
             }
         )
     return entries
@@ -517,7 +522,7 @@ def _artifacts_payload(
 
 
 def _case_evidence_payload(case: Mapping[str, Any]) -> dict[str, Any] | None:
-    for key in ("evidence", "generated_evidence"):
+    for key in ("generated_evidence_full", "evidence", "generated_evidence"):
         value = case.get(key)
         if isinstance(value, Mapping):
             payload = dict(value)

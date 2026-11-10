@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -166,7 +167,12 @@ class KGMaterialRecord(BaseModel):
     @property
     def is_build_ready(self) -> bool:
         """Return whether this material can be fed to the source KG compiler."""
-        return bool(_compiler_source_path(self, must_exist=False))
+        needs_parse = self.source_kind == "url" or self.material_type in {"pdf", "webpage"}
+        return (
+            (not needs_parse or self.extraction.status == "extracted")
+            and self.extraction.status != "failed"
+            and bool(_compiler_source_path(self, must_exist=False))
+        )
 
 
 class KGMaterialListResponse(BaseModel):
@@ -233,16 +239,20 @@ class KGMaterialBuildSourcesResponse(BaseModel):
 
 
 class KGMaterialExtractionRunRequest(BaseModel):
-    """Request to make a material compiler-ready.
-
-    The current compiler reads source files directly, so extraction is a
-    lightweight readiness step rather than a DraftKG/structured-record build.
-    """
+    """Parse material content into located chunks consumed directly by the compiler."""
 
     model_config = ConfigDict(extra="forbid")
 
     overwrite: bool = False
     provider: Literal["none"] = "none"
+    chunk_size: int = Field(default=8000, ge=64)
+    chunk_overlap: int = Field(default=800, ge=0)
+
+    @model_validator(mode="after")
+    def validate_chunks(self):
+        if self.chunk_overlap >= self.chunk_size:
+            raise ValueError("chunk_overlap must be smaller than chunk_size")
+        return self
 
 
 class KGMaterialDirectBuildRequest(KGMaterialSelectedBuildRequest):
@@ -557,8 +567,7 @@ class FileKGMaterialStore:
             "created_at": _utc_now(),
         }
         _append_jsonl(
-            _material_dir(material_id, material_root=self.root)
-            / "extraction_artifacts.jsonl",
+            _material_dir(material_id, material_root=self.root) / "extraction_artifacts.jsonl",
             artifact,
         )
         return artifact
@@ -567,8 +576,7 @@ class FileKGMaterialStore:
         """Return stored extraction artifact references for one material."""
         material_id = _safe_path_component(material_id, field_name="material_id")
         return _read_jsonl_records(
-            _material_dir(material_id, material_root=self.root)
-            / "extraction_artifacts.jsonl",
+            _material_dir(material_id, material_root=self.root) / "extraction_artifacts.jsonl",
             sort_key="created_at",
         )
 
@@ -735,9 +743,7 @@ def list_kg_material_extraction_runs(
 ) -> KGMaterialExtractionRunListResponse:
     """Return extraction run history for one material."""
     material = get_kg_material(material_id, material_root=material_root).material
-    runs = material_store(material_root=material_root).list_extraction_runs(
-        material.material_id
-    )
+    runs = material_store(material_root=material_root).list_extraction_runs(material.material_id)
     return KGMaterialExtractionRunListResponse(
         material=material,
         count=len(runs),
@@ -759,8 +765,7 @@ def list_kg_material_extraction_artifacts(
         material=material,
         count=len(artifacts),
         artifacts=[
-            KGMaterialExtractionArtifactRecord.model_validate(artifact)
-            for artifact in artifacts
+            KGMaterialExtractionArtifactRecord.model_validate(artifact) for artifact in artifacts
         ],
     )
 
@@ -772,41 +777,114 @@ def extract_kg_material_to_structured_records(
     material_root: Path | None = None,
     **_: Any,
 ) -> KGMaterialExtractionRunResponse:
-    """Mark a material as compiler-ready without running legacy DraftKG extraction."""
+    """Fetch/parse real source content, persist spans, and hand the same units to the compiler."""
+    from kgtracevis.source_kg_compiler.material_parser import parse_material
+
     store = material_store(material_root=material_root)
     material = get_kg_material(material_id, material_root=material_root).material
-    source_path = _compiler_source_path(material, must_exist=True)
-    if source_path is None:
-        raise ValueError(
-            f"material is not backed by a local compiler-readable source: {material_id}"
-        )
+    if material.extraction.status == "extracted" and not request.overwrite:
+        raise ValueError("material already parsed; pass overwrite=true to reparse")
     record_dir = Path(material.metadata_path).parent
-    manifest_path = record_dir / "compiler_source_manifest.json"
-    if manifest_path.exists() and not request.overwrite:
-        raise ValueError("compiler_source_manifest.json already exists; pass overwrite=true")
+    extraction_id = str(uuid.uuid4())
+    output_dir = record_dir / "extractions" / extraction_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / "manifest.json"
+    bundle_path = output_dir / "source_units.json"
     now = _utc_now()
+    try:
+        source_path = (
+            fetch_remote_material(
+                url=material.source_uri,
+                material_id=material_id,
+                material_root=material_root,
+                destination_dir=output_dir,
+            )
+            if material.source_kind == "url"
+            else Path(material.source_uri).expanduser()
+        )
+        if material.source_kind == "citation" or not source_path.is_file():
+            raise ValueError("material has no readable local file or fetchable URL")
+        bundle = parse_material(
+            source_path,
+            source_id=material_id,
+            scenario=material.scenario,
+            material_type=material.material_type,
+            original_uri=material.source_uri,
+            chunk_size=request.chunk_size,
+            chunk_overlap=request.chunk_overlap,
+        )
+        bundle_path.write_text(bundle.model_dump_json(indent=2), encoding="utf-8")
+        chunks = [
+            {
+                "chunk_id": unit.unit_id,
+                "material_id": material_id,
+                "chunk_index": index,
+                "source_locator": json.dumps(unit.source_span, ensure_ascii=False),
+                "text_content": unit.content_text,
+                "char_start": unit.source_span.get("char_start"),
+                "char_end": unit.source_span.get("char_end"),
+                "metadata": {
+                    **unit.parser_metadata,
+                    "source_span": unit.source_span,
+                    "extraction_run_id": extraction_id,
+                },
+            }
+            for index, unit in enumerate(bundle.units)
+        ]
+        store.save_source_chunks(material_id, chunks)
+    except Exception as exc:
+        state = KGMaterialExtractionState(
+            status="failed",
+            error_message=str(exc),
+            error_count=1,
+            chunk_count=0,
+            extractor_name="rootlens.material_parser",
+            extracted_at=now,
+        )
+        store.save_material_record(
+            material.model_copy(
+                update={
+                    "status": "failed",
+                    "updated_at": now,
+                    "extraction": state,
+                }
+            )
+        )
+        store.record_extraction_run(
+            material_id,
+            state,
+            extraction_run_id=extraction_id,
+            provider="none",
+            parameters=request.model_dump(mode="json"),
+            result_summary={"error": str(exc)},
+        )
+        _write_json_object(manifest_path, {"status": "failed", "error": str(exc)})
+        raise ValueError(f"material parsing failed: {exc}") from exc
     state = KGMaterialExtractionState(
         status="extracted",
-        structured_records_path=source_path.as_posix(),
-        source_format=_source_format_from_path(source_path),
+        structured_records_path=bundle_path.as_posix(),
+        source_format="json",
         source_id=material.material_id,
-        extractor_name="source_kg_compiler.material_source",
+        extractor_name="rootlens.material_parser",
+        document_understanding_mode="located_text",
         extractor_version="v1",
         prompt_version="none",
         extracted_at=now,
-        record_count=1,
-        chunk_count=0,
+        record_count=len(bundle.units),
+        chunk_count=len(bundle.units),
         error_count=0,
         extraction_manifest_path=manifest_path.as_posix(),
     )
     manifest = {
-        "artifact_type": "source_kg_compiler_material_source_manifest_v1",
+        "artifact_type": "rootlens_material_parse.v1",
         "material_id": material.material_id,
         "source_path": source_path.as_posix(),
+        "source_units_path": bundle_path.as_posix(),
+        "chunk_count": len(bundle.units),
+        "parser": bundle.units[0].parser_metadata["parser"],
         "created_at": now,
         "claim_boundary": (
-            "source compiler consumes this file directly; no legacy KG construction "
-            "extraction has run"
+            "parsed source units with row/page/text spans; no knowledge generation has run"
         ),
     }
     _write_json_object(manifest_path, manifest)
@@ -817,25 +895,28 @@ def extract_kg_material_to_structured_records(
     extraction_run = store.record_extraction_run(
         updated.material_id,
         state,
+        extraction_run_id=extraction_id,
         provider=request.provider,
         parameters=request.model_dump(mode="json"),
-        result_summary={"source_path": source_path.as_posix()},
+        result_summary={"source_path": source_path.as_posix(), "chunk_count": len(bundle.units)},
     )
     store.save_extraction_artifact(
         material_id=updated.material_id,
         extraction_run_id=extraction_run.get("extraction_run_id"),
-        artifact_type="compiler_source",
-        uri=source_path.as_posix(),
-        media_type="text/plain",
+        artifact_type="parsed_source_units",
+        uri=bundle_path.as_posix(),
+        media_type="application/json",
         payload={"source_format": state.source_format},
     )
     return KGMaterialExtractionRunResponse(
         material=updated,
-        structured_records_path=source_path.as_posix(),
-        record_count=1,
+        structured_records_path=bundle_path.as_posix(),
+        record_count=len(bundle.units),
         extraction_manifest_path=manifest_path.as_posix(),
-        chunk_count=0,
+        chunk_count=len(bundle.units),
         error_count=0,
+        extractor_name="rootlens.material_parser",
+        claim_boundary="parsed source content with locations, ready for LLM knowledge construction",
     )
 
 
@@ -849,6 +930,15 @@ def prepare_kg_material_construction_build(
         get_kg_material(material_id, material_root=material_root).material
         for material_id in request.material_ids
     ]
+    for index, material in enumerate(materials):
+        if (
+            material.source_kind == "url" or material.material_type in {"pdf", "webpage"}
+        ) and material.extraction.status == "not_started":
+            materials[index] = extract_kg_material_to_structured_records(
+                material.material_id,
+                KGMaterialExtractionRunRequest(),
+                material_root=material_root,
+            ).material
     sources = [_construction_source_from_material(material) for material in materials]
     construction_request = KGConstructionBuildRequest(
         sources=sources,
@@ -868,6 +958,8 @@ def prepare_kg_material_construction_build(
 def _construction_source_from_material(
     material: KGMaterialRecord,
 ) -> KGConstructionSourceInput:
+    if material.extraction.status == "failed":
+        raise ValueError(f"material parsing failed; retry extraction first: {material.material_id}")
     source_path = _compiler_source_path(material, must_exist=True)
     if source_path is None:
         raise ValueError(
@@ -895,14 +987,15 @@ def fetch_remote_material(
     material_id: str,
     material_root: Path | None = None,
     timeout_seconds: int = REMOTE_MATERIAL_FETCH_TIMEOUT_SECONDS,
+    destination_dir: Path | None = None,
 ) -> Path:
     """Fetch a registered remote source into the local material directory."""
     _require_non_empty(url, field_name="url")
     if not _looks_like_url(url):
         raise ValueError("remote material fetch requires an http(s) URL")
-    record_dir = _material_dir(material_id, material_root=material_root)
+    record_dir = destination_dir or _material_dir(material_id, material_root=material_root)
     record_dir.mkdir(parents=True, exist_ok=True)
-    filename = _safe_upload_filename(Path(url).name or "remote_material.txt")
+    filename = _safe_upload_filename(Path(urlparse(url).path).name or "remote_material.html")
     output_path = record_dir / filename
     with urllib.request.urlopen(url, timeout=timeout_seconds) as response:  # noqa: S310
         with output_path.open("wb") as handle:

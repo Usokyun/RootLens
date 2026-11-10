@@ -29,6 +29,12 @@ EDGE_CSV_COLUMNS = [
     "feedback_count",
     "accepted_count",
     "rejected_count",
+    "external_edge_id",
+    "relation_family",
+    "propagation_enabled",
+    "propagation_direction",
+    "attenuation",
+    "edge_weight",
 ]
 
 
@@ -121,6 +127,20 @@ class CanonicalEdge(BaseModel):
     feedback_count: int = 0
     accepted_count: int = 0
     rejected_count: int = 0
+    relation_family: Literal[
+        "",
+        "FAULT_SOURCE",
+        "CONTROL",
+        "MATERIAL_FLOW",
+        "ENERGY_TRANSFER",
+        "PHASE_CHANGE",
+        "COMPOSITION",
+        "OBSERVATION",
+    ] = ""
+    propagation_enabled: bool = False
+    propagation_direction: Literal["forward", "reverse", "both"] = "forward"
+    attenuation: float = Field(default=1, ge=0, le=1)
+    edge_weight: float | None = Field(default=None, ge=0, le=1)
 
 
 class SourceKGArtifacts(BaseModel):

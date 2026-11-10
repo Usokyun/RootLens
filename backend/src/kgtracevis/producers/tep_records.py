@@ -51,6 +51,8 @@ class TepFaultFreeProfile:
     n_rows: int
     row_stride: int
     max_rows: int | None
+    normal_energy_limit: float = 0.0
+    reference_id: str = "normal-reference"
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,9 @@ def build_tep_records(
     top_variables: int = 5,
     n_components: int | None = DEFAULT_TEP_N_COMPONENTS,
     profile_output_path: str | Path | None = None,
+    window_start_sample: int = 1,
+    sampling_interval_seconds: float = 180,
+    fault_start_sample: int | None = None,
 ) -> list[dict[str, Any]]:
     """Build adapter-ready TEP records from raw fault-free and faulty CSV files."""
     if raw_data_dir is None and (fault_free_path is None or faulty_path is None):
@@ -129,6 +134,7 @@ def build_tep_records(
         window_size=window_size,
         max_runs_per_fault=max_runs_per_fault,
         max_cases=max_cases,
+        window_start_sample=window_start_sample,
     )
     return [
         _record_from_window(
@@ -137,9 +143,75 @@ def build_tep_records(
             faulty_path=faulty_csv,
             profile=profile,
             top_variables=top_variables,
+            sampling_interval_seconds=sampling_interval_seconds,
+            fault_start_sample=fault_start_sample,
         )
         for window in windows
     ]
+
+
+def build_tep_dat_records(
+    normal_path,
+    sequence_path,
+    *,
+    output_dir,
+    windows,
+    sampling_interval_seconds=180.0,
+    fault_start_sample=None,
+    n_components=18,
+):
+    """Braatz 52-channel reference .dat input; explicit one-based inclusive windows.
+
+    This new route fits a matched normal scaler/PCA and does not use legacy memory
+    templates or fault labels. The legacy training-CSV entry point is unchanged.
+    """
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+
+    def matrix(path):
+        values = np.loadtxt(path, dtype=float)
+        if values.ndim == 2 and values.shape[0] == 52 and values.shape[1] != 52:
+            values = values.T
+        if values.ndim != 2 or values.shape[1] != 52 or not np.isfinite(values).all():
+            raise ValueError("Braatz .dat requires 52 finite channels: XMEAS1..41 then XMV1..11")
+        return values
+
+    normal, sequence = matrix(normal_path), matrix(sequence_path)
+    columns = [f"xmeas_{i}" for i in range(1, 42)] + [f"xmv_{i}" for i in range(1, 12)]
+    normal_csv = output / "normal_reference.csv"
+    with normal_csv.open("w") as f:
+        f.write(",".join(columns) + "\n")
+        np.savetxt(f, normal, delimiter=",")
+    reference = fit_tep_fault_free_profile(normal_csv, row_stride=1, n_components=n_components)
+    _write_profile(reference, output / "normal_reference_profile.json")
+    records = []
+    for start, end in windows:
+        if start < 1 or end < start or end > len(sequence):
+            raise ValueError("process window is outside the sequence")
+        window = TepFaultWindow(0, 1, start, end, sequence[start - 1 : end])
+        record = _record_from_window(
+            window,
+            contribution=compute_tep_window_contributions(reference, window),
+            faulty_path=Path(sequence_path),
+            profile=reference,
+            top_variables=6,
+            sampling_interval_seconds=sampling_interval_seconds,
+            fault_start_sample=fault_start_sample,
+        )
+        record.update(
+            case_id=f"process_window_{start}_{end}",
+            anomaly_type="multivariate_deviation",
+            description=(
+                f"Process samples {start}–{end}; compared with a matched fault-free reference."
+            ),
+        )
+        for key in ("fault_number", "fault_id", "scenario_id"):
+            record.pop(key, None)
+        record["extra"]["normal_reference_profile_path"] = str(
+            output / "normal_reference_profile.json"
+        )
+        records.append(record)
+    return records
 
 
 def fit_tep_fault_free_profile(
@@ -181,6 +253,8 @@ def fit_tep_fault_free_profile(
         row_count=len(samples),
     )
     components = _principal_components(standardized, component_count)
+    residual = standardized - (standardized @ components) @ components.T
+    energy_limit = float(np.quantile(np.sum(residual**2, axis=1), 0.99))
     return TepFaultFreeProfile(
         variable_columns=columns,
         mean=mean,
@@ -189,6 +263,8 @@ def fit_tep_fault_free_profile(
         n_rows=len(samples),
         row_stride=row_stride,
         max_rows=max_rows,
+        normal_energy_limit=energy_limit,
+        reference_id=f"{path.name}:rows={len(samples)}:stride={row_stride}:pca={component_count}",
     )
 
 
@@ -200,6 +276,7 @@ def collect_tep_fault_windows(
     window_size: int = 100,
     max_runs_per_fault: int = 3,
     max_cases: int | None = None,
+    window_start_sample: int = 1,
 ) -> list[TepFaultWindow]:
     """Collect fixed-size faulty windows grouped by TEP fault and simulation run."""
     _validate_positive("window_size", window_size)
@@ -221,6 +298,8 @@ def collect_tep_fault_windows(
         reader = csv.DictReader(handle)
         _require_columns(path, reader.fieldnames, (*ID_COLUMNS, *variable_columns))
         for row in reader:
+            if _int_cell(row, "sample") < window_start_sample:
+                continue
             fault_number = _int_cell(row, "faultNumber")
             if fault_number not in target_faults:
                 continue
@@ -235,6 +314,10 @@ def collect_tep_fault_windows(
             if not rows:
                 sample_ranges[key] = [_int_cell(row, "sample"), _int_cell(row, "sample")]
             else:
+                if _int_cell(row, "sample") != sample_ranges[key][1] + 1:
+                    raise ValueError(
+                        "TEP windows require contiguous sample indices within each run"
+                    )
                 sample_ranges[key][1] = _int_cell(row, "sample")
             rows.append(_row_values(row, variable_columns))
             if len(rows) < window_size:
@@ -307,6 +390,8 @@ def _record_from_window(
     faulty_path: Path,
     profile: TepFaultFreeProfile,
     top_variables: int,
+    sampling_interval_seconds: float = 180,
+    fault_start_sample: int | None = None,
 ) -> dict[str, Any]:
     ranked = sorted(
         contribution.channel_contributions.items(),
@@ -315,6 +400,30 @@ def _record_from_window(
     top = ranked[:top_variables]
     variables = [name for name, _value in top]
     variable_contributions = {name: value for name, value in top}
+    from kgtracevis.schema.measured_reasoning import ProcessChannel, ProcessMeasurements
+
+    standardized = (window.rows - profile.mean) / profile.scale
+    measured = ProcessMeasurements(
+        reference_id=profile.reference_id,
+        sample_start=window.sample_start,
+        sample_end=window.sample_end,
+        sampling_interval_seconds=sampling_interval_seconds,
+        fault_start_sample=fault_start_sample,
+        normal_reference_rows=profile.n_rows,
+        residual_energy=contribution.residual_energy,
+        normal_energy_limit=profile.normal_energy_limit,
+        channels=[
+            ProcessChannel(
+                channel=_canonical_channel_name(column).lower(),
+                mean_z=float(standardized[:, i].mean()),
+                std_z=float(standardized[:, i].std()),
+                slope_z=float(np.polyfit(np.arange(len(window.rows)), standardized[:, i], 1)[0]),
+                contribution=contribution.channel_contributions[_canonical_channel_name(column)],
+                samples=window.rows[:, i].tolist(),
+            )
+            for i, column in enumerate(profile.variable_columns)
+        ],
+    )
     case_id = (
         f"tep_fault_{window.fault_number:02d}_run_{window.simulation_run:03d}"
         f"_samples_{window.sample_start:06d}_{window.sample_end:06d}"
@@ -360,6 +469,7 @@ def _record_from_window(
             "produces_root_cause": False,
         },
         "extra": {
+            "process_measurements": measured.model_dump(mode="json"),
             "channel_contributions": contribution.channel_contributions,
             "graph_contributions": _root_kgd_graph_contributions(
                 contribution.channel_contributions
@@ -608,6 +718,8 @@ def _write_profile(profile: TepFaultFreeProfile, output_path: Path) -> None:
         "n_rows": profile.n_rows,
         "row_stride": profile.row_stride,
         "max_rows": profile.max_rows,
+        "normal_energy_limit": profile.normal_energy_limit,
+        "reference_id": profile.reference_id,
     }
     output_path.write_text(
         json.dumps(filter_forbidden_outputs(payload), indent=2, sort_keys=False),

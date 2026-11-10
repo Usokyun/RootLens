@@ -13,6 +13,7 @@ from kgtracevis.core.reasoning_profile import (
     ResolvedReasoningProfile,
     resolve_reasoning_profile_paths,
 )
+from kgtracevis.workflows.profile_match_reasoner import VisualProfileReasoner
 from kgtracevis.workflows.tep_root_kgd import TepRootKgdConfig, TepRootKgdRcaProvider
 
 DEFAULT_REASONING_PROFILE_DIR = Path("configs/reasoning_profiles")
@@ -69,13 +70,11 @@ class ReasoningAdapterRegistry:
         dataset: str | None = None,
     ) -> list[ResolvedReasoningProfile]:
         """Return all registered reasoning profiles, optionally filtered by dataset."""
-        manifests = sorted(self.profile_dir.glob('*/manifest.json'))
+        manifests = sorted(self.profile_dir.glob("*/manifest.json"))
         profiles = [self.resolve_profile(path.parent.name) for path in manifests]
         if dataset is None:
             return profiles
-        return [
-            profile for profile in profiles if self.profile_supports_dataset(profile, dataset)
-        ]
+        return [profile for profile in profiles if self.profile_supports_dataset(profile, dataset)]
 
     def profile_supports_dataset(
         self,
@@ -83,7 +82,7 @@ class ReasoningAdapterRegistry:
         dataset: str | None,
     ) -> bool:
         """Return whether one profile declares compatibility with a dataset."""
-        dataset_name = str(dataset or '').strip().lower()
+        dataset_name = str(dataset or "").strip().lower()
         if not dataset_name:
             return True
         declared = {item.strip().lower() for item in profile.dataset_scope if item.strip()}
@@ -115,9 +114,7 @@ class ReasoningAdapterRegistry:
 
         factory = self._factories.get(profile.reasoner_adapter)
         if factory is None:
-            raise ValueError(
-                f"reasoning adapter is not registered: {profile.reasoner_adapter}"
-            )
+            raise ValueError(f"reasoning adapter is not registered: {profile.reasoner_adapter}")
         reasoner = factory(profile)
         self._reasoner_cache[cache_key] = reasoner
         return reasoner
@@ -144,7 +141,7 @@ class ReasoningAdapterRegistry:
 
 def resolve_default_reasoning_profile_id(dataset: str | None) -> str:
     """Return the built-in reasoning profile id for one dataset string."""
-    if str(dataset or '').strip().lower() == 'tep':
+    if str(dataset or "").strip().lower() == "tep":
         return DEFAULT_TEP_REASONING_PROFILE_ID
     return DEFAULT_GENERIC_REASONING_PROFILE_ID
 
@@ -153,8 +150,9 @@ def resolve_default_reasoning_profile_id(dataset: str | None) -> str:
 def default_reasoning_registry() -> ReasoningAdapterRegistry:
     """Return the singleton registry for built-in reasoning adapters."""
     registry = ReasoningAdapterRegistry()
-    registry.register_adapter('generic_graph_path', _build_generic_graph_path_reasoner)
-    registry.register_adapter('tep_root_kgd', _build_tep_root_kgd_reasoner)
+    registry.register_adapter("generic_graph_path", _build_generic_graph_path_reasoner)
+    registry.register_adapter("tep_root_kgd", _build_tep_root_kgd_reasoner)
+    registry.register_adapter("visual_profile_match", _build_visual_profile_reasoner)
     return registry
 
 
@@ -163,6 +161,11 @@ def _build_generic_graph_path_reasoner(
 ) -> RcaReasoner:
     del profile
     return GenericGraphPathReasoner()
+
+
+def _build_visual_profile_reasoner(profile: ResolvedReasoningProfile) -> RcaReasoner:
+    del profile
+    return VisualProfileReasoner()
 
 
 def _build_tep_root_kgd_reasoner(profile: ResolvedReasoningProfile) -> RcaReasoner:
@@ -185,7 +188,6 @@ def _shared_asset_dir(profile: ResolvedReasoningProfile) -> Path:
     for path in paths[1:]:
         if path.parent != asset_dir:
             raise ValueError(
-                'reasoning profile mixes asset directories: '
-                f'{profile.reasoning_profile_id}'
+                f"reasoning profile mixes asset directories: {profile.reasoning_profile_id}"
             )
     return asset_dir

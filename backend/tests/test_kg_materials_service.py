@@ -64,14 +64,22 @@ def test_material_extraction_marks_local_path_compiler_ready(tmp_path: Path) -> 
         material_root=tmp_path,
     )
 
-    assert result.structured_records_path == source.as_posix()
+    assert result.structured_records_path != source.as_posix()
+    assert result.chunk_count == 1
+    assert (
+        list_kg_material_chunks("local_001", material_root=tmp_path).chunks[0].text_content
+        == source.read_text()
+    )
     assert result.material.extraction.status == "extracted"
     assert Path(result.extraction_manifest_path).is_file()
     assert list_kg_material_extraction_runs("local_001", material_root=tmp_path).count == 1
-    assert list_kg_material_extraction_artifacts(
-        "local_001",
-        material_root=tmp_path,
-    ).count == 1
+    assert (
+        list_kg_material_extraction_artifacts(
+            "local_001",
+            material_root=tmp_path,
+        ).count
+        == 1
+    )
 
 
 def test_material_read_side_lists_source_chunks(tmp_path: Path) -> None:

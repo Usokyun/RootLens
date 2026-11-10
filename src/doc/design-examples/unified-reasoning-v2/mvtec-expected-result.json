@@ -1,0 +1,1045 @@
+{
+  "schema_version": "rootlens-reasoning-result.v2",
+  "example_kind": "calculated_synthetic_design",
+  "case_id": "design-mvtec-001",
+  "graph_id": "design:unified-diagnosis",
+  "calculation_scope": "Declared conjunctive design examples only; no backbone, LLM or production reasoner executed.",
+  "outcome": "ambiguous",
+  "candidate_pool": [
+    "h:contact",
+    "h:wear",
+    "h:adhesion"
+  ],
+  "proof_graph": {
+    "nodes": [
+      {
+        "node_id": "fact:q:elongated",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:elongated]"
+      },
+      {
+        "node_id": "o:ecc",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:ecc]"
+      },
+      {
+        "node_id": "fact:q:foreign_material",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:foreign_material]"
+      },
+      {
+        "node_id": "o:material",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:material]"
+      },
+      {
+        "node_id": "fact:q:scratch_cue",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:scratch_cue]"
+      },
+      {
+        "node_id": "o:semantics",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:semantics]"
+      },
+      {
+        "node_id": "observed:p:linear_mark",
+        "kind": "observed_pattern",
+        "value": true,
+        "definition_id": "d:linear_mark"
+      },
+      {
+        "node_id": "observed:p:foreign_material",
+        "kind": "observed_pattern",
+        "value": false,
+        "definition_id": "d:foreign_material"
+      },
+      {
+        "node_id": "assumed:h:contact",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:contact"
+      },
+      {
+        "node_id": "score:h:contact",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:contact]"
+      },
+      {
+        "node_id": "h:contact@m:local_contact",
+        "kind": "hypothesis_world_state",
+        "knowledge_entity_id": "m:local_contact"
+      },
+      {
+        "node_id": "expected:h:contact:r:contact_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:linear_mark",
+        "expected_value": true
+      },
+      {
+        "node_id": "assumed:h:wear",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:wear"
+      },
+      {
+        "node_id": "score:h:wear",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:wear]"
+      },
+      {
+        "node_id": "h:wear@m:abrasion",
+        "kind": "hypothesis_world_state",
+        "knowledge_entity_id": "m:abrasion"
+      },
+      {
+        "node_id": "expected:h:wear:r:wear_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:linear_mark",
+        "expected_value": true
+      },
+      {
+        "node_id": "assumed:h:adhesion",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:adhesion"
+      },
+      {
+        "node_id": "score:h:adhesion",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:adhesion]"
+      },
+      {
+        "node_id": "h:adhesion@m:adhesion",
+        "kind": "hypothesis_world_state",
+        "knowledge_entity_id": "m:adhesion"
+      },
+      {
+        "node_id": "expected:h:adhesion:r:adhesion_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:foreign_material",
+        "expected_value": true
+      }
+    ],
+    "edges": [
+      {
+        "head": "o:ecc",
+        "relation": "GROUNDS",
+        "tail": "fact:q:elongated",
+        "predicate_definition_id": "q:elongated"
+      },
+      {
+        "head": "o:material",
+        "relation": "GROUNDS",
+        "tail": "fact:q:foreign_material",
+        "predicate_definition_id": "q:foreign_material"
+      },
+      {
+        "head": "o:semantics",
+        "relation": "GROUNDS",
+        "tail": "fact:q:scratch_cue",
+        "predicate_definition_id": "q:scratch_cue"
+      },
+      {
+        "head": "fact:q:elongated",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:linear_mark",
+        "definition_id": "d:linear_mark",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:scratch_cue",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:linear_mark",
+        "definition_id": "d:linear_mark",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:foreign_material",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:foreign_material",
+        "definition_id": "d:foreign_material",
+        "requires_all": true
+      },
+      {
+        "head": "assumed:h:contact",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:contact",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:contact",
+        "relation": "HYPOTHESIZED_EFFECT",
+        "tail": "h:contact@m:local_contact",
+        "rule_id": "r:contact_effect",
+        "origin_edge_ids": [
+          "r:contact_effect::from",
+          "r:contact_effect::to"
+        ]
+      },
+      {
+        "head": "h:contact@m:local_contact",
+        "relation": "EXPECTS",
+        "tail": "expected:h:contact:r:contact_expect",
+        "rule_id": "r:contact_expect",
+        "origin_edge_ids": [
+          "r:contact_expect::from",
+          "r:contact_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:contact:r:contact_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:contact",
+        "expectation_rule_id": "r:contact_expect"
+      },
+      {
+        "head": "observed:p:linear_mark",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:contact",
+        "expectation_rule_id": "r:contact_expect",
+        "matched": true
+      },
+      {
+        "head": "fact:q:elongated",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:contact",
+        "covered": true
+      },
+      {
+        "head": "fact:q:scratch_cue",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:contact",
+        "covered": true
+      },
+      {
+        "head": "assumed:h:wear",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:wear",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:wear",
+        "relation": "HYPOTHESIZED_EFFECT",
+        "tail": "h:wear@m:abrasion",
+        "rule_id": "r:wear_effect",
+        "origin_edge_ids": [
+          "r:wear_effect::from",
+          "r:wear_effect::to"
+        ]
+      },
+      {
+        "head": "h:wear@m:abrasion",
+        "relation": "EXPECTS",
+        "tail": "expected:h:wear:r:wear_expect",
+        "rule_id": "r:wear_expect",
+        "origin_edge_ids": [
+          "r:wear_expect::from",
+          "r:wear_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:wear:r:wear_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:wear",
+        "expectation_rule_id": "r:wear_expect"
+      },
+      {
+        "head": "observed:p:linear_mark",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:wear",
+        "expectation_rule_id": "r:wear_expect",
+        "matched": true
+      },
+      {
+        "head": "fact:q:elongated",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:wear",
+        "covered": true
+      },
+      {
+        "head": "fact:q:scratch_cue",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:wear",
+        "covered": true
+      },
+      {
+        "head": "assumed:h:adhesion",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:adhesion",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:adhesion",
+        "relation": "HYPOTHESIZED_EFFECT",
+        "tail": "h:adhesion@m:adhesion",
+        "rule_id": "r:adhesion_effect",
+        "origin_edge_ids": [
+          "r:adhesion_effect::from",
+          "r:adhesion_effect::to"
+        ]
+      },
+      {
+        "head": "h:adhesion@m:adhesion",
+        "relation": "EXPECTS",
+        "tail": "expected:h:adhesion:r:adhesion_expect",
+        "rule_id": "r:adhesion_expect",
+        "origin_edge_ids": [
+          "r:adhesion_expect::from",
+          "r:adhesion_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:adhesion:r:adhesion_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:adhesion",
+        "expectation_rule_id": "r:adhesion_expect"
+      },
+      {
+        "head": "observed:p:foreign_material",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:adhesion",
+        "expectation_rule_id": "r:adhesion_expect",
+        "matched": false
+      },
+      {
+        "head": "fact:q:elongated",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:adhesion",
+        "covered": false
+      },
+      {
+        "head": "fact:q:scratch_cue",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:adhesion",
+        "covered": false
+      }
+    ]
+  },
+  "unassessed_candidates": [],
+  "grounded_facts": [
+    {
+      "fact_id": "fact:q:elongated",
+      "predicate_id": "q:elongated",
+      "subject_id": "roi:1",
+      "scope_id": "scope:roi1",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "image:1/roi:1",
+      "source_obs_ids": [
+        "o:ecc"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 0.97,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "geometry.eccentricity",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.95,
+          "unit": "1"
+        }
+      },
+      "reference_id": null
+    },
+    {
+      "fact_id": "fact:q:foreign_material",
+      "predicate_id": "q:foreign_material",
+      "subject_id": "roi:1",
+      "scope_id": "scope:roi1",
+      "value": false,
+      "status": "violated",
+      "dependency_group": "image:1/roi:1",
+      "source_obs_ids": [
+        "o:material"
+      ],
+      "actual_values": [
+        {
+          "kind": "boolean",
+          "boolean": false
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "appearance.foreign_material_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        }
+      },
+      "reference_id": null
+    },
+    {
+      "fact_id": "fact:q:scratch_cue",
+      "predicate_id": "q:scratch_cue",
+      "subject_id": "roi:1",
+      "scope_id": "scope:roi1",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "image:1/roi:1",
+      "source_obs_ids": [
+        "o:semantics"
+      ],
+      "actual_values": [
+        {
+          "kind": "candidate_set",
+          "items": [
+            "scratch",
+            "crack"
+          ],
+          "exhaustive": false
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "appearance.semantic_candidates",
+        "op": "candidate_contains",
+        "operand": {
+          "kind": "category",
+          "category": "scratch"
+        }
+      },
+      "reference_id": null
+    }
+  ],
+  "observed_patterns": [
+    {
+      "pattern_id": "p:linear_mark",
+      "definition_id": "d:linear_mark",
+      "value": true,
+      "scope_join": "same_subject_same_scope",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ]
+    },
+    {
+      "pattern_id": "p:foreign_material",
+      "definition_id": "d:foreign_material",
+      "value": false,
+      "scope_join": "same_subject_same_scope",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:foreign_material"
+      ]
+    }
+  ],
+  "candidate_evaluations": [
+    {
+      "candidate_id": "h:contact",
+      "candidate_name": "机械接触候选",
+      "candidate_role": "mechanism",
+      "status": "supported",
+      "eligible_for_ranking": true,
+      "score": -0.25,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "image:1/roi:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "support_obs_ids": [
+        "o:ecc",
+        "o:semantics"
+      ],
+      "counter_obs_ids": [],
+      "unexplained_fact_ids": [],
+      "active_hypothesis_world_entities": [
+        "h:contact",
+        "m:local_contact"
+      ],
+      "activated_effect_rule_ids": [
+        "r:contact_effect"
+      ],
+      "expectation_checks": [
+        {
+          "rule_id": "r:contact_expect",
+          "mode": "expected",
+          "pattern_id": "p:linear_mark",
+          "expected_value": true,
+          "observed_value": true,
+          "covered_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ],
+          "conflicting_fact_ids": [],
+          "partial_matching_fact_ids": [],
+          "missing_predicate_ids": []
+        }
+      ]
+    },
+    {
+      "candidate_id": "h:wear",
+      "candidate_name": "表面磨损候选",
+      "candidate_role": "mechanism",
+      "status": "supported",
+      "eligible_for_ranking": true,
+      "score": -0.25,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "image:1/roi:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "support_obs_ids": [
+        "o:ecc",
+        "o:semantics"
+      ],
+      "counter_obs_ids": [],
+      "unexplained_fact_ids": [],
+      "active_hypothesis_world_entities": [
+        "h:wear",
+        "m:abrasion"
+      ],
+      "activated_effect_rule_ids": [
+        "r:wear_effect"
+      ],
+      "expectation_checks": [
+        {
+          "rule_id": "r:wear_expect",
+          "mode": "expected",
+          "pattern_id": "p:linear_mark",
+          "expected_value": true,
+          "observed_value": true,
+          "covered_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ],
+          "conflicting_fact_ids": [],
+          "partial_matching_fact_ids": [],
+          "missing_predicate_ids": []
+        }
+      ]
+    },
+    {
+      "candidate_id": "h:adhesion",
+      "candidate_name": "异物附着候选",
+      "candidate_role": "mechanism",
+      "status": "no_match",
+      "eligible_for_ranking": false,
+      "score": -1.9166666666666665,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 1,
+        "conflict_loss": 0.3333333333333333,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 1.9166666666666665,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "image:1/roi:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 2,
+            "conflict_count": 1
+          }
+        ]
+      },
+      "support_obs_ids": [],
+      "counter_obs_ids": [
+        "o:material"
+      ],
+      "unexplained_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ],
+      "active_hypothesis_world_entities": [
+        "h:adhesion",
+        "m:adhesion"
+      ],
+      "activated_effect_rule_ids": [
+        "r:adhesion_effect"
+      ],
+      "expectation_checks": [
+        {
+          "rule_id": "r:adhesion_expect",
+          "mode": "expected",
+          "pattern_id": "p:foreign_material",
+          "expected_value": true,
+          "observed_value": false,
+          "covered_fact_ids": [],
+          "conflicting_fact_ids": [
+            "fact:q:foreign_material"
+          ],
+          "partial_matching_fact_ids": [],
+          "missing_predicate_ids": []
+        }
+      ]
+    }
+  ],
+  "ranked_root_causes": [
+    {
+      "candidate_id": "h:contact",
+      "candidate_name": "机械接触候选",
+      "candidate_role": "mechanism",
+      "rank": 1,
+      "score": -0.25,
+      "confidence": null,
+      "support_obs_ids": [
+        "o:ecc",
+        "o:semantics"
+      ],
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "image:1/roi:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "explanation_paths": [
+        {
+          "path_id": "path:design-mvtec-001:h:contact:q:elongated",
+          "nodes": [
+            "q:elongated",
+            "d:linear_mark",
+            "p:linear_mark",
+            "r:contact_expect",
+            "m:local_contact",
+            "r:contact_effect",
+            "h:contact"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:linear_mark::input::q:elongated",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:linear_mark::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:contact_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:ecc"
+          ],
+          "joint_proof_id": "joint:design-mvtec-001:h:contact:p:linear_mark",
+          "required_joint_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ]
+        },
+        {
+          "path_id": "path:design-mvtec-001:h:contact:q:scratch_cue",
+          "nodes": [
+            "q:scratch_cue",
+            "d:linear_mark",
+            "p:linear_mark",
+            "r:contact_expect",
+            "m:local_contact",
+            "r:contact_effect",
+            "h:contact"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:linear_mark::input::q:scratch_cue",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:linear_mark::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:contact_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:contact_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:semantics"
+          ],
+          "joint_proof_id": "joint:design-mvtec-001:h:contact:p:linear_mark",
+          "required_joint_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ]
+        }
+      ]
+    },
+    {
+      "candidate_id": "h:wear",
+      "candidate_name": "表面磨损候选",
+      "candidate_role": "mechanism",
+      "rank": 1,
+      "score": -0.25,
+      "confidence": null,
+      "support_obs_ids": [
+        "o:ecc",
+        "o:semantics"
+      ],
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "image:1/roi:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "explanation_paths": [
+        {
+          "path_id": "path:design-mvtec-001:h:wear:q:elongated",
+          "nodes": [
+            "q:elongated",
+            "d:linear_mark",
+            "p:linear_mark",
+            "r:wear_expect",
+            "m:abrasion",
+            "r:wear_effect",
+            "h:wear"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:linear_mark::input::q:elongated",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:linear_mark::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:wear_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:ecc"
+          ],
+          "joint_proof_id": "joint:design-mvtec-001:h:wear:p:linear_mark",
+          "required_joint_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ]
+        },
+        {
+          "path_id": "path:design-mvtec-001:h:wear:q:scratch_cue",
+          "nodes": [
+            "q:scratch_cue",
+            "d:linear_mark",
+            "p:linear_mark",
+            "r:wear_expect",
+            "m:abrasion",
+            "r:wear_effect",
+            "h:wear"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:linear_mark::input::q:scratch_cue",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:linear_mark::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:wear_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:wear_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:semantics"
+          ],
+          "joint_proof_id": "joint:design-mvtec-001:h:wear:p:linear_mark",
+          "required_joint_fact_ids": [
+            "fact:q:elongated",
+            "fact:q:scratch_cue"
+          ]
+        }
+      ]
+    }
+  ],
+  "top_k_paths": [
+    {
+      "path_id": "path:design-mvtec-001:h:contact:q:elongated",
+      "nodes": [
+        "q:elongated",
+        "d:linear_mark",
+        "p:linear_mark",
+        "r:contact_expect",
+        "m:local_contact",
+        "r:contact_effect",
+        "h:contact"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:linear_mark::input::q:elongated",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:linear_mark::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:contact_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:ecc"
+      ],
+      "joint_proof_id": "joint:design-mvtec-001:h:contact:p:linear_mark",
+      "required_joint_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ]
+    },
+    {
+      "path_id": "path:design-mvtec-001:h:contact:q:scratch_cue",
+      "nodes": [
+        "q:scratch_cue",
+        "d:linear_mark",
+        "p:linear_mark",
+        "r:contact_expect",
+        "m:local_contact",
+        "r:contact_effect",
+        "h:contact"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:linear_mark::input::q:scratch_cue",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:linear_mark::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:contact_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:contact_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:semantics"
+      ],
+      "joint_proof_id": "joint:design-mvtec-001:h:contact:p:linear_mark",
+      "required_joint_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ]
+    },
+    {
+      "path_id": "path:design-mvtec-001:h:wear:q:elongated",
+      "nodes": [
+        "q:elongated",
+        "d:linear_mark",
+        "p:linear_mark",
+        "r:wear_expect",
+        "m:abrasion",
+        "r:wear_effect",
+        "h:wear"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:linear_mark::input::q:elongated",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:linear_mark::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:wear_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:ecc"
+      ],
+      "joint_proof_id": "joint:design-mvtec-001:h:wear:p:linear_mark",
+      "required_joint_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ]
+    },
+    {
+      "path_id": "path:design-mvtec-001:h:wear:q:scratch_cue",
+      "nodes": [
+        "q:scratch_cue",
+        "d:linear_mark",
+        "p:linear_mark",
+        "r:wear_expect",
+        "m:abrasion",
+        "r:wear_effect",
+        "h:wear"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:linear_mark::input::q:scratch_cue",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:linear_mark::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:wear_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:wear_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:semantics"
+      ],
+      "joint_proof_id": "joint:design-mvtec-001:h:wear:p:linear_mark",
+      "required_joint_fact_ids": [
+        "fact:q:elongated",
+        "fact:q:scratch_cue"
+      ]
+    }
+  ],
+  "contextual_obs_ids": [
+    "o:anomaly"
+  ],
+  "unused_observations": [
+    {
+      "obs_id": "o:aspect",
+      "reason": "not_referenced_by_current_applicable_knowledge"
+    }
+  ]
+}

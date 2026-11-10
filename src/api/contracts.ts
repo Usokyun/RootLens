@@ -122,9 +122,33 @@ export interface DashboardReasoningProfileOption {
   profile_id: string;
   reasoner_adapter: string;
   default: boolean;
+  label?: string;
+}
+
+export interface WorkingGraphSummary {
+  graph_id: string;
+  title: string;
+  dataset: "mvtec" | "wafer" | "tep";
+  build_id: string;
+  status: "loading" | "ready" | "failed";
+  node_count: number;
+  edge_count: number;
+}
+
+export interface WorkingGraphPackage {
+  schema_version: "rootlens-working-graph.v1";
+  graph_id?: string | null;
+  title: string;
+  dataset: "mvtec" | "wafer" | "tep";
+  build_id: string;
+  nodes: Array<{ id: string; name: string; label: string; scenario: string; aliases: string[]; description: string }>;
+  edges: Array<Record<string, unknown> & { head: string; relation: string; tail: string; scenario: string }>;
+  profiles: Record<string, unknown>;
 }
 
 export interface RunReasoningMetadata {
+  graph_id?: string | null;
+  outcome?: string | null;
   reasoning_profile_id?: string | null;
   reasoner_adapter?: string | null;
   selection_mode?: string | null;
@@ -225,6 +249,8 @@ export interface UploadRequest {
   defect_type?: string;
   model_preset?: string;
   reasoning_profile_id?: string;
+  graph_id?: string;
+  semantic_mode?: "disabled" | "vlm";
   top_k: number;
 }
 
@@ -401,10 +427,9 @@ export interface KGMaterialMutationResponse {
 }
 
 export interface KGMaterialExtractRequest {
-  provider?: "openai";
-  max_chars?: number;
-  overlap_chars?: number;
-  source_format?: "jsonl";
+  provider?: "none";
+  chunk_size?: number;
+  chunk_overlap?: number;
   overwrite?: boolean;
 }
 
@@ -507,6 +532,7 @@ export interface KGStudioGraphNode {
   node_type: string;
   scenario: string;
   description: string;
+  aliases?: string[];
 }
 
 export interface KGStudioGraphEdge {
@@ -534,6 +560,7 @@ export interface KGStudioReviewTarget {
 }
 
 export interface KGStudioPayload {
+  graph_id?: string | null;
   status: "ok" | "empty" | string;
   claim_boundary: string;
   candidate_dir: string | null;

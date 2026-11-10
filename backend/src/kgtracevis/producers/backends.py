@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import pickle
 import sys
@@ -90,12 +91,28 @@ class AmazonPatchCoreBackend:
     def predict(self, image_path: Path) -> MVTecPrediction:
         """Run official PatchCore inference for one image and normalize outputs."""
         raw_prediction = self._predict_raw(image_path)
-        return amazon_patchcore_prediction_to_mvtec_prediction(
+        prediction = amazon_patchcore_prediction_to_mvtec_prediction(
             raw_prediction,
             checkpoint=self.checkpoint,
             device=self.device,
             artifact_prepend=self.artifact_prepend,
         )
+        if not image_path.is_file():
+            # Injected predictors may consume non-file handles; those have no image mapping.
+            return prediction
+        from PIL import Image
+
+        with Image.open(image_path) as image:
+            size = _amazon_patchcore_image_size(self.model, self.image_size)
+            resize = self.resize or round(size * 8 / 7)
+            scaled_w = int(resize * image.width / min(image.width, image.height))
+            scaled_h = int(resize * image.height / min(image.width, image.height))
+        prediction["metadata"]["spatial_transform"] = {
+            "kind": "resize_center_crop",
+            "resized_shape": [scaled_h, scaled_w],
+            "crop_xywh": [round((scaled_w - size) / 2), round((scaled_h - size) / 2), size, size],
+        }
+        return prediction
 
     def _load_model(self) -> Any:
         _prepare_amazon_patchcore_runtime()
@@ -183,6 +200,7 @@ class AnomalibMVTecBackend:
         checkpoint: str | Path | None = None,
         device: str | None = None,
         inferencer: Any | None = None,
+        model_type: str = "patchcore",
     ) -> None:
         """Create a backend, optionally with an injected inferencer for tests."""
         if backend not in {
@@ -194,12 +212,16 @@ class AnomalibMVTecBackend:
         self.backend = backend
         self.checkpoint = Path(checkpoint) if checkpoint is not None else None
         self.device = device
+        self.model_type = model_type
+        self.legacy_metadata = self._legacy_metadata() if inferencer is None else None
         self.inferencer = inferencer if inferencer is not None else self._load_inferencer()
 
     def predict(self, image_path: Path) -> MVTecPrediction:
         """Run Anomalib inference for one image and normalize the prediction shape."""
         if self.backend == ANOMALIB_ENGINE_BACKEND:
             return self._predict_with_engine(image_path)
+        if self.legacy_metadata is not None:
+            return self._predict_legacy_openvino(image_path)
 
         try:
             raw_prediction = self.inferencer.predict(image_path)
@@ -281,34 +303,126 @@ class AnomalibMVTecBackend:
             device=self.device,
         )
 
+    def _legacy_metadata(self) -> dict[str, Any] | None:
+        if self.backend != ANOMALIB_OPENVINO_BACKEND or self.checkpoint is None:
+            return None
+        path = self.checkpoint.with_name(f"meta_data_{self.checkpoint.stem}.json")
+        if not path.is_file():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if "transform" not in payload:
+            return None
+        return payload
+
+    def _predict_legacy_openvino(self, image_path: Path) -> MVTecPrediction:
+        """Honor the public Anomalib 1.x export's actual preprocessing and learned thresholds."""
+        metadata = self.legacy_metadata
+        transforms = metadata["transform"]["transform"]["transforms"]
+        image = _read_rgb_image(image_path)
+        resized = False
+        for transform in transforms:
+            kind = transform["__class_fullname__"].rsplit(".", 1)[-1]
+            if kind == "Resize":
+                image = _resize_image_array(
+                    image,
+                    height=int(transform["height"]),
+                    width=int(transform["width"]),
+                )
+                resized = True
+            elif kind == "Normalize":
+                image = image.astype(np.float32) / float(transform["max_pixel_value"]) - np.asarray(
+                    transform["mean"], dtype=np.float32
+                )
+                image /= np.asarray(transform["std"], dtype=np.float32)
+            elif kind != "ToTensorV2":
+                raise ValueError(f"unsupported legacy export preprocessing: {kind}")
+        tensor = image.transpose(2, 0, 1)[None].astype(np.float32)
+        result = self.inferencer.model({self.inferencer.input_blob.any_name: tensor})
+        raw_map = np.squeeze(np.asarray(result[self.inferencer.output_blob]))
+        if raw_map.ndim != 2 or not np.isfinite(raw_map).all():
+            raise ValueError("legacy OpenVINO export returned an invalid anomaly map")
+        image_threshold, pixel_threshold = metadata["image_threshold"], metadata["pixel_threshold"]
+        scale = float(metadata["max"]) - float(metadata["min"])
+        if scale <= 0:
+            raise ValueError("legacy export has an invalid normalization range")
+        raw_score = float(raw_map.max())
+        return {
+            "score": float(np.clip((raw_score - image_threshold) / scale + 0.5, 0, 1)),
+            "anomaly_map": np.clip((raw_map - pixel_threshold) / scale + 0.5, 0, 1).tolist(),
+            "mask": (raw_map >= pixel_threshold).tolist(),
+            "metadata": {
+                "source_backend": self.backend,
+                "checkpoint": str(self.checkpoint),
+                "raw_score": raw_score,
+                "image_threshold": image_threshold,
+                "pixel_threshold": pixel_threshold,
+                "raw_pred_label": raw_score >= image_threshold,
+                "score_kind": "export_normalized_anomaly_score_not_probability",
+                "preprocessing": "exported_metadata",
+                "spatial_transform": {
+                    "kind": "resize" if resized else "identity",
+                },
+            },
+        }
+
     def _predict_with_engine(self, image_path: Path) -> MVTecPrediction:
-        """Run an Anomalib Lightning checkpoint with Engine.predict."""
+        """Use the official Anomalib module with weights-only checkpoint loading on CPU."""
         if self.checkpoint is None:
             raise ValueError(f"--checkpoint is required for --model-backend {self.backend}")
         try:
-            from anomalib.data import PredictDataset
-            from anomalib.engine import Engine
-            from anomalib.models import Patchcore
+            import anomalib.models as models
+            import torch
         except ImportError as exc:
             raise ImportError(
                 "Anomalib is required for --model-backend "
                 f"{self.backend}; install it in the local runtime"
             ) from exc
 
-        model = Patchcore()
-        engine = Engine()
-        prediction_batches = engine.predict(
-            model=model,
-            dataset=PredictDataset(path=image_path),
-            ckpt_path=self.checkpoint,
+        model_names = {"patchcore": "Patchcore", "efficientad": "EfficientAd", "stfpm": "Stfpm"}
+        if self.model_type not in model_names:
+            raise ValueError(f"unsupported Anomalib model type: {self.model_type}")
+        if not hasattr(self, "_safe_model"):
+            checkpoint = torch.load(self.checkpoint, map_location="cpu", weights_only=True)
+            hyper = checkpoint.get("hyper_parameters", {})
+            allowed = {"backbone", "layers", "coreset_sampling_ratio", "num_neighbors"}
+            kwargs = {key: hyper[key] for key in allowed if key in hyper}
+            if any(
+                not isinstance(hyper.get(key, True), bool)
+                for key in ("pre_processor", "post_processor", "evaluator", "visualizer")
+            ):
+                raise ValueError(
+                    "custom checkpoint processors require an explicit supported adapter"
+                )
+            model = getattr(models, model_names[self.model_type])(
+                **kwargs,
+                pre_trained=False,
+                evaluator=False,
+                visualizer=False,
+            )
+            model.load_state_dict(checkpoint["state_dict"], strict=True)
+            model.to("cpu").eval()
+            self._safe_model = model
+        image = (
+            torch.from_numpy(_read_rgb_image(image_path).copy()).permute(2, 0, 1).float()[None]
+            / 255
         )
-        raw_prediction = _first_engine_prediction(prediction_batches)
-        return anomalib_prediction_to_mvtec_prediction(
+        with torch.inference_mode():
+            raw_prediction = self._safe_model(image)
+        result = anomalib_prediction_to_mvtec_prediction(
             raw_prediction,
             backend=self.backend,
             checkpoint=self.checkpoint,
-            device=self.device,
+            device="cpu",
         )
+        result["metadata"].update(
+            {
+                "checkpoint_loading": "weights_only",
+                "preprocessing": "anomalib_default_resize_256_imagenet",
+                "spatial_transform": {"kind": "resize"},
+                "score_kind": "checkpoint_normalized_anomaly_score_not_probability",
+            }
+        )
+        return result
 
 
 def amazon_patchcore_prediction_to_mvtec_prediction(
@@ -357,7 +471,12 @@ def anomalib_prediction_to_mvtec_prediction(
     confidence = _float_or_none(_first_prediction_value(prediction, ("confidence",)))
     if confidence is None:
         confidence = score
-    label = _text_or_none(_first_prediction_value(prediction, ("pred_label", "label")))
+    raw_label = _first_prediction_value(prediction, ("pred_label", "label"))
+    label = _text_or_none(raw_label)
+    if hasattr(raw_label, "numel") and raw_label.numel() == 1:
+        raw_label = raw_label.item()
+    if isinstance(raw_label, np.bool_):
+        raw_label = bool(raw_label)
     anomaly_map = _first_prediction_value(prediction, ("anomaly_map",))
     mask = _first_prediction_value(prediction, ("pred_mask", "mask"))
 
@@ -366,7 +485,7 @@ def anomalib_prediction_to_mvtec_prediction(
             "source_backend": backend,
             "checkpoint": str(checkpoint) if checkpoint is not None else None,
             "device": device,
-            "raw_pred_label": label,
+            "raw_pred_label": raw_label if isinstance(raw_label, bool) else label,
         }
     }
     if score is not None:
@@ -726,7 +845,7 @@ def load_trusted_torch_model(checkpoint: str | Path | None) -> Any:
             "PyTorch and torchvision are required for --model-backend torch-resnet34"
         ) from exc
 
-    checkpoint_obj = torch.load(path, map_location="cpu")
+    checkpoint_obj = torch.load(path, map_location="cpu", weights_only=True)
     state_dict = _extract_state_dict(checkpoint_obj)
     model = _build_radai_resnet(models, nn)
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
@@ -805,19 +924,19 @@ def _extract_state_dict(checkpoint_obj: Any) -> Mapping[str, Any]:
 
 def _wafer_map_tensor(wafer_map: Sequence[Sequence[Any]], *, device: Any) -> Any:
     import torch
-    import torch.nn.functional as F
+    from scipy.ndimage import zoom
 
     array = np.asarray(wafer_map, dtype=np.float32)
     if array.ndim != 2:
         raise ValueError("wafer map must be 2-dimensional for torch inference")
     if array.size == 0:
         raise ValueError("wafer map must not be empty")
+    # Match the model author's bilinear zoom and post-resize normalization exactly.
+    array = zoom(array, (64 / array.shape[0], 64 / array.shape[1]), order=1)[:64, :64]
     maximum = float(array.max()) if array.size else 0.0
     if maximum > 0:
         array = array / maximum
     tensor = torch.from_numpy(array).unsqueeze(0).unsqueeze(0)
-    if tensor.shape[-2:] != (64, 64):
-        tensor = F.interpolate(tensor, size=(64, 64), mode="bilinear", align_corners=False)
     return tensor.to(device)
 
 

@@ -208,6 +208,12 @@ class PostgresRunStore:
                         step.model_dump(mode="json") for step in detail.workflow_steps
                     ],
                     "source_dataset_label": detail.run.dataset,
+                    "evidence_by_case": {
+                        str(entry["case_id"]): entry["evidence"] for entry in entries
+                    },
+                    "linked_entities_by_case": {
+                        str(entry["case_id"]): entry.get("linked_entities", []) for entry in entries
+                    },
                     "ranked_root_causes_by_case": {
                         str(entry["case_id"]): entry.get("ranked_root_causes", [])
                         for entry in entries
@@ -347,9 +353,7 @@ class PostgresRunStore:
     def list_feedback(self, request: Any) -> dict[str, Any]:
         """Return append-only feedback records for dashboard clients."""
         run_uuid = parse_run_uuid(request.run_id) if request.run_id else None
-        target_type = (
-            feedback_target_type(request.target_type) if request.target_type else None
-        )
+        target_type = feedback_target_type(request.target_type) if request.target_type else None
         offset = int(getattr(request, "offset", 0))
         limit = int(getattr(request, "limit", 50))
         with self._connection() as connection:

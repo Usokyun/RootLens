@@ -1,0 +1,637 @@
+{
+  "schema_version": "rootlens-knowledge-package.v2",
+  "example_kind": "synthetic_design",
+  "graph_id": "design:unified-diagnosis",
+  "semantics_version": "conjunctive-explanation-v0",
+  "entities": [
+    {
+      "entity_id": "class:surface_object",
+      "label": "可进行表面检查的对象",
+      "kind": "object_class"
+    },
+    {
+      "entity_id": "class:metal_nut",
+      "label": "金属螺母",
+      "kind": "object_class"
+    },
+    {
+      "entity_id": "class:reactor",
+      "label": "反应器",
+      "kind": "equipment_class"
+    },
+    {
+      "entity_id": "class:wafer",
+      "label": "晶圆",
+      "kind": "object_class"
+    },
+    {
+      "entity_id": "var:reactor_temperature",
+      "label": "反应器温度",
+      "kind": "variable"
+    },
+    {
+      "entity_id": "var:cooling_outlet_temperature",
+      "label": "反应器冷却出口温度",
+      "kind": "variable"
+    },
+    {
+      "entity_id": "var:feed_flow",
+      "label": "进料流量",
+      "kind": "variable"
+    }
+  ],
+  "relations": [
+    {
+      "relation_id": "rel:nut_surface",
+      "head": "class:metal_nut",
+      "relation": "SUBCLASS_OF",
+      "tail": "class:surface_object",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    }
+  ],
+  "subject_bindings": [
+    {
+      "namespace": "mvtec.object",
+      "external_id": "metal_nut",
+      "target_id": "class:metal_nut"
+    },
+    {
+      "namespace": "process.unit_type",
+      "external_id": "reactor",
+      "target_id": "class:reactor"
+    },
+    {
+      "namespace": "wafer.object",
+      "external_id": "wafer",
+      "target_id": "class:wafer"
+    },
+    {
+      "namespace": "tep_braatz.channel",
+      "external_id": "xmeas_9",
+      "target_id": "var:reactor_temperature"
+    },
+    {
+      "namespace": "tep_braatz.channel",
+      "external_id": "xmeas_21",
+      "target_id": "var:cooling_outlet_temperature"
+    },
+    {
+      "namespace": "tep_braatz.channel",
+      "external_id": "xmeas_1",
+      "target_id": "var:feed_flow"
+    }
+  ],
+  "feature_registry": [
+    {
+      "feature_id": "detection.anomaly_present",
+      "value_kind": "boolean",
+      "unit": null,
+      "definition": "Producer 对本次分析范围是否存在异常的显式判断；仅为输入任务门控，不计原因支持票。"
+    },
+    {
+      "feature_id": "geometry.eccentricity",
+      "value_kind": "number",
+      "unit": "1",
+      "definition": "区域坐标协方差特征值形成的离心率；定义及输入平面由 procedure 声明。"
+    },
+    {
+      "feature_id": "geometry.aspect_ratio",
+      "value_kind": "number",
+      "unit": "1",
+      "definition": "轴对齐 bbox 长边/短边；本样例仅展示，不进入任何诊断规则。"
+    },
+    {
+      "feature_id": "appearance.semantic_candidates",
+      "value_kind": "candidate_set",
+      "unit": null,
+      "definition": "开放的外观语义候选集；缺少某标签不是该标签为假的证据。"
+    },
+    {
+      "feature_id": "appearance.foreign_material_present",
+      "value_kind": "boolean",
+      "unit": null,
+      "definition": "视觉模型对 ROI 是否存在可见附着物的显式估计；false 是模型阴性估计，不是缺省值。"
+    },
+    {
+      "feature_id": "statistics.mean_z",
+      "value_kind": "number",
+      "unit": "1",
+      "definition": "相对固定正常参考逐样本标准化，再求窗口均值。"
+    },
+    {
+      "feature_id": "spatial.failure_density",
+      "value_kind": "number",
+      "unit": "1",
+      "definition": "给定空间 scope 内失效 die 数/有效 die 数。"
+    }
+  ],
+  "observable_definitions": [
+    {
+      "predicate_id": "q:elongated",
+      "label": "区域细长",
+      "feature_id": "geometry.eccentricity",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.95,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "predicate_id": "q:scratch_cue",
+      "label": "存在划痕外观候选",
+      "feature_id": "appearance.semantic_candidates",
+      "op": "candidate_contains",
+      "operand": {
+        "kind": "category",
+        "category": "scratch"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "predicate_id": "q:foreign_material",
+      "label": "存在可见附着物估计",
+      "feature_id": "appearance.foreign_material_present",
+      "op": "bool_eq",
+      "operand": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "predicate_id": "q:reactor_deviation",
+      "label": "反应器温度窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:reactor_temperature"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": "same_as_task",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "predicate_id": "q:cooling_deviation",
+      "label": "冷却出口温度窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:cooling_outlet_temperature"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": "same_as_task",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "predicate_id": "q:feed_deviation",
+      "label": "进料流量窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:feed_flow"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      },
+      "reference_requirement": "same_as_task",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "predicate_id": "q:edge_high",
+      "label": "边缘失效密度高",
+      "feature_id": "spatial.failure_density",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.3,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "edge",
+        "parent": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    },
+    {
+      "predicate_id": "q:center_low",
+      "label": "中心失效密度低",
+      "feature_id": "spatial.failure_density",
+      "op": "lte",
+      "operand": {
+        "kind": "number",
+        "number": 0.15,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "center",
+        "parent": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    },
+    {
+      "predicate_id": "q:overall_high",
+      "label": "整体失效密度高",
+      "feature_id": "spatial.failure_density",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.75,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "all_valid",
+        "parent": "task_scope"
+      },
+      "reference_requirement": null,
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    }
+  ],
+  "pattern_definitions": [
+    {
+      "definition_id": "d:linear_mark",
+      "pattern_id": "p:linear_mark",
+      "label": "线性表面异常表现",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:elongated",
+          "q:scratch_cue"
+        ]
+      },
+      "scope_join": "same_subject_same_scope",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "definition_id": "d:foreign_material",
+      "pattern_id": "p:foreign_material",
+      "label": "可见附着物表现",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:foreign_material"
+        ]
+      },
+      "scope_join": "same_subject_same_scope",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "definition_id": "d:cooling",
+      "pattern_id": "p:cooling",
+      "label": "冷却相关多变量表现",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:reactor_deviation",
+          "q:cooling_deviation"
+        ]
+      },
+      "scope_join": "same_event_same_window",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "definition_id": "d:feed_flow",
+      "pattern_id": "p:feed_flow",
+      "label": "进料流量多变量表现",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:reactor_deviation",
+          "q:feed_deviation"
+        ]
+      },
+      "scope_join": "same_event_same_window",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "definition_id": "d:edge_ring",
+      "pattern_id": "p:edge_ring",
+      "label": "边缘集中且中心稀疏",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:edge_high",
+          "q:center_low"
+        ]
+      },
+      "scope_join": "same_wafer_parent_scope",
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    },
+    {
+      "definition_id": "d:nearfull",
+      "pattern_id": "p:nearfull",
+      "label": "整体高密度且边缘高密度",
+      "semantics": "iff",
+      "body": {
+        "all": [
+          "q:overall_high",
+          "q:edge_high"
+        ]
+      },
+      "scope_join": "same_wafer_parent_scope",
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    }
+  ],
+  "mechanisms": [
+    {
+      "mechanism_id": "m:local_contact",
+      "label": "局部接触作用"
+    },
+    {
+      "mechanism_id": "m:abrasion",
+      "label": "表面磨蚀作用"
+    },
+    {
+      "mechanism_id": "m:adhesion",
+      "label": "物料附着"
+    },
+    {
+      "mechanism_id": "m:cooling_change",
+      "label": "冷却功能变化"
+    },
+    {
+      "mechanism_id": "m:feed_change",
+      "label": "进料流量变化"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h:contact",
+      "label": "机械接触候选",
+      "target_role": "mechanism",
+      "applies_to_class_id": "class:surface_object",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:wear",
+      "label": "表面磨损候选",
+      "target_role": "mechanism",
+      "applies_to_class_id": "class:surface_object",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:adhesion",
+      "label": "异物附着候选",
+      "target_role": "mechanism",
+      "applies_to_class_id": "class:surface_object",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:cooling",
+      "label": "冷却相关扰动候选",
+      "target_role": "fault",
+      "applies_to_class_id": "class:reactor",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:feed_flow",
+      "label": "进料流量扰动候选",
+      "target_role": "fault",
+      "applies_to_class_id": "class:reactor",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:edge_ring",
+      "label": "Edge-ring 图案候选",
+      "target_role": "spatial_pattern",
+      "applies_to_class_id": "class:wafer",
+      "assumption_cost": 1
+    },
+    {
+      "hypothesis_id": "h:nearfull",
+      "label": "Nearfull 图案候选",
+      "target_role": "spatial_pattern",
+      "applies_to_class_id": "class:wafer",
+      "assumption_cost": 1
+    }
+  ],
+  "effect_rules": [
+    {
+      "rule_id": "r:contact_effect",
+      "from_id": "h:contact",
+      "to_id": "m:local_contact",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:wear_effect",
+      "from_id": "h:wear",
+      "to_id": "m:abrasion",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:adhesion_effect",
+      "from_id": "h:adhesion",
+      "to_id": "m:adhesion",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:cooling_effect",
+      "from_id": "h:cooling",
+      "to_id": "m:cooling_change",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "rule_id": "r:feed_effect",
+      "from_id": "h:feed_flow",
+      "to_id": "m:feed_change",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    }
+  ],
+  "expectation_rules": [
+    {
+      "rule_id": "r:contact_expect",
+      "from_id": "m:local_contact",
+      "pattern_id": "p:linear_mark",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:wear_expect",
+      "from_id": "m:abrasion",
+      "pattern_id": "p:linear_mark",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:adhesion_expect",
+      "from_id": "m:adhesion",
+      "pattern_id": "p:foreign_material",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:visual-design"
+      ]
+    },
+    {
+      "rule_id": "r:cooling_expect",
+      "from_id": "m:cooling_change",
+      "pattern_id": "p:cooling",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "rule_id": "r:feed_expect",
+      "from_id": "m:feed_change",
+      "pattern_id": "p:feed_flow",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:process-design"
+      ]
+    },
+    {
+      "rule_id": "r:edge_ring_expect",
+      "from_id": "h:edge_ring",
+      "pattern_id": "p:edge_ring",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    },
+    {
+      "rule_id": "r:nearfull_expect",
+      "from_id": "h:nearfull",
+      "pattern_id": "p:nearfull",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "s:wafer-design"
+      ]
+    }
+  ],
+  "execution_policy": {
+    "conflict_weight": 2,
+    "assumption_weight": 0.25,
+    "score_mapping": "negative_explanation_cost",
+    "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+    "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+    "positive_coverage": "complete_joint_pattern_only",
+    "group_aggregation": "equal_budget_normalized_mean",
+    "primitive_comparison": "discrete_boolean_v0",
+    "missing": "unknown_not_negative",
+    "tie_epsilon": 1e-9
+  },
+  "source_assertions": [
+    {
+      "assertion_id": "s:visual-design",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义三种候选及其外观期待；接触与磨损预期相同，因此应并列。附着候选的可见物料期待是软条件。",
+      "parameter_origin": "declared_demo_heuristic"
+    },
+    {
+      "assertion_id": "s:process-design",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义冷却与进料流量两种多变量期待。abs(mean_z)>=2 是示例阈值，不代表完整 TEP 故障模型。",
+      "parameter_origin": "declared_demo_heuristic"
+    },
+    {
+      "assertion_id": "s:wafer-design",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义边缘环带与 nearfull 的联合空间条件。数值为示例，不对应真实模型评测。",
+      "parameter_origin": "declared_demo_heuristic"
+    }
+  ]
+}

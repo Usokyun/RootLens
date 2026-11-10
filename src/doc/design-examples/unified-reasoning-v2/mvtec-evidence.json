@@ -1,0 +1,175 @@
+{
+  "schema_version": "rootlens-evidence.v2",
+  "example_kind": "synthetic_design",
+  "case_id": "design-mvtec-001",
+  "source_dataset": "mvtec",
+  "task": {
+    "target_role": "mechanism",
+    "context_subject_id": "object:1",
+    "focus_subject_ids": [
+      "roi:1"
+    ],
+    "scope_id": "scope:roi1"
+  },
+  "subjects": [
+    {
+      "subject_id": "object:1",
+      "kind": "object",
+      "external_namespace": "mvtec.object",
+      "external_id": "metal_nut"
+    },
+    {
+      "subject_id": "roi:1",
+      "kind": "image_region",
+      "parent_id": "object:1"
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "scope:roi1",
+      "kind": "image_region",
+      "subject_id": "roi:1",
+      "asset_id": "image:1",
+      "image_shape_hw": [
+        900,
+        900
+      ],
+      "coordinate_space": "original_image_pixels",
+      "bbox_xyxy": [
+        210,
+        180,
+        570,
+        230
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "image:1",
+      "kind": "image",
+      "uri": "design://image.png"
+    },
+    {
+      "asset_id": "mask:1",
+      "kind": "mask",
+      "uri": "design://mask.png"
+    },
+    {
+      "asset_id": "semantics:1",
+      "kind": "json",
+      "uri": "design://roi-semantics.json"
+    }
+  ],
+  "procedures": [
+    {
+      "procedure_id": "detector:v1",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "image:1"
+      ]
+    },
+    {
+      "procedure_id": "geometry:v1",
+      "kind": "measurement",
+      "input_asset_ids": [
+        "mask:1"
+      ]
+    },
+    {
+      "procedure_id": "roi-vlm:v1",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "image:1",
+        "mask:1"
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "obs_id": "o:anomaly",
+      "subject_id": "roi:1",
+      "feature_id": "detection.anomaly_present",
+      "value": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "status": "observed",
+      "scope_id": "scope:roi1",
+      "procedure_id": "detector:v1",
+      "dependency_group": "image:1/roi:1",
+      "raw_refs": [
+        "image:1"
+      ]
+    },
+    {
+      "obs_id": "o:ecc",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.eccentricity",
+      "value": {
+        "kind": "number",
+        "number": 0.97,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:roi1",
+      "procedure_id": "geometry:v1",
+      "dependency_group": "image:1/roi:1",
+      "raw_refs": [
+        "mask:1"
+      ]
+    },
+    {
+      "obs_id": "o:semantics",
+      "subject_id": "roi:1",
+      "feature_id": "appearance.semantic_candidates",
+      "value": {
+        "kind": "candidate_set",
+        "items": [
+          "scratch",
+          "crack"
+        ],
+        "exhaustive": false
+      },
+      "status": "observed",
+      "scope_id": "scope:roi1",
+      "procedure_id": "roi-vlm:v1",
+      "dependency_group": "image:1/roi:1",
+      "raw_refs": [
+        "semantics:1"
+      ]
+    },
+    {
+      "obs_id": "o:material",
+      "subject_id": "roi:1",
+      "feature_id": "appearance.foreign_material_present",
+      "value": {
+        "kind": "boolean",
+        "boolean": false
+      },
+      "status": "observed",
+      "scope_id": "scope:roi1",
+      "procedure_id": "roi-vlm:v1",
+      "dependency_group": "image:1/roi:1",
+      "raw_refs": [
+        "semantics:1"
+      ]
+    },
+    {
+      "obs_id": "o:aspect",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.aspect_ratio",
+      "value": {
+        "kind": "number",
+        "number": 7.2,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:roi1",
+      "procedure_id": "geometry:v1",
+      "dependency_group": "image:1/roi:1",
+      "raw_refs": [
+        "mask:1"
+      ]
+    }
+  ]
+}

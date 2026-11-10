@@ -20,6 +20,7 @@ from kgtracevis.kg.import_neo4j import RELATION_PATTERN, Neo4jConfig
 NODE_QUERY = """
 MATCH (node:KGEntity)
 WHERE node.scenario IN $scenarios
+  AND node.graph_id IS NULL
 RETURN node.id AS id,
        node.name AS name,
        node.entity_label AS label,
@@ -67,6 +68,7 @@ MATCH (head:KGEntity)-[rel]->(tail:KGEntity)
 WHERE rel.scenario IN $scenarios
   AND head.scenario IN $scenarios
   AND tail.scenario IN $scenarios
+  AND rel.graph_id IS NULL
 RETURN head.id AS head,
        tail.id AS tail,
        type(rel) AS relation,
@@ -189,9 +191,7 @@ class Neo4jKGRepository:
     def connect(cls, config: Neo4jConfig) -> Neo4jKGRepository:
         """Create a repository using the real Neo4j Python driver."""
         missing = [
-            field
-            for field in ("uri", "user", "password", "database")
-            if not getattr(config, field)
+            field for field in ("uri", "user", "password", "database") if not getattr(config, field)
         ]
         if missing:
             raise ValueError(f"Neo4j repository config is incomplete: {', '.join(missing)}")
@@ -214,8 +214,8 @@ class Neo4jKGRepository:
         min_score: float = 0.55,
     ) -> list[LinkCandidate]:
         """Return top-k entity candidates scoped to a dataset scenario plus shared KG."""
-        normalized_mention = "" if mention is None else "".join(
-            ch.lower() if ch.isalnum() else "" for ch in mention
+        normalized_mention = (
+            "" if mention is None else "".join(ch.lower() if ch.isalnum() else "" for ch in mention)
         )
         if not normalized_mention:
             return []
@@ -334,9 +334,7 @@ class Neo4jKGRepository:
         record = records[0]
         return {
             "deleted_node_count": int(record.get("deleted_node_count") or 0),
-            "deleted_relationship_count": int(
-                record.get("deleted_relationship_count") or 0
-            ),
+            "deleted_relationship_count": int(record.get("deleted_relationship_count") or 0),
         }
 
     def upsert_edge(self, edge: KGEdge) -> KGEdge:

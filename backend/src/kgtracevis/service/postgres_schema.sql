@@ -443,3 +443,10 @@ CREATE INDEX IF NOT EXISTS idx_material_extraction_artifacts_material
     ON material_extraction_artifacts(material_id, artifact_type);
 CREATE INDEX IF NOT EXISTS idx_material_extraction_artifacts_run
     ON material_extraction_artifacts(extraction_run_id);
+
+CREATE TABLE IF NOT EXISTS working_graphs (
+    graph_id text PRIMARY KEY,
+    payload jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);

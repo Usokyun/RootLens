@@ -77,6 +77,13 @@ def normalize_visual_evidence_items(
         _normalize_browser_preview_reference(row)
         _apply_visual_item_classification(row)
         normalized.append(row)
+    priority = {"image": 0, "mask": 1, "heatmap": 2, "wafer_map": 3}
+    normalized.sort(
+        key=lambda row: (
+            4 if row.get("source_key") == "roi_path" else priority.get(row.get("kind"), 5),
+            str(row.get("artifact_id", "")),
+        )
+    )
     return normalized
 
 
@@ -117,6 +124,33 @@ def _record_visual_items(
                 )
             )
 
+    for region in record.get("visual_regions", []):
+        if isinstance(region, Mapping) and region.get("roi_path"):
+            item = _path_item(
+                case_id=case_id,
+                dataset=dataset,
+                kind="image",
+                title=f"ROI · {region['region_id']}",
+                source_key="roi_path",
+                source_path=str(region["roi_path"]),
+                run_id=run_id,
+                run_dir=run_dir,
+                artifact_dir=artifact_dir,
+                used_filenames=used_filenames,
+            )
+            items.append(
+                item.model_copy(
+                    update={
+                        "metadata": {
+                            **item.metadata,
+                            "region_id": region["region_id"],
+                            "obs_id": f"obs:{case_id}:{region['region_id']}",
+                            "image_bbox_xyxy": region.get("image_bbox_xyxy"),
+                            "roi_bbox_xyxy": region.get("roi_bbox_xyxy"),
+                        }
+                    }
+                )
+            )
     wafer_map, source_key = _first_value_with_key(
         record,
         ("wafer_map", "wafer_map_path", "map_path"),

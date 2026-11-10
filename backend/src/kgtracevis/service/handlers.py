@@ -54,6 +54,7 @@ class AnalyzeRequest(BaseModel):
 
     case_id: str | None = None
     evidence: Evidence | None = None
+    graph_id: str | None = None
     top_k: int = Field(default=5, ge=1, le=20)
 
 
@@ -194,6 +195,12 @@ def analyze_request(
     case_dirs: Sequence[str | Path] = DEFAULT_EVIDENCE_DIRS,
 ) -> dict[str, Any]:
     """Analyze either a full evidence payload or a known case ID."""
+    if request.graph_id is not None:
+        if pipeline is not None:
+            raise ValueError("pass pipeline or graph_id, not both")
+        from kgtracevis.workflows.root_cause_provider_selection import build_pipeline
+
+        pipeline = build_pipeline(graph_id=request.graph_id)
     if request.evidence is not None:
         return _analysis_envelope(request.evidence, pipeline=pipeline, top_k=request.top_k)
     if request.case_id is not None:
@@ -275,9 +282,7 @@ def _analysis_envelope(
                 else []
             )
         ],
-        "claim_boundary": (
-            "candidate/plausible explanation only; not a verified root-cause label"
-        ),
+        "claim_boundary": ("candidate/plausible explanation only; not a verified root-cause label"),
     }
 
 

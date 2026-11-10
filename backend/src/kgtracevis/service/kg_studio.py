@@ -13,7 +13,12 @@ from typing import Any, Literal, Protocol
 from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict, Field
 
-from kgtracevis.kg.graph import REQUIRED_EDGE_COLUMNS, REQUIRED_NODE_COLUMNS, KnowledgeGraph
+from kgtracevis.kg.graph import (
+    REQUIRED_EDGE_COLUMNS,
+    REQUIRED_NODE_COLUMNS,
+    KnowledgeGraph,
+    split_aliases,
+)
 from kgtracevis.kg.import_neo4j import resolve_neo4j_config
 from kgtracevis.kg.neo4j_repository import Neo4jKGRepository
 
@@ -84,6 +89,7 @@ class KGStudioGraphNode(BaseModel):
     node_type: str
     scenario: str
     description: str = ""
+    aliases: list[str] = Field(default_factory=list)
 
 
 class KGStudioGraphEdge(BaseModel):
@@ -180,6 +186,7 @@ def kg_studio_payload(
             "label": node.label,
             "scenario": node.scenario,
             "description": node.description,
+            "aliases": "|".join(node.aliases),
         }
         for node in graph.nodes.values()
     ]
@@ -295,10 +302,7 @@ def _candidate_artifact_dirs(candidate_dir: Path) -> list[Path]:
         child
         for child in candidate_dir.iterdir()
         if child.is_dir()
-        and (
-            (child / "nodes_candidate.csv").is_file()
-            or (child / "nodes.csv").is_file()
-        )
+        and ((child / "nodes_candidate.csv").is_file() or (child / "nodes.csv").is_file())
     ]
     children.sort(key=_candidate_dir_mtime, reverse=True)
     return [candidate_dir, *children]
@@ -312,10 +316,9 @@ def _candidate_dir_mtime(path: Path) -> float:
 
 
 def _candidate_artifacts_from_dir(candidate_dir: Path) -> _CandidateArtifacts | None:
-    if (
-        (candidate_dir / "nodes_candidate.csv").is_file()
-        and (candidate_dir / "edges_candidate.csv").is_file()
-    ):
+    if (candidate_dir / "nodes_candidate.csv").is_file() and (
+        candidate_dir / "edges_candidate.csv"
+    ).is_file():
         return _CandidateArtifacts(
             candidate_dir=candidate_dir,
             nodes_path=candidate_dir / "nodes_candidate.csv",
@@ -415,6 +418,7 @@ def _graph_node(row: dict[str, str]) -> KGStudioGraphNode:
         node_type=row.get("label", ""),
         scenario=row.get("scenario", ""),
         description=row.get("description", ""),
+        aliases=split_aliases(row.get("aliases", "")),
     )
 
 

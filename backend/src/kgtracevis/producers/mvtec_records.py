@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from PIL import Image
 
+from kgtracevis.mask.visual_regions import map_regions_to_image, regions_from_mask
 from kgtracevis.producers.common import (
     MVTecAnomalyPredictor,
     deterministic_subset,
@@ -203,6 +205,16 @@ def _record_from_sample(
         record["heatmap_path"] = heatmap_path
     if mask_stats:
         record["mask_stats"] = mask_stats
+    if predicted_mask is not None:
+        regions = regions_from_mask(predicted_mask, raw_ref=mask_path or "detector.mask")
+        if extra_metadata.get("spatial_transform"):
+            with Image.open(sample.image_path) as image:
+                regions = map_regions_to_image(
+                    regions,
+                    (image.height, image.width),
+                    extra_metadata["spatial_transform"],
+                )
+        record["visual_regions"] = [region.model_dump(mode="json") for region in regions]
     return record
 
 

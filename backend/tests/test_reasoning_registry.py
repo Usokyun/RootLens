@@ -24,18 +24,19 @@ def test_builtin_reasoning_profiles_load_with_resolved_assets() -> None:
     tep = registry.resolve_profile(DEFAULT_TEP_REASONING_PROFILE_ID)
 
     assert isinstance(generic.manifest, ReasoningProfileManifest)
-    assert generic.root_dir == (
-        DEFAULT_REASONING_PROFILE_DIR / DEFAULT_GENERIC_REASONING_PROFILE_ID
-    ).resolve()
+    assert (
+        generic.root_dir
+        == (DEFAULT_REASONING_PROFILE_DIR / DEFAULT_GENERIC_REASONING_PROFILE_ID).resolve()
+    )
     assert generic.reasoner_adapter == "generic_graph_path"
     assert "tep" in generic.dataset_scope
     assert generic.runtime_overlay == {}
     assert generic.reasoning_assets == {}
 
     assert isinstance(tep.manifest, ReasoningProfileManifest)
-    assert tep.root_dir == (
-        DEFAULT_REASONING_PROFILE_DIR / DEFAULT_TEP_REASONING_PROFILE_ID
-    ).resolve()
+    assert (
+        tep.root_dir == (DEFAULT_REASONING_PROFILE_DIR / DEFAULT_TEP_REASONING_PROFILE_ID).resolve()
+    )
     assert tep.reasoner_adapter == "tep_root_kgd"
     assert tep.runtime_overlay["nodes"].is_file()
     assert tep.runtime_overlay["edges"].is_file()
@@ -54,7 +55,7 @@ def test_reasoning_registry_lists_dataset_compatible_profiles() -> None:
     tep_ids = [profile.reasoning_profile_id for profile in registry.list_profiles("tep")]
     wafer_ids = [profile.reasoning_profile_id for profile in registry.list_profiles("wafer")]
 
-    assert mvtec_ids == [DEFAULT_GENERIC_REASONING_PROFILE_ID]
+    assert mvtec_ids == [DEFAULT_GENERIC_REASONING_PROFILE_ID, "mvtec_feature_graph_v1"]
     assert wafer_ids == [DEFAULT_GENERIC_REASONING_PROFILE_ID]
     assert tep_ids == [DEFAULT_GENERIC_REASONING_PROFILE_ID, DEFAULT_TEP_REASONING_PROFILE_ID]
 

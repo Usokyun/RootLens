@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
 import {
   IconBulb,
   IconInfoCircle,
@@ -97,7 +98,11 @@ const uploadForm = reactive({
   defectType: '',
   modelPreset: 'auto',
   reasoningProfileId: '',
+  roiSemantics: false,
 })
+
+const workingGraphOptions = ref<DashboardReasoningProfileOption[]>([])
+const workingGraphError = ref('')
 
 const evidenceFilter = reactive({
   graph: workbenchState.value.evidenceFilterGraph ?? 'all',
@@ -185,6 +190,26 @@ const activeObservation = computed(() =>
   findObservationBrowseItem(activeObservationItems.value, selectedObservationId.value),
 )
 
+const activeVisualRegion = computed(() =>
+  activeObservation.value?.rawObservation.value_type === 'visual_region.v1'
+    ? toRecord(activeObservation.value.rawObservation.value) : null,
+)
+const activeRegionMeasurements = computed(() => {
+  const region = activeVisualRegion.value
+  if (!region) return []
+  const value = (input: unknown) => typeof input === 'number' && Number.isFinite(input)
+    ? Number(input.toPrecision(5)).toString()
+    : Array.isArray(input) ? input.map(value => typeof value === 'number' ? Number(value.toFixed(2)) : value).join(', ') : normalizeText(input, '--')
+  return [
+    ['面积占比（检测网格）', value(region.area_ratio)],
+    ['长宽比 / 离心率', `${value(region.aspect_ratio)} / ${value(region.eccentricity)}`],
+    [`bbox（${value(region.image_shape)}）`, value(region.bbox_xyxy)],
+    [`原图 bbox（${value(region.original_image_shape)}）`, value(region.image_bbox_xyxy)],
+    ['语义来源', value(region.semantic_source)],
+    ['语义状态', value(region.semantic_status)],
+  ]
+})
+
 const observationModalityOptions = computed(() => collectObservationModalities(caseEvidenceEntriesObservationItems.value))
 const observationSourceOptions = computed(() => collectObservationSources(caseEvidenceEntriesObservationItems.value))
 const selectedObservationVisualEvidence = computed(() =>
@@ -202,7 +227,8 @@ const uploadReasoningProfileOptions = computed<DashboardReasoningProfileOption[]
     return []
   }
 
-  return bootstrap.value?.reasoning_profile_options?.[dataset] ?? []
+  const options = bootstrap.value?.reasoning_profile_options?.[dataset] ?? []
+  return dataset === 'mvtec' ? [...options, ...workingGraphOptions.value] : options
 })
 
 const uploadReasoningHelp = computed(() => {
@@ -549,7 +575,7 @@ async function handleReplayImport() {
 
     if (assetFiles.length) {
       const importResult = await buildLocalImportResult(assetFiles)
-      saveImportedSession({
+      await saveImportedSession({
         graphs: importResult.graphs,
         runtime: importResult.runtime,
         summary: `导入完整回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
@@ -701,6 +727,16 @@ async function loadRun(runId: string) {
   }
 }
 
+async function exportBackendReplay() {
+  if (!selectedRunId.value) return
+  try {
+    const bundle = await getRootLensService().exportRunReplay(selectedRunId.value)
+    const url = URL.createObjectURL(new Blob([JSON.stringify(bundle)], { type: 'application/json' }))
+    const a = document.createElement('a'); a.href = url; a.download = `rootlens-${selectedRunId.value}-session.json`; a.click(); URL.revokeObjectURL(url)
+    uploadMessage.value = '已导出原始图谱、完整结果与图片，可从现有 Session 入口离线回放。'
+  } catch (error) { errorMessage.value = String(error) }
+}
+
 async function refreshWorkspace() {
   syncImportedSessionState()
   loading.value = true
@@ -714,6 +750,17 @@ async function refreshWorkspace() {
     bootstrap.value = bootstrapPayload
     runs.value = runSummaries
     uploadForm.mode = bootstrapPayload.upload_modes[0]?.mode ?? 'records'
+    workingGraphError.value = ''
+    try {
+      const result = await getRootLensService().listWorkingGraphs()
+      workingGraphOptions.value = result.graphs.map((graph) => ({
+        profile_id: `working:${graph.graph_id}`, label: graph.title,
+        reasoner_adapter: graph.dataset === 'mvtec' ? 'visual_profile_match' : graph.dataset === 'tep' ? 'process_graph_rbc' : 'wafer_spatial_profile', default: false,
+      }))
+    } catch (error) {
+      workingGraphOptions.value = []
+      workingGraphError.value = error instanceof Error ? error.message : String(error)
+    }
 
     const nextRunId =
       runSummaries.find((item) => item.run_id === selectedRunId.value)?.run_id ?? runSummaries[0]?.run_id ?? null
@@ -755,6 +802,7 @@ async function handleUpload() {
       defect_type: uploadForm.defectType || undefined,
       model_preset: uploadForm.modelPreset || undefined,
       reasoning_profile_id: uploadForm.reasoningProfileId || undefined,
+      semantic_mode: uploadForm.mode === 'image' && uploadForm.roiSemantics ? 'vlm' : undefined,
       top_k: uploadForm.topK,
     })
 
@@ -925,6 +973,7 @@ onBeforeUnmount(() => {
                   </a-button>
                 </a-button-group>
 
+                <a-button v-if="preferences.dataSourceMode === 'backend' && !isReplaySessionActive && selectedRunId" @click="exportBackendReplay">导出本次运行回放</a-button>
                 <div v-if="isReplaySessionActive" class="rl-section-card workspace-session-card">
                   <div class="rl-section-card__body workspace-stack workspace-stack--tight">
                     <div class="workspace-summary-list workspace-summary-list--two-col">
@@ -1080,13 +1129,17 @@ onBeforeUnmount(() => {
                           :key="option.profile_id"
                           :value="option.profile_id"
                         >
-                          {{ option.profile_id }} ·
+                          {{ option.label ?? option.profile_id }} ·
                           {{ formatReasonerAdapterLabel(option.reasoner_adapter) }}
                         </a-option>
                       </a-select>
+                      <small v-if="workingGraphError">工作图列表不可用：{{ workingGraphError }}</small>
                     </div>
                   </a-form-item>
 
+                  <a-checkbox v-if="uploadForm.mode === 'image'" v-model="uploadForm.roiSemantics">
+                    识别区域语义（调用已配置的视觉模型，发送原图缩略图与 ROI）
+                  </a-checkbox>
                   <div
                     v-if="uploadForm.mode === 'image'"
                     class="workspace-form-row workspace-form-row--three"
@@ -1757,6 +1810,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <MeasuredEvidenceDetails :observation="activeObservation.rawObservation" />
       <template v-if="activeObservation.modality === 'image'">
         <div class="workspace-summary-list workspace-summary-list--two-col">
           <div class="workspace-summary-list__item">
@@ -1788,6 +1842,13 @@ onBeforeUnmount(() => {
             <strong>{{ readObservationNumberField(activeObservation, 'severity') }}</strong>
           </div>
         </div>
+        <div v-if="activeRegionMeasurements.length" class="workspace-summary-list workspace-summary-list--two-col">
+          <div v-for="[label, value] in activeRegionMeasurements" :key="label" class="workspace-summary-list__item">
+            <span class="workspace-summary-label">{{ label }}</span>
+            <strong>{{ value }}</strong>
+          </div>
+        </div>
+        <p v-if="activeVisualRegion?.semantic_description">{{ activeVisualRegion.semantic_description }}</p>
         <div
           v-if="selectedObservationVisualEvidence.length"
           class="workspace-observation-visual-grid"

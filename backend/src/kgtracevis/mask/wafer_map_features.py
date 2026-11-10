@@ -31,13 +31,8 @@ def normalize_wafer_map_features(
     _set_shape_if_present(normalized, "map_shape", map_shape)
 
     if wafer_map is not None:
-        normalized.update(
-            {
-                key: value
-                for key, value in _stats_from_wafer_map(wafer_map).items()
-                if key not in normalized
-            }
-        )
+        # A map is measured data, not a label-derived descriptor supplied by a classifier.
+        normalized.update(_stats_from_wafer_map(wafer_map))
 
     if "defect_density" not in normalized:
         failed = _int_or_none(normalized.get("failed_die_count"))
@@ -71,6 +66,8 @@ def derive_wafer_location(stats: Mapping[str, Any]) -> str | None:
     if explicit:
         return explicit
 
+    # Legacy top-level summaries retain their pattern semantics. The independent
+    # measured v1 observation is computed separately and never consumes this label.
     pattern = _canonical_pattern(stats.get("pattern"))
     if pattern == "nearfull":
         return "wafer_surface"
@@ -105,7 +102,7 @@ def derive_wafer_morphology(stats: Mapping[str, Any]) -> str | None:
 
     pattern = _canonical_pattern(stats.get("pattern"))
     if pattern == "nearfull":
-        return "dense_particles"
+        return "widespread_failures"
     if pattern in {"edge_ring", "donut"}:
         return "ring"
     if pattern == "scratch":
@@ -118,7 +115,7 @@ def derive_wafer_morphology(stats: Mapping[str, Any]) -> str | None:
     density = _float_or_none(stats.get("defect_density"))
     component_count = _int_or_none(stats.get("component_count"))
     if density is not None and density >= 0.45:
-        return "dense_particles"
+        return "widespread_failures"
     if component_count is not None and component_count >= 4:
         return "scattered"
     if component_count is not None and component_count <= 2:
@@ -134,48 +131,114 @@ def _stats_from_wafer_map(wafer_map: Sequence[Sequence[Any]]) -> dict[str, Any]:
     ]
     row_count = len(rows)
     col_count = max((len(row) for row in rows), default=0)
-    die_count = sum(len(row) for row in rows)
+    if not rows or not col_count or any(len(row) != col_count for row in rows):
+        raise ValueError("WM811K map must be a nonempty rectangular 0/1/2 grid")
+    if any(value not in (0, 1, 2) for row in rows for value in row):
+        raise ValueError(
+            "WM811K uses 0 background / 1 good / 2 failed; binary masks need explicit conversion"
+        )
+    die_count = sum(value in (1, 2) for row in rows for value in row)
     failed_positions = _failed_positions(rows)
     failed_count = len(failed_positions)
     stats: dict[str, Any] = {
         "map_shape": [row_count, col_count],
+        "encoding": "wm811k_012",
         "die_count": die_count,
         "failed_die_count": failed_count,
         "defect_density": _clamp(failed_count / die_count) if die_count else 0.0,
         "component_count": _component_count(failed_positions),
     }
+    stats.update(
+        measure_wafer_map(rows).model_dump(
+            exclude={
+                "schema_version",
+                "annotation_state",
+                "classifier_pattern",
+                "classifier_source",
+            }
+        )
+    )
     if failed_positions and row_count > 1 and col_count > 1:
         row_mean = sum(row for row, _col in failed_positions) / failed_count
         col_mean = sum(col for _row, col in failed_positions) / failed_count
         x_norm = _clamp(col_mean / (col_count - 1))
         y_norm = _clamp(row_mean / (row_count - 1))
         stats["centroid_norm"] = [x_norm, y_norm]
-        stats["radial_mean"] = sum(
-            _radial_distance(col / (col_count - 1), row / (row_count - 1))
-            for row, col in failed_positions
-        ) / failed_count
+        stats["radial_mean"] = (
+            sum(
+                _radial_distance(col / (col_count - 1), row / (row_count - 1))
+                for row, col in failed_positions
+            )
+            / failed_count
+        )
     return stats
 
 
 def _failed_positions(rows: Sequence[Sequence[Any]]) -> set[tuple[int, int]]:
-    numeric_values = [
-        number
-        for row in rows
-        for value in row
-        if (number := _float_or_none(value)) is not None
-    ]
-    has_explicit_failed_value = any(value > 1 for value in numeric_values)
     positions: set[tuple[int, int]] = set()
     for row_index, row in enumerate(rows):
         for col_index, value in enumerate(row):
             number = _float_or_none(value)
             if number is None:
                 continue
-            if (has_explicit_failed_value and number > 1) or (
-                not has_explicit_failed_value and number > 0
-            ):
+            if number == 2:
                 positions.add((row_index, col_index))
     return positions
+
+
+def measure_wafer_map(wafer_map):
+    """Measure valid die, radial densities and shape without using a predicted pattern."""
+    import numpy as np
+
+    from kgtracevis.schema.measured_reasoning import WaferMeasurements
+
+    a = np.asarray(wafer_map)
+    if a.ndim != 2 or not a.size or not np.isin(a, [0, 1, 2]).all():
+        raise ValueError("WM811K map must be a nonempty 0/1/2 grid")
+    valid, failed = a > 0, a == 2
+    y, x = np.indices(a.shape)
+    vy, vx = np.where(valid)
+    radius = np.ones(a.shape)
+    if vx.size:
+        cx, cy = (vx.max() + vx.min()) / 2, (vy.max() + vy.min()) / 2
+        radius = np.sqrt(
+            ((x - cx) / max((vx.max() - vx.min()) / 2, 1)) ** 2
+            + ((y - cy) / max((vy.max() - vy.min()) / 2, 1)) ** 2
+        )
+
+    def density(zone):
+        count = int((valid & zone).sum())
+        return float((failed & zone).sum() / count) if count else None
+
+    positions = set(zip(*np.where(failed), strict=True))
+    remaining, sizes = set(positions), []
+    while remaining:
+        stack, size = [remaining.pop()], 0
+        while stack:
+            row, col = stack.pop()
+            size += 1
+            for dr in (-1, 0, 1):
+                for dc in (-1, 0, 1):
+                    neighbor = row + dr, col + dc
+                    if neighbor in remaining:
+                        remaining.remove(neighbor)
+                        stack.append(neighbor)
+        sizes.append(size)
+    linearity = None
+    if len(positions) >= 3:
+        eigen = np.linalg.eigvalsh(np.cov(np.array(sorted(positions)).T))
+        linearity = float(1 - eigen[0] / eigen[-1]) if eigen[-1] > 0 else None
+    return WaferMeasurements(
+        valid_die_count=int(valid.sum()),
+        failed_die_count=int(failed.sum()),
+        failure_density=float(failed.sum() / valid.sum()) if valid.any() else 0,
+        center_density=density(radius <= 0.4),
+        edge_density=density(radius >= 0.8),
+        middle_density=density((radius > 0.4) & (radius < 0.8)),
+        component_count=len(sizes),
+        largest_component_ratio=max(sizes, default=0) / max(len(positions), 1),
+        linearity=linearity,
+    )
 
 
 def _component_count(positions: set[tuple[int, int]]) -> int:

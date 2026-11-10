@@ -78,7 +78,7 @@ npm run dev:all
 
 ### 新环境 / fresh clone：使用 Docker Compose
 
-fresh clone 不包含被 Git 忽略的本机数据库与运行工具，应走 Compose 分支；不要期待 `backend:db:start` 下载软件或新建数据库。本次 Compose 仅做静态配置检查，本机未安装 Docker、未实际运行容器。以下命令均在 RootLens 根目录执行：
+fresh clone 不包含被 Git 忽略的本机数据库与运行工具，应走 Compose 分支；不要期待 `backend:db:start` 下载软件或新建数据库。先前迁移验收仅静态检查默认 Compose；后续 MVTec M1 已在独立 `compose.test.yaml` 实跑数据库，记录见 [M1 使用与验收](backend/docs/mvtec-m1-demo.md)，不混用两次范围。以下命令均在 RootLens 根目录执行：
 
 ```bash
 docker compose -f backend/compose.yaml up -d neo4j postgres
@@ -162,6 +162,21 @@ npm run dev:all
 2. `rootlens-session-export.v1`
 
 `workspace export` 仍可单独恢复 analyst workspace。不再支持从 `nodes/edges/evidence` 在浏览器端临时组装 runtime，也不恢复浏览器端 RCA / what-if 重算。
+
+## 三场景渐进重构 Demo
+
+已完成 M1–M6：**实际素材解析 → LLM 可执行知识 → 持久图谱管理 → 三场景测量/条件推理 → 原始图与结果回放**，保留三页布局。
+
+- 支持 TXT/Markdown、CSV、JSON/JSONL、HTML、文本层 PDF（Docling Parse）和实际 URL 获取；片段定位、重解析与失败重试可查看。
+- Graphs 页可编辑/保存节点、边、别名、绑定和画像，完整导入/导出工作图包；改图影响新分析，历史 run 保留当时的图和结果。
+- 实跑模型为 capsule/STFPM、bottle/PatchCore、WM811K ResNet；TEP 使用完整 52 通道、匹配的正常参考/PCA 和当前图传播。新策略不使用原生标签冒充测量。
+- Evidence 页导出完整 Session；现有回放入口直接导入，图片/大时序由 IndexedDB 保存，浏览器不重新推理。
+
+安装 Demo 依赖：`cd backend && uv sync --frozen --extra dev --extra llm --extra ml --extra parsers`。已有库只执行 `backend/scripts/migrate_working_graphs.py --apply` 增量迁移，不执行新库初始化。
+
+本机演示前端 `http://127.0.0.1:5186`、API `http://127.0.0.1:8012` 使用独立测试数据库；日常默认端口不变。最省事的展示文件是 `backend/runs/refactor_m2_m6/all-scenes-session.json`，MVTec 单场景为 `mvtec_final-session.json`；大文件不随 Git 提供。
+
+使用步骤、图谱 JSON/路径、实际正负结果与恢复说明见 [三场景使用与验收](backend/docs/progressive-demo-2026-11-10.md)；任务记录见[渐进执行计划](src/doc/rootlens-refactor-execution-plan-2026-11-10.md)。最终前端 89 项及 build 通过；后端 345 通过、7 项既有失败，详见验收文档。
 
 ## 数据与 Git 边界
 

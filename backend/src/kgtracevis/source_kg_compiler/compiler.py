@@ -17,6 +17,9 @@ from threading import Lock
 from typing import Any, TypeVar, cast
 
 from kgtracevis.kg.graph import KnowledgeGraph
+from kgtracevis.kg.visual_profile_compiler import compile_visual_profiles
+from kgtracevis.schema.measured_reasoning import MeasuredProfileBundle
+from kgtracevis.schema.visual_reasoning import VisualProfileBundle
 from kgtracevis.source_kg_compiler.llm import safe_json_parse
 from kgtracevis.source_kg_compiler.models import (
     EDGE_CSV_COLUMNS,
@@ -128,6 +131,10 @@ TARGET_TYPE_CONSTRAINTS = {
 KNOWLEDGE_CARD_SYSTEM_PROMPT = """You build an offline reusable RCA knowledge graph.
 Extract reusable domain knowledge cards from source material.
 This is not a case-specific graph for one observed sample.
+Extract physical objects, defects, variables and mechanisms, not the instructions
+that describe this software. JSON schema names, filenames, metrics, thresholds,
+channel-contribution vectors and prohibitions are execution policy, not domain
+entities or industrial causal relationships. Preserve them only as profile hints.
 Return JSON only. Do not output markdown. Do not output explanation text.
 Only output the specified schema."""
 
@@ -298,6 +305,35 @@ def compile_source_kg(
         progress_callback=progress_callback,
         started_at=started,
     )
+    domain_profiles, runtime_profiles = compile_executable_visual_profiles(
+        artifacts=artifacts,
+        graph=KnowledgeGraph.from_csv(paths.nodes_csv, paths.edges_csv),
+        domain_profiles=domain_profiles,
+        llm_client=llm_client,
+        progress_callback=progress_callback,
+        started_at=started,
+    )
+    domain_profiles["visual_runtime"] = runtime_profiles.model_dump(mode="json")
+    domain_profiles = compile_executable_measured_profiles(
+        artifacts=artifacts,
+        graph=KnowledgeGraph.from_csv(paths.nodes_csv, paths.edges_csv),
+        domain_profiles=domain_profiles,
+        llm_client=llm_client,
+        progress_callback=progress_callback,
+        started_at=started,
+    )
+    _write_json(
+        paths.runtime_views_manifest,
+        {
+            "artifact_type": "source_kg_compiler_runtime_views_manifest_v1",
+            "status": "generated" if runtime_profiles.profiles else "no_executable_visual_profiles",
+            "dataset_scope": ["mvtec"],
+            "reasoner_adapter": "visual_profile_match",
+            "profile_count": len(runtime_profiles.profiles),
+            "issues": runtime_profiles.issues,
+            "domain_profiles": "../domain_profiles.json",
+        },
+    )
     _emit_progress(
         progress_callback,
         stage="domain_profiles",
@@ -306,6 +342,33 @@ def compile_source_kg(
         profile_counts=domain_profiles.get("metadata", {}).get("profile_counts", {}),
     )
     _write_json(paths.domain_profiles, domain_profiles)
+    from kgtracevis.kg.working_graph_package import (
+        compile_profiles,
+        executable_subgraph,
+        graph_package,
+    )
+
+    compiled_graph = KnowledgeGraph.from_csv(paths.nodes_csv, paths.edges_csv)
+    runtime_packages = {}
+    for scope in sorted({node.scenario for node in compiled_graph.nodes.values()} - {"shared"}):
+        bundle = compile_profiles(compiled_graph, scope, domain_profiles)
+        if not bundle.profiles:
+            continue
+        view = executable_subgraph(compiled_graph, bundle)
+        target = paths.runtime_views_manifest.parent / f"{scope}.working-graph.json"
+        package = graph_package(
+            view,
+            graph_id="compiler-runtime",
+            title=f"{scope} executable knowledge",
+            build_id=output_dir.name,
+            dataset=scope,
+            profiles=bundle,
+        )
+        _write_json(target, package.model_dump(mode="json"))
+        runtime_packages[scope] = target.as_posix()
+    runtime_manifest = json.loads(paths.runtime_views_manifest.read_text())
+    runtime_manifest["working_graph_packages"] = runtime_packages
+    _write_json(paths.runtime_views_manifest, runtime_manifest)
     _write_json(paths.domain_profile_report, domain_profiles["metadata"])
     _write_json(paths.domain_profiles_manifest, _domain_profiles_manifest(paths.domain_profiles))
     qa_report = build_qa_report(artifacts)
@@ -393,6 +456,12 @@ def load_source_units(
 
     units: list[SourceUnit] = []
     for file_path in unique_files:
+        from kgtracevis.source_kg_compiler.material_parser import read_parsed_bundle
+
+        bundle = read_parsed_bundle(file_path)
+        if bundle is not None:
+            units.extend(bundle.units)
+            continue
         text = file_path.read_text(encoding="utf-8")
         scenario = _infer_unit_scenario(text, default_scenario)
         source_id = _source_id(file_path)
@@ -506,7 +575,7 @@ def build_canonical_entities(
         aliases: list[str] | None = None,
         description: str = "",
     ) -> CanonicalEntity:
-        key = (_normalize_key(name), scenario)
+        key = (_normalize_key(entity_id or name), scenario)
         existing = entities_by_key.get(key)
         if existing is None:
             base_id = entity_id or _pascal_id(name)
@@ -755,6 +824,7 @@ def build_domain_profiles(
     llm_client: SourceKGLLMClient,
     progress_callback: SourceKGProgressCallback | None = None,
     started_at: float | None = None,
+    validation_feedback: list[str] | None = None,
 ) -> dict[str, Any]:
     """Extract reusable KGBuilder-style domain reasoning profiles."""
     started = time.perf_counter() if started_at is None else started_at
@@ -763,7 +833,32 @@ def build_domain_profiles(
     raw = _complete_json_with_progress(
         llm_client,
         system_prompt=DOMAIN_PROFILE_SYSTEM_PROMPT,
-        user_prompt=_domain_profile_user_prompt(knowledge_cards, entities, edges),
+        user_prompt=_domain_profile_user_prompt(knowledge_cards, entities, edges)
+        + (
+            "\nAlso return measured_runtime, keyed by wafer and/or tep when those scenarios exist. "
+            "Each value MUST follow this schema: "
+            + json.dumps(MeasuredProfileBundle.model_json_schema())
+            + "\nUse only numeric predicates explicitly supported by the source material, "
+            "not case labels. "
+            "Wafer map encoding is 0 background / 1 good / 2 failed; "
+            "density denominator is valid die. "
+            "TEP process channels are xmeas_N / xmv_N. "
+            "Bind each predicate to an existing Variable or "
+            "Pattern node and a real source edge ID. "
+            "Candidates are existing Cause/Mechanism/Fault nodes. "
+            "Process paths must use propagation_enabled forward/reverse/both edges with registered "
+            "relation_family: FAULT_SOURCE, CONTROL, MATERIAL_FLOW, ENERGY_TRANSFER, PHASE_CHANGE, "
+            "COMPOSITION, OBSERVATION. Do not invent causal facts."
+            if any(e.scenario in {"wafer", "tep"} for e in entities)
+            else ""
+        )
+        + (
+            "\nFix these executable-condition validation errors from the previous extraction. "
+            "Return the full corrected profiles object, not a patch.\n"
+            + json.dumps(validation_feedback, ensure_ascii=False)
+            if validation_feedback
+            else ""
+        ),
         stage="domain_profiles",
         item=item_label,
         progress_callback=progress_callback,
@@ -790,6 +885,7 @@ def build_domain_profiles(
         "llm_profile_extraction_ok": bool(llm_payload),
         "llm_profile_extraction_error": "",
         "profiles": profiles["profiles"],
+        "measured_runtime": llm_payload.get("measured_runtime", {}),
         "metadata": {
             "num_cards": len(knowledge_cards),
             "num_entities": len(entities),
@@ -797,6 +893,71 @@ def build_domain_profiles(
             "profile_counts": _profile_counts(profiles),
         },
     }
+
+
+def compile_executable_measured_profiles(
+    *, artifacts, graph, domain_profiles, llm_client, progress_callback=None, started_at=None
+):
+    from kgtracevis.kg.working_graph_package import compile_profiles
+
+    scopes = sorted({e.scenario for e in artifacts.entities} & {"wafer", "tep"})
+    visual = domain_profiles.get("visual_runtime")
+    for attempt in range(2):
+        errors = []
+        for scenario in scopes:
+            try:
+                compile_profiles(graph, scenario, domain_profiles)
+            except ValueError as exc:
+                errors.append(f"{scenario}: {exc}")
+        if not errors:
+            break
+        if attempt == 0:
+            domain_profiles = build_domain_profiles(
+                knowledge_cards=artifacts.knowledge_cards,
+                entities=artifacts.entities,
+                edges=artifacts.edges,
+                llm_client=llm_client,
+                progress_callback=progress_callback,
+                started_at=started_at,
+                validation_feedback=errors,
+            )
+        else:
+            raise ValueError(
+                "Measured profiles failed bounded automatic repair: " + "; ".join(errors)
+            )
+    if visual is not None:
+        domain_profiles["visual_runtime"] = visual
+    return domain_profiles
+
+
+def compile_executable_visual_profiles(
+    *,
+    artifacts: SourceKGArtifacts,
+    graph: KnowledgeGraph,
+    domain_profiles: dict[str, Any],
+    llm_client: SourceKGLLMClient,
+    progress_callback: SourceKGProgressCallback | None = None,
+    started_at: float | None = None,
+) -> tuple[dict[str, Any], VisualProfileBundle]:
+    """Compile registered predicates with one bounded automatic semantic repair."""
+    runtime = compile_visual_profiles(graph, domain_profiles)
+    repairs = 0
+    if runtime.issues:
+        domain_profiles = build_domain_profiles(
+            knowledge_cards=artifacts.knowledge_cards,
+            entities=artifacts.entities,
+            edges=artifacts.edges,
+            llm_client=llm_client,
+            progress_callback=progress_callback,
+            started_at=started_at,
+            validation_feedback=runtime.issues,
+        )
+        repairs = 1
+        runtime = compile_visual_profiles(graph, domain_profiles)
+    domain_profiles["metadata"]["runtime_profile_repair_attempts"] = repairs
+    domain_profiles["metadata"]["executable_visual_profile_count"] = len(runtime.profiles)
+    domain_profiles["visual_runtime"] = runtime.model_dump(mode="json")
+    return domain_profiles, runtime
 
 
 def write_artifacts(artifacts: SourceKGArtifacts, paths: SourceKGArtifactPaths) -> None:
@@ -1107,6 +1268,10 @@ Rules:
   4. anomaly/pattern to candidate cause/mechanism
   5. candidate cause to required evidence
 - Default confidence to 0.7 and review_status to "auto".
+- For explicitly described physical TEP propagation, also return propagation_enabled=true,
+  propagation_direction="forward", relation_family (FAULT_SOURCE, CONTROL, MATERIAL_FLOW,
+  ENERGY_TRANSFER, PHASE_CHANGE, COMPOSITION or OBSERVATION), attenuation=1.0,
+  edge_weight=0.7. Do not enable arbitrary similarity or diagnostic reverse edges.
 - Output JSON object exactly like:
 {{
   "edges": [
@@ -1201,6 +1366,19 @@ Rules:
 - Do not invent sample-specific evidence.
 - Keep each profile concise and reusable.
 - Prefer high-value RCA reasoning profiles over exhaustive lists.
+- MVTec profiles may additionally include evidence_conditions and conflict_conditions arrays.
+  Each condition has feature, op, value, optional concept_id/source_edge_id, required and group.
+  Registered features: object; region.morphology (linear/spot/scattered/dense),
+  region.location (surface/edge in the detector plane), region.area_ratio,
+  region.aspect_ratio, region.eccentricity, region.component_count, region.semantic_candidates.
+  Use eq/in for scalar labels, gte/lte/eq for numeric values, intersects for semantic candidates.
+  Values of in/intersects are string arrays. Only include numerical limits supported by the source.
+  Do not translate image edge into product-part edge or invent sample observations.
+- object_id already specifies scope; do not add duplicate object equality conditions.
+- group is assigned by the runtime from feature dependencies, not generated domain knowledge.
+- Only explicitly contrary observations belong in conflict_conditions. Shared shape,
+  ambiguity, or inability to identify a unique cause is NOT a conflict. Use [] when the
+  source gives no explicit contrary condition. Never contradict a supported appearance.
 
 Compact entities:
 {json.dumps([_compact_entity(entity) for entity in entities], ensure_ascii=False)}
@@ -1251,7 +1429,7 @@ def _normalize_llm_entity(
     canonical_name = str(item.get("canonical_name") or item.get("entity_id") or "").strip()
     if not canonical_name:
         return None
-    entity_id = _pascal_id(canonical_name)
+    entity_id = _pascal_id(str(item.get("entity_id") or canonical_name))
     label = str(item.get("entity_type") or item.get("label") or "Other").strip()
     if label not in ENTITY_TYPES:
         label = "Other"
@@ -1262,21 +1440,15 @@ def _normalize_llm_entity(
         )
     )
     source_card_ids = [
-        str(value).strip()
-        for value in _as_list(item.get("source_card_ids"))
-        if str(value).strip()
+        str(value).strip() for value in _as_list(item.get("source_card_ids")) if str(value).strip()
     ]
     return CanonicalEntity(
         entity_id=entity_id,
-        name=entity_id,
+        name=canonical_name,
         label=label,
         scenario=scenario,
         aliases=sorted(
-            {
-                str(value).strip()
-                for value in _as_list(item.get("aliases"))
-                if str(value).strip()
-            }
+            {str(value).strip() for value in _as_list(item.get("aliases")) if str(value).strip()}
         ),
         description=str(item.get("description") or "").strip()[:240],
         source_card_ids=source_card_ids,
@@ -1301,9 +1473,7 @@ def _normalize_llm_edge(
         confidence = 0.7
     confidence = max(0.0, min(1.0, round(confidence, 4)))
     source_card_ids = [
-        str(value).strip()
-        for value in _as_list(item.get("source_card_ids"))
-        if str(value).strip()
+        str(value).strip() for value in _as_list(item.get("source_card_ids")) if str(value).strip()
     ]
     scenario = _scenario(
         str(item.get("scenario") or _scenario_from_card_ids(knowledge_cards, source_card_ids))
@@ -1324,6 +1494,17 @@ def _normalize_llm_edge(
         confidence=confidence,
         weight=round(1.0 - confidence, 4),
         review_status=cast(Any, review_status),
+        **{
+            key: item[key]
+            for key in (
+                "relation_family",
+                "propagation_enabled",
+                "propagation_direction",
+                "attenuation",
+                "edge_weight",
+            )
+            if key in item
+        },
     )
 
 
@@ -1667,6 +1848,17 @@ def _write_edges_csv(path: Path, edges: list[CanonicalEdge]) -> None:
                     "feedback_count": edge.feedback_count,
                     "accepted_count": edge.accepted_count,
                     "rejected_count": edge.rejected_count,
+                    "external_edge_id": edge.edge_id,
+                    **{
+                        key: getattr(edge, key)
+                        for key in (
+                            "relation_family",
+                            "propagation_enabled",
+                            "propagation_direction",
+                            "attenuation",
+                            "edge_weight",
+                        )
+                    },
                 }
             )
 
@@ -1873,7 +2065,7 @@ def _merge_profile_payloads(
 
 
 def _dedupe_profile_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    seen: set[tuple[str, str]] = set()
+    seen: dict[tuple[str, str], dict[str, Any]] = {}
     output: list[dict[str, Any]] = []
     for row in rows:
         key = (
@@ -1881,9 +2073,13 @@ def _dedupe_profile_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             str(row.get("unit_id") or row.get("defect_id") or row.get("pattern_name") or ""),
         )
         if key in seen:
+            for field in ("evidence_conditions", "conflict_conditions"):
+                if field in row:
+                    seen[key].setdefault(field, []).extend(row[field])
             continue
-        seen.add(key)
-        output.append(_normalize_profile_row(row))
+        normalized = _normalize_profile_row(row)
+        seen[key] = normalized
+        output.append(normalized)
     return output
 
 
@@ -1903,9 +2099,7 @@ def _normalize_profile_row(row: dict[str, Any]) -> dict[str, Any]:
         "aliases",
     ):
         if key in normalized:
-            normalized[key] = [
-                str(value) for value in _as_list(normalized.get(key)) if value != ""
-            ]
+            normalized[key] = [str(value) for value in _as_list(normalized.get(key)) if value != ""]
     return normalized
 
 
@@ -2156,8 +2350,7 @@ def _run_ordered_parallel(
     max_workers = min(concurrency, len(items))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(worker, index, item)
-            for index, item in enumerate(items, start=1)
+            executor.submit(worker, index, item) for index, item in enumerate(items, start=1)
         ]
         return [future.result() for future in futures]
 
@@ -2209,11 +2402,7 @@ def _artifact_sizes(paths: SourceKGArtifactPaths) -> dict[str, int]:
         "domain_profiles_manifest": paths.domain_profiles_manifest,
         "runtime_views_manifest": paths.runtime_views_manifest,
     }
-    return {
-        name: path.stat().st_size
-        for name, path in artifact_paths.items()
-        if path.exists()
-    }
+    return {name: path.stat().st_size for name, path in artifact_paths.items() if path.exists()}
 
 
 def _parse_options(parts: list[str]) -> dict[str, str]:

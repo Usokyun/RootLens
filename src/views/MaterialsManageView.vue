@@ -57,6 +57,8 @@ const { state: workbenchState, updateState } = useWorkbenchState();
 const loading = ref(false);
 const errorMessage = ref("");
 const actionMessage = ref("");
+const activationLoading = ref(false);
+const activationDataset = ref<"mvtec" | "wafer" | "tep">("mvtec");
 
 const materials = ref<KGMaterialRecord[]>([]);
 const builds = ref<KGConstructionBuildListResponse | null>(null);
@@ -486,6 +488,22 @@ async function loadSelectedMaterialState(materialId: string) {
   }
 }
 
+async function handleActivateBuild() {
+  if (!buildDetail.value || preferences.value.dataSourceMode !== "backend") return;
+  activationLoading.value = true;
+  errorMessage.value = "";
+  try {
+    const graph = await getRootLensService().activateWorkingGraph(
+      buildDetail.value.build.run_id, `${activationDataset.value} · ${buildDetail.value.build.run_id}`, activationDataset.value,
+    );
+    actionMessage.value = `已装载 ${graph.title}。在 Evidence 页的推理配置中选择它。`;
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    activationLoading.value = false;
+  }
+}
+
 async function refreshWorkspace() {
   loading.value = true;
   errorMessage.value = "";
@@ -666,11 +684,11 @@ async function handleMaterialExtract() {
       selectedMaterial.value.material_id,
       { overwrite: true },
     );
-    actionMessage.value = `已完成 extract：${response.material.material_id}`;
+    actionMessage.value = `解析完成：${response.record_count} 个实际片段，可在 Chunks 查看内容与定位。`;
     await refreshWorkspace();
     selectedMaterialId.value = response.material.material_id;
     await loadSelectedMaterialState(response.material.material_id);
-    selectedMaterialTab.value = "extractions";
+    selectedMaterialTab.value = "chunks";
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   } finally {
@@ -723,9 +741,12 @@ async function handleBuild() {
   errorMessage.value = "";
 
   try {
+    const baseName = buildForm.output_name.trim();
+    const outputName = (builds.value?.builds ?? []).some(build => build.output_dir.endsWith(`/${baseName}`))
+      ? `${baseName}-${Date.now()}` : baseName;
     const buildSourcesResponse = await getRootLensService().buildKGMaterialSources({
       material_ids: selectedMaterials.value.map((item) => item.material_id),
-      output_name: buildForm.output_name,
+      output_name: outputName,
       overwrite: false,
       source_type: buildForm.source_type,
     });
@@ -1328,6 +1349,9 @@ onMounted(() => {
               <div class="rl-form-actions rl-form-actions--dual">
                 <a-button type="primary" @click="handleBuild">生成构图</a-button>
                 <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
+                <a-select v-model="activationDataset" style="width: 105px" aria-label="工作图场景"><a-option value="mvtec">MVTec</a-option><a-option value="wafer">Wafer</a-option><a-option value="tep">TEP</a-option></a-select>
+                <a-button :disabled="!buildDetail || preferences.dataSourceMode !== 'backend'"
+                  :loading="activationLoading" @click="handleActivateBuild">装载工作图</a-button>
                 <a-button
                   :disabled="!buildDetail"
                   @click="

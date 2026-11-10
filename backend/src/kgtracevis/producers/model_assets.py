@@ -20,10 +20,8 @@ ModelAsset = Literal["mvtec-efficientad", "mvtec-patchcore", "mvtec-stfpm", "wm8
 DEFAULT_MODEL_ASSETS_ROOT = Path("runs/real_model_pipeline/assets")
 DEFAULT_MVTEC_EFFICIENTAD_REPO = ""
 DEFAULT_MVTEC_EFFICIENTAD_FILE = "mvtec_efficientad.pt"
-DEFAULT_MVTEC_PATCHCORE_REPO = "NTHoang2103/patchcore-mvtec-models"
-DEFAULT_MVTEC_PATCHCORE_FILE = (
-    "clean/capsule/Patchcore/mvtec/capsule/v0/weights/lightning/model.ckpt"
-)
+DEFAULT_MVTEC_PATCHCORE_REPO = "micguida1/mvtec-anomaly-checkpoints"
+DEFAULT_MVTEC_PATCHCORE_FILE = "Patchcore/MVTecAD/capsule/latest/weights/lightning/model.ckpt"
 DEFAULT_MVTEC_STFPM_REPO = "alexsu52/stfpm_mvtec_capsule"
 DEFAULT_MVTEC_STFPM_FILE = "openvino_model.tar"
 DEFAULT_WM811K_REPO = WM811K_RESNET_MODEL_SOURCE

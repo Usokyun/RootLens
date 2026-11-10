@@ -155,6 +155,7 @@ def test_postgres_run_store_persists_run_detail_to_normalized_tables() -> None:
                 "linked_entities": [
                     {
                         "link_id": "anomaly_type:scratch",
+                        "obs_id": "obs:mvtec_unit:region_1",
                         "field": "anomaly_type",
                         "mention": "scratch",
                         "selected_entity_id": "ScratchDefect",
@@ -183,8 +184,7 @@ def test_postgres_run_store_persists_run_detail_to_normalized_tables() -> None:
                         "source_edges": [
                             {
                                 "edge_id": (
-                                    "ScratchDefect|HAS_PLAUSIBLE_CAUSE|"
-                                    "MechanicalContact|mvtec"
+                                    "ScratchDefect|HAS_PLAUSIBLE_CAUSE|MechanicalContact|mvtec"
                                 ),
                             }
                         ],
@@ -224,6 +224,10 @@ def test_postgres_run_store_persists_run_detail_to_normalized_tables() -> None:
     assert analysis_params[2] == "mvtec"
     assert analysis_params[7] == 1
     parameters = _json_obj(analysis_params[16])
+    assert parameters["evidence_by_case"]["mvtec_unit"]["case_id"] == "mvtec_unit"
+    assert parameters["linked_entities_by_case"]["mvtec_unit"][0]["obs_id"] == (
+        "obs:mvtec_unit:region_1"
+    )
     assert parameters["ranked_root_causes_by_case"]["mvtec_unit"][0]["candidate_id"] == (
         "MechanicalContact"
     )
@@ -507,3 +511,45 @@ def test_postgres_run_store_records_feedback_against_matching_run_case() -> None
 
 def _json_obj(value: Any) -> Any:
     return value.obj if hasattr(value, "obj") else value
+
+
+def test_full_image_evidence_is_persisted_instead_of_compact_summary():
+    from types import SimpleNamespace
+
+    from kgtracevis.service.postgres_run_payloads import case_entries
+
+    full = {
+        "case_id": "image",
+        "dataset": "mvtec",
+        "object": "capsule",
+        "observations": [{"obs_id": "obs:image:region_1", "value_type": "visual_region.v1"}],
+    }
+    entries = case_entries(
+        SimpleNamespace(
+            cases=[
+                {
+                    "case_id": "image",
+                    "dataset": "mvtec",
+                    "generated_evidence": {"case_id": "image", "observation_count": 1},
+                    "generated_evidence_full": full,
+                }
+            ]
+        )
+    )
+    assert entries[0]["evidence"]["observations"] == full["observations"]
+
+
+def test_legacy_file_recovery_and_new_explicit_snapshot_authority(tmp_path):
+    import json
+
+    from kgtracevis.adapters.ds_mvtec_adapter import evidence_from_mvtec_record
+    from kgtracevis.service.run_enrichment import resolve_case_generated_evidence
+
+    original = evidence_from_mvtec_record({"case_id": "legacy", "object": "capsule"})
+    path = tmp_path / "old_input.json"
+    path.write_text(json.dumps(original.model_dump(mode="json")))
+    later_catalog_value = {**original.model_dump(mode="json"), "object": "bottle"}
+    row = {"generated_evidence": later_catalog_value, "generated_evidence_path": str(path)}
+    assert resolve_case_generated_evidence(row)["object"] == "capsule"
+    row["generated_evidence_full"] = later_catalog_value
+    assert resolve_case_generated_evidence(row)["object"] == "bottle"

@@ -17,6 +17,7 @@ from kgtracevis.adapters._common import (
     text_value,
 )
 from kgtracevis.mask.mask_feature_extractor import summarize_mask_features
+from kgtracevis.mask.visual_regions import regions_from_record
 from kgtracevis.schema.evidence_schema import Evidence, EvidenceObservation, RawEvidence
 
 CASE_KEYS = ("case_id", "sample_id", "image_id", "record_id", "id")
@@ -165,9 +166,43 @@ def evidence_from_mvtec_record(
             morphology_source=morphology_source,
             severity_source=severity_source,
             confidence_source=confidence_source,
-        ),
+        )
+        + _region_observations(data, case_id, anomaly_type),
         adapter=adapter_metadata("mvtec"),
     )
+
+
+def _region_observations(
+    data: Mapping[str, Any],
+    case_id: str,
+    anomaly_type: str,
+) -> list[EvidenceObservation]:
+    observations = []
+    for region in regions_from_record(data):
+        if anomaly_type.lower() not in {"unknown", "good", "normal", "none", ""}:
+            if not region.semantic_candidates and not region.semantic_source:
+                region = region.model_copy(
+                    update={
+                        "semantic_candidates": [anomaly_type],
+                        "semantic_source": str(data.get("annotation_type") or "supplied_label"),
+                    }
+                )
+        observations.append(
+            EvidenceObservation(
+                obs_id=f"obs:{case_id}:{region.region_id}",
+                facet="image_defect",
+                name=region.region_id,
+                display_name=(
+                    f"{region.region_id} · {region.morphology or '未识别形态'}区域 / "
+                    f"{region.coordinate_space}"
+                ),
+                value=region.model_dump(mode="json"),
+                value_type="visual_region.v1",
+                source_ref=region.source,
+                raw_ref=region.raw_ref,
+            )
+        )
+    return observations
 
 
 def _mvtec_observations(

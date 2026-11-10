@@ -20,7 +20,7 @@ from kgtracevis.mask.wafer_map_features import normalize_wafer_map_features
 from kgtracevis.schema.evidence_schema import Evidence, EvidenceObservation, RawEvidence
 
 CASE_KEYS = ("case_id", "sample_id", "record_id", "wafer_id", "id")
-PATTERN_KEYS = ("failure_pattern", "pattern", "label", "predicted_pattern", "defect_class")
+PATTERN_KEYS = ("predicted_pattern", "failure_pattern", "pattern", "label", "defect_class")
 CONFIDENCE_KEYS = ("confidence", "classification_confidence", "score", "prediction_score")
 LOCATION_KEYS = ("location", "zone", "wafer_location")
 MORPHOLOGY_KEYS = ("morphology", "defect_pattern", "shape")
@@ -106,7 +106,7 @@ def evidence_from_wm811k_record(
     annotation_type = optional_text(data.get("annotation_type")) or "native_ground_truth"
     wm811k_extra = _wm811k_extra(data, raw_pattern=raw_pattern, annotation_type=annotation_type)
 
-    return Evidence(
+    evidence = Evidence(
         case_id=case_id,
         dataset="wafer",
         source=source_value(data.get("source"), "image"),
@@ -140,12 +140,12 @@ def evidence_from_wm811k_record(
             location_source=(
                 "adapter:wm811k"
                 if first_value(data, LOCATION_KEYS) is not None
-                else "wafer_map_descriptor"
+                else "wafer_pattern_summary"
             ),
             morphology_source=(
                 "adapter:wm811k"
                 if first_value(data, MORPHOLOGY_KEYS) is not None
-                else "wafer_map_descriptor"
+                else "wafer_pattern_summary"
             ),
             severity_source=(
                 "adapter:wm811k"
@@ -162,6 +162,40 @@ def evidence_from_wm811k_record(
             },
         ),
     )
+    if descriptor_stats.get("encoding") == "wm811k_012":
+        from kgtracevis.schema.measured_reasoning import WaferMeasurements
+
+        fields = WaferMeasurements.model_fields
+        measured = WaferMeasurements.model_validate(
+            {
+                **{key: value for key, value in descriptor_stats.items() if key in fields},
+                "classifier_pattern": anomaly_type
+                if data.get("predicted_pattern") is not None
+                else None,
+                "classifier_source": "classifier_output"
+                if data.get("predicted_pattern") is not None
+                else None,
+                "annotation_state": "unlabeled"
+                if annotation_type == "unlabeled"
+                else "normal"
+                if annotation_type == "normal"
+                else "unknown"
+                if annotation_type == "unknown"
+                else "labeled",
+            }
+        )
+        evidence.observations.append(
+            make_observation(
+                case_id,
+                "wafer_measurements",
+                "有效 die 与空间分布",
+                value=measured.model_dump(mode="json"),
+                value_type="wafer-measurements.v1",
+                source_ref="wm811k_map_012",
+                raw_ref="raw_evidence.extra.descriptor_stats",
+            )
+        )
+    return evidence
 
 
 def from_wm811k_record(record: Mapping[str, Any] | None = None, **overrides: Any) -> Evidence:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,6 +53,9 @@ class RcaReasoningResult(BaseModel):
     ranked_root_causes: list[RankedRootCause] = Field(default_factory=list)
     scoring_method: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # None preserves the historical fallback contract for existing strategies.
+    outcome: Literal["matched", "no_match", "insufficient_evidence", "not_applicable"] | None = None
+    linked_entities: list[dict[str, Any]] | None = None
 
 
 class AnalysisResult(BaseModel):
@@ -178,11 +181,7 @@ def _path_candidate_name(path: dict[str, Any], candidate_id: str) -> str:
 
 
 def _support_evidence_ids_from_path(path: dict[str, Any]) -> list[str]:
-    support_obs_ids = [
-        str(item)
-        for item in path.get("support_obs_ids") or []
-        if item is not None
-    ]
+    support_obs_ids = [str(item) for item in path.get("support_obs_ids") or [] if item is not None]
     if support_obs_ids:
         return list(dict.fromkeys(support_obs_ids))
 

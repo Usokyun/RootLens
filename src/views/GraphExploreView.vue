@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
 import {
   IconBulb,
   IconCheckCircle,
@@ -14,6 +15,8 @@ import { useRoute, useRouter } from "vue-router";
 
 import type {
   KGStudioGraphNode,
+  WorkingGraphPackage,
+  WorkingGraphSummary,
   KGStudioPayload,
   ReviewLedgerRecord,
   RunDetail,
@@ -123,6 +126,59 @@ const loading = ref(false);
 const runs = ref<RunSummary[]>([]);
 const runDetail = ref<RunDetail | null>(null);
 const kgStudio = ref<KGStudioPayload | null>(null);
+const packageDrawerOpen = ref(false);
+const packageText = ref("");
+const packageBusy = ref(false);
+const workingGraphs = ref<WorkingGraphSummary[]>([]);
+const editableGraphId = computed(() => preferences.value.dataSourceMode === "backend"
+  && getLocalSessionMeta()?.source !== "import" ? kgStudio.value?.graph_id : undefined);
+
+async function openGraphPackage() {
+  packageDrawerOpen.value = true;
+  try {
+    workingGraphs.value = (await getRootLensService().listWorkingGraphs()).graphs;
+    if (editableGraphId.value) await selectPackageGraph(editableGraphId.value);
+  } catch (error) { errorMessage.value = String(error); }
+}
+async function selectPackageGraph(id: string) {
+  packageBusy.value = true;
+  try {
+    packageText.value = JSON.stringify(await getRootLensService().getWorkingGraphPackage(id), null, 2);
+    kgStudio.value = await getRootLensService().kgStudio(id);
+  } catch (error) { errorMessage.value = String(error); }
+  finally { packageBusy.value = false; }
+}
+async function savePackage(importNew = false) {
+  packageBusy.value = true;
+  try {
+    const body = JSON.parse(packageText.value) as WorkingGraphPackage;
+    const service = getRootLensService();
+    const result = importNew ? await service.importWorkingGraphPackage(body)
+      : await service.saveWorkingGraphPackage(editableGraphId.value!, body);
+    await selectPackageGraph(result.graph_id);
+    workingGraphs.value = (await service.listWorkingGraphs()).graphs;
+    actionMessage.value = "工作图已保存；新分析使用当前知识，历史运行保持原结果。";
+  } catch (error) { errorMessage.value = String(error); }
+  finally { packageBusy.value = false; }
+}
+function downloadPackage() {
+  const url = URL.createObjectURL(new Blob([packageText.value], { type: "application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = "rootlens-working-graph.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+async function importPackageFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) { packageText.value = await file.text(); await savePackage(true); }
+}
+async function rebuildGraphProfiles() {
+  if (!editableGraphId.value) return;
+  try {
+    await getRootLensService().mutateWorkingGraph(editableGraphId.value, { rebuild_profiles: true });
+    await selectPackageGraph(editableGraphId.value);
+    actionMessage.value = "已按当前关系重新编译画像。";
+  } catch (error) { errorMessage.value = String(error); }
+}
+
 const bundledGraphDatasets = ref<UnifiedGraphDataset[]>([]);
 const errorMessage = ref("");
 const reviewMessage = ref("");
@@ -325,7 +381,7 @@ function buildKGStudioDataset(
     category: node.scenario,
     kind: node.node_type,
     description: node.description,
-    aliases: [],
+    aliases: node.aliases ?? [],
     degree:
       (inDegree.get(node.node_id) ?? 0) + (outDegree.get(node.node_id) ?? 0),
     inDegree: inDegree.get(node.node_id) ?? 0,
@@ -369,7 +425,7 @@ function buildKGStudioDataset(
   }));
 
   return {
-    id: payload.candidate_dir ?? "kg-studio",
+    id: payload.graph_id ?? payload.candidate_dir ?? "kg-studio",
     label: "总图谱",
     description: payload.note,
     graphKind: "candidate-graph",
@@ -440,6 +496,21 @@ const activeCandidate = computed(() => {
     list,
     workbenchState.value.selectedCandidateId,
   );
+});
+
+const activeVisualConditions = computed(() => {
+  const matches = activeCandidate.value?.scoring_details?.profile_matches;
+  if (!Array.isArray(matches)) return [];
+  const rows = new Map<string, string>();
+  for (const match of matches) {
+    if (!Array.isArray(match?.conditions)) continue;
+    for (const condition of match.conditions) {
+      if (condition.result !== "matched" || condition.feature === "object") continue;
+      const text = `${match.region_id ?? condition.channel ?? match.obs_id} · ${condition.feature}: ${JSON.stringify(condition.actual)} → ${condition.op} ${JSON.stringify(condition.value)}`;
+      rows.set(text, text);
+    }
+  }
+  return [...rows.values()];
 });
 
 const activeSavedCaseDraft = computed(() => {
@@ -1646,13 +1717,40 @@ function updateSelectedNodeDraft(patch: Partial<MockGraphNodeDraft>) {
   });
 }
 
-function saveCurrentCaseDraft() {
+async function saveCurrentCaseDraft() {
   const caseId = activeCase.value?.case_id;
   const currentDraft = activeWorkingCaseDraft.value;
   if (!caseId || !currentDraft) {
     return;
   }
 
+  if (editableGraphId.value) {
+    try {
+      const service = getRootLensService();
+      const body = await service.getWorkingGraphPackage(editableGraphId.value);
+      const edgeId = (edge: WorkingGraphPackage["edges"][number]) => [edge.head, edge.relation, edge.tail, edge.scenario].join("|");
+      const upsert_nodes = currentDraft.node_drafts.flatMap((draft) => {
+        const node = body.nodes.find((n) => n.id === draft.node_id);
+        return node ? [{ ...node, name: draft.display_name ?? node.name,
+          aliases: draft.aliases ?? node.aliases, description: draft.description ?? node.description }] : [];
+      });
+      const delete_edge_ids: string[] = [];
+      const upsert_edges = currentDraft.edge_drafts.flatMap((draft) => {
+        if (draft.edge_id.startsWith("view:")) {
+          throw new Error("解释反向视图不能直接改写物理关系，请在总图中选择对应源边后编辑。");
+        }
+        const edge = body.edges.find((e) => edgeId(e) === draft.edge_id);
+        if (!edge) throw new Error(`当前工作图不存在 ${draft.edge_id}；请刷新并选择源边。`);
+        const next: WorkingGraphPackage["edges"][number] = { ...edge, relation: draft.relation ?? edge.relation,
+          confidence: draft.confidence ?? edge.confidence,
+          review_status: draft.review_decision === "reject" ? "rejected" : edge.review_status };
+        if (next.relation !== edge.relation) { delete_edge_ids.push(edgeId(edge)); next.external_edge_id = ""; }
+        return [next];
+      });
+      await service.mutateWorkingGraph(editableGraphId.value, { upsert_nodes, upsert_edges, delete_edge_ids });
+      kgStudio.value = await service.kgStudio(editableGraphId.value);
+    } catch (error) { errorMessage.value = String(error); return; }
+  }
   saveGraphCurationCaseDraft(currentDraft);
   const savedCopy = deepClone(currentDraft);
   savedCaseDrafts.value = {
@@ -1663,7 +1761,7 @@ function saveCurrentCaseDraft() {
     ...workingCaseDrafts.value,
     [caseId]: deepClone(savedCopy),
   };
-  actionMessage.value = `已保存 ${caseId} 的本地策展草稿。`;
+  actionMessage.value = editableGraphId.value ? "工作图已保存，新分析生效；历史结果未重算。" : `已保存 ${caseId} 的本地策展草稿。`;
 }
 
 function revertCurrentSelectionDraft() {
@@ -1853,6 +1951,19 @@ async function loadRun(runId: string) {
   try {
     const detail = await getRootLensService().getRun(runId);
     runDetail.value = detail;
+    if (preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import") {
+      const graphId = detail.cases?.[0]?.reasoning_metadata?.graph_id
+        ?? detail.reasoning_metadata?.graph_id;
+      if (!kgStudio.value || (graphId ?? null) !== (kgStudio.value.graph_id ?? null)) {
+        try {
+          kgStudio.value = await getRootLensService().kgStudio(graphId ?? undefined);
+          totalGraphRenderMessage.value = "";
+        } catch (error) {
+          kgStudio.value = null;
+          totalGraphRenderMessage.value = error instanceof Error ? error.message : String(error);
+        }
+      }
+    }
 
     const routeCaseId =
       typeof route.query.case_id === "string"
@@ -2162,6 +2273,24 @@ onMounted(() => {
   >
     <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
 
+    <a-drawer v-model:visible="packageDrawerOpen" title="工作图与可执行画像" :width="760" :footer="false">
+      <a-space direction="vertical" fill>
+        <a-select placeholder="选择工作图" :model-value="editableGraphId" @change="(id: string) => selectPackageGraph(id)">
+          <a-option v-for="graph in workingGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }} · {{ graph.dataset }}</a-option>
+        </a-select>
+        <p>编辑节点、关系、别名与条件。删除被引用对象前须同步修改画像；保存影响新分析，历史运行保持原结果。</p>
+        <a-textarea v-model="packageText" :auto-size="{ minRows: 18, maxRows: 28 }" aria-label="完整工作图包 JSON" />
+        <a-space wrap>
+          <a-button type="primary" :loading="packageBusy" :disabled="!editableGraphId" @click="savePackage(false)">保存当前图</a-button>
+          <a-button :disabled="!packageText" @click="downloadPackage">导出完整包</a-button>
+          <a-button :loading="packageBusy" :disabled="!packageText" @click="savePackage(true)">导入为新图</a-button>
+          <a-button v-if="workingGraphs.find(g => g.graph_id === editableGraphId)?.dataset === 'mvtec'" :disabled="!editableGraphId" @click="rebuildGraphProfiles">按关系重建画像</a-button>
+          <label>导入 JSON <input type="file" accept=".json" @change="importPackageFile" /></label>
+        </a-space>
+        <a-alert v-if="errorMessage" type="error">{{ errorMessage }}</a-alert>
+        <a-alert v-if="actionMessage" type="success">{{ actionMessage }}</a-alert>
+      </a-space>
+    </a-drawer>
     <section class="workspace-shell">
       <div class="workspace-shell__main workspace-stack">
         <article class="rl-section-card">
@@ -2178,6 +2307,7 @@ onMounted(() => {
                 <a-tag color="green">{{ totalGraphDataset?.nodes.length ?? 0 }} 节点</a-tag>
                 <a-tag color="gold">{{ totalGraphDataset?.edges.length ?? 0 }} 边</a-tag>
               </div>
+              <a-button v-if="preferences.dataSourceMode === 'backend' && getLocalSessionMeta()?.source !== 'import'" @click="openGraphPackage">管理工作图</a-button>
               <a-button :loading="loading" @click="refreshWorkspace">
                 <template #icon><icon-refresh /></template>
                 刷新视图
@@ -2610,7 +2740,7 @@ onMounted(() => {
                             aria-label="备注"
                             v-model="nodeNoteModel"
                             :auto-size="{ minRows: 3, maxRows: 5 }"
-                            placeholder="记录节点策展备注。"
+                            placeholder="策展备注（仅保存在本地草稿）"
                           />
                         </a-form-item>
                       </a-form>
@@ -2642,7 +2772,7 @@ onMounted(() => {
                         <template #icon>
                           <icon-save />
                         </template>
-                        保存草稿
+                        {{ editableGraphId ? "保存工作图" : "保存草稿" }}
                       </a-button>
                       <a-button
                         :disabled="!canRevertCurrentSelection"
@@ -2757,8 +2887,23 @@ onMounted(() => {
                                 </strong>
                               </div>
                             </div>
+                            <p
+                              v-if="typeof activeCandidate?.scoring_details?.reason === 'string'"
+                              class="workspace-visual-profile-reason"
+                            >
+                              {{ activeCandidate.scoring_details.reason }}
+                            </p>
+                            <details v-if="activeVisualConditions.length" class="workspace-visual-profile-details">
+                              <summary>命中条件（{{ activeVisualConditions.length }}）</summary>
+                              <ul>
+                                <li v-for="condition in activeVisualConditions" :key="condition">
+                                  {{ condition }}
+                                </li>
+                              </ul>
+                            </details>
                           </section>
 
+                          <MeasuredEvidenceDetails :observation="activeObservationContext?.rawObservation" />
                           <section class="workspace-reasoning-trace__section">
                             <div
                               class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"

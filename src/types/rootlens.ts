@@ -1,3 +1,4 @@
+import type { RunDetail } from '@/api/contracts'
 import type { JsonValue } from '@/types/graph'
 
 export type EvidenceDataset = 'tep' | 'mvtec' | 'wafer' | 'wm811k'
@@ -253,4 +254,5 @@ export interface RootLensRuntimeFile {
   generated_at: string
   generator: string
   cases: RootLensRuntimeCase[]
+  backend_runs?: RunDetail[]
 }

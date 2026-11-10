@@ -63,6 +63,7 @@ import type {
 import {
   getLocalSessionMeta,
   getStoredImportedRuntime,
+  loadStoredImportedRuntime,
   loadBundledRootLensRuntime,
 } from "@/services/rootlens-data";
 import type {
@@ -1096,6 +1097,7 @@ function buildSeedRuns(runtime: RootLensRuntimeFile): RunDetail[] {
   ];
 }
 function buildImportedReplayRuns(runtime: RootLensRuntimeFile): RunDetail[] {
+  if (runtime.backend_runs?.length) return deepClone(runtime.backend_runs);
   if (!runtime.cases.length) {
     return [];
   }
@@ -1391,6 +1393,7 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
 }
 
 async function loadCurrentState() {
+  if (getLocalSessionMeta()?.source === "import") await loadStoredImportedRuntime();
   const seed = await ensureSeedBundle();
   return {
     seed,
@@ -2252,8 +2255,8 @@ export const mockBackend = {
       extraction_run_id: `extract-${Date.now()}`,
       material_id: materialId,
       status: "extracted",
-      provider: request?.provider ?? "openai",
-      source_format: request?.source_format ?? "jsonl",
+      provider: request?.provider ?? "none",
+      source_format: "json",
       structured_records_path: structuredRecordsPath,
       source_id: materialId,
       extractor_name: "mock_document_ie",
@@ -2263,8 +2266,8 @@ export const mockBackend = {
       started_at: now,
       completed_at: now,
       parameters: {
-        max_chars: request?.max_chars ?? 2000,
-        overlap_chars: request?.overlap_chars ?? 200,
+        max_chars: request?.chunk_size ?? 2000,
+        overlap_chars: request?.chunk_overlap ?? 200,
         overwrite: request?.overwrite ?? false,
       },
       result_summary: {
@@ -2306,7 +2309,7 @@ export const mockBackend = {
       extraction: {
         status: "extracted",
         structured_records_path: structuredRecordsPath,
-        source_format: request?.source_format ?? "jsonl",
+        source_format: "json",
         source_id: materialId,
         extractor_name: "mock_document_ie",
         extractor_version: "v1",

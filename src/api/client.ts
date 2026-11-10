@@ -35,6 +35,8 @@ import type {
   RunDetail,
   RunSummary,
   UploadRequest,
+  WorkingGraphSummary,
+  WorkingGraphPackage,
 } from "@/api/contracts";
 
 const DEFAULT_API_BASE_URL =
@@ -144,7 +146,14 @@ function jsonInit(method: string, body: unknown): RequestInit {
 
 export interface ApiClient {
   bootstrap: () => Promise<DashboardBootstrap>;
-  kgStudio: () => Promise<KGStudioPayload>;
+  kgStudio: (graphId?: string) => Promise<KGStudioPayload>;
+  listWorkingGraphs: () => Promise<{ graphs: WorkingGraphSummary[] }>;
+  getWorkingGraphPackage: (graphId: string) => Promise<WorkingGraphPackage>;
+  saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
+  importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
+  mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
+  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep") => Promise<WorkingGraphSummary>;
+  exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
@@ -229,7 +238,17 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
   return {
     bootstrap: () =>
       requestJson<DashboardBootstrap>(baseUrl, "/api/dashboard/bootstrap"),
-    kgStudio: () => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio"),
+    kgStudio: (graphId) => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio", undefined,
+      graphId ? new URLSearchParams({ graph_id: graphId }) : undefined),
+    listWorkingGraphs: () => requestJson(baseUrl, "/api/kg/working-graphs"),
+    getWorkingGraphPackage: (id) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`),
+    saveWorkingGraphPackage: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`, jsonInit("PUT", body)),
+    importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
+    mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
+    activateWorkingGraph: (buildId, title, dataset = "mvtec") => requestJson(baseUrl,
+      `/api/kg/construction/builds/${encodeURIComponent(buildId)}/activate`,
+      jsonInit("POST", { title, dataset, compact_runtime: true })),
+    exportRunReplay: (id) => requestJson(baseUrl, `/api/runs/${encodeURIComponent(id)}/replay`),
     listRuns: () => requestJson<RunSummary[]>(baseUrl, "/api/runs"),
     getRun: (runId) => requestJson<RunDetail>(baseUrl, `/api/runs/${runId}`),
     uploadRun: (request) => {
@@ -244,6 +263,8 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
         form.append("model_preset", request.model_preset);
       if (request.reasoning_profile_id)
         form.append("reasoning_profile_id", request.reasoning_profile_id);
+      if (request.semantic_mode) form.append("semantic_mode", request.semantic_mode);
+      if (request.graph_id) form.append("graph_id", request.graph_id);
 
       return requestJson<RunDetail>(baseUrl, "/api/runs/upload", {
         method: "POST",

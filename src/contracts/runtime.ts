@@ -806,8 +806,16 @@ export function parseRootLensRuntimeFile(value: unknown): RootLensRuntimeFile {
   assertString(value.generated_at, 'rootLensRuntime.generated_at')
   assertString(value.generator, 'rootLensRuntime.generator')
   assertArray(value.cases, 'rootLensRuntime.cases')
+  if (value.backend_runs !== undefined) {
+    assertArray(value.backend_runs, 'rootLensRuntime.backend_runs')
+    for (const run of value.backend_runs) {
+      assertRecord(run, 'backend run'); assertRecord(run.run, 'backend run summary')
+      assertString(run.run.run_id, 'backend run id'); assertArray(run.cases, 'backend run cases')
+    }
+  }
 
   return {
+    backend_runs: value.backend_runs as RootLensRuntimeFile['backend_runs'],
     schema_version: value.schema_version,
     generated_at: value.generated_at,
     generator: value.generator,

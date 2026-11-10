@@ -79,8 +79,11 @@ function getObservations(caseItem: RunCaseDetail) {
 
 function toModality(facet: string): ObservationModality {
   switch (facet) {
+    case 'wafer_measurements':
+    case 'visual_region':
     case 'image_defect':
       return 'image'
+    case 'process_window':
     case 'variable':
       return 'time_series'
     case 'log_event':
@@ -107,20 +110,23 @@ function toConfidenceBand(value: number | null): Exclude<ObservationConfidenceBa
 }
 
 function buildObservationTitle(observation: Record<string, unknown>, facet: string) {
+  const title = normalizeNullableText(observation.display_name)
+  if (title) return title
   switch (facet) {
     case 'variable':
-      return `${normalizeText(observation.variable_name)} / ${normalizeText(observation.direction, 'unknown')}`
+      return `${normalizeText(observation.variable_name ?? observation.name)} / ${normalizeText(observation.direction, 'unknown')}`
     case 'image_defect':
       return `${normalizeText(observation.object)} / ${normalizeText(observation.anomaly_type)}`
     case 'log_event':
       return `${normalizeText(observation.event_code, normalizeText(observation.event_type))} / ${normalizeText(observation.equipment)}`
     default:
-      return normalizeText(observation.obs_id, '未命名 observation')
+      return normalizeText(observation.name, normalizeText(observation.obs_id, '未命名 observation'))
   }
 }
 
 function buildTimeLabel(observation: Record<string, unknown>, caseTimestamp: string | null) {
   if (isRecord(observation.time_window)) {
+    if (typeof observation.time_window.sample_start === 'number') return `样本 ${observation.time_window.sample_start}–${observation.time_window.sample_end}`
     const start = normalizeNullableText(observation.time_window.start)
     const end = normalizeNullableText(observation.time_window.end)
     if (start && end) {
@@ -306,5 +312,8 @@ export function selectVisualEvidenceForObservation(
     return []
   }
 
-  return (visualEvidence ?? []).filter((item) => item.available !== false).slice(0, 3)
+  const available = (visualEvidence ?? []).filter((item) => item.available !== false)
+  const roi = available.filter((item) => item.metadata?.obs_id === observation.id)
+  const context = available.filter((item) => item.source_key !== 'roi_path').slice(0, 3)
+  return [...roi, ...context]
 }

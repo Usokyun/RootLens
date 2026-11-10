@@ -305,7 +305,7 @@ async function restoreSessionBundle(candidate: Record<string, unknown>): Promise
     throw new Error('session bundle 中的 analysisFocus 格式无效。')
   }
 
-  saveImportedSession({
+  await saveImportedSession({
     graphs,
     runtime,
     summary: `恢复完整 bundle：${normalizeExportSummary(graphs, runtime)}`,

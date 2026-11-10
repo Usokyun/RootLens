@@ -1,0 +1,900 @@
+{
+  "schema_version": "rootlens-knowledge-graph-view.v2",
+  "example_kind": "derived_synthetic_design",
+  "generated_from": "knowledge-package.json",
+  "editable": false,
+  "nodes": [
+    {
+      "node_id": "class:surface_object",
+      "kind": "object_class",
+      "label": "可进行表面检查的对象"
+    },
+    {
+      "node_id": "class:metal_nut",
+      "kind": "object_class",
+      "label": "金属螺母"
+    },
+    {
+      "node_id": "class:reactor",
+      "kind": "equipment_class",
+      "label": "反应器"
+    },
+    {
+      "node_id": "class:wafer",
+      "kind": "object_class",
+      "label": "晶圆"
+    },
+    {
+      "node_id": "var:reactor_temperature",
+      "kind": "variable",
+      "label": "反应器温度"
+    },
+    {
+      "node_id": "var:cooling_outlet_temperature",
+      "kind": "variable",
+      "label": "反应器冷却出口温度"
+    },
+    {
+      "node_id": "var:feed_flow",
+      "kind": "variable",
+      "label": "进料流量"
+    },
+    {
+      "node_id": "h:contact",
+      "kind": "Hypothesis",
+      "label": "机械接触候选",
+      "target_role": "mechanism"
+    },
+    {
+      "node_id": "h:wear",
+      "kind": "Hypothesis",
+      "label": "表面磨损候选",
+      "target_role": "mechanism"
+    },
+    {
+      "node_id": "h:adhesion",
+      "kind": "Hypothesis",
+      "label": "异物附着候选",
+      "target_role": "mechanism"
+    },
+    {
+      "node_id": "h:cooling",
+      "kind": "Hypothesis",
+      "label": "冷却相关扰动候选",
+      "target_role": "fault"
+    },
+    {
+      "node_id": "h:feed_flow",
+      "kind": "Hypothesis",
+      "label": "进料流量扰动候选",
+      "target_role": "fault"
+    },
+    {
+      "node_id": "h:edge_ring",
+      "kind": "Hypothesis",
+      "label": "Edge-ring 图案候选",
+      "target_role": "spatial_pattern"
+    },
+    {
+      "node_id": "h:nearfull",
+      "kind": "Hypothesis",
+      "label": "Nearfull 图案候选",
+      "target_role": "spatial_pattern"
+    },
+    {
+      "node_id": "m:local_contact",
+      "kind": "Mechanism",
+      "label": "局部接触作用"
+    },
+    {
+      "node_id": "m:abrasion",
+      "kind": "Mechanism",
+      "label": "表面磨蚀作用"
+    },
+    {
+      "node_id": "m:adhesion",
+      "kind": "Mechanism",
+      "label": "物料附着"
+    },
+    {
+      "node_id": "m:cooling_change",
+      "kind": "Mechanism",
+      "label": "冷却功能变化"
+    },
+    {
+      "node_id": "m:feed_change",
+      "kind": "Mechanism",
+      "label": "进料流量变化"
+    },
+    {
+      "node_id": "q:elongated",
+      "kind": "ObservablePredicate",
+      "label": "区域细长",
+      "feature_id": "geometry.eccentricity",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.95,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:scratch_cue",
+      "kind": "ObservablePredicate",
+      "label": "存在划痕外观候选",
+      "feature_id": "appearance.semantic_candidates",
+      "op": "candidate_contains",
+      "operand": {
+        "kind": "category",
+        "category": "scratch"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:foreign_material",
+      "kind": "ObservablePredicate",
+      "label": "存在可见附着物估计",
+      "feature_id": "appearance.foreign_material_present",
+      "op": "bool_eq",
+      "operand": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:reactor_deviation",
+      "kind": "ObservablePredicate",
+      "label": "反应器温度窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:reactor_temperature"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:cooling_deviation",
+      "kind": "ObservablePredicate",
+      "label": "冷却出口温度窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:cooling_outlet_temperature"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:feed_deviation",
+      "kind": "ObservablePredicate",
+      "label": "进料流量窗口均值偏离",
+      "feature_id": "statistics.mean_z",
+      "op": "abs_gte",
+      "operand": {
+        "kind": "number",
+        "number": 2,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "bound_entity",
+        "entity_id": "var:feed_flow"
+      },
+      "scope_selector": {
+        "kind": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:edge_high",
+      "kind": "ObservablePredicate",
+      "label": "边缘失效密度高",
+      "feature_id": "spatial.failure_density",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.3,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "edge",
+        "parent": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:center_low",
+      "kind": "ObservablePredicate",
+      "label": "中心失效密度低",
+      "feature_id": "spatial.failure_density",
+      "op": "lte",
+      "operand": {
+        "kind": "number",
+        "number": 0.15,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "center",
+        "parent": "task_scope"
+      }
+    },
+    {
+      "node_id": "q:overall_high",
+      "kind": "ObservablePredicate",
+      "label": "整体失效密度高",
+      "feature_id": "spatial.failure_density",
+      "op": "gte",
+      "operand": {
+        "kind": "number",
+        "number": 0.75,
+        "unit": "1"
+      },
+      "subject_selector": {
+        "kind": "focus"
+      },
+      "scope_selector": {
+        "kind": "wafer_zone",
+        "zone": "all_valid",
+        "parent": "task_scope"
+      }
+    },
+    {
+      "node_id": "p:linear_mark",
+      "kind": "Phenomenon",
+      "label": "线性表面异常表现"
+    },
+    {
+      "node_id": "d:linear_mark",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_subject_same_scope"
+    },
+    {
+      "node_id": "p:foreign_material",
+      "kind": "Phenomenon",
+      "label": "可见附着物表现"
+    },
+    {
+      "node_id": "d:foreign_material",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_subject_same_scope"
+    },
+    {
+      "node_id": "p:cooling",
+      "kind": "Phenomenon",
+      "label": "冷却相关多变量表现"
+    },
+    {
+      "node_id": "d:cooling",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_event_same_window"
+    },
+    {
+      "node_id": "p:feed_flow",
+      "kind": "Phenomenon",
+      "label": "进料流量多变量表现"
+    },
+    {
+      "node_id": "d:feed_flow",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_event_same_window"
+    },
+    {
+      "node_id": "p:edge_ring",
+      "kind": "Phenomenon",
+      "label": "边缘集中且中心稀疏"
+    },
+    {
+      "node_id": "d:edge_ring",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_wafer_parent_scope"
+    },
+    {
+      "node_id": "p:nearfull",
+      "kind": "Phenomenon",
+      "label": "整体高密度且边缘高密度"
+    },
+    {
+      "node_id": "d:nearfull",
+      "kind": "DefinitionRule",
+      "logic": "ALL",
+      "semantics": "iff",
+      "scope_join": "same_wafer_parent_scope"
+    },
+    {
+      "node_id": "r:contact_effect",
+      "kind": "EffectRule"
+    },
+    {
+      "node_id": "r:wear_effect",
+      "kind": "EffectRule"
+    },
+    {
+      "node_id": "r:adhesion_effect",
+      "kind": "EffectRule"
+    },
+    {
+      "node_id": "r:cooling_effect",
+      "kind": "EffectRule"
+    },
+    {
+      "node_id": "r:feed_effect",
+      "kind": "EffectRule"
+    },
+    {
+      "node_id": "r:contact_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:wear_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:adhesion_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:cooling_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:feed_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:edge_ring_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "r:nearfull_expect",
+      "kind": "ExpectationRule",
+      "mode": "expected"
+    },
+    {
+      "node_id": "s:visual-design",
+      "kind": "SourceAssertion",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义三种候选及其外观期待；接触与磨损预期相同，因此应并列。附着候选的可见物料期待是软条件。"
+    },
+    {
+      "node_id": "s:process-design",
+      "kind": "SourceAssertion",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义冷却与进料流量两种多变量期待。abs(mean_z)>=2 是示例阈值，不代表完整 TEP 故障模型。"
+    },
+    {
+      "node_id": "s:wafer-design",
+      "kind": "SourceAssertion",
+      "origin": "synthetic_design_assertion",
+      "text": "为执行规格定义边缘环带与 nearfull 的联合空间条件。数值为示例，不对应真实模型评测。"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "h:contact::applies",
+      "head": "h:contact",
+      "relation": "APPLIES_TO",
+      "tail": "class:surface_object"
+    },
+    {
+      "edge_id": "h:wear::applies",
+      "head": "h:wear",
+      "relation": "APPLIES_TO",
+      "tail": "class:surface_object"
+    },
+    {
+      "edge_id": "h:adhesion::applies",
+      "head": "h:adhesion",
+      "relation": "APPLIES_TO",
+      "tail": "class:surface_object"
+    },
+    {
+      "edge_id": "h:cooling::applies",
+      "head": "h:cooling",
+      "relation": "APPLIES_TO",
+      "tail": "class:reactor"
+    },
+    {
+      "edge_id": "h:feed_flow::applies",
+      "head": "h:feed_flow",
+      "relation": "APPLIES_TO",
+      "tail": "class:reactor"
+    },
+    {
+      "edge_id": "h:edge_ring::applies",
+      "head": "h:edge_ring",
+      "relation": "APPLIES_TO",
+      "tail": "class:wafer"
+    },
+    {
+      "edge_id": "h:nearfull::applies",
+      "head": "h:nearfull",
+      "relation": "APPLIES_TO",
+      "tail": "class:wafer"
+    },
+    {
+      "edge_id": "q:reactor_deviation::binding",
+      "head": "q:reactor_deviation",
+      "relation": "OBSERVES",
+      "tail": "var:reactor_temperature"
+    },
+    {
+      "edge_id": "q:cooling_deviation::binding",
+      "head": "q:cooling_deviation",
+      "relation": "OBSERVES",
+      "tail": "var:cooling_outlet_temperature"
+    },
+    {
+      "edge_id": "q:feed_deviation::binding",
+      "head": "q:feed_deviation",
+      "relation": "OBSERVES",
+      "tail": "var:feed_flow"
+    },
+    {
+      "edge_id": "d:linear_mark::input::q:elongated",
+      "head": "q:elongated",
+      "relation": "INPUT_OF",
+      "tail": "d:linear_mark"
+    },
+    {
+      "edge_id": "d:linear_mark::input::q:scratch_cue",
+      "head": "q:scratch_cue",
+      "relation": "INPUT_OF",
+      "tail": "d:linear_mark"
+    },
+    {
+      "edge_id": "d:linear_mark::head",
+      "head": "d:linear_mark",
+      "relation": "DEFINES",
+      "tail": "p:linear_mark"
+    },
+    {
+      "edge_id": "d:foreign_material::input::q:foreign_material",
+      "head": "q:foreign_material",
+      "relation": "INPUT_OF",
+      "tail": "d:foreign_material"
+    },
+    {
+      "edge_id": "d:foreign_material::head",
+      "head": "d:foreign_material",
+      "relation": "DEFINES",
+      "tail": "p:foreign_material"
+    },
+    {
+      "edge_id": "d:cooling::input::q:reactor_deviation",
+      "head": "q:reactor_deviation",
+      "relation": "INPUT_OF",
+      "tail": "d:cooling"
+    },
+    {
+      "edge_id": "d:cooling::input::q:cooling_deviation",
+      "head": "q:cooling_deviation",
+      "relation": "INPUT_OF",
+      "tail": "d:cooling"
+    },
+    {
+      "edge_id": "d:cooling::head",
+      "head": "d:cooling",
+      "relation": "DEFINES",
+      "tail": "p:cooling"
+    },
+    {
+      "edge_id": "d:feed_flow::input::q:reactor_deviation",
+      "head": "q:reactor_deviation",
+      "relation": "INPUT_OF",
+      "tail": "d:feed_flow"
+    },
+    {
+      "edge_id": "d:feed_flow::input::q:feed_deviation",
+      "head": "q:feed_deviation",
+      "relation": "INPUT_OF",
+      "tail": "d:feed_flow"
+    },
+    {
+      "edge_id": "d:feed_flow::head",
+      "head": "d:feed_flow",
+      "relation": "DEFINES",
+      "tail": "p:feed_flow"
+    },
+    {
+      "edge_id": "d:edge_ring::input::q:edge_high",
+      "head": "q:edge_high",
+      "relation": "INPUT_OF",
+      "tail": "d:edge_ring"
+    },
+    {
+      "edge_id": "d:edge_ring::input::q:center_low",
+      "head": "q:center_low",
+      "relation": "INPUT_OF",
+      "tail": "d:edge_ring"
+    },
+    {
+      "edge_id": "d:edge_ring::head",
+      "head": "d:edge_ring",
+      "relation": "DEFINES",
+      "tail": "p:edge_ring"
+    },
+    {
+      "edge_id": "d:nearfull::input::q:overall_high",
+      "head": "q:overall_high",
+      "relation": "INPUT_OF",
+      "tail": "d:nearfull"
+    },
+    {
+      "edge_id": "d:nearfull::input::q:edge_high",
+      "head": "q:edge_high",
+      "relation": "INPUT_OF",
+      "tail": "d:nearfull"
+    },
+    {
+      "edge_id": "d:nearfull::head",
+      "head": "d:nearfull",
+      "relation": "DEFINES",
+      "tail": "p:nearfull"
+    },
+    {
+      "edge_id": "r:contact_effect::from",
+      "head": "h:contact",
+      "relation": "ACTIVATES_RULE",
+      "tail": "r:contact_effect"
+    },
+    {
+      "edge_id": "r:contact_effect::to",
+      "head": "r:contact_effect",
+      "relation": "DERIVES_STATE",
+      "tail": "m:local_contact"
+    },
+    {
+      "edge_id": "r:wear_effect::from",
+      "head": "h:wear",
+      "relation": "ACTIVATES_RULE",
+      "tail": "r:wear_effect"
+    },
+    {
+      "edge_id": "r:wear_effect::to",
+      "head": "r:wear_effect",
+      "relation": "DERIVES_STATE",
+      "tail": "m:abrasion"
+    },
+    {
+      "edge_id": "r:adhesion_effect::from",
+      "head": "h:adhesion",
+      "relation": "ACTIVATES_RULE",
+      "tail": "r:adhesion_effect"
+    },
+    {
+      "edge_id": "r:adhesion_effect::to",
+      "head": "r:adhesion_effect",
+      "relation": "DERIVES_STATE",
+      "tail": "m:adhesion"
+    },
+    {
+      "edge_id": "r:cooling_effect::from",
+      "head": "h:cooling",
+      "relation": "ACTIVATES_RULE",
+      "tail": "r:cooling_effect"
+    },
+    {
+      "edge_id": "r:cooling_effect::to",
+      "head": "r:cooling_effect",
+      "relation": "DERIVES_STATE",
+      "tail": "m:cooling_change"
+    },
+    {
+      "edge_id": "r:feed_effect::from",
+      "head": "h:feed_flow",
+      "relation": "ACTIVATES_RULE",
+      "tail": "r:feed_effect"
+    },
+    {
+      "edge_id": "r:feed_effect::to",
+      "head": "r:feed_effect",
+      "relation": "DERIVES_STATE",
+      "tail": "m:feed_change"
+    },
+    {
+      "edge_id": "r:contact_expect::from",
+      "head": "m:local_contact",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:contact_expect"
+    },
+    {
+      "edge_id": "r:contact_expect::to",
+      "head": "r:contact_expect",
+      "relation": "EXPECTS",
+      "tail": "p:linear_mark"
+    },
+    {
+      "edge_id": "r:wear_expect::from",
+      "head": "m:abrasion",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:wear_expect"
+    },
+    {
+      "edge_id": "r:wear_expect::to",
+      "head": "r:wear_expect",
+      "relation": "EXPECTS",
+      "tail": "p:linear_mark"
+    },
+    {
+      "edge_id": "r:adhesion_expect::from",
+      "head": "m:adhesion",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:adhesion_expect"
+    },
+    {
+      "edge_id": "r:adhesion_expect::to",
+      "head": "r:adhesion_expect",
+      "relation": "EXPECTS",
+      "tail": "p:foreign_material"
+    },
+    {
+      "edge_id": "r:cooling_expect::from",
+      "head": "m:cooling_change",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:cooling_expect"
+    },
+    {
+      "edge_id": "r:cooling_expect::to",
+      "head": "r:cooling_expect",
+      "relation": "EXPECTS",
+      "tail": "p:cooling"
+    },
+    {
+      "edge_id": "r:feed_expect::from",
+      "head": "m:feed_change",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:feed_expect"
+    },
+    {
+      "edge_id": "r:feed_expect::to",
+      "head": "r:feed_expect",
+      "relation": "EXPECTS",
+      "tail": "p:feed_flow"
+    },
+    {
+      "edge_id": "r:edge_ring_expect::from",
+      "head": "h:edge_ring",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:edge_ring_expect"
+    },
+    {
+      "edge_id": "r:edge_ring_expect::to",
+      "head": "r:edge_ring_expect",
+      "relation": "EXPECTS",
+      "tail": "p:edge_ring"
+    },
+    {
+      "edge_id": "r:nearfull_expect::from",
+      "head": "h:nearfull",
+      "relation": "HAS_EXPECTATION",
+      "tail": "r:nearfull_expect"
+    },
+    {
+      "edge_id": "r:nearfull_expect::to",
+      "head": "r:nearfull_expect",
+      "relation": "EXPECTS",
+      "tail": "p:nearfull"
+    },
+    {
+      "edge_id": "rel:nut_surface",
+      "head": "class:metal_nut",
+      "relation": "SUBCLASS_OF",
+      "tail": "class:surface_object"
+    },
+    {
+      "edge_id": "s:visual-design::supports::q:elongated",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "q:elongated"
+    },
+    {
+      "edge_id": "s:visual-design::supports::q:scratch_cue",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "q:scratch_cue"
+    },
+    {
+      "edge_id": "s:visual-design::supports::q:foreign_material",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "q:foreign_material"
+    },
+    {
+      "edge_id": "s:process-design::supports::q:reactor_deviation",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "q:reactor_deviation"
+    },
+    {
+      "edge_id": "s:process-design::supports::q:cooling_deviation",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "q:cooling_deviation"
+    },
+    {
+      "edge_id": "s:process-design::supports::q:feed_deviation",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "q:feed_deviation"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::q:edge_high",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "q:edge_high"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::q:center_low",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "q:center_low"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::q:overall_high",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "q:overall_high"
+    },
+    {
+      "edge_id": "s:visual-design::supports::d:linear_mark",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "d:linear_mark"
+    },
+    {
+      "edge_id": "s:visual-design::supports::d:foreign_material",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "d:foreign_material"
+    },
+    {
+      "edge_id": "s:process-design::supports::d:cooling",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "d:cooling"
+    },
+    {
+      "edge_id": "s:process-design::supports::d:feed_flow",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "d:feed_flow"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::d:edge_ring",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "d:edge_ring"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::d:nearfull",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "d:nearfull"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:contact_effect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:contact_effect"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:wear_effect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:wear_effect"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:adhesion_effect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:adhesion_effect"
+    },
+    {
+      "edge_id": "s:process-design::supports::r:cooling_effect",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "r:cooling_effect"
+    },
+    {
+      "edge_id": "s:process-design::supports::r:feed_effect",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "r:feed_effect"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:contact_expect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:contact_expect"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:wear_expect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:wear_expect"
+    },
+    {
+      "edge_id": "s:visual-design::supports::r:adhesion_expect",
+      "head": "s:visual-design",
+      "relation": "SUPPORTS",
+      "tail": "r:adhesion_expect"
+    },
+    {
+      "edge_id": "s:process-design::supports::r:cooling_expect",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "r:cooling_expect"
+    },
+    {
+      "edge_id": "s:process-design::supports::r:feed_expect",
+      "head": "s:process-design",
+      "relation": "SUPPORTS",
+      "tail": "r:feed_expect"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::r:edge_ring_expect",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "r:edge_ring_expect"
+    },
+    {
+      "edge_id": "s:wafer-design::supports::r:nearfull_expect",
+      "head": "s:wafer-design",
+      "relation": "SUPPORTS",
+      "tail": "r:nearfull_expect"
+    }
+  ]
+}

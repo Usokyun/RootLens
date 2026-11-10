@@ -19,7 +19,9 @@ from kgtracevis.producers.common import (
     write_array_json,
 )
 
-NONE_LABELS = {"", "none", "normal", "no label", "unlabeled", "unknown", "[]" }
+UNLABELED_LABELS = {"", "no label", "unlabeled", "unknown", "[]"}
+NORMAL_LABELS = {"none", "normal"}
+NONE_LABELS = UNLABELED_LABELS
 
 
 def build_wm811k_records(
@@ -34,6 +36,7 @@ def build_wm811k_records(
     max_per_label: int | None = None,
     seed: int | None = None,
     include_unlabeled: bool = False,
+    include_normal: bool = False,
     wafer_map_inline_limit: int = 400,
 ) -> list[dict[str, Any]]:
     """Run a classifier over a pandas-readable WM811K table and return records."""
@@ -44,6 +47,8 @@ def build_wm811k_records(
     ]
     if not include_unlabeled:
         rows = [row for row in rows if row["native_failure_pattern"].lower() not in NONE_LABELS]
+    if not include_normal and not include_unlabeled:
+        rows = [row for row in rows if row["native_failure_pattern"].lower() not in NORMAL_LABELS]
     selected = deterministic_subset(
         rows,
         label=lambda row: str(row["native_failure_pattern"]),
@@ -56,7 +61,7 @@ def build_wm811k_records(
     records = [
         _record_from_row(
             row,
-            classifier.predict(row["wafer_map"], metadata=row),
+            classifier.predict(row["wafer_map"], metadata={"case_id": row["case_id"]}),
             output_dir=asset_dir,
             model_backend=model_backend,
             checkpoint=checkpoint,
@@ -145,9 +150,11 @@ def _record_from_row(
         "defect_density": descriptor_stats.get("defect_density"),
         "native_failure_pattern": row["native_failure_pattern"],
         "annotation_type": (
-            "native_ground_truth"
-            if row["native_failure_pattern"].lower() not in NONE_LABELS
-            else "unlabeled"
+            "unlabeled"
+            if row["native_failure_pattern"].lower() in UNLABELED_LABELS
+            else "normal"
+            if row["native_failure_pattern"].lower() in NORMAL_LABELS
+            else "native_ground_truth"
         ),
         "source_table": row["source_table"],
         "source_row_index": row["source_row_index"],
@@ -226,7 +233,7 @@ def _parse_wafer_map(value: Any) -> list[list[Any]]:
 
 def _canonical_label(value: Any) -> str:
     if value is None or _is_missing(value):
-        return "none"
+        return "unlabeled"
     if hasattr(value, "tolist") and callable(value.tolist):
         value = value.tolist()
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
@@ -234,9 +241,9 @@ def _canonical_label(value: Any) -> str:
         for item in flattened:
             if item.lower() not in NONE_LABELS:
                 return item
-        return "none"
+        return "unlabeled"
     text = str(value).strip()
-    return text or "none"
+    return text or "unlabeled"
 
 
 def _wafer_id(row: pd.Series, index: Any) -> str:

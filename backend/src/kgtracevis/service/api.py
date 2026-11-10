@@ -11,10 +11,14 @@ from typing import Annotated, Any, Literal, cast
 from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict
 
 from kgtracevis.kg.import_neo4j import Neo4jImportError
+from kgtracevis.kg.working_graph_package import WorkingGraphPackage
+from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
 from kgtracevis.producers.model_assets import MODEL_ASSET_CHOICES, ModelAsset
+from kgtracevis.producers.visual_semantics import ROISemanticServiceError
 from kgtracevis.service.dashboard import dashboard_bootstrap
 from kgtracevis.service.handlers import (
     AnalyzeRequest,
@@ -98,6 +102,19 @@ from kgtracevis.service.runs import (
     mvtec_model_presets,
     parse_dataset_override,
     parse_upload_mode,
+)
+from kgtracevis.service.working_graph_editor import (
+    WorkingGraphMutation,
+    export_working_graph,
+    import_working_graph,
+    mutate_working_graph,
+    save_working_graph,
+)
+from kgtracevis.service.working_graphs import (
+    ActivateWorkingGraphRequest,
+    WorkingGraphStorageError,
+    activate_compiler_build,
+    working_graph_store,
 )
 
 
@@ -199,12 +216,87 @@ def create_app() -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @app.get("/api/kg/studio")
-    def kg_studio() -> dict[str, object]:
+    @app.get("/api/runs/{run_id}/replay")
+    def run_replay(run_id: str):
+        from kgtracevis.service.replay_export import export_run_replay
+
         try:
+            return export_run_replay(run_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/kg/studio")
+    def kg_studio(graph_id: str | None = None) -> dict[str, object]:
+        try:
+            if graph_id is not None:
+                record = working_graph_store().get(graph_id)
+                if record.status != "ready":
+                    raise ValueError(f"working graph is not ready: {record.status}")
+                repository = WorkingGraphRepository.connect(graph_id)
+                try:
+                    payload = kg_studio_payload(repository=repository).model_dump(mode="json")
+                    payload["graph_id"] = graph_id
+                    return payload
+                finally:
+                    repository.close()
             return kg_studio_payload().model_dump(mode="json")
         except KGStudioRuntimeError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except WorkingGraphStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except (DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail="工作图 Neo4j 存储不可用。") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/kg/working-graphs")
+    def working_graphs() -> dict[str, object]:
+        try:
+            return {
+                "graphs": [
+                    record.model_dump(mode="json") for record in working_graph_store().list_ready()
+                ]
+            }
+        except WorkingGraphStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    @app.post("/api/kg/construction/builds/{run_id}/activate")
+    def activate_working_graph(
+        run_id: str,
+        request: ActivateWorkingGraphRequest,
+    ) -> dict[str, object]:
+        try:
+            return activate_compiler_build(run_id, request).model_dump(mode="json")
+        except (FileNotFoundError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except WorkingGraphStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except (DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail="工作图 Neo4j 存储不可用。") from exc
+
+    def graph_action(action):
+        try:
+            return action().model_dump(mode="json")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except (WorkingGraphStorageError, DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    @app.get("/api/kg/working-graphs/{graph_id}/package")
+    def export_graph_package(graph_id: str):
+        return graph_action(lambda: export_working_graph(graph_id))
+
+    @app.post("/api/kg/working-graphs/import")
+    def import_graph_package(package: WorkingGraphPackage):
+        return graph_action(lambda: import_working_graph(package))
+
+    @app.put("/api/kg/working-graphs/{graph_id}/package")
+    def save_graph_package(graph_id: str, package: WorkingGraphPackage):
+        return graph_action(lambda: save_working_graph(graph_id, package))
+
+    @app.patch("/api/kg/working-graphs/{graph_id}")
+    def mutate_graph(graph_id: str, request: WorkingGraphMutation):
+        return graph_action(lambda: mutate_working_graph(graph_id, request))
 
     @app.get("/api/kg/drafts")
     def kg_draft_history(
@@ -264,9 +356,7 @@ def create_app() -> FastAPI:
         request: RuntimeKGEdgeConfidenceRequest,
     ) -> dict[str, object]:
         try:
-            return update_runtime_kg_edge_confidence(edge_id, request).model_dump(
-                mode="json"
-            )
+            return update_runtime_kg_edge_confidence(edge_id, request).model_dump(mode="json")
         except ValueError as exc:
             status_code = 404 if "unknown KG edge" in str(exc) else 400
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
@@ -521,9 +611,7 @@ def create_app() -> FastAPI:
                 validation_request,
             ).model_dump(mode="json")
         except ValueError as exc:
-            status_code = (
-                404 if "unknown construction build run_id" in str(exc) else 400
-            )
+            status_code = 404 if "unknown construction build run_id" in str(exc) else 400
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
     @app.get("/api/kg/construction/builds/{run_id}/artifacts/{artifact_key}")
@@ -532,9 +620,7 @@ def create_app() -> FastAPI:
         artifact_key: str,
     ) -> FileResponse:
         try:
-            return FileResponse(
-                get_kg_construction_build_artifact_path(run_id, artifact_key)
-            )
+            return FileResponse(get_kg_construction_build_artifact_path(run_id, artifact_key))
         except ValueError as exc:
             detail = str(exc)
             status_code = (
@@ -650,12 +736,17 @@ def create_app() -> FastAPI:
         defect_type: Annotated[str | None, Form()] = None,
         model_preset: Annotated[str | None, Form()] = None,
         reasoning_profile_id: Annotated[str | None, Form()] = None,
+        graph_id: Annotated[str | None, Form()] = None,
+        semantic_mode: Annotated[Literal["disabled", "vlm"], Form()] = "disabled",
         top_k: Annotated[int, Form()] = 5,
     ) -> dict[str, object]:
         try:
             upload_mode = parse_upload_mode(mode)
             dataset_override = parse_dataset_override(dataset)
             content = await file.read()
+            graph_options = {"graph_id": graph_id} if graph_id else {}
+            if semantic_mode != "disabled":
+                graph_options["semantic_mode"] = semantic_mode
             return create_run_from_upload(
                 file.filename or "upload",
                 content,
@@ -668,9 +759,16 @@ def create_app() -> FastAPI:
                     str(reasoning_profile_id).strip() if reasoning_profile_id else None
                 ),
                 top_k=top_k,
+                **graph_options,
             ).model_dump(mode="json")
+        except ROISemanticServiceError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         except (FileNotFoundError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except WorkingGraphStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except (DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail="Neo4j 运行图不可用。") from exc
 
     @app.post("/api/analyze")
     def analyze(request: AnalyzeRequest) -> dict[str, object]:
@@ -678,6 +776,10 @@ def create_app() -> FastAPI:
             return analyze_request(request)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except WorkingGraphStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except (DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail="Neo4j 运行图不可用。") from exc
 
     @app.post("/api/what-if")
     def what_if(request: WhatIfRequest) -> dict[str, object]:

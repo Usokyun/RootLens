@@ -105,9 +105,10 @@ class FakeWM811KClassifier:
         *,
         metadata: Mapping[str, Any] | None = None,
     ) -> WM811KPrediction:
-        """Return a stable pattern from native metadata or map density."""
-        native = str((metadata or {}).get("native_failure_pattern") or "")
-        pattern = native if native.lower() != "none" else "Random"
+        """Use map density only; the producer must never supply native labels."""
+        assert "native_failure_pattern" not in (metadata or {})
+        a = np.asarray(wafer_map)
+        pattern = "Near-full" if (a == 2).sum() / max((a > 0).sum(), 1) >= 0.75 else "Random"
         return {
             "pattern": pattern,
             "confidence": 0.84,
@@ -500,9 +501,7 @@ def test_amazon_patchcore_object_router_lazily_routes_by_image_path(
     )
 
     bottle_prediction = router.predict(tmp_path / "input" / "bottle" / "test" / "bad" / "0.png")
-    capsule_prediction = router.predict(
-        tmp_path / "input" / "capsule" / "test" / "bad" / "0.png"
-    )
+    capsule_prediction = router.predict(tmp_path / "input" / "capsule" / "test" / "bad" / "0.png")
     router.predict(tmp_path / "input" / "bottle" / "test" / "bad" / "1.png")
 
     assert bottle_prediction["metadata"]["checkpoint"] == str(bottle_dir)
@@ -689,7 +688,7 @@ def test_wm811k_producer_emits_adapter_compatible_model_records(tmp_path: Path) 
     assert record["predicted_pattern"] == "Near-full"
     assert record["classification_confidence"] == 0.84
     assert record["native_failure_pattern"] == "Near-full"
-    assert record["descriptor_stats"]["defect_density"] == 8 / 9
+    assert record["descriptor_stats"]["defect_density"] == 1.0
     assert record["annotation_type"] == "native_ground_truth"
     assert Path(str(record["saliency_path"])).exists()
     assert record["classifier"]["backend"] == "fake"
@@ -1163,13 +1162,16 @@ def test_deterministic_subset_supports_seed_and_per_label_limits() -> None:
     )
 
     assert [item["label"] for item in selected] == ["a", "b"]
-    assert deterministic_subset(
-        items,
-        label=lambda item: item["label"],
-        sort_key=lambda item: item["id"],
-        max_per_label=1,
-        seed=3,
-    ) == selected
+    assert (
+        deterministic_subset(
+            items,
+            label=lambda item: item["label"],
+            sort_key=lambda item: item["id"],
+            max_per_label=1,
+            seed=3,
+        )
+        == selected
+    )
 
 
 def test_mask_stats_from_array_handles_component_geometry() -> None:
@@ -1214,18 +1216,14 @@ def test_filter_forbidden_outputs_recurses_through_records() -> None:
 def _write_tiny_tep_csvs(root: Path, *, compact_channel_headers: bool = False) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     channel_header = (
-        ["xmeas1", "xmeas2", "xmv1"]
-        if compact_channel_headers
-        else ["xmeas_1", "xmeas_2", "xmv_1"]
+        ["xmeas1", "xmeas2", "xmv1"] if compact_channel_headers else ["xmeas_1", "xmeas_2", "xmv_1"]
     )
     header = ["faultNumber", "simulationRun", "sample", *channel_header]
     fault_free_rows = [
-        [0, 1, sample, sample, sample * 0.1, sample * 2.0]
-        for sample in range(1, 21)
+        [0, 1, sample, sample, sample * 0.1, sample * 2.0] for sample in range(1, 21)
     ]
     faulty_rows = [
-        [1, 1, sample, sample, sample * 0.1 + 20.0, sample * 2.0]
-        for sample in range(1, 7)
+        [1, 1, sample, sample, sample * 0.1 + 20.0, sample * 2.0] for sample in range(1, 7)
     ]
     _write_csv(root / "TEP_FaultFree_Training.csv", header, fault_free_rows)
     _write_csv(root / "TEP_Faulty_Training.csv", header, faulty_rows)
@@ -1262,9 +1260,7 @@ def _amazon_patchcore_artifact_dir(path: Path) -> Path:
 def _amazon_patchcore_pointer_artifact_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     pointer = (
-        b"version https://git-lfs.github.com/spec/v1\n"
-        b"oid sha256:0123456789abcdef\n"
-        b"size 123456\n"
+        b"version https://git-lfs.github.com/spec/v1\noid sha256:0123456789abcdef\nsize 123456\n"
     )
     (path / "patchcore_params.pkl").write_bytes(pointer)
     (path / "nnscorer_search_index.faiss").write_bytes(pointer)

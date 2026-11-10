@@ -173,9 +173,7 @@ def test_adapter_keyword_overrides_do_not_mutate_record() -> None:
 
 def test_adapter_observation_ids_remain_unique_for_repeated_values() -> None:
     """Repeated observed variable/log values should still get stable unique IDs."""
-    tep = evidence_from_tep_record(
-        {"case_id": "dup_case", "variables": ["XMEAS_1", "XMEAS_1"]}
-    )
+    tep = evidence_from_tep_record({"case_id": "dup_case", "variables": ["XMEAS_1", "XMEAS_1"]})
     wafer = evidence_from_wafer_record(
         {"case_id": "dup_case", "log_events": ["etch_alarm", "etch_alarm"]}
     )
@@ -184,9 +182,7 @@ def test_adapter_observation_ids_remain_unique_for_repeated_values() -> None:
         observation.obs_id for observation in tep.observations if observation.facet == "variable"
     ]
     wafer_event_ids = [
-        observation.obs_id
-        for observation in wafer.observations
-        if observation.facet == "log_event"
+        observation.obs_id for observation in wafer.observations if observation.facet == "log_event"
     ]
 
     assert tep_variable_ids == [
@@ -283,12 +279,12 @@ def test_wafer_map_feature_helpers_support_precomputed_stats_and_tiny_arrays() -
     )
 
     assert precomputed["derived_location"] == "wafer_surface"
-    assert precomputed["derived_morphology"] == "dense_particles"
+    assert precomputed["derived_morphology"] == "widespread_failures"
     assert precomputed["derived_severity"] == 0.72
     assert from_array["failed_die_count"] == 8
-    assert from_array["die_count"] == 9
+    assert from_array["die_count"] == 8
     assert from_array["derived_location"] == "wafer_surface"
-    assert from_array["derived_morphology"] == "dense_particles"
+    assert from_array["derived_morphology"] == "widespread_failures"
 
 
 def test_mvtec_adapter_derives_fallback_fields_from_mask_stats() -> None:

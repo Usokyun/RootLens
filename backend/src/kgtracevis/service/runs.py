@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from kgtracevis.adapters import evidence_from_mvtec_record
 from kgtracevis.adapters.batch import load_records as load_adapter_records
@@ -132,14 +132,25 @@ def create_run_from_upload(
     defect_type: str | None = None,
     model_preset: str | None = None,
     reasoning_profile_id: str | None = None,
+    graph_id: str | None = None,
+    semantic_mode: Literal["disabled", "vlm"] = "disabled",
     runs_dir: str | Path | None = None,
     pipeline: KGTracePipeline | None = None,
 ) -> RunDetail:
     """Persist one uploaded sample and run the applicable pipeline path."""
     if top_k < 1:
         raise ValueError("top_k must be >= 1")
-    if pipeline is not None and reasoning_profile_id is not None:
-        raise ValueError("pass either pipeline or reasoning_profile_id, not both")
+    if semantic_mode not in {"disabled", "vlm"} or (semantic_mode == "vlm" and mode != "image"):
+        raise ValueError("ROI semantics are supported only for image uploads")
+    if semantic_mode == "vlm" and reasoning_profile_id is None and graph_id is None:
+        reasoning_profile_id = "mvtec_feature_graph_v1"
+    if semantic_mode == "vlm" and reasoning_profile_id is not None:
+        if reasoning_profile_id != "mvtec_feature_graph_v1" and not reasoning_profile_id.startswith(
+            "working:"
+        ):
+            raise ValueError("ROI semantics require visual profile reasoning")
+    if pipeline is not None and (reasoning_profile_id is not None or graph_id is not None):
+        raise ValueError("pass pipeline or reasoning_profile_id/graph_id, not both")
 
     base_dir = Path(runs_dir or DEFAULT_RUNS_DIR)
     run_id = build_run_id()
@@ -154,7 +165,11 @@ def create_run_from_upload(
     input_path.write_bytes(content)
 
     created_at = datetime.now(timezone.utc).isoformat()
-    active_pipeline = pipeline or build_pipeline(reasoning_profile_id=reasoning_profile_id)
+    active_pipeline = pipeline or (
+        build_pipeline(reasoning_profile_id=reasoning_profile_id, graph_id=graph_id)
+        if graph_id is not None
+        else build_pipeline(reasoning_profile_id=reasoning_profile_id)
+    )
     if mode == "evidence":
         detail = _run_evidence_upload(
             run_id=run_id,
@@ -178,6 +193,7 @@ def create_run_from_upload(
             top_k=top_k,
             pipeline=active_pipeline,
             output_dir=output_dir / "mvtec_image_pipeline",
+            semantic_mode=semantic_mode,
         )
     elif mode == "records":
         detail = _run_records_upload(
@@ -193,6 +209,11 @@ def create_run_from_upload(
     else:
         raise ValueError("upload mode must be evidence, records, or image")
 
+    if active_pipeline.graph_snapshot is not None:
+        detail.summary = {
+            **(detail.summary or {}),
+            "working_graph_snapshot": active_pipeline.graph_snapshot,
+        }
     store = run_store()
     if store is None:
         raise ValueError("Postgres run store is not configured")
@@ -242,14 +263,13 @@ def _pipeline_summary_from_reasoning_metadata(
         "reasoning_profile_id": profile_id,
         "reasoner_adapter": adapter,
         "selection_mode": selection_mode,
+        "graph_id": metadata.get("graph_id"),
         "reasoning_profile_ids": [profile_id] if profile_id else [],
         "reasoner_adapters": [adapter] if adapter else [],
         "selection_modes": [selection_mode] if selection_mode else [],
         "requested_reasoning_profile_id": requested_profile_id,
         "requested_reasoner_adapter": requested_adapter,
-        "requested_reasoning_profile_ids": [requested_profile_id]
-        if requested_profile_id
-        else [],
+        "requested_reasoning_profile_ids": [requested_profile_id] if requested_profile_id else [],
         "requested_reasoner_adapters": [requested_adapter] if requested_adapter else [],
         "fallback_applied": metadata.get("fallback_applied"),
         "fallback_reason": metadata.get("fallback_reason"),
@@ -326,9 +346,7 @@ def _run_evidence_upload(
                 },
             ),
         ],
-        claim_boundary=(
-            "candidate/plausible explanation only; not a verified root-cause label"
-        ),
+        claim_boundary=("candidate/plausible explanation only; not a verified root-cause label"),
         evidence=evidence.model_dump(mode="json"),
         **dashboard_fields_from_analysis(evidence, analysis),
         evidence_with_analysis=evidence_with_analysis(evidence, analysis),
@@ -382,10 +400,7 @@ def _run_records_upload(
         if isinstance(first_case, dict):
             inferred_dataset = first_case.get("dataset")
     dataset_name = str(
-        dataset
-        or inferred_dataset
-        or summary.get("input", {}).get("dataset_override")
-        or "mvtec"
+        dataset or inferred_dataset or summary.get("input", {}).get("dataset_override") or "mvtec"
     )
     if dataset_name not in {"mvtec", "tep", "wafer"}:
         dataset_name = "mvtec"
@@ -439,9 +454,10 @@ def _run_records_upload(
                 },
             ),
         ],
-        claim_boundary=str(summary.get("note") or (
-            "candidate/plausible explanation only; not a verified root-cause label"
-        )),
+        claim_boundary=str(
+            summary.get("note")
+            or ("candidate/plausible explanation only; not a verified root-cause label")
+        ),
         summary=summary,
         cases=case_rows,
         reasoning_metadata=reasoning_metadata,
@@ -471,6 +487,7 @@ def _run_mvtec_image_upload(
     output_dir: Path,
     predictor: MVTecAnomalyPredictor | None = None,
     checkpoint: str | Path | None = None,
+    semantic_mode: Literal["disabled", "vlm"] = "disabled",
 ) -> RunDetail:
     image_root = input_path.parent / "mvtec_image_root"
     object_folder = _safe_filename(object_name)
@@ -479,7 +496,11 @@ def _run_mvtec_image_upload(
     case_image.parent.mkdir(parents=True, exist_ok=True)
     case_image.write_bytes(input_path.read_bytes())
 
-    selection = resolve_mvtec_model_selection(model_preset)
+    selection = (
+        resolve_mvtec_model_selection(model_preset, object_name=object_folder)
+        if predictor is None and checkpoint is None and pipeline.graph_snapshot is not None
+        else resolve_mvtec_model_selection(model_preset)
+    )
     if checkpoint is not None:
         checkpoint_path = _resolve_mvtec_checkpoint(checkpoint, model_preset=selection.preset)
     else:
@@ -493,6 +514,7 @@ def _run_mvtec_image_upload(
         model_backend=selection.backend,
         checkpoint=checkpoint_path,
         device=_resolve_mvtec_device(),
+        model_type=selection.preset,
     )
 
     generated_records = build_mvtec_records(
@@ -507,6 +529,46 @@ def _run_mvtec_image_upload(
     )
     if not generated_records:
         raise ValueError("no MVTec evidence records were produced from the uploaded image")
+    for record in generated_records:
+        record["annotation_type"] = "operator_label" if defect_type else "unlabeled"
+        if semantic_mode == "vlm" and record.get("detector", {}).get("raw_pred_label") is not False:
+            from kgtracevis.kg.graph import normalize_text
+            from kgtracevis.producers.visual_semantics import OpenAICompatibleROISemantics
+            from kgtracevis.schema.visual_reasoning import VisualRegion
+
+            graph = pipeline.graph_for_evidence(evidence_from_mvtec_record(record))
+            objects = {
+                n.id
+                for n in graph.nodes.values()
+                if n.label == "Object"
+                and normalize_text(object_folder) in {normalize_text(t) for t in n.searchable_terms}
+            }
+            concepts = [
+                {"concept_id": n.id, "label": n.name, "description": n.description}
+                for node_id in sorted(
+                    {
+                        e.tail
+                        for e in graph.edges
+                        if e.head in objects and e.relation in {"HAS_ANOMALY", "HAS_DEFECT"}
+                    }
+                )
+                if (n := graph.nodes[node_id]).scenario in {"mvtec", "shared"}
+            ]
+            semantics = OpenAICompatibleROISemantics()
+            regions = semantics.annotate(
+                case_image,
+                [VisualRegion.model_validate(r) for r in record["visual_regions"]],
+                object_name=object_folder,
+                concepts=concepts,
+                output_dir=output_dir / "rois",
+                normal_reference_path=selection.normal_reference,
+            )
+            record["visual_regions"] = [r.model_dump(mode="json") for r in regions]
+            record["semantic_inference"] = {
+                "model": semantics.model,
+                "calls": semantics.calls,
+                "total_tokens": semantics.tokens,
+            }
     records_path = write_jsonl_records(
         generated_records,
         output_dir / "mvtec_image_records.jsonl",
@@ -538,7 +600,6 @@ def _run_mvtec_image_upload(
         model_preset=selection.preset,
         model_backend=selection.backend,
     )
-    reasoning_metadata = _run_reasoning_metadata_payload(analysis.reasoning_metadata)
     detail = RunDetail(
         run=run,
         workflow_steps=workflow_steps_for_image_case(
@@ -553,9 +614,10 @@ def _run_mvtec_image_upload(
             analysis=analysis,
             top_k=top_k,
         ),
-        claim_boundary=str(summary.get("note") or (
-            "candidate/plausible explanation only; not a verified root-cause label"
-        )),
+        claim_boundary=str(
+            summary.get("note")
+            or ("candidate/plausible explanation only; not a verified root-cause label")
+        ),
         evidence=evidence.model_dump(mode="json"),
         **dashboard_fields_from_analysis(evidence, analysis),
         evidence_with_analysis=evidence_with_analysis(evidence, analysis),
@@ -587,6 +649,7 @@ def _build_mvtec_upload_predictor(
     model_backend: str,
     checkpoint: Path,
     device: str | None,
+    model_type: str = "patchcore",
 ) -> MVTecAnomalyPredictor:
     """Build the selected raw-image upload predictor."""
     if model_backend == AMAZON_PATCHCORE_BACKEND:
@@ -595,6 +658,7 @@ def _build_mvtec_upload_predictor(
         backend=model_backend,
         checkpoint=checkpoint,
         device=device,
+        model_type=model_type,
     )
 
 
@@ -633,10 +697,7 @@ def _resolve_mvtec_checkpoint(
         candidate = Path(checkpoint)
     else:
         candidate = _default_checkpoint_for_preset(model_preset)
-    candidate = Path(
-        os.environ.get(_checkpoint_env_for_preset(model_preset))
-        or candidate
-    )
+    candidate = Path(os.environ.get(_checkpoint_env_for_preset(model_preset)) or candidate)
     if (
         candidate.is_file()
         or is_amazon_patchcore_artifact_dir(candidate)

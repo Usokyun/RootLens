@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -66,6 +67,7 @@ class MVTecModelSelection:
     checkpoint_path: Path
     available: bool
     checkpoint_hint: str
+    normal_reference: Path | None = None
 
 
 MVTEC_MODEL_PRESET_SPECS: dict[MVTecResolvedPreset, MVTecModelPresetSpec] = {
@@ -137,9 +139,49 @@ def list_mvtec_model_presets() -> list[dict[str, Any]]:
     return presets
 
 
-def resolve_mvtec_model_selection(model_preset: str | None = None) -> MVTecModelSelection:
+def resolve_mvtec_model_selection(
+    model_preset: str | None = None, *, object_name: str | None = None
+) -> MVTecModelSelection:
     """Resolve a selectable MVTec model preset into a concrete checkpoint path."""
     normalized = _normalize_model_preset(model_preset)
+    if object_name is not None:
+        manifest_path = Path(
+            os.environ.get("KGTRACEVIS_MVTEC_MODEL_MANIFEST", "runs/mvtec_models.json")
+        )
+        manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
+        if manifest and manifest.get("schema_version") != "rootlens-mvtec-models.v1":
+            raise ValueError("unsupported MVTec model manifest schema")
+        entries = manifest.get("objects", {}).get(object_name, {})
+        order = MVTEC_MODEL_PRESET_PRIORITY if normalized == "auto" else (normalized,)
+        for preset in order:
+            if preset not in entries:
+                continue
+            entry = entries[preset]
+            checkpoint = Path(entry["checkpoint"])
+            if not checkpoint.is_file():
+                raise FileNotFoundError(
+                    f"registered {object_name}/{preset} checkpoint is missing: {checkpoint}"
+                )
+            spec = MVTEC_MODEL_PRESET_SPECS[preset]
+            return MVTecModelSelection(
+                preset,
+                spec.label,
+                spec.description,
+                _infer_backend(checkpoint, spec.backend_hint),
+                checkpoint,
+                True,
+                str(checkpoint),
+                Path(entry["normal_reference"]) if entry.get("normal_reference") else None,
+            )
+        # The bundled STFPM export is trained on capsule, never silently reuse it on bottle.
+        if object_name == "capsule" and normalized in {"auto", "stfpm"}:
+            capsule = _selection_for_preset("stfpm")
+            if capsule.available:
+                return capsule
+        raise ValueError(
+            f"No registered {normalized} detector for object {object_name}; "
+            "configure runs/mvtec_models.json"
+        )
     if normalized == "auto":
         resolved = {preset: _selection_for_preset(preset) for preset in MVTEC_MODEL_PRESET_PRIORITY}
         selected = _best_available_selection(resolved)
@@ -187,9 +229,8 @@ def _resolve_checkpoint_path(spec: MVTecModelPresetSpec) -> Path:
 def _infer_backend(checkpoint_path: Path, default_backend: str) -> str:
     if checkpoint_path.suffix.lower() == ".xml":
         return ANOMALIB_OPENVINO_BACKEND
-    if (
-        is_amazon_patchcore_artifact_dir(checkpoint_path)
-        or is_amazon_patchcore_artifact_collection(checkpoint_path)
+    if is_amazon_patchcore_artifact_dir(checkpoint_path) or is_amazon_patchcore_artifact_collection(
+        checkpoint_path
     ):
         return AMAZON_PATCHCORE_BACKEND
     if checkpoint_path.suffix.lower() == ".ckpt":

@@ -93,8 +93,43 @@ def build_pipeline(
     neo4j_repository: KGSnapshotRepository | None = None,
     reasoning_profile_id: str | None = None,
     reasoning_registry: ReasoningAdapterRegistry | None = None,
+    graph_id: str | None = None,
 ) -> KGTracePipeline:
     """Build a KGTracePipeline with reasoning-profile resolution."""
+    if reasoning_profile_id and reasoning_profile_id.startswith("working:"):
+        selected_graph_id = reasoning_profile_id.removeprefix("working:")
+        if graph_id is not None and graph_id != selected_graph_id:
+            raise ValueError("conflicting working graph selections")
+        graph_id = selected_graph_id
+        reasoning_profile_id = None
+    if graph_id is not None:
+        if graph is not None or neo4j_repository is not None:
+            raise ValueError("pass graph_id or a graph repository, not both")
+        if reasoning_profile_id not in {None, "mvtec_feature_graph_v1"}:
+            raise ValueError("working graphs require the visual profile reasoner")
+        from kgtracevis.kg.working_graph_package import graph_package
+        from kgtracevis.service.working_graphs import load_working_graph
+        from kgtracevis.workflows.measured_profile_reasoner import MeasuredProfileReasoner
+        from kgtracevis.workflows.profile_match_reasoner import VisualProfileReasoner
+
+        record, snapshot = load_working_graph(graph_id)
+        reasoner = (
+            VisualProfileReasoner(record.profiles, graph_id=graph_id)
+            if record.dataset == "mvtec"
+            else MeasuredProfileReasoner(record.profiles, graph_id=graph_id)
+        )
+        return KGTracePipeline(
+            graph=snapshot,
+            root_cause_reasoner=reasoner,
+            graph_snapshot=graph_package(
+                snapshot,
+                graph_id=graph_id,
+                title=record.title,
+                build_id=record.build_id,
+                profiles=record.profiles,
+                dataset=record.dataset,
+            ).model_dump(mode="json"),
+        )
     return KGTracePipeline(
         graph=graph,
         neo4j_repository=neo4j_repository,

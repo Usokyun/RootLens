@@ -56,6 +56,19 @@ describe("mock backend paper demo mode", () => {
     installGeneratedAssetFetchStub();
   });
 
+  it("replays persisted backend details without rebuilding reasoning from current graphs", async () => {
+    const { mockBackend } = await import("@/services/mock-backend");
+    const { loadBundledRootLensRuntime, saveImportedSession } = await import("@/services/rootlens-data");
+    const original = await mockBackend.getRun("paper-demo-curated");
+    original.run.run_id = "saved-backend-run";
+    original.summary = { working_graph_snapshot: { graph_id: "original-graph" } };
+    original.cases[0].reasoning_metadata = { graph_id: "original-graph", outcome: "matched" };
+    const runtime = await loadBundledRootLensRuntime();
+    saveImportedSession({ graphs: null, runtime: { ...runtime, backend_runs: [original] } });
+    expect((await mockBackend.listRuns())[0].run_id).toBe("saved-backend-run");
+    expect(await mockBackend.getRun("saved-backend-run")).toEqual(original);
+  });
+
   it("returns exactly one curated demo run with the four paper cases", async () => {
     const { mockBackend } = await import("@/services/mock-backend");
 

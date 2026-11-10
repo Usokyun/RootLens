@@ -1,3 +1,4 @@
+import { readReplayRuntime, storeReplayRuntime } from '@/services/replay-asset-store'
 import { parseRootLensRuntimeFile, parseUnifiedGraphsFile } from '@/contracts/runtime'
 import type { UnifiedGraphsFile } from '@/types/graph'
 import type { RootLensRuntimeFile } from '@/types/rootlens'
@@ -18,6 +19,8 @@ async function fetchJson(url: string): Promise<unknown> {
 
   return response.json()
 }
+
+let cachedRuntime: { key: string; value: RootLensRuntimeFile } | null = null
 
 let unifiedGraphsPromise: Promise<UnifiedGraphsFile> | null = null
 let runtimePromise: Promise<RootLensRuntimeFile> | null = null
@@ -72,6 +75,7 @@ export interface LocalSessionMeta {
   source: 'demo' | 'import'
   updatedAt: string
   summary?: string
+  runtimeAssetKey?: string
 }
 
 export function getLocalSessionEventName() {
@@ -96,6 +100,7 @@ export function getLocalSessionMeta(): LocalSessionMeta | null {
     source: candidate.source,
     updatedAt: candidate.updatedAt,
     summary: typeof candidate.summary === 'string' ? candidate.summary : undefined,
+    runtimeAssetKey: typeof candidate.runtimeAssetKey === 'string' ? candidate.runtimeAssetKey : undefined,
   }
 }
 
@@ -201,6 +206,8 @@ export function getStoredImportedGraphs(): UnifiedGraphsFile | null {
 }
 
 export function getStoredImportedRuntime(): RootLensRuntimeFile | null {
+  const key = getLocalSessionMeta()?.runtimeAssetKey
+  if (key) return cachedRuntime?.key === key ? cachedRuntime.value : null
   try {
     const payload = readLocalJson(LOCAL_RUNTIME_KEY)
     return payload ? parseRootLensRuntimeFile(payload) : null
@@ -209,45 +216,57 @@ export function getStoredImportedRuntime(): RootLensRuntimeFile | null {
   }
 }
 
+export async function loadStoredImportedRuntime(): Promise<RootLensRuntimeFile | null> {
+  const key = getLocalSessionMeta()?.runtimeAssetKey
+  if (key && cachedRuntime?.key !== key) {
+    const payload = await readReplayRuntime(key)
+    if (!payload) throw new Error('回放资产缺失，请重新导入 Session 文件。')
+    cachedRuntime = { key, value: parseRootLensRuntimeFile(payload) }
+  }
+  return getStoredImportedRuntime()
+}
+
 function isImportedSessionActive(): boolean {
   return getLocalSessionMeta()?.source === 'import'
 }
 
-export function saveImportedSession(input: {
+export async function saveImportedSession(input: {
   graphs: UnifiedGraphsFile | null
   runtime: RootLensRuntimeFile | null
   summary?: string
   importSummary?: LocalImportSummary
 }) {
-  if (input.graphs) {
-    writeLocalJson(LOCAL_GRAPHS_KEY, input.graphs)
-  } else {
-    removeLocalJson(LOCAL_GRAPHS_KEY)
+  // Large complete runs include image data and time series. Persist before publishing
+  // the session pointer so a quota/failure cannot mix new graphs with old evidence.
+  const large = input.runtime && JSON.stringify(input.runtime).length > 1_500_000
+  const runtimeAssetKey = large ? crypto.randomUUID() : undefined
+  if (runtimeAssetKey) await storeReplayRuntime(runtimeAssetKey, input.runtime)
+  const keys = [LOCAL_GRAPHS_KEY, LOCAL_RUNTIME_KEY, LOCAL_META_KEY, LOCAL_IMPORT_SUMMARY_KEY]
+  const previous = keys.map(key => window.localStorage.getItem(key))
+  try {
+    if (input.graphs) writeLocalJson(LOCAL_GRAPHS_KEY, input.graphs)
+    else removeLocalJson(LOCAL_GRAPHS_KEY)
+    if (input.runtime && !runtimeAssetKey) writeLocalJson(LOCAL_RUNTIME_KEY, input.runtime)
+    else removeLocalJson(LOCAL_RUNTIME_KEY)
+    writeLocalJson(LOCAL_META_KEY, { source: 'import', updatedAt: new Date().toISOString(),
+      summary: input.summary, runtimeAssetKey } satisfies LocalSessionMeta)
+    if (input.importSummary) writeLocalJson(LOCAL_IMPORT_SUMMARY_KEY, input.importSummary)
+    else removeLocalJson(LOCAL_IMPORT_SUMMARY_KEY)
+  } catch (error) {
+    keys.forEach((key, index) => {
+      const old = previous[index]
+      if (old === null) window.localStorage.removeItem(key)
+      else window.localStorage.setItem(key, old!)
+    })
+    throw error
   }
-
-  if (input.runtime) {
-    writeLocalJson(LOCAL_RUNTIME_KEY, input.runtime)
-  } else {
-    removeLocalJson(LOCAL_RUNTIME_KEY)
-  }
-
-  writeLocalJson(LOCAL_META_KEY, {
-    source: 'import',
-    updatedAt: new Date().toISOString(),
-    summary: input.summary,
-  } satisfies LocalSessionMeta)
-
-  if (input.importSummary) {
-    writeLocalJson(LOCAL_IMPORT_SUMMARY_KEY, input.importSummary)
-  } else {
-    removeLocalJson(LOCAL_IMPORT_SUMMARY_KEY)
-  }
-
+  cachedRuntime = runtimeAssetKey && input.runtime ? { key: runtimeAssetKey, value: input.runtime } : null
   resetPromises()
   notifySessionChange()
 }
 
 export function clearImportedSession() {
+  cachedRuntime = null
   removeLocalJson(LOCAL_GRAPHS_KEY)
   removeLocalJson(LOCAL_RUNTIME_KEY)
   removeLocalJson(LOCAL_IMPORT_SUMMARY_KEY)
@@ -275,12 +294,12 @@ export async function loadUnifiedGraphs(): Promise<UnifiedGraphsFile> {
 
 export async function loadRootLensRuntime(): Promise<RootLensRuntimeFile> {
   if (!runtimePromise) {
-    const localPayload = readLocalJson(LOCAL_RUNTIME_KEY)
-    runtimePromise = localPayload
-      ? Promise.resolve(parseRootLensRuntimeFile(localPayload))
-      : isImportedSessionActive()
-        ? Promise.reject(new Error('当前回放会话未包含 rootlens-runtime.json，Evidence 与 RCA 工作台不可用。'))
-        : fetchJson('/generated/rootlens-runtime.json').then(parseRootLensRuntimeFile)
+    runtimePromise = isImportedSessionActive()
+      ? loadStoredImportedRuntime().then(payload => {
+          if (!payload) throw new Error('当前回放未包含 runtime，Evidence 与 RCA 工作台不可用。')
+          return payload
+        })
+      : fetchJson('/generated/rootlens-runtime.json').then(parseRootLensRuntimeFile)
   }
 
   return runtimePromise

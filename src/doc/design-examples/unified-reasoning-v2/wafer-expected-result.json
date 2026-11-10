@@ -1,0 +1,627 @@
+{
+  "schema_version": "rootlens-reasoning-result.v2",
+  "example_kind": "calculated_synthetic_design",
+  "case_id": "design-wafer-001",
+  "graph_id": "design:unified-diagnosis",
+  "calculation_scope": "Declared conjunctive design examples only; no backbone, LLM or production reasoner executed.",
+  "outcome": "supported",
+  "candidate_pool": [
+    "h:edge_ring",
+    "h:nearfull"
+  ],
+  "proof_graph": {
+    "nodes": [
+      {
+        "node_id": "fact:q:center_low",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:center_low]"
+      },
+      {
+        "node_id": "o:center",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:center]"
+      },
+      {
+        "node_id": "fact:q:edge_high",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:edge_high]"
+      },
+      {
+        "node_id": "o:edge",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:edge]"
+      },
+      {
+        "node_id": "fact:q:overall_high",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:overall_high]"
+      },
+      {
+        "node_id": "o:overall",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:overall]"
+      },
+      {
+        "node_id": "observed:p:edge_ring",
+        "kind": "observed_pattern",
+        "value": true,
+        "definition_id": "d:edge_ring"
+      },
+      {
+        "node_id": "observed:p:nearfull",
+        "kind": "observed_pattern",
+        "value": false,
+        "definition_id": "d:nearfull"
+      },
+      {
+        "node_id": "assumed:h:edge_ring",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:edge_ring"
+      },
+      {
+        "node_id": "score:h:edge_ring",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:edge_ring]"
+      },
+      {
+        "node_id": "expected:h:edge_ring:r:edge_ring_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:edge_ring",
+        "expected_value": true
+      },
+      {
+        "node_id": "assumed:h:nearfull",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:nearfull"
+      },
+      {
+        "node_id": "score:h:nearfull",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:nearfull]"
+      },
+      {
+        "node_id": "expected:h:nearfull:r:nearfull_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:nearfull",
+        "expected_value": true
+      }
+    ],
+    "edges": [
+      {
+        "head": "o:center",
+        "relation": "GROUNDS",
+        "tail": "fact:q:center_low",
+        "predicate_definition_id": "q:center_low"
+      },
+      {
+        "head": "o:edge",
+        "relation": "GROUNDS",
+        "tail": "fact:q:edge_high",
+        "predicate_definition_id": "q:edge_high"
+      },
+      {
+        "head": "o:overall",
+        "relation": "GROUNDS",
+        "tail": "fact:q:overall_high",
+        "predicate_definition_id": "q:overall_high"
+      },
+      {
+        "head": "fact:q:edge_high",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:edge_ring",
+        "definition_id": "d:edge_ring",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:center_low",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:edge_ring",
+        "definition_id": "d:edge_ring",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:overall_high",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:nearfull",
+        "definition_id": "d:nearfull",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:edge_high",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:nearfull",
+        "definition_id": "d:nearfull",
+        "requires_all": true
+      },
+      {
+        "head": "assumed:h:edge_ring",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:edge_ring",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:edge_ring",
+        "relation": "EXPECTS",
+        "tail": "expected:h:edge_ring:r:edge_ring_expect",
+        "rule_id": "r:edge_ring_expect",
+        "origin_edge_ids": [
+          "r:edge_ring_expect::from",
+          "r:edge_ring_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:edge_ring:r:edge_ring_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:edge_ring",
+        "expectation_rule_id": "r:edge_ring_expect"
+      },
+      {
+        "head": "observed:p:edge_ring",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:edge_ring",
+        "expectation_rule_id": "r:edge_ring_expect",
+        "matched": true
+      },
+      {
+        "head": "fact:q:center_low",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:edge_ring",
+        "covered": true
+      },
+      {
+        "head": "fact:q:edge_high",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:edge_ring",
+        "covered": true
+      },
+      {
+        "head": "assumed:h:nearfull",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:nearfull",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:nearfull",
+        "relation": "EXPECTS",
+        "tail": "expected:h:nearfull:r:nearfull_expect",
+        "rule_id": "r:nearfull_expect",
+        "origin_edge_ids": [
+          "r:nearfull_expect::from",
+          "r:nearfull_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:nearfull:r:nearfull_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:nearfull",
+        "expectation_rule_id": "r:nearfull_expect"
+      },
+      {
+        "head": "observed:p:nearfull",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:nearfull",
+        "expectation_rule_id": "r:nearfull_expect",
+        "matched": false
+      },
+      {
+        "head": "fact:q:center_low",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:nearfull",
+        "covered": false
+      },
+      {
+        "head": "fact:q:edge_high",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:nearfull",
+        "covered": false
+      }
+    ]
+  },
+  "unassessed_candidates": [],
+  "grounded_facts": [
+    {
+      "fact_id": "fact:q:center_low",
+      "predicate_id": "q:center_low",
+      "subject_id": "wafer:1",
+      "scope_id": "scope:center",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "wafer-grid:1",
+      "source_obs_ids": [
+        "o:center"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 0.03,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "spatial.failure_density",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.15,
+          "unit": "1"
+        }
+      },
+      "reference_id": null
+    },
+    {
+      "fact_id": "fact:q:edge_high",
+      "predicate_id": "q:edge_high",
+      "subject_id": "wafer:1",
+      "scope_id": "scope:edge",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "wafer-grid:1",
+      "source_obs_ids": [
+        "o:edge"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 0.47,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.3,
+          "unit": "1"
+        }
+      },
+      "reference_id": null
+    },
+    {
+      "fact_id": "fact:q:overall_high",
+      "predicate_id": "q:overall_high",
+      "subject_id": "wafer:1",
+      "scope_id": "scope:all_valid",
+      "value": false,
+      "status": "violated",
+      "dependency_group": "wafer-grid:1",
+      "source_obs_ids": [
+        "o:overall"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 0.22,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.75,
+          "unit": "1"
+        }
+      },
+      "reference_id": null
+    }
+  ],
+  "observed_patterns": [
+    {
+      "pattern_id": "p:edge_ring",
+      "definition_id": "d:edge_ring",
+      "value": true,
+      "scope_join": "same_wafer_parent_scope",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:edge_high",
+        "fact:q:center_low"
+      ]
+    },
+    {
+      "pattern_id": "p:nearfull",
+      "definition_id": "d:nearfull",
+      "value": false,
+      "scope_join": "same_wafer_parent_scope",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:overall_high",
+        "fact:q:edge_high"
+      ]
+    }
+  ],
+  "candidate_evaluations": [
+    {
+      "candidate_id": "h:edge_ring",
+      "candidate_name": "Edge-ring 图案候选",
+      "candidate_role": "spatial_pattern",
+      "status": "supported",
+      "eligible_for_ranking": true,
+      "score": -0.25,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "wafer-grid:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "support_obs_ids": [
+        "o:center",
+        "o:edge"
+      ],
+      "counter_obs_ids": [],
+      "unexplained_fact_ids": [],
+      "active_hypothesis_world_entities": [
+        "h:edge_ring"
+      ],
+      "activated_effect_rule_ids": [],
+      "expectation_checks": [
+        {
+          "rule_id": "r:edge_ring_expect",
+          "mode": "expected",
+          "pattern_id": "p:edge_ring",
+          "expected_value": true,
+          "observed_value": true,
+          "covered_fact_ids": [
+            "fact:q:edge_high",
+            "fact:q:center_low"
+          ],
+          "conflicting_fact_ids": [],
+          "partial_matching_fact_ids": [],
+          "missing_predicate_ids": []
+        }
+      ]
+    },
+    {
+      "candidate_id": "h:nearfull",
+      "candidate_name": "Nearfull 图案候选",
+      "candidate_role": "spatial_pattern",
+      "status": "no_match",
+      "eligible_for_ranking": false,
+      "score": -1.9166666666666665,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 1,
+        "conflict_loss": 0.3333333333333333,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 1.9166666666666665,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "wafer-grid:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 2,
+            "conflict_count": 1
+          }
+        ]
+      },
+      "support_obs_ids": [],
+      "counter_obs_ids": [
+        "o:overall"
+      ],
+      "unexplained_fact_ids": [
+        "fact:q:center_low",
+        "fact:q:edge_high"
+      ],
+      "active_hypothesis_world_entities": [
+        "h:nearfull"
+      ],
+      "activated_effect_rule_ids": [],
+      "expectation_checks": [
+        {
+          "rule_id": "r:nearfull_expect",
+          "mode": "expected",
+          "pattern_id": "p:nearfull",
+          "expected_value": true,
+          "observed_value": false,
+          "covered_fact_ids": [],
+          "conflicting_fact_ids": [
+            "fact:q:overall_high"
+          ],
+          "partial_matching_fact_ids": [
+            "fact:q:edge_high"
+          ],
+          "missing_predicate_ids": []
+        }
+      ]
+    }
+  ],
+  "ranked_root_causes": [
+    {
+      "candidate_id": "h:edge_ring",
+      "candidate_name": "Edge-ring 图案候选",
+      "candidate_role": "spatial_pattern",
+      "rank": 1,
+      "score": -0.25,
+      "confidence": null,
+      "support_obs_ids": [
+        "o:center",
+        "o:edge"
+      ],
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "wafer-grid:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "explanation_paths": [
+        {
+          "path_id": "path:design-wafer-001:h:edge_ring:q:edge_high",
+          "nodes": [
+            "q:edge_high",
+            "d:edge_ring",
+            "p:edge_ring",
+            "r:edge_ring_expect",
+            "h:edge_ring"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:edge_ring::input::q:edge_high",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:edge_ring::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:edge_ring_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:edge_ring_expect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:edge"
+          ],
+          "joint_proof_id": "joint:design-wafer-001:h:edge_ring:p:edge_ring",
+          "required_joint_fact_ids": [
+            "fact:q:edge_high",
+            "fact:q:center_low"
+          ]
+        },
+        {
+          "path_id": "path:design-wafer-001:h:edge_ring:q:center_low",
+          "nodes": [
+            "q:center_low",
+            "d:edge_ring",
+            "p:edge_ring",
+            "r:edge_ring_expect",
+            "h:edge_ring"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:edge_ring::input::q:center_low",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:edge_ring::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:edge_ring_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:edge_ring_expect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:center"
+          ],
+          "joint_proof_id": "joint:design-wafer-001:h:edge_ring:p:edge_ring",
+          "required_joint_fact_ids": [
+            "fact:q:edge_high",
+            "fact:q:center_low"
+          ]
+        }
+      ]
+    }
+  ],
+  "top_k_paths": [
+    {
+      "path_id": "path:design-wafer-001:h:edge_ring:q:edge_high",
+      "nodes": [
+        "q:edge_high",
+        "d:edge_ring",
+        "p:edge_ring",
+        "r:edge_ring_expect",
+        "h:edge_ring"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:edge_ring::input::q:edge_high",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:edge_ring::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:edge_ring_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:edge_ring_expect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:edge"
+      ],
+      "joint_proof_id": "joint:design-wafer-001:h:edge_ring:p:edge_ring",
+      "required_joint_fact_ids": [
+        "fact:q:edge_high",
+        "fact:q:center_low"
+      ]
+    },
+    {
+      "path_id": "path:design-wafer-001:h:edge_ring:q:center_low",
+      "nodes": [
+        "q:center_low",
+        "d:edge_ring",
+        "p:edge_ring",
+        "r:edge_ring_expect",
+        "h:edge_ring"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:edge_ring::input::q:center_low",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:edge_ring::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:edge_ring_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:edge_ring_expect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:center"
+      ],
+      "joint_proof_id": "joint:design-wafer-001:h:edge_ring:p:edge_ring",
+      "required_joint_fact_ids": [
+        "fact:q:edge_high",
+        "fact:q:center_low"
+      ]
+    }
+  ],
+  "contextual_obs_ids": [],
+  "unused_observations": []
+}

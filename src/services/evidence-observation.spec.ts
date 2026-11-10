@@ -132,4 +132,17 @@ describe('evidence observation helpers', () => {
     expect(selectVisualEvidenceForObservation(items[0], visualEvidence)).toHaveLength(1)
     expect(selectVisualEvidenceForObservation(items[1], visualEvidence)).toHaveLength(0)
   })
+
+  it('uses the region display title and selects only that observation’s ROI', () => {
+    const detail = structuredClone(caseDetail)
+    const evidence = detail.generated_evidence as Record<string, unknown>
+    const observations = evidence.observations as Record<string, unknown>[]
+    observations[0].display_name = 'spot 区域 / detector_grid'
+    const item = buildObservationBrowseItems(detail)[0]
+    expect(item.title).toBe('spot 区域 / detector_grid')
+    const roi = { ...visualEvidence[0], artifact_id: 'roi', source_key: 'roi_path', metadata: { obs_id: item.id } }
+    const other = { ...roi, artifact_id: 'other', metadata: { obs_id: 'other-region' } }
+    expect(selectVisualEvidenceForObservation(item, [...visualEvidence, other, roi]).map(v => v.artifact_id))
+      .toEqual(['roi', 'artifact-1'])
+  })
 })

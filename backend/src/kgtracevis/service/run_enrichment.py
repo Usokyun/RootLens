@@ -37,16 +37,12 @@ def dashboard_fields_from_analysis(
     """Build dashboard fields for a single analyzed Evidence object."""
     linked_entities = [dict(item) for item in analysis.linked_entities]
     top_k_paths = [dict(item) for item in analysis.top_k_paths]
-    ranked_root_causes = [
-        item.model_dump(mode="json") for item in analysis.ranked_root_causes
-    ]
-    linked_entities, top_k_paths, ranked_root_causes, _changed = (
-        normalize_case_reasoning_payload(
-            evidence.model_dump(mode="json"),
-            linked_entities=linked_entities,
-            top_k_paths=top_k_paths,
-            ranked_root_causes=ranked_root_causes,
-        )
+    ranked_root_causes = [item.model_dump(mode="json") for item in analysis.ranked_root_causes]
+    linked_entities, top_k_paths, ranked_root_causes, _changed = normalize_case_reasoning_payload(
+        evidence.model_dump(mode="json"),
+        linked_entities=linked_entities,
+        top_k_paths=top_k_paths,
+        ranked_root_causes=ranked_root_causes,
     )
     source_edges = unique_source_edges(top_k_paths)
     correction_candidates = list(analysis.correction_candidates)
@@ -175,9 +171,7 @@ def resolve_case_generated_evidence(row: Mapping[str, Any]) -> dict[str, Any]:
     """Return the richest available evidence payload for one case row."""
     generated_evidence_full = row.get("generated_evidence_full")
     full_payload = (
-        dict(generated_evidence_full)
-        if isinstance(generated_evidence_full, Mapping)
-        else {}
+        dict(generated_evidence_full) if isinstance(generated_evidence_full, Mapping) else {}
     )
     if full_payload:
         return full_payload
@@ -191,11 +185,7 @@ def resolve_case_generated_evidence(row: Mapping[str, Any]) -> dict[str, Any]:
             pass
 
     generated_evidence = row.get("generated_evidence")
-    generated = (
-        dict(generated_evidence)
-        if isinstance(generated_evidence, Mapping)
-        else {}
-    )
+    generated = dict(generated_evidence) if isinstance(generated_evidence, Mapping) else {}
     if generated:
         return generated
 
@@ -215,13 +205,9 @@ def normalize_case_reasoning_payload(
     updated_candidates = [dict(item) for item in ranked_root_causes]
     changed = False
 
-    observation_values = (
-        evidence.get("observations") if isinstance(evidence, Mapping) else None
-    )
+    observation_values = evidence.get("observations") if isinstance(evidence, Mapping) else None
     observations = [
-        dict(item)
-        for item in _list_value(observation_values)
-        if isinstance(item, Mapping)
+        dict(item) for item in _list_value(observation_values) if isinstance(item, Mapping)
     ]
     observation_lookup = {
         (
@@ -252,8 +238,7 @@ def normalize_case_reasoning_payload(
                 (
                     candidate.get("name")
                     for candidate in candidates
-                    if candidate.get("entity_id") == selected_entity_id
-                    and candidate.get("name")
+                    if candidate.get("entity_id") == selected_entity_id and candidate.get("name")
                 ),
                 selected_entity_id,
             )
@@ -279,11 +264,7 @@ def normalize_case_reasoning_payload(
         if str(obs_id) not in bucket:
             bucket.append(str(obs_id))
 
-    path_by_id = {
-        str(path.get("path_id")): path
-        for path in updated_paths
-        if path.get("path_id")
-    }
+    path_by_id = {str(path.get("path_id")): path for path in updated_paths if path.get("path_id")}
     for path in updated_paths:
         support_obs_ids = _read_obs_id_list(path.get("support_obs_ids"))
         if not support_obs_ids:
@@ -425,9 +406,7 @@ def path_graph_from_paths(top_k_paths: list[dict[str, Any]]) -> dict[str, Any]:
         nodes = [str(node) for node in path.get("nodes", []) if node is not None]
         node_names = [str(name) for name in path.get("node_names", []) if name is not None]
         relations = [
-            str(relation)
-            for relation in path.get("relations", [])
-            if relation is not None
+            str(relation) for relation in path.get("relations", []) if relation is not None
         ]
         source_edges = list_of_dicts(path.get("source_edges"))
         graph_nodes = []
@@ -444,8 +423,7 @@ def path_graph_from_paths(top_k_paths: list[dict[str, Any]]) -> dict[str, Any]:
         for edge_index, relation in enumerate(relations):
             edge = source_edges[edge_index] if edge_index < len(source_edges) else {}
             edge_id = str(
-                edge.get("edge_id")
-                or _fallback_edge_id(nodes, edge_index, relation, path_id)
+                edge.get("edge_id") or _fallback_edge_id(nodes, edge_index, relation, path_id)
             )
             edge_ids.add(edge_id)
             graph_edges.append(
@@ -594,10 +572,7 @@ def _enrich_case_row(
         changed = True
 
     display_label = (
-        row.get("case_label")
-        or evidence.get("case_label")
-        or row.get("label")
-        or case_id
+        row.get("case_label") or evidence.get("case_label") or row.get("label") or case_id
     )
     if row.get("case_label") != display_label:
         row["case_label"] = display_label
@@ -611,6 +586,14 @@ def _enrich_case_row(
     linked_entities = list_of_dicts(row.get("linked_entities"))
     correction_candidates = list_of_dicts(row.get("correction_candidates"))
     source_edges = list_of_dicts(row.get("source_edge_provenance"))
+    presented = present_visual_observations(evidence, linked_entities)
+    graph_id = (row.get("reasoning_metadata") or {}).get("graph_id")
+    if graph_id:
+        presented["graph_dataset_id"] = graph_id
+    if presented != evidence:
+        evidence = presented
+        row["generated_evidence"] = evidence
+        changed = True
 
     linked_entities, top_k_paths, ranked_root_causes, normalized_changed = (
         normalize_case_reasoning_payload(
@@ -653,6 +636,52 @@ def _enrich_case_row(
     return row, changed
 
 
+def present_visual_observations(
+    evidence: dict[str, Any],
+    linked_entities: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Project typed region facts onto existing UI fields without changing canonical inputs."""
+    presented = dict(evidence)
+    observations = []
+    for observation in list_of_dicts(evidence.get("observations")):
+        if observation.get("value_type") == "visual_region.v1":
+            value = observation["value"]
+            observation = {
+                **observation,
+                "object": evidence.get("object"),
+                "display_name": (
+                    f"{value['region_id']} · {value.get('morphology') or '未识别形态'}"
+                    f"区域 / {value['coordinate_space']}"
+                ),
+                "anomaly_type": ", ".join(value.get("semantic_candidates", [])) or "unknown",
+                "morphology": value.get("morphology"),
+                "location": value.get("location"),
+                "linked_entity_hints": sorted(
+                    {
+                        str(link["selected_entity_id"])
+                        for link in linked_entities
+                        if link.get("obs_id") == observation["obs_id"]
+                        and link.get("selected_entity_id")
+                    }
+                ),
+            }
+            raw_ref = value.get("raw_ref")
+            if raw_ref and Path(raw_ref).suffix in {".json", ".png", ".npy"}:
+                observation["raw_evidence_refs"] = [
+                    {
+                        "ref_id": f"raw:{observation['obs_id']}",
+                        "label": "实际区域 mask",
+                        "role": "predicted_mask",
+                        "file_path": raw_ref,
+                        "line": None,
+                    }
+                ]
+        observations.append(observation)
+    if observations:
+        presented["observations"] = observations
+    return presented
+
+
 def _default_case_rows(
     detail: RunDetail,
     *,
@@ -664,9 +693,7 @@ def _default_case_rows(
         return []
 
     case_summary = (
-        dict(detail.evidence_summary)
-        if isinstance(detail.evidence_summary, Mapping)
-        else {}
+        dict(detail.evidence_summary) if isinstance(detail.evidence_summary, Mapping) else {}
     )
     case_id = str(evidence.get("case_id") or case_summary.get("case_id") or "unknown")
     analysis = dict(detail.analysis) if isinstance(detail.analysis, Mapping) else {}
@@ -674,22 +701,18 @@ def _default_case_rows(
     ranked_root_causes = list_of_dicts(detail.ranked_root_causes)
     linked_entities = list_of_dicts(detail.linked_entities)
     correction_candidates = list_of_dicts(detail.correction_candidates)
-    linked_entities, top_k_paths, ranked_root_causes, _changed = (
-        normalize_case_reasoning_payload(
-            evidence,
-            linked_entities=linked_entities,
-            top_k_paths=top_k_paths,
-            ranked_root_causes=ranked_root_causes,
-        )
+    linked_entities, top_k_paths, ranked_root_causes, _changed = normalize_case_reasoning_payload(
+        evidence,
+        linked_entities=linked_entities,
+        top_k_paths=top_k_paths,
+        ranked_root_causes=ranked_root_causes,
     )
     source_edges = list_of_dicts(detail.source_edge_provenance)
 
     return [
         {
             "case_id": case_id,
-            "case_label": evidence.get("case_label")
-            or case_summary.get("case_id")
-            or case_id,
+            "case_label": evidence.get("case_label") or case_summary.get("case_id") or case_id,
             "label": evidence.get("case_label") or case_summary.get("case_id") or case_id,
             "dataset": evidence.get("dataset") or detail.run.dataset,
             "source": evidence.get("source"),

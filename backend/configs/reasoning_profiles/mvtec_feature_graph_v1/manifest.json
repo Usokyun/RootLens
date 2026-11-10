@@ -1,0 +1,10 @@
+{
+  "reasoning_profile_id": "mvtec_feature_graph_v1",
+  "dataset_scope": ["mvtec"],
+  "reasoner_adapter": "visual_profile_match",
+  "version": "1.0.0",
+  "required_evidence_fields": ["observations:visual_region.v1"],
+  "runtime_overlay": {},
+  "reasoning_assets": {},
+  "claim_boundary": "Region measurements jointly match executable diagnostic conditions from the current graph; causes remain plausible candidates."
+}

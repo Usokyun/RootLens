@@ -1,0 +1,703 @@
+{
+  "schema_version": "rootlens-reasoning-result.v2",
+  "example_kind": "calculated_synthetic_design",
+  "case_id": "design-tep-001",
+  "graph_id": "design:unified-diagnosis",
+  "calculation_scope": "Declared conjunctive design examples only; no backbone, LLM or production reasoner executed.",
+  "outcome": "supported",
+  "candidate_pool": [
+    "h:cooling",
+    "h:feed_flow"
+  ],
+  "proof_graph": {
+    "nodes": [
+      {
+        "node_id": "fact:q:cooling_deviation",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:cooling_deviation]"
+      },
+      {
+        "node_id": "o:cooling",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:cooling]"
+      },
+      {
+        "node_id": "fact:q:feed_deviation",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:feed_deviation]"
+      },
+      {
+        "node_id": "o:feed",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:feed]"
+      },
+      {
+        "node_id": "fact:q:reactor_deviation",
+        "kind": "grounded_fact",
+        "record_ref": "grounded_facts[predicate_id=q:reactor_deviation]"
+      },
+      {
+        "node_id": "o:reactor",
+        "kind": "observation",
+        "record_ref": "input.observations[obs_id=o:reactor]"
+      },
+      {
+        "node_id": "observed:p:cooling",
+        "kind": "observed_pattern",
+        "value": true,
+        "definition_id": "d:cooling"
+      },
+      {
+        "node_id": "observed:p:feed_flow",
+        "kind": "observed_pattern",
+        "value": false,
+        "definition_id": "d:feed_flow"
+      },
+      {
+        "node_id": "assumed:h:cooling",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:cooling"
+      },
+      {
+        "node_id": "score:h:cooling",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:cooling]"
+      },
+      {
+        "node_id": "h:cooling@m:cooling_change",
+        "kind": "hypothesis_world_state",
+        "knowledge_entity_id": "m:cooling_change"
+      },
+      {
+        "node_id": "expected:h:cooling:r:cooling_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:cooling",
+        "expected_value": true
+      },
+      {
+        "node_id": "assumed:h:feed_flow",
+        "kind": "hypothesis_assumption",
+        "candidate_id": "h:feed_flow"
+      },
+      {
+        "node_id": "score:h:feed_flow",
+        "kind": "candidate_score",
+        "record_ref": "candidate_evaluations[candidate_id=h:feed_flow]"
+      },
+      {
+        "node_id": "h:feed_flow@m:feed_change",
+        "kind": "hypothesis_world_state",
+        "knowledge_entity_id": "m:feed_change"
+      },
+      {
+        "node_id": "expected:h:feed_flow:r:feed_expect",
+        "kind": "expected_pattern",
+        "pattern_id": "p:feed_flow",
+        "expected_value": true
+      }
+    ],
+    "edges": [
+      {
+        "head": "o:cooling",
+        "relation": "GROUNDS",
+        "tail": "fact:q:cooling_deviation",
+        "predicate_definition_id": "q:cooling_deviation"
+      },
+      {
+        "head": "o:feed",
+        "relation": "GROUNDS",
+        "tail": "fact:q:feed_deviation",
+        "predicate_definition_id": "q:feed_deviation"
+      },
+      {
+        "head": "o:reactor",
+        "relation": "GROUNDS",
+        "tail": "fact:q:reactor_deviation",
+        "predicate_definition_id": "q:reactor_deviation"
+      },
+      {
+        "head": "fact:q:reactor_deviation",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:cooling",
+        "definition_id": "d:cooling",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:cooling_deviation",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:cooling",
+        "definition_id": "d:cooling",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:reactor_deviation",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:feed_flow",
+        "definition_id": "d:feed_flow",
+        "requires_all": true
+      },
+      {
+        "head": "fact:q:feed_deviation",
+        "relation": "JOINT_INPUT",
+        "tail": "observed:p:feed_flow",
+        "definition_id": "d:feed_flow",
+        "requires_all": true
+      },
+      {
+        "head": "assumed:h:cooling",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:cooling",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:cooling",
+        "relation": "HYPOTHESIZED_EFFECT",
+        "tail": "h:cooling@m:cooling_change",
+        "rule_id": "r:cooling_effect",
+        "origin_edge_ids": [
+          "r:cooling_effect::from",
+          "r:cooling_effect::to"
+        ]
+      },
+      {
+        "head": "h:cooling@m:cooling_change",
+        "relation": "EXPECTS",
+        "tail": "expected:h:cooling:r:cooling_expect",
+        "rule_id": "r:cooling_expect",
+        "origin_edge_ids": [
+          "r:cooling_expect::from",
+          "r:cooling_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:cooling:r:cooling_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:cooling",
+        "expectation_rule_id": "r:cooling_expect"
+      },
+      {
+        "head": "observed:p:cooling",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:cooling",
+        "expectation_rule_id": "r:cooling_expect",
+        "matched": true
+      },
+      {
+        "head": "fact:q:cooling_deviation",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:cooling",
+        "covered": true
+      },
+      {
+        "head": "fact:q:reactor_deviation",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:cooling",
+        "covered": true
+      },
+      {
+        "head": "assumed:h:feed_flow",
+        "relation": "ASSUMPTION_COST",
+        "tail": "score:h:feed_flow",
+        "value": 1
+      },
+      {
+        "head": "assumed:h:feed_flow",
+        "relation": "HYPOTHESIZED_EFFECT",
+        "tail": "h:feed_flow@m:feed_change",
+        "rule_id": "r:feed_effect",
+        "origin_edge_ids": [
+          "r:feed_effect::from",
+          "r:feed_effect::to"
+        ]
+      },
+      {
+        "head": "h:feed_flow@m:feed_change",
+        "relation": "EXPECTS",
+        "tail": "expected:h:feed_flow:r:feed_expect",
+        "rule_id": "r:feed_expect",
+        "origin_edge_ids": [
+          "r:feed_expect::from",
+          "r:feed_expect::to"
+        ]
+      },
+      {
+        "head": "expected:h:feed_flow:r:feed_expect",
+        "relation": "EXPECTED_SIDE",
+        "tail": "score:h:feed_flow",
+        "expectation_rule_id": "r:feed_expect"
+      },
+      {
+        "head": "observed:p:feed_flow",
+        "relation": "OBSERVED_SIDE",
+        "tail": "score:h:feed_flow",
+        "expectation_rule_id": "r:feed_expect",
+        "matched": false
+      },
+      {
+        "head": "fact:q:cooling_deviation",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:feed_flow",
+        "covered": false
+      },
+      {
+        "head": "fact:q:reactor_deviation",
+        "relation": "COVERAGE_TERM",
+        "tail": "score:h:feed_flow",
+        "covered": false
+      }
+    ]
+  },
+  "unassessed_candidates": [],
+  "grounded_facts": [
+    {
+      "fact_id": "fact:q:cooling_deviation",
+      "predicate_id": "q:cooling_deviation",
+      "subject_id": "channel:xmeas_21",
+      "scope_id": "scope:window1",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "window:1",
+      "source_obs_ids": [
+        "o:cooling"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 3.2,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "statistics.mean_z",
+        "op": "abs_gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        }
+      },
+      "reference_id": "reference:normal1"
+    },
+    {
+      "fact_id": "fact:q:feed_deviation",
+      "predicate_id": "q:feed_deviation",
+      "subject_id": "channel:xmeas_1",
+      "scope_id": "scope:window1",
+      "value": false,
+      "status": "violated",
+      "dependency_group": "window:1",
+      "source_obs_ids": [
+        "o:feed"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 0.2,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "statistics.mean_z",
+        "op": "abs_gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        }
+      },
+      "reference_id": "reference:normal1"
+    },
+    {
+      "fact_id": "fact:q:reactor_deviation",
+      "predicate_id": "q:reactor_deviation",
+      "subject_id": "channel:xmeas_9",
+      "scope_id": "scope:window1",
+      "value": true,
+      "status": "matched",
+      "dependency_group": "window:1",
+      "source_obs_ids": [
+        "o:reactor"
+      ],
+      "actual_values": [
+        {
+          "kind": "number",
+          "number": 2.4,
+          "unit": "1"
+        }
+      ],
+      "predicate_check": {
+        "feature_id": "statistics.mean_z",
+        "op": "abs_gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        }
+      },
+      "reference_id": "reference:normal1"
+    }
+  ],
+  "observed_patterns": [
+    {
+      "pattern_id": "p:cooling",
+      "definition_id": "d:cooling",
+      "value": true,
+      "scope_join": "same_event_same_window",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:reactor_deviation",
+        "fact:q:cooling_deviation"
+      ]
+    },
+    {
+      "pattern_id": "p:feed_flow",
+      "definition_id": "d:feed_flow",
+      "value": false,
+      "scope_join": "same_event_same_window",
+      "join_satisfied": true,
+      "input_fact_ids": [
+        "fact:q:reactor_deviation",
+        "fact:q:feed_deviation"
+      ]
+    }
+  ],
+  "candidate_evaluations": [
+    {
+      "candidate_id": "h:cooling",
+      "candidate_name": "冷却相关扰动候选",
+      "candidate_role": "fault",
+      "status": "supported",
+      "eligible_for_ranking": true,
+      "score": -0.25,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "window:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "support_obs_ids": [
+        "o:cooling",
+        "o:reactor"
+      ],
+      "counter_obs_ids": [],
+      "unexplained_fact_ids": [],
+      "active_hypothesis_world_entities": [
+        "h:cooling",
+        "m:cooling_change"
+      ],
+      "activated_effect_rule_ids": [
+        "r:cooling_effect"
+      ],
+      "expectation_checks": [
+        {
+          "rule_id": "r:cooling_expect",
+          "mode": "expected",
+          "pattern_id": "p:cooling",
+          "expected_value": true,
+          "observed_value": true,
+          "covered_fact_ids": [
+            "fact:q:reactor_deviation",
+            "fact:q:cooling_deviation"
+          ],
+          "conflicting_fact_ids": [],
+          "partial_matching_fact_ids": [],
+          "missing_predicate_ids": []
+        }
+      ]
+    },
+    {
+      "candidate_id": "h:feed_flow",
+      "candidate_name": "进料流量扰动候选",
+      "candidate_role": "fault",
+      "status": "no_match",
+      "eligible_for_ranking": false,
+      "score": -1.9166666666666665,
+      "confidence": null,
+      "scoring_details": {
+        "unexplained_loss": 1,
+        "conflict_loss": 0.3333333333333333,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 1.9166666666666665,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "window:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 2,
+            "conflict_count": 1
+          }
+        ]
+      },
+      "support_obs_ids": [],
+      "counter_obs_ids": [
+        "o:feed"
+      ],
+      "unexplained_fact_ids": [
+        "fact:q:cooling_deviation",
+        "fact:q:reactor_deviation"
+      ],
+      "active_hypothesis_world_entities": [
+        "h:feed_flow",
+        "m:feed_change"
+      ],
+      "activated_effect_rule_ids": [
+        "r:feed_effect"
+      ],
+      "expectation_checks": [
+        {
+          "rule_id": "r:feed_expect",
+          "mode": "expected",
+          "pattern_id": "p:feed_flow",
+          "expected_value": true,
+          "observed_value": false,
+          "covered_fact_ids": [],
+          "conflicting_fact_ids": [
+            "fact:q:feed_deviation"
+          ],
+          "partial_matching_fact_ids": [
+            "fact:q:reactor_deviation"
+          ],
+          "missing_predicate_ids": []
+        }
+      ]
+    }
+  ],
+  "ranked_root_causes": [
+    {
+      "candidate_id": "h:cooling",
+      "candidate_name": "冷却相关扰动候选",
+      "candidate_role": "fault",
+      "rank": 1,
+      "score": -0.25,
+      "confidence": null,
+      "support_obs_ids": [
+        "o:cooling",
+        "o:reactor"
+      ],
+      "scoring_details": {
+        "unexplained_loss": 0,
+        "conflict_loss": 0,
+        "assumption_cost": 1,
+        "conflict_weight": 2,
+        "assumption_weight": 0.25,
+        "total_cost": 0.25,
+        "denominator_policy": "fixed_for_all_context_candidates",
+        "groups": [
+          {
+            "group_id": "window:1",
+            "positive_fact_count": 2,
+            "observed_fact_count": 3,
+            "uncovered_positive_count": 0,
+            "conflict_count": 0
+          }
+        ]
+      },
+      "explanation_paths": [
+        {
+          "path_id": "path:design-tep-001:h:cooling:q:reactor_deviation",
+          "nodes": [
+            "q:reactor_deviation",
+            "d:cooling",
+            "p:cooling",
+            "r:cooling_expect",
+            "m:cooling_change",
+            "r:cooling_effect",
+            "h:cooling"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:cooling::input::q:reactor_deviation",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:cooling::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:cooling_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:reactor"
+          ],
+          "joint_proof_id": "joint:design-tep-001:h:cooling:p:cooling",
+          "required_joint_fact_ids": [
+            "fact:q:reactor_deviation",
+            "fact:q:cooling_deviation"
+          ]
+        },
+        {
+          "path_id": "path:design-tep-001:h:cooling:q:cooling_deviation",
+          "nodes": [
+            "q:cooling_deviation",
+            "d:cooling",
+            "p:cooling",
+            "r:cooling_expect",
+            "m:cooling_change",
+            "r:cooling_effect",
+            "h:cooling"
+          ],
+          "source_edge_views": [
+            {
+              "edge_id": "d:cooling::input::q:cooling_deviation",
+              "reverse": false
+            },
+            {
+              "edge_id": "d:cooling::head",
+              "reverse": false
+            },
+            {
+              "edge_id": "r:cooling_expect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_expect::from",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_effect::to",
+              "reverse": true
+            },
+            {
+              "edge_id": "r:cooling_effect::from",
+              "reverse": true
+            }
+          ],
+          "support_obs_ids": [
+            "o:cooling"
+          ],
+          "joint_proof_id": "joint:design-tep-001:h:cooling:p:cooling",
+          "required_joint_fact_ids": [
+            "fact:q:reactor_deviation",
+            "fact:q:cooling_deviation"
+          ]
+        }
+      ]
+    }
+  ],
+  "top_k_paths": [
+    {
+      "path_id": "path:design-tep-001:h:cooling:q:reactor_deviation",
+      "nodes": [
+        "q:reactor_deviation",
+        "d:cooling",
+        "p:cooling",
+        "r:cooling_expect",
+        "m:cooling_change",
+        "r:cooling_effect",
+        "h:cooling"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:cooling::input::q:reactor_deviation",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:cooling::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:cooling_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:reactor"
+      ],
+      "joint_proof_id": "joint:design-tep-001:h:cooling:p:cooling",
+      "required_joint_fact_ids": [
+        "fact:q:reactor_deviation",
+        "fact:q:cooling_deviation"
+      ]
+    },
+    {
+      "path_id": "path:design-tep-001:h:cooling:q:cooling_deviation",
+      "nodes": [
+        "q:cooling_deviation",
+        "d:cooling",
+        "p:cooling",
+        "r:cooling_expect",
+        "m:cooling_change",
+        "r:cooling_effect",
+        "h:cooling"
+      ],
+      "source_edge_views": [
+        {
+          "edge_id": "d:cooling::input::q:cooling_deviation",
+          "reverse": false
+        },
+        {
+          "edge_id": "d:cooling::head",
+          "reverse": false
+        },
+        {
+          "edge_id": "r:cooling_expect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_expect::from",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_effect::to",
+          "reverse": true
+        },
+        {
+          "edge_id": "r:cooling_effect::from",
+          "reverse": true
+        }
+      ],
+      "support_obs_ids": [
+        "o:cooling"
+      ],
+      "joint_proof_id": "joint:design-tep-001:h:cooling:p:cooling",
+      "required_joint_fact_ids": [
+        "fact:q:reactor_deviation",
+        "fact:q:cooling_deviation"
+      ]
+    }
+  ],
+  "contextual_obs_ids": [],
+  "unused_observations": []
+}

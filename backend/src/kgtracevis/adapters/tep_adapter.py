@@ -88,7 +88,7 @@ def evidence_from_tep_record(
     }
     time_window = _time_window(metadata_extra)
 
-    return Evidence(
+    evidence = Evidence(
         case_id=case_id,
         dataset="tep",
         source=source_value(data.get("source"), "time_series"),
@@ -119,6 +119,60 @@ def evidence_from_tep_record(
         ),
         adapter=adapter_metadata("tep"),
     )
+    measured_payload = evidence.raw_evidence.extra.get("process_measurements")
+    if measured_payload is not None:
+        from kgtracevis.schema.measured_reasoning import ProcessMeasurements
+
+        measured = ProcessMeasurements.model_validate(measured_payload)
+        evidence.observations.append(
+            make_observation(
+                case_id,
+                "process_window",
+                "完整多变量窗口与正常参考",
+                value=measured.model_dump(mode="json"),
+                value_type="process-measurements.v1",
+                source_ref=measured.reference_id,
+                raw_ref="raw_evidence.extra.process_measurements",
+                time_window={
+                    "sample_start": measured.sample_start,
+                    "sample_end": measured.sample_end,
+                    "sampling_interval_seconds": measured.sampling_interval_seconds,
+                },
+            )
+        )
+        existing = {obs.name.lower() for obs in evidence.observations if obs.facet == "variable"}
+        for obs in evidence.observations:
+            if obs.facet == "variable":
+                channel = next(
+                    (c for c in measured.channels if c.channel == obs.name.lower()), None
+                )
+                if channel is not None:
+                    obs.direction = (
+                        "increase"
+                        if channel.mean_z >= 2
+                        else "decrease"
+                        if channel.mean_z <= -2
+                        else "unknown"
+                    )
+        for channel in measured.channels:
+            if channel.channel in existing:
+                continue
+            evidence.observations.append(
+                make_observation(
+                    case_id,
+                    "variable",
+                    channel.channel,
+                    value=channel.contribution,
+                    value_type="contribution",
+                    source_ref=measured.reference_id,
+                    raw_ref=f"raw_evidence.extra.process_measurements.channels.{channel.channel}",
+                    time_window={
+                        "sample_start": measured.sample_start,
+                        "sample_end": measured.sample_end,
+                    },
+                )
+            )
+    return evidence
 
 
 def _tep_observations(

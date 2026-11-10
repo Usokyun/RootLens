@@ -13,10 +13,14 @@ const SCORING_METHOD_LABELS: Record<string, string> = {
   tep_root_kgd: 'TEP Root-KGD 排序',
   tep_artifact_bridge: 'TEP 工件桥接',
   root_score_fusion: 'RootScore 融合',
+  process_graph_rbc: '完整通道 RBC × 当前图传播与条件',
+  wafer_spatial_profile: '晶圆空间统计与分类联合匹配',
+  visual_profile_match: '区域特征与图谱条件匹配',
 }
 const REASONER_ADAPTER_LABELS: Record<string, string> = {
   generic_graph_path: 'Generic Path',
   tep_root_kgd: 'TEP Root-KGD',
+  visual_profile_match: '视觉特征推理',
 }
 const REASONING_SELECTION_MODE_LABELS: Record<string, string> = {
   default: 'Auto',

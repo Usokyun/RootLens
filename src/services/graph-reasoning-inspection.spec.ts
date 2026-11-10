@@ -318,4 +318,16 @@ describe("graph reasoning inspection helpers", () => {
       }),
     ).toBe("MechanicalContact::HAS_PLAUSIBLE_CAUSE>PART_OF");
   });
+
+  it("does not turn KG quotations into observations when explicit observation IDs exist", () => {
+    const detail = structuredClone(caseA.caseDetail);
+    detail.top_k_paths![0].supporting_evidence = ["Domain knowledge, not a measured observation."];
+    const inspection = buildGraphReasoningInspection({
+      runDetail, caseDetail: detail, selectedCandidateId: "ranking:path-case_a-1",
+      selectedPathId: "path-case_a-1", selectedObservationId: null,
+    });
+    expect(inspection.supportingObservations.map(item => item.obsId)).toEqual([
+      caseA.anomalyObservationId, caseA.locationObservationId,
+    ]);
+  });
 });

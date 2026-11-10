@@ -426,11 +426,12 @@ function extractTopKPaths(caseDetail: RunCaseDetail): ReasoningPathSummary[] {
         .map((edge) => normalizeText(edge.relation))
         .filter(Boolean) ?? [];
     const supportObservationIds = uniqueStable(
-      [
-        ...readStringArray(pathRecord.support_obs_ids),
-        ...readStringArray(pathRecord.supporting_evidence),
-        ...readStringArray(graphPath?.supporting_evidence),
-      ],
+      Array.isArray(pathRecord.support_obs_ids)
+        ? readStringArray(pathRecord.support_obs_ids)
+        : [
+            ...readStringArray(pathRecord.supporting_evidence),
+            ...readStringArray(graphPath?.supporting_evidence),
+          ],
       (item) => item,
     );
     const targetEntityId =

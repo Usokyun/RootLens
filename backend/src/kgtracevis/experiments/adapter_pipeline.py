@@ -268,9 +268,7 @@ def _case_summary(
             graph=pipeline.graph_for_evidence(evidence),
         ),
         "source_edge_provenance": source_edges,
-        "claim_boundary": (
-            "candidate/plausible explanation only; not a verified root-cause label"
-        ),
+        "claim_boundary": ("candidate/plausible explanation only; not a verified root-cause label"),
     }
 
 
@@ -337,11 +335,7 @@ def _candidate_targets(
     targets: dict[str, dict[str, Any]] = {}
     edges_by_id = {edge["edge_id"]: edge for edge in source_edges}
     for path in top_k_paths:
-        target_id = str(
-            path.get("root_cause_candidate_id")
-            or path.get("target_entity_id")
-            or ""
-        )
+        target_id = str(path.get("root_cause_candidate_id") or path.get("target_entity_id") or "")
         if not target_id:
             continue
         target = targets.setdefault(
@@ -428,7 +422,9 @@ def _pipeline_reasoning_summary(
         requested_adapters = _unique_nonempty_values(
             row.get("requested_reasoner_adapter") for row in metadata_rows
         )
+        graph_ids = _unique_nonempty_values(row.get("graph_id") for row in metadata_rows)
         return {
+            "graph_id": graph_ids[0] if len(graph_ids) == 1 else None,
             "reasoning_profile_id": profile_ids[0] if len(profile_ids) == 1 else None,
             "reasoner_adapter": adapters[0] if len(adapters) == 1 else None,
             "selection_mode": selection_modes[0] if len(selection_modes) == 1 else None,

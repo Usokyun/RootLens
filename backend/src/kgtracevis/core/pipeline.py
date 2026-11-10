@@ -39,12 +39,14 @@ class KGTracePipeline:
         *,
         neo4j_repository: KGSnapshotRepository | None = None,
         root_cause_reasoner: RcaReasoner | None = None,
+        graph_snapshot: dict[str, Any] | None = None,
     ) -> None:
         """Create a pipeline backed by runtime Neo4j unless a graph is explicit."""
         self.neo4j_repository = neo4j_repository
         self.root_cause_reasoner = root_cause_reasoner
         self._generic_rca_reasoner = GenericGraphPathReasoner()
         self.graph = graph
+        self.graph_snapshot = graph_snapshot
         self._graph_cache: dict[str, KnowledgeGraph] = {}
 
     def analyze(self, evidence: Evidence, *, top_k: int = 5) -> AnalysisResult:
@@ -68,6 +70,11 @@ class KGTracePipeline:
             linked_entities=linked_entities,
             top_k=top_k,
         )
+        if rca_result.linked_entities is not None:
+            linked_entities = rca_result.linked_entities
+            # Profile checks, rather than legacy single-value checks, describe this strategy.
+            consistency = {"consistency_score": None, "inconsistent_fields": []}
+            correction_candidates = []
         return AnalysisResult(
             case_id=evidence.case_id,
             linked_entities=linked_entities,
@@ -115,7 +122,7 @@ class KGTracePipeline:
                 linked_entities=linked_entities,
                 top_k=top_k,
             )
-            if result.top_k_paths or result.ranked_root_causes:
+            if result.outcome is not None or result.top_k_paths or result.ranked_root_causes:
                 return result
             fallback = self._generic_rca_reasoner.reason_root_causes(
                 evidence,

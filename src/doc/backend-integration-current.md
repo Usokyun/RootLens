@@ -37,6 +37,32 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 **核验边界：**Docker Compose 仅做静态配置检查，本机未安装 Docker、未实际运行容器栈；上述结果不是所有模型能力、完整构图发布或工业根因准确率验收。原目录继续保留为备份，不因本次验证而自动授权清理。
 
+### 1.3 后续 MVTec M1 增量（2026-11-10）
+
+本轮在当前 checkout 另用 `backend/compose.test.yaml` 实跑独立 Neo4j/Postgres，不把先前迁移的机器状态、资产或测试数作为本轮结果。
+
+- **已实现**：TXT/Markdown 经既有 LLM compiler 生成可执行视觉画像；自动条件检查/一次有界修复；装载为隔离工作图；指定工作图分析 records 或原图；逐区域几何、可选视觉语义、实际条件执行、源边路径与完整 PG 运行快照。
+- 新策略为 `mvtec_feature_graph_v1` / `visual_profile_match`。指定 `graph_id` 或 `working:<graph_id>` 才使用新工作图；旧入口及默认 profile 保持原行为。新策略的无匹配/证据不足不回退为 generic 路径。
+- MVTec 观测使用闭合的 `visual_region.v1`：坐标平面、bbox、面积/长宽比/离心率/形态、语义候选及来源；任意 metadata 不参与执行。多个区域有独立 obs ID，输入、绑定、trace 与选择的工作图可在重启后读取。
+- 前端只补了工作图装载/选择、ROI 开关、区域详情和候选条件；三页与 Demo/Replay 边界未改变。KG 来源文字不作为现场 observation；诊断反向视图保存原始源边。
+- **实跑范围**：公开 capsule STFPM 权重、3 张公开图片及配置的 LLM 服务。正例的下缘开口得到 PokeDefect→MechanicalContact 候选，原生类别为 crack；正常图无候选；另一个 scratch 图被 detector 漏检。不能扩写为全部 MVTec 类别或模型通过。
+- **核验**：前端 18 文件/85 项及 build 通过；最终后端 329 passed / 7 failed / 1 skipped，失败分类见使用文档，不是全通过。真实隔离库与页面联动已走查。
+
+以上为 M1 历史验收；后续完成情况见下节。新增工作图表使用增量迁移，不重初始化旧库。
+
+### 1.4 M2–M6 渐进重构完成（2026-11-10）
+
+- 素材现在实际解析 TXT/Markdown、CSV、JSON/JSONL、HTML 与文本层 PDF（Docling Parse）；URL 实际获取，失败重试、片段定位、重解析历史可查看。扫描件/OCR/Office 未启用。
+- 三场景工作图支持持久节点/边/别名、绑定/画像 JSON 编辑和完整 `rootlens-working-graph.v1` 交换。默认导入新图，显式保存前备份；每次新 run 固定图/画像快照，历史结果不随改图重算。
+- 实际 LLM 图自动校验并生成视觉/空间/过程画像；运行图只投影全部可执行依赖及物理路径，不依据某个 case 选图。源码、完整原始构图与可执行工作图分开保留。
+- MVTec 实跑 capsule/STFPM 与 bottle/PatchCore；第二对象支持正常参考 ROI 比较、安全纯权重加载、对象注册与明确坐标。没有权重的对象不冒用其他对象模型；旧入口原选择合同保留。
+- Wafer 新 `wafer-measurements.v1` 固定 0背景/1正常/2失效，联合实际空间统计与独立分类；原生标签不传分类器，不把 nearfull 命名成实测颗粒污染。实际 18 张公开网格中 3 张满足现有画像，15 张无匹配。
+- TEP 新 `process-measurements.v1` 保留 52 通道、正常参考/PCA、时序、窗口和全贡献向量；当前图方向/权重/条件参与数值排名，已验证同一真实窗口的改图效果。旧 Root-KGD profile/资产不被新调用替换。
+- 现有 Session 格式增加可选 backend_runs 保存原始 RunDetail。后端导出原图快照和内嵌图片，浏览器只回放；大回放用 IndexedDB，失败不混写旧会话。MVTec/TEP 导入、刷新与路径已实屏检查。
+- 本轮最终后端 **345 passed / 7 failed / 1 skipped**（与 M1 相同失败项），前端 **19 文件/89 项通过**、build 通过，修改的 Python 文件 Ruff 通过。不是全后端测试通过，也不是工业准确率验证。
+
+使用、实际 JSON/路径、模型来源、负结果、回放文件和恢复入口见 [三场景使用与验收](../../backend/docs/progressive-demo-2026-11-10.md)。[执行计划](rootlens-refactor-execution-plan-2026-11-10.md) 的 T01–T22 已完成；审核、正式版本、置信校准、训练与完整 benchmark 后置。
+
 ## 2. 当前保留的三种数据来源
 
 ### 2.1 Backend 模式
@@ -71,18 +97,20 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 - 上传运行文件（backend 模式）
 - 查看 run / case / observation
 - 导入完整回放资产或 session bundle
+- 三场景可在原有推理配置中选择工作图；图像模式可显式启用 ROI 语义。详情显示区域几何、wafer die 统计或 TEP 全通道趋势；可导出本次运行的原图/结果回放。
 
 ### `/graphs`
 
 - 查看总图谱、局部子图、path graph、候选根因、反馈 ledger
 - 图谱与 case 选择联动
-- backend 模式消费后端返回结果；demo/replay 模式消费快照结果
+- backend 模式消费后端返回结果，已有编辑表单及“管理工作图”接持久 API；demo/replay 模式消费快照结果，不保存到后端。
 
 ### `/materials`
 
 - 查看 material library / construction / build / review queue
 - 相关构图能力以 **后端接口** 为准
 - mock 模式仅保留最小演示数据
+- 构图完成后选择 mvtec/wafer/tep 并装载工作图，不要求人工审核；完整工作图包导入/导出位于 Graphs 页。
 
 ## 4. 运行、数据库与数据保留边界
 
@@ -109,7 +137,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 ### 4.2 数据库职责与新库初始化
 
 - Neo4j：运行时知识图谱与遍历。
-- Postgres：Evidence case、分析运行记录、反馈、草稿与 review 状态；运行历史与反馈不依赖旧 session JSON 作为真值。
+- Postgres：Evidence case、分析运行记录、反馈、草稿与 review 状态，以及工作图登记/可执行画像。新 run 保存完整输入与绑定快照，重载不依赖临时 Evidence 文件；未带快照的旧 run 保持原文件恢复方式。反馈与运行元数据不依赖旧 session JSON 作为真值。
 - CSV / JSON：种子、导入与导出资产，不是运行时数据库的替代品。
 
 fresh clone 不含被 Git 忽略的本机数据库与工具，应从 RootLens 根目录走 Compose 分支：

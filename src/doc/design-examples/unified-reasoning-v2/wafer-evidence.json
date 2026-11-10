@@ -1,0 +1,146 @@
+{
+  "schema_version": "rootlens-evidence.v2",
+  "example_kind": "synthetic_design",
+  "case_id": "design-wafer-001",
+  "source_dataset": "wafer",
+  "task": {
+    "target_role": "spatial_pattern",
+    "context_subject_id": "wafer:1",
+    "focus_subject_ids": [
+      "wafer:1"
+    ],
+    "scope_id": "scope:wafer1"
+  },
+  "subjects": [
+    {
+      "subject_id": "wafer:1",
+      "kind": "spatial_grid",
+      "external_namespace": "wafer.object",
+      "external_id": "wafer"
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "scope:wafer1",
+      "kind": "wafer_grid",
+      "subject_id": "wafer:1",
+      "asset_id": "cells:1",
+      "encoding": {
+        "background": 0,
+        "normal": 1,
+        "failed": 2
+      }
+    },
+    {
+      "scope_id": "scope:edge",
+      "kind": "wafer_zone",
+      "subject_id": "wafer:1",
+      "parent_scope_id": "scope:wafer1",
+      "zone": "edge",
+      "normalized_radius_interval": [
+        0.8,
+        1
+      ],
+      "valid_die_only": true
+    },
+    {
+      "scope_id": "scope:center",
+      "kind": "wafer_zone",
+      "subject_id": "wafer:1",
+      "parent_scope_id": "scope:wafer1",
+      "zone": "center",
+      "normalized_radius_interval": [
+        0,
+        0.4
+      ],
+      "valid_die_only": true
+    },
+    {
+      "scope_id": "scope:all_valid",
+      "kind": "wafer_zone",
+      "subject_id": "wafer:1",
+      "parent_scope_id": "scope:wafer1",
+      "zone": "all_valid",
+      "normalized_radius_interval": [
+        0,
+        1
+      ],
+      "valid_die_only": true
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "cells:1",
+      "kind": "typed_array",
+      "uri": "design://wafer-cells.npz",
+      "dtype": "uint8",
+      "shape": [
+        32,
+        32
+      ]
+    }
+  ],
+  "procedures": [
+    {
+      "procedure_id": "wafer-stats:v1",
+      "kind": "measurement",
+      "input_asset_ids": [
+        "cells:1"
+      ],
+      "definition": "failed valid die / all valid die within declared zone"
+    }
+  ],
+  "observations": [
+    {
+      "obs_id": "o:edge",
+      "subject_id": "wafer:1",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.47,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:edge",
+      "procedure_id": "wafer-stats:v1",
+      "dependency_group": "wafer-grid:1",
+      "raw_refs": [
+        "cells:1"
+      ]
+    },
+    {
+      "obs_id": "o:center",
+      "subject_id": "wafer:1",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.03,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:center",
+      "procedure_id": "wafer-stats:v1",
+      "dependency_group": "wafer-grid:1",
+      "raw_refs": [
+        "cells:1"
+      ]
+    },
+    {
+      "obs_id": "o:overall",
+      "subject_id": "wafer:1",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.22,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "wafer-stats:v1",
+      "dependency_group": "wafer-grid:1",
+      "raw_refs": [
+        "cells:1"
+      ]
+    }
+  ]
+}

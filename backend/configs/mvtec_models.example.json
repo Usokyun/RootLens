@@ -1,0 +1,16 @@
+{
+  "schema_version": "rootlens-mvtec-models.v1",
+  "objects": {
+    "capsule": {
+      "stfpm": {
+        "checkpoint": "runs/real_model_pipeline/assets/mvtec/checkpoints/openvino_model/stfpm_capsule.xml"
+      }
+    },
+    "bottle": {
+      "patchcore": {
+        "checkpoint": "runs/models/bottle_patchcore.ckpt",
+        "normal_reference": "runs/public/bottle_normal.png"
+      }
+    }
+  }
+}

@@ -36,6 +36,8 @@ import type {
   RunDetail,
   RunSummary,
   UploadRequest,
+  WorkingGraphSummary,
+  WorkingGraphPackage,
 } from "@/api/contracts";
 import { getAppPreferences } from "@/services/app-preferences";
 import { getLocalSessionMeta } from "@/services/rootlens-data";
@@ -43,7 +45,14 @@ import { canSubmitReviewTarget, mockBackend } from "@/services/mock-backend";
 
 export interface RootLensService {
   bootstrap: () => Promise<DashboardBootstrap>;
-  kgStudio: () => Promise<KGStudioPayload>;
+  kgStudio: (graphId?: string) => Promise<KGStudioPayload>;
+  listWorkingGraphs: () => Promise<{ graphs: WorkingGraphSummary[] }>;
+  getWorkingGraphPackage: (graphId: string) => Promise<WorkingGraphPackage>;
+  saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
+  importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
+  mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
+  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep") => Promise<WorkingGraphSummary>;
+  exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
@@ -136,6 +145,13 @@ function isImportedReplayActive() {
 function buildMockService(): RootLensService {
   return {
     ...mockBackend,
+    exportRunReplay: async () => { throw new Error("请用现有 Session 导出保存当前回放。"); },
+    listWorkingGraphs: async () => ({ graphs: [] }),
+    getWorkingGraphPackage: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
+    saveWorkingGraphPackage: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
+    importWorkingGraphPackage: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
+    mutateWorkingGraph: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
+    activateWorkingGraph: async () => { throw new Error("装载工作图需要 Backend 模式。"); },
     artifactUrl: (_runId: string, artifactName: string) => artifactName,
   };
 }
