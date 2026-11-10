@@ -94,3 +94,32 @@ uv run --offline --no-sync python scripts/development_api.py health --name two-l
 独立GUI审核发现：只返回 `application/x-ndjson` 时，Chrome会把晶圆素材命名为 `.ndjson`，而原始loader按实际 `.jsonl` 入口读取。现资产响应显式设置 `Content-Disposition` 的真实安全文件名，不扩大后缀兼容范围。实际GET已确认 `wafer-nearfull-248536.jsonl`、`sequence_04.dat`、`sample_006.png`；Wafer下载后不改名直接交既有loader可读。3个HTTP文件名契约用例通过。
 
 该次受控重载还暴露launchd卸载的异步状态：旧job仍在SIGTERMed时立即bootstrap会返回EIO5。持久日志显示旧API正常shutdown，随后job确实卸载；管理脚本现等命名job实际卸载再启动，不按端口杀进程、不提权绕过。launcher/API针对集合13项通过；真实下载头记录为 `runs/two_loop_verification/download-filenames.json`。GUI下载→原名上传由独立reviewer另行消费验收。
+
+## 默认测试隔离与历史失败清零
+
+2026-11-11后续阶段从已推送的 `a5faf68` 重现默认命令：
+
+```bash
+cd backend
+UV_CACHE_DIR=/private/tmp/rootlens-plan-uv-cache uv run --offline --no-sync pytest -q -ra
+```
+
+首次实际结果为 **23 failed / 450 passed / 4 skipped**，不是只有先前已记录的5项：旧adapter／实验／service单元测试遗漏KG依赖注入，默认尝试Neo4j7687；URL测试还要求绑定本地HTTP服务。未为本次清理读取／修改数据库，也未启动模型下载或付费调用。
+
+五项原失败均保留有效覆盖，没有删除测试、降低断言或新增skip/xfail：
+
+| 原测试 | 原因 | 处置与保留覆盖 |
+| --- | --- | --- |
+| case index包含固定real-output ID | 断言本机忽略目录中一定存在旧实验结果。 | 使用checked-in样例与临时生成的完整Evidence目录，检验合并发现、generated来源标记，以及缺少可选目录时的正常行为。 |
+| 固定`wm811k_row_100402` detail | 依赖未入库的旧输出JSON。 | 临时完整wafer Evidence＋显式seed KG，仍实际执行详情分析，断言候选路径、workflow与claim边界。 |
+| records媒体预览 | 引用缺失的旧图片／mask／heatmap。 | 生成16×16 PNG与2×2 mask/heatmap，在临时受信根目录下验证image/mask/heatmap/wafer_map四种预览、角色标签、浏览器URL和PNG响应；不放宽生产路径检查。 |
+| 未标注图片上传 | 依赖capsule旧原图和本机checkpoint。 | 小型PNG、显式checkpoint存在性fixture与注入predictor，保留真实producer→adapter→KG链，仍断言unknown标签与无臆造形态。 |
+| auto模型必须PatchCore | 把机器有无权重误当固定默认行为。实际优先级本就按可用性选择。 | 控制三个checkpoint路径的存在性，覆盖PatchCore优先、仅EfficientAD/STFPM可用、仅STFPM、均不可用四种组合；不修改正确的生产优先级。 |
+
+其余网络依赖通过明确的checked-in `seed_graph`／真实 `seed_pipeline` fixture注入；子进程CLI使用既有 `--kg-node-path` 显式入口。原生产默认仍连运行时Neo4j，新增测试直接验证连接、按dataset缓存、关闭，以及失败时不偷偷回退seed。
+
+URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续走真实fetch、定位解析、失败记录、明确重试和compiler交接；不需要外网或本机监听端口。真正数据库集成测试仍需独立数据库显式opt-in，真正模型有效性仍由已有原始模型／独立演示验收承担，单元fixture不冒称模型复现。
+
+当前四项skip均为既有可选外部验证：3项要求`ROOTLENS_TEST_DATABASES=1`与指定隔离PG／Neo4j，1项比较原TEP_KG checkout但本机未安装。未新增skip。
+
+同一默认离线命令最终为 **478 passed / 4 skipped，8.76s**；修改过的测试文件Ruff通过。全部有效断言保留，原来依赖机器状态的断言改为控制输入／依赖后验证真实行为。日志保存在本机临时目录 `/private/tmp/rootlens-test-cleanup-{before,after,final}.log`，不入库；本轮没有重跑backbone、LLM或数据库集成矩阵。

@@ -21,6 +21,7 @@ from kgtracevis.experiments.adapter_pipeline import (
 
 def test_run_adapter_pipeline_writes_evidence_and_candidate_summary(
     tmp_path: Path,
+    seed_pipeline,
 ) -> None:
     """The helper should produce evidence files and candidate explanation summaries."""
     output = run_adapter_pipeline(
@@ -28,6 +29,7 @@ def test_run_adapter_pipeline_writes_evidence_and_candidate_summary(
         tmp_path / "mvtec",
         dataset="mvtec",
         top_k=2,
+        pipeline=seed_pipeline,
     )
 
     assert output.summary_path == tmp_path / "mvtec" / SUMMARY_FILENAME
@@ -67,13 +69,14 @@ def test_run_adapter_pipeline_writes_evidence_and_candidate_summary(
     assert rows[0]["claim_boundary"].startswith("candidate/plausible explanation")
 
 
-def test_run_adapter_pipeline_supports_wm811k_records(tmp_path: Path) -> None:
+def test_run_adapter_pipeline_supports_wm811k_records(tmp_path: Path, seed_pipeline) -> None:
     """WM811K records should route through the wafer schema and produce paths."""
     output = run_adapter_pipeline(
         "data/examples/records/wm811k_records.jsonl",
         tmp_path / "wm811k",
         dataset="wafer",
         top_k=3,
+        pipeline=seed_pipeline,
     )
 
     cases = output.summary["cases"]
@@ -93,8 +96,8 @@ def test_run_adapter_pipeline_supports_wm811k_records(tmp_path: Path) -> None:
     assert all(row["explanation_scope"] == EXPLANATION_SCOPE for row in rows)
 
 
-def test_run_adapter_pipeline_default_kg_handles_wm811k_loc(tmp_path: Path) -> None:
-    """Default web/script KG should not require an overlay for WM811K Loc."""
+def test_run_adapter_pipeline_seed_kg_handles_wm811k_loc(tmp_path: Path, seed_pipeline) -> None:
+    """Checked-in knowledge should cover Loc without a task-specific overlay."""
     records_path = tmp_path / "wm811k_loc.jsonl"
     records_path.write_text(
         (
@@ -107,7 +110,9 @@ def test_run_adapter_pipeline_default_kg_handles_wm811k_loc(tmp_path: Path) -> N
         encoding="utf-8",
     )
 
-    output = run_adapter_pipeline(records_path, tmp_path / "default", dataset="wafer")
+    output = run_adapter_pipeline(
+        records_path, tmp_path / "default", dataset="wafer", pipeline=seed_pipeline
+    )
 
     case = output.summary["cases"][0]
     selected = {
@@ -144,13 +149,14 @@ def test_run_adapter_pipeline_uses_tep_root_kgd_reasoner(
     assert case["ranked_root_causes"][0]["scoring_method"] == "tep_root_kgd"
 
 
-def test_run_adapter_pipeline_protects_existing_summary(tmp_path: Path) -> None:
+def test_run_adapter_pipeline_protects_existing_summary(tmp_path: Path, seed_pipeline) -> None:
     """Existing summaries should not be replaced unless overwrite is explicit."""
     output_dir = tmp_path / "existing"
     run_adapter_pipeline(
         "data/examples/records/mvtec_records.jsonl",
         output_dir,
         dataset="mvtec",
+        pipeline=seed_pipeline,
     )
 
     with pytest.raises(FileExistsError, match="overwrite"):
@@ -158,12 +164,14 @@ def test_run_adapter_pipeline_protects_existing_summary(tmp_path: Path) -> None:
             "data/examples/records/mvtec_records.jsonl",
             output_dir,
             dataset="mvtec",
+            pipeline=seed_pipeline,
         )
 
     run_adapter_pipeline(
         "data/examples/records/mvtec_records.jsonl",
         output_dir,
         dataset="mvtec",
+        pipeline=seed_pipeline,
         overwrite=True,
     )
 
@@ -180,6 +188,8 @@ def test_run_adapter_pipeline_cli_reports_compact_result(tmp_path: Path) -> None
             "mvtec",
             "--output-dir",
             str(tmp_path / "cli"),
+            "--kg-node-path",
+            "data/kg/nodes.csv",
             "--top-k",
             "2",
         ],

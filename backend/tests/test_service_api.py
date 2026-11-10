@@ -6,18 +6,23 @@ import csv
 import json
 import uuid
 from collections.abc import Generator
+from functools import partial
 from pathlib import Path
 from typing import cast
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
+from kgtracevis.core import KGTracePipeline
 from kgtracevis.producers.backends import AMAZON_PATCHCORE_BACKEND, ANOMALIB_ENGINE_BACKEND
 from kgtracevis.service import api as service_api
 from kgtracevis.service import dashboard as service_dashboard
+from kgtracevis.service import handlers as service_handlers
 from kgtracevis.service import kg_construction as service_kg_construction
 from kgtracevis.service import runs as service_runs
+from kgtracevis.service import visual_evidence as service_visual_evidence
 from kgtracevis.service.api import app
 from kgtracevis.service.handlers import (
     FeedbackRequest,
@@ -28,6 +33,7 @@ from kgtracevis.service.handlers import (
     record_feedback,
     what_if_request,
 )
+from kgtracevis.workflows.root_cause_provider_selection import build_pipeline
 
 
 class InMemoryRunStore:
@@ -133,35 +139,59 @@ class InMemoryRunStore:
 @pytest.fixture(autouse=True)
 def postgres_run_store_fixture(
     monkeypatch: pytest.MonkeyPatch,
+    seed_graph,
 ) -> Generator[InMemoryRunStore, None, None]:
-    """Route service tests through the run-store contract without a live database."""
+    """Exercise service algorithms against explicit checked-in KG and memory stores."""
     store = InMemoryRunStore()
     service_runs.configure_run_store_for_testing(store)
     monkeypatch.setattr(
         "kgtracevis.service.handlers._default_feedback_store",
         lambda: store,
     )
+    monkeypatch.setattr(service_runs, "build_pipeline", partial(build_pipeline, graph=seed_graph))
+    monkeypatch.setattr(
+        service_handlers, "KGTracePipeline", partial(KGTracePipeline, graph=seed_graph)
+    )
     yield store
     service_runs.configure_run_store_for_testing(None)
 
 
-def test_case_index_includes_checked_in_and_real_output_cases() -> None:
-    """The API case index should expose both example and real pipeline evidence."""
-    cases = list_cases()
+@pytest.fixture
+def generated_case_catalog(tmp_path):
+    """Small generated evidence catalog, not a claim that model assets are installed."""
+    generated = tmp_path / "runs/real_model_pipeline/adapter_pipeline/evidence"
+    generated.mkdir(parents=True)
+    for filename, identity in (
+        ("ds_mvtec_example.json", "fixture_generated_image"),
+        ("wafer_example.json", "fixture_generated_wafer"),
+    ):
+        payload = json.loads((Path("data/examples") / filename).read_text())
+        payload["case_id"] = identity
+        (generated / filename).write_text(json.dumps(payload))
+    return (Path("data/examples"), generated, tmp_path / "optional_missing_outputs")
+
+
+def test_case_index_includes_checked_in_and_generated_output_cases(generated_case_catalog) -> None:
+    """The catalog merges explicit source directories and tolerates absent optional ones."""
+    cases = list_cases(case_dirs=generated_case_catalog)
     case_ids = {case.case_id for case in cases}
 
     assert "mvtec_0001" in case_ids
     assert "wafer_0001" in case_ids
-    assert "mvtec_capsule_test_crack_000" in case_ids
-    assert "wm811k_row_100402" in case_ids
+    assert "fixture_generated_image" in case_ids
+    assert "fixture_generated_wafer" in case_ids
+    assert all(
+        case.is_real_output for case in cases if case.case_id.startswith("fixture_generated")
+    )
 
 
-def test_case_detail_returns_analysis_for_real_outputs() -> None:
+def test_case_detail_returns_analysis_for_generated_outputs(generated_case_catalog) -> None:
     """Detail loading should attach a fresh KG analysis envelope."""
-    detail = get_case_detail("wm811k_row_100402", top_k=3)
+    detail = get_case_detail("fixture_generated_wafer", top_k=3, case_dirs=generated_case_catalog)
 
-    assert detail["case"]["case_id"] == "wm811k_row_100402"
-    assert detail["analysis"]["case_id"] == "wm811k_row_100402"
+    assert detail["case"]["case_id"] == "fixture_generated_wafer"
+    assert detail["analysis"]["case_id"] == "fixture_generated_wafer"
+    assert detail["analysis"]["top_k_paths"]
     assert "top_k_paths" in detail["analysis"]
     assert detail["workflow_steps"]
     assert detail["workflow_steps"][0]["title"] == "Load evidence case"
@@ -289,7 +319,16 @@ def test_upload_run_prepares_visual_evidence_artifacts(
 
     monkeypatch.setattr(service_api, "create_run_from_upload", _patched_create_run_from_upload)
     monkeypatch.setattr(service_api, "get_run_artifact_path", _patched_get_run_artifact_path)
+    monkeypatch.setattr(service_visual_evidence, "PROJECT_ROOT", tmp_path)
     client = TestClient(app)
+
+    generated = tmp_path / "runs/real_model_pipeline/assets/mvtec"
+    image = generated / "input_root/capsule/test/crack/000.png"
+    image.parent.mkdir(parents=True)
+    Image.new("RGB", (16, 16), "gray").save(image)
+    mask, heatmap = generated / "mask.json", generated / "heatmap.json"
+    mask.write_text(json.dumps([[0, 1], [0, 1]]))
+    heatmap.write_text(json.dumps([[0.1, 0.8], [0.2, 0.9]]))
 
     mvtec_record = {
         "dataset": "mvtec",
@@ -297,13 +336,10 @@ def test_upload_run_prepares_visual_evidence_artifacts(
         "object": "capsule",
         "defect_type": "crack",
         "source_label": "crack",
-        "image_path": "runs/real_model_pipeline/assets/mvtec/input_root/capsule/test/crack/000.png",
-        "source_path": "runs/real_model_pipeline/assets/mvtec/input_root/capsule/test/"
-        "crack/000.png",
-        "mask_path": "runs/real_model_pipeline/assets/mvtec/generated_records/"
-        "mvtec_capsule_test_crack_000_mask.json",
-        "heatmap_path": "runs/real_model_pipeline/assets/mvtec/generated_records/"
-        "mvtec_capsule_test_crack_000_heatmap.json",
+        "image_path": str(image),
+        "source_path": str(image),
+        "mask_path": str(mask),
+        "heatmap_path": str(heatmap),
         "confidence": 0.6,
     }
     wafer_record = {
@@ -405,10 +441,13 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
         "_build_mvtec_upload_predictor",
         lambda **_kwargs: _FakeMVTecUploadPredictor(),
     )
+    image = tmp_path / "unlabeled.png"
+    Image.new("RGB", (16, 16), "gray").save(image)
+    checkpoint = tmp_path / "stfpm.xml"
+    checkpoint.write_text("fixture selected through the injected predictor")
+    monkeypatch.setenv("KGTRACEVIS_MVTEC_STFPM_CHECKPOINT", str(checkpoint))
     client = TestClient(app)
-    with Path("runs/real_model_pipeline/assets/mvtec/input_root/capsule/test/crack/000.png").open(
-        "rb"
-    ) as handle:
+    with image.open("rb") as handle:
         response = client.post(
             "/api/runs/upload",
             files={"file": ("000.png", handle, "image/png")},
@@ -428,14 +467,27 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
     assert payload["evidence"]["morphology"] is None
 
 
+@pytest.mark.parametrize(
+    "available,expected",
+    [
+        (("patchcore", "efficientad", "stfpm"), "patchcore"),
+        (("efficientad", "stfpm"), "efficientad"),
+        (("stfpm",), "stfpm"),
+        ((), None),
+    ],
+)
 def test_mvtec_model_preset_route_reports_available_default(
     tmp_path: Path,
     monkeypatch,
+    available,
+    expected,
 ) -> None:
-    """The API should expose selectable MVTec model presets for image uploads."""
-    checkpoint = tmp_path / "efficientad.pt"
-    checkpoint.write_bytes(b"trusted local checkpoint placeholder")
-    monkeypatch.setenv("KGTRACEVIS_MVTEC_EFFICIENTAD_CHECKPOINT", str(checkpoint))
+    """Auto follows the priority of actually available models, not workstation state."""
+    for preset, suffix in (("patchcore", ".ckpt"), ("efficientad", ".pt"), ("stfpm", ".xml")):
+        checkpoint = tmp_path / (preset + suffix)
+        if preset in available:
+            checkpoint.write_bytes(b"checkpoint-existence fixture; never loaded")
+        monkeypatch.setenv("KGTRACEVIS_MVTEC_" + preset.upper() + "_CHECKPOINT", str(checkpoint))
 
     client = TestClient(app)
     response = client.get("/api/runs/mvtec-model-presets")
@@ -444,8 +496,9 @@ def test_mvtec_model_preset_route_reports_available_default(
     payload = response.json()
     assert payload["default_preset"] == "auto"
     presets = {item["preset"]: item for item in payload["presets"]}
-    assert presets["auto"]["resolved_preset"] == "patchcore"
-    assert presets["efficientad"]["available"] is True
+    assert presets["auto"]["resolved_preset"] == expected
+    for preset in ("patchcore", "efficientad", "stfpm"):
+        assert presets[preset]["available"] == (preset in available)
 
 
 def test_dashboard_bootstrap_route_exposes_contract(monkeypatch) -> None:
@@ -474,9 +527,7 @@ def test_dashboard_bootstrap_route_exposes_contract(monkeypatch) -> None:
     assert payload["reasoning_profile_options"]["mvtec"][0]["profile_id"] == (
         "generic_graph_path_default"
     )
-    assert payload["reasoning_profile_options"]["tep"][-1]["profile_id"] == (
-        "tep_root_kgd_default"
-    )
+    assert payload["reasoning_profile_options"]["tep"][-1]["profile_id"] == ("tep_root_kgd_default")
     assert "presets" in payload["mvtec_model_presets"]
 
 
@@ -1063,10 +1114,7 @@ def _manual_rca_source_csv() -> str:
             "id,name,label,head,relation,tail,scenario,evidence,confidence",
             "ApiManualFault,API manual fault,FaultEvent,,,,tep,manual fault row,0.71",
             "ApiManualCause,API manual cause,RootCause,,,,tep,manual cause row,0.71",
-            (
-                ",,,ApiManualFault,SUGGESTS_ROOT_CAUSE,ApiManualCause,tep,"
-                "root cause API row,0.71"
-            ),
+            (",,,ApiManualFault,SUGGESTS_ROOT_CAUSE,ApiManualCause,tep,root cause API row,0.71"),
             "",
         ]
     )
@@ -1076,18 +1124,9 @@ def _manual_overlay_validation_source_csv() -> str:
     return "\n".join(
         [
             "id,name,label,head,relation,tail,scenario,evidence,confidence",
-            (
-                "ApiOverlayAlert,API overlay alert,FaultType,,,,shared,"
-                "overlay alert source row,0.88"
-            ),
-            (
-                "ApiOverlayCause,API overlay cause,RootCause,,,,shared,"
-                "overlay cause source row,0.88"
-            ),
-            (
-                ",,,ApiOverlayAlert,CAUSES,ApiOverlayCause,shared,"
-                "overlay RCA source row,0.88"
-            ),
+            ("ApiOverlayAlert,API overlay alert,FaultType,,,,shared,overlay alert source row,0.88"),
+            ("ApiOverlayCause,API overlay cause,RootCause,,,,shared,overlay cause source row,0.88"),
+            (",,,ApiOverlayAlert,CAUSES,ApiOverlayCause,shared,overlay RCA source row,0.88"),
             "",
         ]
     )

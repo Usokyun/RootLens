@@ -20,9 +20,10 @@ def _load_script_module() -> Any:
     return cast(ModuleType, module)
 
 
-def test_path_ranking_payload_records_provenance() -> None:
+def test_path_ranking_payload_records_provenance(monkeypatch, seed_pipeline) -> None:
     """Optional JSON output should preserve command and config provenance."""
     script = _load_script_module()
+    monkeypatch.setattr(script, "KGTracePipeline", lambda: seed_pipeline)
     evidence_path = Path("data/examples/ds_mvtec_example.json")
     records = script.analyze_evidence_files([evidence_path], top_k=2)
 

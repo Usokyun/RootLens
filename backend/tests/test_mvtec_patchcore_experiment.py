@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+from functools import partial
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
+from kgtracevis.experiments import mvtec_calibrated_pipeline as calibrated_module
 from kgtracevis.experiments.mvtec_calibrated_pipeline import (
     MVTecCalibratedPipelineConfig,
     run_mvtec_calibrated_pipeline,
@@ -86,8 +88,15 @@ def test_build_ds_mvtec_subset_input_samples_good_and_defects(tmp_path: Path) ->
 
 def test_run_mvtec_calibrated_pipeline_writes_records_and_adapter_outputs(
     tmp_path: Path,
+    monkeypatch,
+    seed_pipeline,
 ) -> None:
     """The one-command pipeline should connect producer records to KGTracePipeline."""
+    monkeypatch.setattr(
+        calibrated_module,
+        "run_adapter_pipeline",
+        partial(calibrated_module.run_adapter_pipeline, pipeline=seed_pipeline),
+    )
     root = tmp_path / "Defect_Spectrum" / "DS-MVTec"
     _touch(root / "bottle" / "image" / "good" / "000.png", content=b"good")
     _touch(root / "bottle" / "image" / "scratch" / "001.png", content=b"defect")

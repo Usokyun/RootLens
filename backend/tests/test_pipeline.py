@@ -5,7 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from kgtracevis.core import KGTracePipeline
+from kgtracevis.core import pipeline as pipeline_module
 from kgtracevis.kg.graph import KnowledgeGraph
 from kgtracevis.schema.evidence_schema import KGAnalysis
 from kgtracevis.schema.validators import load_evidence_json
@@ -126,9 +129,7 @@ def test_pipeline_path_contract_for_known_example() -> None:
     assert path["path_strength"] == path["confidence"]
     assert path["rca_score"] == 0.0
     assert path["supporting_evidence"]
-    assert path["source_edge_ids"] == [
-        "ScratchDefect|HAS_PLAUSIBLE_CAUSE|MechanicalContact|mvtec"
-    ]
+    assert path["source_edge_ids"] == ["ScratchDefect|HAS_PLAUSIBLE_CAUSE|MechanicalContact|mvtec"]
     assert path["source_edges"]
     _assert_edge_contract(path["source_edges"][0])
 
@@ -160,6 +161,41 @@ def test_pipeline_uses_neo4j_snapshot_repository_by_default() -> None:
 
     assert repository.scenarios == ["mvtec"]
     assert result.top_k_paths
+
+
+def test_default_pipeline_connects_and_closes_runtime_repository(monkeypatch, seed_graph):
+    """Test injection elsewhere must not turn the production default into a seed fallback."""
+    events = []
+
+    class RuntimeRepository(FakeSnapshotRepository):
+        def close(self):
+            events.append("closed")
+
+    repository = RuntimeRepository(seed_graph)
+    config = object()
+    monkeypatch.setattr(pipeline_module, "resolve_neo4j_config", lambda: config)
+
+    def connect(actual_config):
+        assert actual_config is config
+        events.append("connected")
+        return repository
+
+    monkeypatch.setattr(pipeline_module.Neo4jKGRepository, "connect", connect)
+    pipeline = KGTracePipeline()
+    evidence = load_evidence_json("data/examples/ds_mvtec_example.json")
+    assert pipeline.analyze(evidence).top_k_paths
+    assert pipeline.analyze(evidence).top_k_paths
+    assert repository.scenarios == ["mvtec"]
+    assert events == ["connected", "closed"]
+
+
+def test_default_pipeline_reports_runtime_failure_without_seed_fallback(monkeypatch):
+    def unavailable(_config):
+        raise RuntimeError("runtime repository unavailable")
+
+    monkeypatch.setattr(pipeline_module.Neo4jKGRepository, "connect", unavailable)
+    with pytest.raises(RuntimeError, match="runtime repository unavailable"):
+        KGTracePipeline().analyze(load_evidence_json("data/examples/ds_mvtec_example.json"))
 
 
 class FakeSnapshotRepository:

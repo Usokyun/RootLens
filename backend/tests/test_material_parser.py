@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import json
-import threading
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
@@ -67,51 +66,49 @@ def test_text_layer_pdf_uses_docling_and_keeps_page_number():
     assert parsed.units[0].parser_metadata["parser"].startswith("docling-parse:")
 
 
-def test_url_fetch_parse_failure_retry_and_compiler_handoff(tmp_path):
+def test_url_fetch_parse_failure_retry_and_compiler_handoff(tmp_path, monkeypatch):
     root = tmp_path / "library"
-    server = ThreadingHTTPServer(
-        ("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(tmp_path))
+    url = "https://materials.example.test/notes.html"
+    calls = []
+
+    def remote_response(requested_url, *, timeout):
+        calls.append((requested_url, timeout))
+        assert requested_url == url
+        if len(calls) == 1:
+            raise HTTPError(url, 404, "Not Found", None, None)
+        return BytesIO(b"<h1>Capsule</h1><p>Punctures are localized openings.</p>")
+
+    monkeypatch.setattr("kgtracevis.service.kg_materials.urllib.request.urlopen", remote_response)
+    register_kg_material(
+        KGMaterialRegisterRequest(
+            material_id="url_1",
+            title="URL",
+            source_uri=url,
+            source_kind="url",
+            material_type="webpage",
+            scenario="mvtec",
+        ),
+        material_root=root,
     )
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        url = f"http://127.0.0.1:{server.server_port}/notes.html"
-        register_kg_material(
-            KGMaterialRegisterRequest(
-                material_id="url_1",
-                title="URL",
-                source_uri=url,
-                source_kind="url",
-                material_type="webpage",
-                scenario="mvtec",
-            ),
-            material_root=root,
-        )
-        with pytest.raises(ValueError, match="parsing failed"):
-            extract_kg_material_to_structured_records(
-                "url_1", KGMaterialExtractionRunRequest(), material_root=root
-            )
-        assert get_kg_material("url_1", material_root=root).material.status == "failed"
-        (tmp_path / "notes.html").write_text(
-            "<h1>Capsule</h1><p>Punctures are localized openings.</p>"
-        )
-        result = extract_kg_material_to_structured_records(
+    with pytest.raises(ValueError, match="parsing failed"):
+        extract_kg_material_to_structured_records(
             "url_1", KGMaterialExtractionRunRequest(), material_root=root
         )
-        assert result.chunk_count == 1
-        chunks = list_kg_material_chunks("url_1", material_root=root).chunks
-        assert "localized openings" in chunks[0].text_content
-        prepared = prepare_kg_material_construction_build(
-            KGMaterialSelectedBuildRequest(material_ids=["url_1"]),
-            material_root=root,
-        )
-        units = load_source_units((Path(prepared.sources[0].path),))
-        assert units[0].unit_id == chunks[0].chunk_id
-        assert units[0].material_path == url
-        assert list_kg_material_extraction_runs("url_1", material_root=root).count == 2
-        manifest = json.loads(Path(result.extraction_manifest_path).read_text())
-        assert manifest["chunk_count"] == len(units)
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join()
+    assert get_kg_material("url_1", material_root=root).material.status == "failed"
+    result = extract_kg_material_to_structured_records(
+        "url_1", KGMaterialExtractionRunRequest(), material_root=root
+    )
+    assert result.chunk_count == 1
+    chunks = list_kg_material_chunks("url_1", material_root=root).chunks
+    assert "localized openings" in chunks[0].text_content
+    prepared = prepare_kg_material_construction_build(
+        KGMaterialSelectedBuildRequest(material_ids=["url_1"]),
+        material_root=root,
+    )
+    units = load_source_units((Path(prepared.sources[0].path),))
+    assert units[0].unit_id == chunks[0].chunk_id
+    assert units[0].material_path == url
+    assert list_kg_material_extraction_runs("url_1", material_root=root).count == 2
+    manifest = json.loads(Path(result.extraction_manifest_path).read_text())
+    assert manifest["chunk_count"] == len(units)
+    assert calls == [(url, 10), (url, 10)]

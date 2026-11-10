@@ -19,19 +19,23 @@ from kgtracevis.experiments.paper_tables import (
 )
 
 
-def test_build_paper_tables_groups_adapter_noise_and_commands(tmp_path: Path) -> None:
+def test_build_paper_tables_groups_adapter_noise_and_commands(
+    tmp_path: Path, seed_pipeline
+) -> None:
     """The builder should group generated outputs without writing into paper/."""
     mvtec_output = run_adapter_pipeline(
         "data/examples/records/mvtec_records.jsonl",
         tmp_path / "runs" / "adapter_pipeline_mvtec",
         dataset="mvtec",
         top_k=2,
+        pipeline=seed_pipeline,
     )
     wm811k_output = run_adapter_pipeline(
         "data/examples/records/wm811k_records.jsonl",
         tmp_path / "runs" / "adapter_pipeline_wm811k",
         dataset="wafer",
         top_k=2,
+        pipeline=seed_pipeline,
     )
     noise_summary = _write_noise_summary(tmp_path / "runs" / "v0_examples" / "summary.json")
     suite_summary = _write_suite_summary(
@@ -51,9 +55,7 @@ def test_build_paper_tables_groups_adapter_noise_and_commands(tmp_path: Path) ->
 
     expected_output_dir = tmp_path / "artifacts" / "paper_tables_v0"
     assert output.manifest_path == expected_output_dir / PAPER_MANIFEST_FILENAME
-    assert output.command_manifest_path == (
-        expected_output_dir / COMMAND_MANIFEST_FILENAME
-    )
+    assert output.command_manifest_path == (expected_output_dir / COMMAND_MANIFEST_FILENAME)
     assert output.summary_path == expected_output_dir / SUMMARY_FILENAME
     assert output.manifest_path.is_file()
     assert output.command_manifest_path.is_file()
