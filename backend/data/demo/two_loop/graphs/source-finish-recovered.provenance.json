@@ -1,0 +1,106 @@
+{
+  "schema_version": "rootlens-demo-source-recovery.v1",
+  "package_file": "source-finish-recovered.json",
+  "purpose": "Strict source-specific Finish knowledge versus an existing coarse glass-edge observation; an importable insufficient-evidence control, not a ready diagnosis graph.",
+  "default_demo_manifest_member": false,
+  "formal_export": {
+    "graph_id": "graph_538efc4369b64b46a879dd5a30652bc1",
+    "build_id": "offline-recovery:task_2b5e770ad3114218bba64e58847b9cb5:proposal-1:budget32:presence-gates-v1",
+    "export_contract": "GET /api/kg/working-graphs/{graph_id}/package",
+    "package_fields_unchanged": true
+  },
+  "public_source": {
+    "title": "Emhart Glass Defect Guide",
+    "url": "https://www.emhartglass.com/sites/default/files/publications/2024-07/BEG_BR0060RevA-Defect_Guide-WEB.pdf",
+    "pdf_pages": [
+      13,
+      20
+    ],
+    "source_unit_count": 2,
+    "source_characters_processed": 3008,
+    "redistribution": "Derived public-source knowledge and locators only; full PDF, credentials and model transcripts are excluded."
+  },
+  "original_real_task": {
+    "task_id": "task_2b5e770ad3114218bba64e58847b9cb5",
+    "status": "failed",
+    "stage": "validation",
+    "llm_calls": 2,
+    "llm_tokens": 18899,
+    "candidate_counts": [
+      20,
+      17
+    ],
+    "then_hard_candidate_limit": 16,
+    "max_repairs": 1
+  },
+  "recovery": {
+    "kind": "captured_real_llm_response_offline_compilation",
+    "original_response": "proposal-1.txt",
+    "new_llm_calls": 0,
+    "hard_candidate_limit_before": 16,
+    "hard_candidate_limit_after": 32,
+    "recommended_max_candidates": 16,
+    "candidates_preserved": 17,
+    "truncation_or_automatic_merge": false,
+    "semantic_change": true,
+    "authoring_normalizations": [
+      {
+        "kind": "presence_gates_lifted",
+        "signature_key": "finish_broken_glass",
+        "gate_feature_ids": [
+          "appearance.defect_present"
+        ],
+        "diagnostic_condition_count": 1,
+        "authored_logic": "any",
+        "semantic_change": true
+      },
+      {
+        "kind": "presence_gates_lifted",
+        "signature_key": "finish_chipped_small_section",
+        "gate_feature_ids": [
+          "appearance.defect_present"
+        ],
+        "diagnostic_condition_count": 1,
+        "authored_logic": "any",
+        "semantic_change": true
+      }
+    ],
+    "meaning": "Generic defect_present from the authored ANY is lifted to an ALL prerequisite; a specific Finish diagnostic cue is still required. This is explicit semantic tightening, not unchanged LLM semantics.",
+    "coarse_to_finish_value_binding_added": false
+  },
+  "existing_formal_execution": {
+    "graph_id": "graph_538efc4369b64b46a879dd5a30652bc1",
+    "enabled": true,
+    "frame_task_id": "task_7898d4c1f0464b5287de779a7a47e7d3",
+    "run_id": "c846c64a-2388-4c3a-9827-25c4cb770496",
+    "frame_file": "../evidence/bottle-rim-break.json",
+    "frame_modified": false,
+    "reasoner_id": "unified_abduction",
+    "top_k": 8,
+    "outcome": "insufficient_evidence",
+    "ranked_candidates": 0,
+    "media_status": "available",
+    "new_model_or_llm_calls": 0,
+    "missing_specific_cues": [
+      "broken_finish",
+      "chipped_finish"
+    ],
+    "actual_open_appearance_values": [
+      "cracked_or_missing_glass"
+    ],
+    "actual_equivalence_bindings": []
+  },
+  "use": "Import the complete package as a new copy, enable it, then upload the existing bottle-rim-break Frame. Import assigns a new graph ID; no original database or paid model run is required.",
+  "verification": {
+    "schema_readback": "passed",
+    "same_export_values": "passed",
+    "candidate_count": 17,
+    "pattern_count": 2,
+    "source_assertion_count": 26,
+    "specific_cue_finite_branches_per_pattern": [
+      1,
+      1
+    ],
+    "formal_import_and_run": "reuse the existing actual execution above; no extra run was created for exporting this file."
+  }
+}

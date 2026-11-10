@@ -26,9 +26,13 @@
 
 ## 知识图的原始产物与演示适配分开保存
 
-Bottle主图使用本轮真实原厂PDF LLM产物，默认Frame由两次一致的公开006原图第二次实际运行导出；原图拍摄部位未确认，Finish资料的外观迁移已明确写入来源。Wafer知识种子复用前期真实资料LLM产物，默认Frame同样是本轮raw输出。TEP 本轮重新向配置的文本 LLM 提交原始 `teprob.f` 与 `temain_mod.f`，原始输出及失败报告保留在 `backend/runs/two_loop_demo/knowledge/tep-source-llm-002/`。
+默认Bottle主图使用原双闭环验收版的真实原厂PDF LLM产物，默认Frame由两次一致的公开006原图第二次实际运行导出；原图拍摄部位未确认，Finish资料的外观迁移已明确写入来源。Wafer知识种子复用前期真实资料LLM产物，默认Frame同样是原验收版raw输出。TEP 原验收时重新向配置的文本 LLM 提交原始 `teprob.f` 与 `temain_mod.f`，原始输出及失败报告保留在 `backend/runs/two_loop_demo/knowledge/tep-source-llm-002/`。
 
-最终13份默认Frame、17个样本／引擎组合的API与CLI候选、排名、分数和状态完全一致；每条实际路径有来源和观测定位，原始媒体／52通道曲线可读。随仓库的小型验证摘要是 `backend/data/demo/two_loop/verification-summary.json`；它只记录验收，不参与计算。
+13份默认Frame和默认3图本轮保持不变。原17项验证（13个统一引擎＋4个RootKGD v1）作为历史保留；其中13项统一引擎不受投影变更影响，没有重复运行。
+
+当前另复演4个TEP×RootKGD v2组合：d04／d01／d05／正常，正式API与CLI的候选、名次、分数、完整评分组件和状态精确一致；52评分输入及曲线、连续真实源路径通过检查。结果标记 `tep_rootkgd_propagation_v2`／`rootkgd-host-channel.v2`，原错误排名未变。随仓库摘要 `backend/data/demo/two_loop/verification-summary.json` 将当前4项与旧17项分区，完整新记录在 `backend/runs/two_loop_demo/rootkgd-v2-consumption-20261111/verification.json`；摘要不参与计算。
+
+当前d04原始Run `48595ebd-a532-4c98-9464-5cb2730bac29` 直接下载Frame并普通上传得到 `43311a86-a894-4bb9-b884-88ae7f8186b4`。同图／引擎／top_k=8下，三窗口候选、组件、结果和52曲线精确一致；不覆盖旧Run或默认冻结Frame。
 
 TEP 工作图保留 8 个候选、分回路机制、14 个原子和全部 52 个稳定通道绑定。对原 LLM 产物的演示适配包括：移除无具体可诊断机理的 Unknown 兜底；使用原程序明确的进料组分测量；修正进料热边界的过强质量流量解释；统一声明 2 z 门槛。通道绑定不等于每个通道都有来源支持的传播路径。
 
@@ -39,6 +43,14 @@ TEP 工作图保留 8 个候选、分回路机制、14 个原子和全部 52 个
 - `backend/data/demo/two_loop/knowledge/tep-demo-refinement.json`
 
 人工可以继续改图；新分析固定所选图快照。既有分析不因之后编辑而改变。
+
+## 新源图验证与默认适配图分开
+
+当前制作合同另用同一公开 Emhart PDF 实际调用一次任务（含唯一修复共2调用／18899 tokens）。原任务 `task_2b5e770ad3114218bba64e58847b9cb5` 因17候选超过当时硬16失败，记录未改写。保留最终响应后，按硬32／软建议16离线编译，并明确将原 ANY 中的泛缺陷布尔分支提升为 ALL 前置；报告标 `semantic_change=true`，没有再次调用模型。
+
+独立恢复图 `graph_538efc4369b64b46a879dd5a30652bc1` 已通过正式导入／启用，006冻结Frame普通上传得到 `c846c64a-2388-4c3a-9827-25c4cb770496`：insufficient_evidence、0排名、媒体可读。细 `broken_finish/chipped_finish` 尚未观测，空词汇绑定不补成等价；这张17候选源图不替换默认已适配图。原始响应、编译归一化与实际API结果见 `backend/runs/two_loop_demo/rootkgd-v2-consumption-20261111/current-llm-contract/`，随仓库摘要保留任务／图／Run及明确恢复来源。
+
+可跨机器导入的[完整源图包](../../backend/data/demo/two_loop/graphs/source-finish-recovered.json)与[恢复provenance](../../backend/data/demo/two_loop/graphs/source-finish-recovered.provenance.json)已入库，不依赖上述本机ID或重新调用LLM。它们不在默认manifest中；导入为新副本，启用后上传既有006 Frame即可复用这一不足对照。完整包34,166字节，已通过当前schema读回；原失败、2调用／0新增、预算和语义收紧在provenance明确区分。
 
 ## 准备和复算
 
@@ -51,3 +63,16 @@ uv run --offline --no-sync python scripts/prepare_two_loop_demo.py \
 ```
 
 第一条准备／检查资产，不调用外部LLM或视觉backbone、不连接数据库；缺失的TEP配套数值资产可从同一公开数据与正常参考重建并核对。缺失公开资产时才加 `--download`。第二条用小型冻结 Frame 重新执行内核；输出目录必须是新的。真实 API 闭环客户端是 `backend/scripts/prepare_two_loop_demo_api.py`，仅调用正式服务，不实现第二份 adapter 或推理算法。
+
+仅复演受本次投影影响的四项时，复用现有已启用TEP图，不加 `--build-bottle`、不重新导图：
+
+```bash
+uv run --offline --no-sync python scripts/prepare_two_loop_demo_api.py \
+  --output-dir runs/two_loop_demo/my-root-v2-check \
+  --graph-id graph_c6d2a470450e41369de3fc7bdcaaf459 \
+  --reasoner tep_rootkgd --variant evidence \
+  --sample tep-sequence-04 --sample tep-sequence-01 \
+  --sample tep-sequence-05 --sample tep-normal-window
+```
+
+上例图ID仅属于本机验收库；新库使用实际导入后返回的ID。当前Root投影按host／稳定通道去重逻辑期待，保留真实effect和来源；不执行条件阈值／AND-OR／mode，新增条件的业务含义与推理器选择见[现场手册](../../backend/docs/two-loop-demo.md)。
