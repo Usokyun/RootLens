@@ -252,17 +252,27 @@ def test_at_least_and_branch_budgets_are_explicit(knowledge):
     assert not limited["ranked_root_causes"]
 
 
-def test_cli_exports_actual_inputs_graph_and_results_without_overwriting(tmp_path):
+@pytest.mark.parametrize("working_package", [False, True])
+def test_cli_exports_actual_inputs_graph_and_results_without_overwriting(tmp_path, working_package):
     import json
 
     from test_unified_contracts import EXAMPLES
 
     from scripts.run_unified_reasoning import main
 
+    source = EXAMPLES / "knowledge-package.json"
+    if working_package:
+        from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
+
+        package = UnifiedWorkingGraphPackage(
+            title="CLI interchange", dataset="mvtec", knowledge=example("knowledge-package.json")
+        )
+        source = tmp_path / "working.json"
+        source.write_text(package.model_dump_json())
     target = tmp_path / "run"
     args = [
         "--knowledge",
-        str(EXAMPLES / "knowledge-package.json"),
+        str(source),
         "--evidence",
         str(EXAMPLES / "mvtec-evidence.json"),
         "--output-dir",

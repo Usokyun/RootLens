@@ -62,7 +62,11 @@ describe("mock backend paper demo mode", () => {
     const original = await mockBackend.getRun("paper-demo-curated");
     original.run.run_id = "saved-backend-run";
     original.summary = { working_graph_snapshot: { graph_id: "original-graph" } };
-    original.cases[0].reasoning_metadata = { graph_id: "original-graph", outcome: "matched" };
+    original.cases[0].reasoning_metadata = {
+      graph_id: "original-graph", outcome: "matched",
+      query_results: [{ schema_version: 'rootlens-reasoning-result.v2', outcome: 'ambiguous', grounded_facts: [{ value: null, status: 'missing' }], candidate_evaluations: [{ score: -0.25, confidence: null }] }],
+      evidence_frames: [{ schema_version: 'rootlens-evidence.v2', observations: [{ status: 'missing', value: null }] }],
+    };
     const runtime = await loadBundledRootLensRuntime();
     saveImportedSession({ graphs: null, runtime: { ...runtime, backend_runs: [original] } });
     expect((await mockBackend.listRuns())[0].run_id).toBe("saved-backend-run");

@@ -16,11 +16,13 @@ const SCORING_METHOD_LABELS: Record<string, string> = {
   process_graph_rbc: '完整通道 RBC × 当前图传播与条件',
   wafer_spatial_profile: '晶圆空间统计与分类联合匹配',
   visual_profile_match: '区域特征与图谱条件匹配',
+  unified_constraint_abduction_v0: '统一约束溯因（score = −代价）',
 }
 const REASONER_ADAPTER_LABELS: Record<string, string> = {
   generic_graph_path: 'Generic Path',
   tep_root_kgd: 'TEP Root-KGD',
   visual_profile_match: '视觉特征推理',
+  unified_working_graph: '统一图谱推理',
 }
 const REASONING_SELECTION_MODE_LABELS: Record<string, string> = {
   default: 'Auto',

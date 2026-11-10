@@ -63,6 +63,18 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 使用、实际 JSON/路径、模型来源、负结果、回放文件和恢复入口见 [三场景使用与验收](../../backend/docs/progressive-demo-2026-11-10.md)。[执行计划](rootlens-refactor-execution-plan-2026-11-10.md) 的 T01–T22 已完成；审核、正式版本、置信校准、训练与完整 benchmark 后置。
 
+### 1.5 U0–U5：统一推理 v2 完成（2026-11-11）
+
+- 新闭合 `EvidenceFrame` 和公共知识 IR 把主体、注册特征、类型／单位、scope、procedure、正常参考及来源绑定起来。MVTec／TEP／Wafer 通过不同测量 adapter 接入**同一 grounding、候选展开、联合条件、代价与证明内核**；不按 dataset 更换最终评分。
+- 原始公开 PDF／过程程序／论文与模型卡 → LLM 领域蓝图 → 确定性编译的可执行知识。素材页显式选 `unified-v2` 能力契约，沿用原解析／构图／装载服务，无人工审核前提。
+- 完整 `rootlens-working-graph.v2` 的 canonical knowledge 持久保存于既有登记／隔离 KG，支持别名、绑定、条件／规则编辑、备份恢复和完整交换。明确选择 v2 工作图才走新内核，v1 包、旧 Evidence 和默认策略保留原合同。
+- 三类真实模型／数值观测已运行：bottle 5 张图中 2 张得到 4 个并列候选；TEP 3 序列／9 窗口，正常无候选但后故障首位族仍错误；Wafer 18 网格中 7 匹配（6 原生图案一致、1 分歧），11 未匹配。实际失败不靠 generic fallback 补答案。
+- 32 份同输入／知识的独立平坦计算和去中间机制对照均等价；收益落在统一合同、知识维护迁移与推导追溯，未证明图结构本身提高准确率。全局策略、改值／缺失／重复／删规则等检查和完整负结果已保存。
+- 前端三页保持，补“推理依据”抽屉展示实测、联合条件、候选 U/C/A/J、反证／缺失及源边。22-case 原始 Session 实际导入和刷新通过，浏览器只消费保存结果，不执行新推理。
+- 最终后端 **442 passed / 5 failed / 1 skipped**，5 项为已有资产／默认模型断言失败；已有空 env 配置和单 case 保存不完整问题已修复。前端 **20 文件 / 95 项及 build 通过**。不是全后端测试全通过，也不是工业诊断准确率验收。
+
+使用／实际 JSON／图谱制作／API／回放见 [统一推理 v2](/Users/hhm/code/RootLens/backend/docs/unified-reasoning.md)，比较与负结果见 [U5 验收](/Users/hhm/code/RootLens/backend/docs/unified-reasoning-u5.md)，提交与分期证据见 [执行记录](rootlens-unified-reasoning-execution.md)。本机仍使用 5186／8012 与独立 55433／57687 测试库；日常默认地址未变，原数据未重建。
+
 ## 2. 当前保留的三种数据来源
 
 ### 2.1 Backend 模式

@@ -163,7 +163,27 @@ npm run dev:all
 
 `workspace export` 仍可单独恢复 analyst workspace。不再支持从 `nodes/edges/evidence` 在浏览器端临时组装 runtime，也不恢复浏览器端 RCA / what-if 重算。
 
-## 三场景渐进重构 Demo
+## 统一工业推理 v2（U0–U5）
+
+MVTec、TEP 和 Wafer 现在通过注册 adapter 进入同一强类型 Evidence、公共可执行知识、候选展开／联合条件／代价与证明内核。LLM 从原始公开资料制作知识；完整工作图可持久修改／交换，前端保持三页并增加“推理依据”。旧策略／v1 包保留，显式选择 v2 工作图才启用新路线。
+
+先用随仓库的真实测量 JSON，无需数据库或模型调用：
+
+```bash
+cd backend
+uv run --no-sync python scripts/run_unified_reasoning.py \
+  --knowledge data/kg/unified/bottle-working-graph.v2.json \
+  --evidence data/examples/unified/mvtec-chipped.json \
+  --output-dir runs/my-unified-demo
+```
+
+得到 4 个并列候选、score = −0.25 和实际联合证明。TEP／Wafer 的知识与真实输入也在 `backend/data/`。完整步骤、原始数据／构图／API／回放见 [统一推理使用说明](backend/docs/unified-reasoning.md)，真实失败和公平对照见 [U5 评价](backend/docs/unified-reasoning-u5.md)。
+
+本机新回放文件为 `backend/runs/unified_reasoning/u5_replay/all-scenes-session.json`（3 Run／22 case，不随 Git 提供），经现有导入入口刷新后仍可读取；运行服务沿用 5186／8012 的隔离测试栈。
+
+32 份同输入的平坦对照完全等价；TEP 故障首位仍有明确负结果，不能把统一架构当作准确率改进。最终前端 95 项／build 通过；后端 442 通过、5 项既有失败、1 跳过，详见 U5 文档。
+
+## 前期三场景渐进重构 Demo（M1–M6）
 
 已完成 M1–M6：**实际素材解析 → LLM 可执行知识 → 持久图谱管理 → 三场景测量/条件推理 → 原始图与结果回放**，保留三页布局。
 

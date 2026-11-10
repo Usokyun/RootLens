@@ -1,6 +1,6 @@
 # RootLens 统一工业推理方法：调研、契约与渐进实施方案
 
-日期：2026-11-10。状态：**方法设计与实施规划，尚未实现下述 v2 内核**。
+日期：2026-11-10（冻结设计）；实施更新：2026-11-11。状态：**U0–U5 已完成，实际范围与负结果见 [执行记录](rootlens-unified-reasoning-execution.md) 和 [U5 验收](/Users/hhm/code/RootLens/backend/docs/unified-reasoning-u5.md)**。下文设计样例继续标为合成样例，不冒充真实模型效果。
 
 主线：不同 backbone / 数据源经 adapter 生成有明确语义的 Evidence；领域知识不同，但图上的候选生成、联合检验、冲突处理、解释选择采用同一推理机制。MVTec 仍是首个落地入口，TEP 同时约束内核设计，Wafer 用于检验新增场景是否需要改内核。前端保持现有三页结构，审核、正式版本治理、置信校准后置。
 
@@ -45,9 +45,9 @@ LLM 生成形式化知识、确定性程序执行的分工已有 Logic-LM；工�
 | VisualProfileReasoner、MeasuredProfileReasoner、旧 Root-KGD | 保留旧入口及对照；新内核不调用它们的最终排名 |
 | API、运行记录、三页前端、Replay | 复用；新增 trace 字段仍投影为现有候选与路径 |
 
-当前 [视觉 reasoner](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/profile_match_reasoner.py) 用特征组匹配分，[measured reasoner](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/measured_profile_reasoner.py) 对 TEP 使用贡献与图传播对齐、对 Wafer 使用空间特征组；[选择器](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/root_cause_provider_selection.py) 按场景选择实现。它们已经消费实际观测和工作图，但尚未采用同一解释选择机制。
+规划前的 [视觉 reasoner](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/profile_match_reasoner.py) 用特征组匹配分，[measured reasoner](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/measured_profile_reasoner.py) 对 TEP 使用贡献与图传播对齐、对 Wafer 使用空间特征组。这些旧实现继续保留；现有 [选择器](/Users/hhm/code/RootLens/backend/src/kgtracevis/workflows/root_cause_provider_selection.py) 对显式 v2 工作图选择公共内核，不再按数据集替换其评分。
 
-此外，[外层 EvidenceObservation](/Users/hhm/code/RootLens/backend/src/kgtracevis/schema/evidence_schema.py) 仍包含 `Any`；新场景靠各自闭合的内部模型校验。下一步要统一的是内部执行语义，而不只是更换外层字段名。
+兼容的 [外层 EvidenceObservation](/Users/hhm/code/RootLens/backend/src/kgtracevis/schema/evidence_schema.py) 仍包含 `Any`；v2 路线现在只接受注册的闭合 measurements，经 adapter 转成严格 `EvidenceFrame` 后执行。旧外壳不因保留兼容而获得任意字段执行资格。
 
 ## 3. 完整数据流与责任边界
 
@@ -82,7 +82,7 @@ LLM 生成形式化知识、确定性程序执行的分工已有 Logic-LM；工�
 | TEP | 固定正常参考的 scaler/PCA；完整通道统计和 SPE 残差平方贡献；后续可增加起始时间与动态残差 | 输出稳定通道身份、窗口、参考资产、完整向量引用与标量观测 | 输出 fault ID 或 RootScore；重新拟合参考后继续冒用旧参考身份 |
 | Wafer | 正确 0/1/2 编码；有效 die 几何、径向密度、聚集与线性统计；可选分类器 | 输出空间主体、统计定义、网格与预测来源 | 把 pattern label 直接写成该片 wafer 的实际制造原因 |
 
-TEP 当前贡献计算是归一化 SPE 残差平方贡献；新契约以 `spe_residual_share` 命名，旧接口中的 RBC 名称只作兼容显示，不继续扩散数学含义混用。
+TEP 当前贡献计算是归一化 SPE 残差平方贡献；实现中的注册特征为 `residual.contribution`，定义明确保留该含义。旧接口中的 RBC 名称只作兼容，不继续混用；前端测量表显示“PCA 残差贡献”。
 
 Producer 可有不同实现，但须发布能力清单：`feature_id`、值类型、单位、算法定义、适用主体、依赖资产与前置输入。LLM 只能引用清单中存在的测量能力。
 
@@ -291,7 +291,7 @@ Wafer 的一条空间观测则是：
 
 `unobserved` 不等于 false；显式 NOT 只能来自有效阴性观测或规则定义的明确反面，不能来自“没找到这个字段”。相互矛盾的模型观测保留双方来源，不用输入顺序覆盖。
 
-规则初始算子集限定为：标量／集合比较、区间、all/any/at_least、同一主体／事件／窗口 join、明确时间先后、白名单语义关系链。时间先后只有在起始时刻或时间区间真的可用且分辨率足够时执行，否则为 unobserved。
+当前 v0 执行标量／集合比较、all/any/at_least、同一主体／事件／窗口／wafer parent join 与显式规则链。interval／array 引用可归档；区间比较、明确时间先后和动态机制未接入执行，不把缺少的时间信息猜成已观测条件。
 
 ### 5.2 反向检索候选，正向检查期待
 
@@ -495,7 +495,7 @@ TEP 的控制补偿、时滞及条件残差后续由正常动态模型提供额�
 
 ### 7.1 已做的最小代价算例推演
 
-本次用合成 A/B 观测进行了数值计算，尚未实现规则搜索器。设 H1 期待 A、B 均异常；H2 期待 A 异常、B 正常；U 为已观测阳性目标未解释比例，C 为已测 A/B 与期待冲突比例，λc=2，额外假设代价 λaA=0.25：
+方案阶段用合成 A/B 观测进行了以下数值计算；后续规则搜索器及真实输入检查见执行记录。本表仍是合成性质检查：设 H1 期待 A、B 均异常；H2 期待 A 异常、B 正常；U 为已观测阳性目标未解释比例，C 为已测 A/B 与期待冲突比例，λc=2，额外假设代价 λaA=0.25：
 
 | 变更 | H1 代价 | H2 代价 | 应有解释 |
 | --- | ---: | ---: | --- |
@@ -581,7 +581,7 @@ U0 就同时使用 TEP 的反例约束设计，不等视觉内核写完再发现
 - **软约束权重决定结果**：采用跨场景固定策略并做敏感性对照；不按测试 fault 单独调权，不声称代价是概率。
 - **形式正确、含义错误**：自动检查保证可执行，不保证领域断言真实；机制知识的效果与失败必须在真实观测和对照中暴露。
 
-建议接下来执行 U0＋U1：先得到能容纳视觉与过程观测的公共契约和最小内核，再接现有 MVTec 链路。新增构图、图谱编辑与 backbone 能力都围绕这份公共合同收敛。
+U0–U5 现已完成并围绕同一公共合同收敛。实际验收得到平坦等价及 TEP 首位错误等反证；后续表达扩展应由这些具体问题决定，不以增加场景或图节点数代替方法收益。
 
 ## 附录：本次调研范围与证据记录
 
@@ -589,4 +589,4 @@ U0 就同时使用 TEP 的反例约束设计，不等视觉内核写完再发现
 
 纳入依据是能解释观测语义、可执行知识或候选推理机制；没有将二手综述中的诊断准确率转引为本项目预期。主要阅读定位已附各处链接；经典诊断与加权溯因仅引用已核对的摘要／引言层原则。Reiter 大学镜像获取超时，采用出版社摘要；MVTec 旧 PDF URL 返回 404，数据范围以官方数据页核对。未使用程序化书目数据库验证或进行穷尽新颖性检索。
 
-AI 辅助完成了源码核对、公开文献检索、方法综合和合成代价算例。本轮未调用项目配置的付费 LLM、未下载模型、未执行新的真实数据诊断实验；本文件中的 v2、推理过程示例与 U0–U5 均为后续设计。
+本附录描述的是 2026-11-10 **调研／设计阶段**：AI 辅助源码核对、公开文献检索、方法综合和合成算例，当时未调用项目 LLM／下载模型／执行真实实验。用户随后授权的实现和实际模型调用／实验另记于执行记录；本文件的设计样例不因此变成实测结果。

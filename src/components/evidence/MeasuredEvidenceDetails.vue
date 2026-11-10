@@ -33,9 +33,9 @@ function points(values: unknown) {
       <h4>完整窗口 · 样本 {{ value.sample_start }}–{{ value.sample_end }}</h4>
       <p>间隔 {{ value.sampling_interval_seconds }} 秒；正常参考 {{ value.normal_reference_rows }} 行。残差能量 {{ fmt(value.residual_energy) }} / 正常限 {{ fmt(value.normal_energy_limit) }}</p>
       <p class="reference">{{ value.reference_id }}</p>
-      <p>趋势为原始值，各通道独立纵轴；全部 {{ channels.length }} 通道均进入数值计算。</p>
+      <p>趋势为原始值，各通道独立纵轴；完整保留 {{ channels.length }} 通道。图中实际使用的统计见“推理依据”。</p>
       <div class="measurement-scroll"><table>
-        <thead><tr><th>通道</th><th>均值 z</th><th>标准差 z</th><th>斜率 z/样本</th><th>RBC</th><th>窗口趋势</th></tr></thead>
+        <thead><tr><th>通道</th><th>均值 z</th><th>标准差 z</th><th>斜率 z/样本</th><th>PCA 残差贡献</th><th>窗口趋势</th></tr></thead>
         <tbody><tr v-for="channel in channels" :key="String(channel.channel)">
           <td>{{ channel.channel }}</td><td>{{ fmt(channel.mean_z) }}</td><td>{{ fmt(channel.std_z) }}</td><td>{{ fmt(channel.slope_z) }}</td><td>{{ fmt(channel.contribution) }}</td>
           <td><svg viewBox="0 0 180 38" width="180" height="38" role="img" :aria-label="`${channel.channel} 原始窗口趋势`"><polyline :points="points(channel.samples)" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></td>

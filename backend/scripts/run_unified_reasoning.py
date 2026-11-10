@@ -7,18 +7,29 @@ import json
 from pathlib import Path
 
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.schema.unified_evidence import EvidenceFrame
 from kgtracevis.schema.unified_knowledge import KnowledgePackage
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--knowledge", type=Path, required=True)
+    parser.add_argument(
+        "--knowledge",
+        type=Path,
+        required=True,
+        help="Canonical knowledge or v2 working graph package",
+    )
     parser.add_argument("--evidence", type=Path, action="append", required=True)
     parser.add_argument("--output-dir", type=Path, required=True, help="New output directory")
     parser.add_argument("--top-k", type=int, default=5)
     args = parser.parse_args(argv)
-    knowledge = KnowledgePackage.model_validate_json(args.knowledge.read_text(encoding="utf-8"))
+    payload = json.loads(args.knowledge.read_text(encoding="utf-8"))
+    knowledge = (
+        UnifiedWorkingGraphPackage.model_validate(payload).knowledge
+        if payload.get("schema_version") == "rootlens-working-graph.v2"
+        else KnowledgePackage.model_validate(payload)
+    )
     frames = []
     for source in args.evidence:
         text = source.read_text(encoding="utf-8")

@@ -1,0 +1,1322 @@
+{
+  "schema_version": "rootlens-unified-evaluation-summary.v1",
+  "scope": "Exploratory engineering runs, not independent accuracy trials. Legacy references use different knowledge and target vocabularies.",
+  "case_count": 32,
+  "cases": [
+    {
+      "run_id": "efc9888e-a986-4b7b-aa3c-1d4aaeaa5c02",
+      "case_id": "mvtec_bottle_test_unknown_public",
+      "query_index": 0,
+      "dataset": "mvtec",
+      "outcome": "insufficient_evidence",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:bottle:careless_handling_cold_ware",
+        "hypothesis:bottle:cold_glass_feeder",
+        "hypothesis:bottle:faulty_gauging_heads",
+        "hypothesis:bottle:machine_setup_operation",
+        "hypothesis:bottle:mold_equipment_mismatch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": false,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "insufficient_evidence",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "038a083f-af8a-4b44-a81e-05e7a9a9fde0",
+      "case_id": "mvtec_bottle_test_unknown_public",
+      "query_index": 0,
+      "dataset": "mvtec",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": false,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "3e83390c-8360-4f1e-a73e-ccb521e96d21",
+      "case_id": "mvtec_bottle_test_unknown_public",
+      "query_index": 0,
+      "dataset": "mvtec",
+      "outcome": "ambiguous",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:bottle:careless_handling_cold_ware",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:cold_glass_feeder",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:machine_setup_operation",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:mold_equipment_mismatch",
+          1,
+          -0.25
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:bottle:careless_handling_cold_ware",
+        "hypothesis:bottle:cold_glass_feeder",
+        "hypothesis:bottle:machine_setup_operation",
+        "hypothesis:bottle:mold_equipment_mismatch",
+        "hypothesis:bottle:faulty_gauging_heads"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:bottle:careless_handling_cold_ware",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:cold_glass_feeder",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:machine_setup_operation",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:mold_equipment_mismatch",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": false,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "6136854b-0913-4f87-8917-703717d7db6f",
+      "case_id": "mvtec_bottle_test_unknown_public",
+      "query_index": 0,
+      "dataset": "mvtec",
+      "outcome": "ambiguous",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:bottle:careless_handling_cold_ware",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:cold_glass_feeder",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:machine_setup_operation",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:mold_equipment_mismatch",
+          1,
+          -0.25
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:bottle:careless_handling_cold_ware",
+        "hypothesis:bottle:cold_glass_feeder",
+        "hypothesis:bottle:machine_setup_operation",
+        "hypothesis:bottle:mold_equipment_mismatch",
+        "hypothesis:bottle:faulty_gauging_heads"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:bottle:careless_handling_cold_ware",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:cold_glass_feeder",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:machine_setup_operation",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:bottle:mold_equipment_mismatch",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": false,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "f549be92-a965-4b0b-8c89-9933ad291a8a",
+      "case_id": "mvtec_bottle_test_unknown_public",
+      "query_index": 0,
+      "dataset": "mvtec",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:bottle:careless_handling_cold_ware",
+        "hypothesis:bottle:cold_glass_feeder",
+        "hypothesis:bottle:faulty_gauging_heads",
+        "hypothesis:bottle:machine_setup_operation",
+        "hypothesis:bottle:mold_equipment_mismatch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "0e04af33-6025-4095-8179-57b969638523",
+      "case_id": "process_window_1_100",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+        "hypothesis:Tennessee Eastman Process:valve_sticking"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "0e04af33-6025-4095-8179-57b969638523",
+      "case_id": "process_window_161_260",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          2,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          3,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 9,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "ReactorCoolingDisturbance",
+          "score": 0.35663927354575353
+        }
+      ],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "0e04af33-6025-4095-8179-57b969638523",
+      "case_id": "process_window_261_360",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          2,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          3,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 9,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "ReactorCoolingDisturbance",
+          "score": 0.35783350420541277
+        }
+      ],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "54a7916a-c038-40c3-a7dd-6c4a63a08636",
+      "case_id": "process_window_1_100",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+        "hypothesis:Tennessee Eastman Process:valve_sticking"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "54a7916a-c038-40c3-a7dd-6c4a63a08636",
+      "case_id": "process_window_161_260",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          2,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "FeedDisturbance",
+          "score": 0.027874996861081195
+        }
+      ],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "54a7916a-c038-40c3-a7dd-6c4a63a08636",
+      "case_id": "process_window_261_360",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          2,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "FeedDisturbance",
+          "score": 0.0792900574957122
+        }
+      ],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "535ce3b9-4ede-43a0-8aa5-d73f88877c5d",
+      "case_id": "process_window_1_100",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+        "hypothesis:Tennessee Eastman Process:valve_sticking"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "535ce3b9-4ede-43a0-8aa5-d73f88877c5d",
+      "case_id": "process_window_161_260",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          2,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "535ce3b9-4ede-43a0-8aa5-d73f88877c5d",
+      "case_id": "process_window_261_360",
+      "query_index": 0,
+      "dataset": "tep",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.5833333333333333
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          2,
+          -0.9166666666666666
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          2,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+        "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+        "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+        "hypothesis:Tennessee Eastman Process:valve_sticking",
+        "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_composition_ratio_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:feed_temperature_step",
+          1,
+          -0.25
+        ],
+        [
+          "hypothesis:Tennessee Eastman Process:valve_sticking",
+          1,
+          -0.25
+        ]
+      ],
+      "path_count": 12,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 2
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_18070",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_18077",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_22274",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_scratch",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_248536",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_near_full",
+          1,
+          -0.875
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_near_full",
+          1,
+          -0.875
+        ]
+      ],
+      "path_count": 3,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "WidespreadYieldLoss",
+          "score": 2.0
+        }
+      ],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_250250",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_near_full",
+          1,
+          -0.9166666666666666
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_near_full",
+          1,
+          -0.9166666666666666
+        ]
+      ],
+      "path_count": 3,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "WidespreadYieldLoss",
+          "score": 2.0
+        }
+      ],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_276128",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_31707",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.5833333333333333
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.5833333333333333
+        ]
+      ],
+      "path_count": 4,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_39",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_49",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_5",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_7258",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_7264",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_loc",
+          1,
+          -0.75
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_scratch",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_loc",
+          1,
+          -0.75
+        ]
+      ],
+      "path_count": 4,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_7293",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_7383",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_loc",
+          1,
+          -0.6785714285714286
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_loc",
+          1,
+          -0.6785714285714286
+        ]
+      ],
+      "path_count": 4,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_7849",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_scratch",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_8734",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.6785714285714286
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.6785714285714286
+        ]
+      ],
+      "path_count": 4,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "matched",
+      "legacy_scenario_candidates": [
+        {
+          "candidate_id": "EdgeProcessNonuniformity",
+          "score": 2.0
+        }
+      ],
+      "legacy_generic_candidates": 1
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_9",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "no_match",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [],
+      "path_count": 0,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": null,
+      "deleted_used_rule_changed": null,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 0
+    },
+    {
+      "run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "case_id": "wm811k_9797",
+      "query_index": 0,
+      "dataset": "wafer",
+      "outcome": "supported",
+      "flat_equivalent": true,
+      "intermediate_removal_equivalent": true,
+      "candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.5833333333333333
+        ]
+      ],
+      "atom_path_candidates": [
+        "hypothesis:wafer:pattern_edge_ring",
+        "hypothesis:wafer:pattern_random",
+        "hypothesis:wafer:pattern_edge_loc",
+        "hypothesis:wafer:pattern_center",
+        "hypothesis:wafer:pattern_donut",
+        "hypothesis:wafer:pattern_loc",
+        "hypothesis:wafer:pattern_near_full",
+        "hypothesis:wafer:pattern_scratch"
+      ],
+      "no_conflict_candidates": [
+        [
+          "hypothesis:wafer:pattern_edge_ring",
+          1,
+          -0.5833333333333333
+        ]
+      ],
+      "path_count": 4,
+      "duplicate_reorder_dataset_invariant": true,
+      "naive_source_counting_changed": true,
+      "missing_used_fact_changed": true,
+      "deleted_used_rule_changed": true,
+      "legacy_scenario_outcome": "no_match",
+      "legacy_scenario_candidates": [],
+      "legacy_generic_candidates": 1
+    }
+  ]
+}

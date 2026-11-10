@@ -29,6 +29,19 @@ interface WorkbenchStateApi {
   resetState: () => void
 }
 
+/** Refreshing or returning from Graphs must keep the same case and proof focus. */
+export function loadedRunSelectionPatch(state: WorkbenchState, runId: string, caseIds: string[]): Partial<WorkbenchState> {
+  if (state.selectedRunId === runId && state.selectedCaseId && caseIds.includes(state.selectedCaseId)) {
+    return { selectedRunId: runId }
+  }
+  return {
+    selectedRunId: runId, selectedCaseId: caseIds[0] ?? null,
+    selectedObservationId: null, selectedCandidateId: null, selectedPathId: null,
+    selectedReviewTargetKey: null, selectedGraphNodeId: null, subgraphMode: 'path',
+    selectedSubgraphNodeId: null, selectedSubgraphEdgeId: null,
+  }
+}
+
 const WORKBENCH_STATE_STORAGE_KEY = 'rootlens.workbench-state'
 const WORKBENCH_STATE_UPDATED_EVENT = 'rootlens:workbench-state-updated'
 

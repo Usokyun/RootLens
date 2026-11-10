@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
+import UnifiedReasoningDetails from '@/components/evidence/UnifiedReasoningDetails.vue'
 import {
   IconBulb,
   IconCheckCircle,
@@ -2283,7 +2284,7 @@ onMounted(() => {
         <a-select placeholder="选择工作图" :model-value="editableGraphId" @change="(id: string) => selectPackageGraph(id)">
           <a-option v-for="graph in workingGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }} · {{ graph.dataset }}</a-option>
         </a-select>
-        <p>编辑节点、关系、别名与条件。删除被引用对象前须同步修改画像；保存影响新分析，历史运行保持原结果。</p>
+        <p>编辑节点、关系、别名与条件；v2 包请修改 knowledge 中的实体、绑定和规则。删除被引用对象前须同步修改相关规则；保存影响新分析，历史运行保持原结果。</p>
         <a-textarea v-model="packageText" :auto-size="{ minRows: 18, maxRows: 28 }" aria-label="完整工作图包 JSON" />
         <a-space wrap>
           <a-button type="primary" :loading="packageBusy" :disabled="!editableGraphId" @click="savePackage(false)">保存当前图</a-button>
@@ -3396,6 +3397,7 @@ onMounted(() => {
             <section class="workspace-root-cause-aside-card__list">
               <div class="workspace-root-cause-aside-card__section-header">
                 <strong>候选根因</strong>
+                <UnifiedReasoningDetails :metadata="activeCase?.reasoning_metadata" :candidate-id="activeCandidate?.candidate_id" :query-id="activeCandidate?.scoring_details?.query_id" />
                 <span>{{ activeCandidate ? '已选中 1 项' : '当前未选中' }}</span>
               </div>
               <div class="workspace-scroll-list workspace-scroll-list--fill">

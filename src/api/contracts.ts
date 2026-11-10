@@ -159,6 +159,9 @@ export interface UnifiedWorkingGraphPackage {
 export type WorkingGraphPackage = LegacyWorkingGraphPackage | UnifiedWorkingGraphPackage;
 
 export interface RunReasoningMetadata {
+  query_results?: Array<Record<string, unknown>>;
+  evidence_frames?: Array<Record<string, unknown>>;
+  aggregation?: string;
   graph_id?: string | null;
   outcome?: string | null;
   reasoning_profile_id?: string | null;

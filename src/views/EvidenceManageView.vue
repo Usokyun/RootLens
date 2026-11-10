@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
+import UnifiedReasoningDetails from '@/components/evidence/UnifiedReasoningDetails.vue'
 import {
   IconBulb,
   IconInfoCircle,
@@ -36,7 +37,7 @@ import {
   resolveRunReasoningSummary,
   resolveVisualEvidenceUrl,
 } from '@/services/ui-copy'
-import { useWorkbenchState } from '@/services/workbench-state'
+import { loadedRunSelectionPatch, useWorkbenchState } from '@/services/workbench-state'
 
 interface CaseEvidenceEntry {
   key: string
@@ -644,21 +645,6 @@ function openObservationDetail(observationId: string | null) {
   observationDetailModalVisible.value = true
 }
 
-function setSelectedRun(runId: string) {
-  updateState({
-    selectedRunId: runId,
-    selectedCaseId: null,
-    selectedObservationId: null,
-    selectedCandidateId: null,
-    selectedPathId: null,
-    selectedReviewTargetKey: null,
-    selectedGraphNodeId: null,
-    subgraphMode: 'path',
-    selectedSubgraphNodeId: null,
-    selectedSubgraphEdgeId: null,
-  })
-}
-
 function setSelectedCase(caseId: string | null) {
   updateState({
     selectedCaseId: caseId,
@@ -714,12 +700,7 @@ async function loadRun(runId: string) {
   try {
     const detail = await getRootLensService().getRun(runId)
     runDetail.value = detail
-    setSelectedRun(runId)
-    const nextCaseId =
-      detail.cases.find((item) => item.case_id === workbenchState.value.selectedCaseId)?.case_id ??
-      detail.cases[0]?.case_id ??
-      null
-    setSelectedCase(nextCaseId)
+    updateState(loadedRunSelectionPatch(workbenchState.value, runId, detail.cases.map((item) => item.case_id)))
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
@@ -1539,6 +1520,7 @@ onBeforeUnmount(() => {
                 </h3>
               </div>
               <div class="rl-inline-tags">
+                <UnifiedReasoningDetails :metadata="activeCase?.reasoning_metadata" :candidate-id="activeCandidate?.candidate_id" :query-id="activeCandidate?.scoring_details?.query_id" />
                 <a-tag color="arcoblue">
                   {{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}
                 </a-tag>

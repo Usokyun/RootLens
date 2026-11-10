@@ -2416,6 +2416,11 @@ a {
   min-height: 0;
 }
 
+/* All build/activate actions must remain reachable in the narrow recipe column. */
+.workspace-build-recipe-card .rl-form-actions--dual {
+  flex-wrap: wrap;
+}
+
 .workspace-root-cause-summary-card {
   min-height: 0;
   height: 100%;

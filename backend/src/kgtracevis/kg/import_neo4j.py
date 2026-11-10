@@ -90,7 +90,7 @@ def resolve_neo4j_config(
 ) -> Neo4jConfig:
     """Resolve Neo4j settings from CLI values, environment, then YAML defaults."""
     config_data = _load_config(config_path)
-    env_data = _load_env(env or os.environ)
+    env_data = _load_env(os.environ if env is None else env)
     return Neo4jConfig(
         uri=_first_present(uri, env_data.get("uri"), config_data.get("uri")),
         user=_first_present(user, env_data.get("user"), config_data.get("user")),

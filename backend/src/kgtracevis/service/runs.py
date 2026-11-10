@@ -214,6 +214,9 @@ def create_run_from_upload(
             **(detail.summary or {}),
             "working_graph_snapshot": active_pipeline.graph_snapshot,
         }
+    # Persist the same complete case envelope we return, including single-case legacy uploads.
+    # Backfilling only after save leaves stored details with an empty case list.
+    detail = enrich_run_detail(detail)
     store = run_store()
     if store is None:
         raise ValueError("Postgres run store is not configured")

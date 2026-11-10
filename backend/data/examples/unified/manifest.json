@@ -1,0 +1,88 @@
+{
+  "description": "Public measured inputs frozen from actual runs; raw assets/weights are not bundled. Examples selected for inspecting outputs, not accuracy estimation.",
+  "cases": [
+    {
+      "evidence": "mvtec-insufficient.json",
+      "knowledge": "data/kg/unified/bottle-working-graph.v2.json",
+      "origin_run_id": "efc9888e-a986-4b7b-aa3c-1d4aaeaa5c02",
+      "original_case_id": "mvtec_bottle_test_unknown_public",
+      "outcome": "insufficient_evidence",
+      "candidates": []
+    },
+    {
+      "evidence": "mvtec-normal.json",
+      "knowledge": "data/kg/unified/bottle-working-graph.v2.json",
+      "origin_run_id": "038a083f-af8a-4b44-a81e-05e7a9a9fde0",
+      "original_case_id": "mvtec_bottle_test_unknown_public",
+      "outcome": "no_match",
+      "candidates": []
+    },
+    {
+      "evidence": "mvtec-chipped.json",
+      "knowledge": "data/kg/unified/bottle-working-graph.v2.json",
+      "origin_run_id": "3e83390c-8360-4f1e-a73e-ccb521e96d21",
+      "original_case_id": "mvtec_bottle_test_unknown_public",
+      "outcome": "ambiguous",
+      "candidates": [
+        {
+          "candidate_id": "hypothesis:bottle:careless_handling_cold_ware",
+          "rank": 1,
+          "score": -0.25
+        },
+        {
+          "candidate_id": "hypothesis:bottle:cold_glass_feeder",
+          "rank": 1,
+          "score": -0.25
+        },
+        {
+          "candidate_id": "hypothesis:bottle:machine_setup_operation",
+          "rank": 1,
+          "score": -0.25
+        },
+        {
+          "candidate_id": "hypothesis:bottle:mold_equipment_mismatch",
+          "rank": 1,
+          "score": -0.25
+        }
+      ]
+    },
+    {
+      "evidence": "tep-cooling-window.json",
+      "knowledge": "data/kg/unified/tep-working-graph.v2.json",
+      "origin_run_id": "0e04af33-6025-4095-8179-57b969638523",
+      "original_case_id": "process_window_161_260",
+      "outcome": "supported",
+      "candidates": [
+        {
+          "candidate_id": "hypothesis:Tennessee Eastman Process:reaction_kinetics_drift",
+          "rank": 1,
+          "score": -0.25
+        },
+        {
+          "candidate_id": "hypothesis:Tennessee Eastman Process:valve_sticking",
+          "rank": 2,
+          "score": -0.5833333333333333
+        },
+        {
+          "candidate_id": "hypothesis:Tennessee Eastman Process:cooling_water_inlet_temp",
+          "rank": 3,
+          "score": -0.9166666666666666
+        }
+      ]
+    },
+    {
+      "evidence": "wafer-nearfull.json",
+      "knowledge": "data/kg/unified/wafer-working-graph.v2.json",
+      "origin_run_id": "5800defc-f490-48bd-9e9a-fd9d6fa33cae",
+      "original_case_id": "wm811k_248536",
+      "outcome": "supported",
+      "candidates": [
+        {
+          "candidate_id": "hypothesis:wafer:pattern_near_full",
+          "rank": 1,
+          "score": -0.875
+        }
+      ]
+    }
+  ]
+}

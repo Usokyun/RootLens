@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { getWorkbenchState, resetWorkbenchState, updateWorkbenchState } from '@/services/workbench-state'
+import { getWorkbenchState, loadedRunSelectionPatch, resetWorkbenchState, updateWorkbenchState } from '@/services/workbench-state'
 
 describe('workbench state persistence', () => {
   beforeEach(() => {
@@ -57,5 +57,13 @@ describe('workbench state persistence', () => {
       evidenceFilterGraph: null,
       evidenceFilterConfidenceBand: 'all',
     })
+  })
+
+  it('preserves a selected non-first window and proof when returning from Graphs', () => {
+    const state = { ...getWorkbenchState(), selectedRunId: 'run', selectedCaseId: 'window-2', selectedCandidateId: 'candidate', selectedPathId: 'proof' }
+    const patch = loadedRunSelectionPatch(state, 'run', ['window-1', 'window-2'])
+    expect({ ...state, ...patch }).toMatchObject({ selectedCaseId: 'window-2', selectedCandidateId: 'candidate', selectedPathId: 'proof' })
+    expect(loadedRunSelectionPatch(state, 'other-run', ['window-1', 'window-2'])).toMatchObject({ selectedCaseId: 'window-1', selectedCandidateId: null, selectedPathId: null })
+    expect(loadedRunSelectionPatch(state, 'run', [])).toMatchObject({ selectedCaseId: null, selectedPathId: null })
   })
 })

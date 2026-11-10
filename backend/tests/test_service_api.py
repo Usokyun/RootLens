@@ -241,6 +241,8 @@ def test_default_upload_run_persists_detail_to_postgres(
 
     uuid.UUID(detail.run.run_id)
     assert postgres_run_store_fixture.details[detail.run.run_id].run.run_id == detail.run.run_id
+    assert postgres_run_store_fixture.details[detail.run.run_id].cases == detail.cases
+    assert detail.cases[0]["case_id"] == "mvtec_0001"
     assert not (Path(detail.run.run_dir) / "manifest.json").exists()
 
 
@@ -904,7 +906,9 @@ def test_fastapi_routes_are_wired() -> None:
     assert analysis.json()["analysis"]["case_id"] == "mvtec_0001"
 
 
-def test_evidence_upload_persists_summary_pipeline_reasoning_metadata(tmp_path: Path, monkeypatch) -> None:
+def test_evidence_upload_persists_summary_pipeline_reasoning_metadata(
+    tmp_path: Path, monkeypatch
+) -> None:
     """Single-evidence uploads should expose stable summary/case reasoning metadata."""
     monkeypatch.setattr(service_runs, "DEFAULT_RUNS_DIR", tmp_path / "rootlens_sessions")
 

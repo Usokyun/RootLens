@@ -84,7 +84,7 @@ def test_resolve_neo4j_config_precedence(tmp_path: Path) -> None:
     )
 
 
-def test_resolve_neo4j_config_accepts_nested_yaml(tmp_path: Path) -> None:
+def test_resolve_neo4j_config_accepts_nested_yaml(tmp_path: Path, monkeypatch) -> None:
     """Config resolution should accept a top-level neo4j mapping."""
     config_path = tmp_path / "neo4j.yaml"
     config_path.write_text(
@@ -99,6 +99,8 @@ def test_resolve_neo4j_config_accepts_nested_yaml(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
+    # An explicitly empty mapping must not accidentally read the running service's credentials.
+    monkeypatch.setenv("NEO4J_URI", "bolt://not-the-requested-config:9999")
     config = resolve_neo4j_config(env={}, config_path=config_path)
 
     assert config == Neo4jConfig(

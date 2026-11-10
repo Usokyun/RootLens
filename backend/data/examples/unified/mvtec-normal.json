@@ -1,0 +1,97 @@
+{
+  "schema_version": "rootlens-evidence.v2",
+  "example_kind": null,
+  "case_id": "mvtec_bottle_test_unknown_public/query/1",
+  "source_dataset": "mvtec",
+  "task": {
+    "target_role": "mechanism",
+    "context_subject_id": "object",
+    "focus_subject_ids": [
+      "roi:1"
+    ],
+    "scope_id": "scope:1",
+    "reference_id": null
+  },
+  "subjects": [
+    {
+      "subject_id": "object",
+      "kind": "object",
+      "external_namespace": "industrial.object",
+      "external_id": "bottle",
+      "parent_id": null,
+      "context_subject_id": null
+    },
+    {
+      "subject_id": "roi:1",
+      "kind": "image_region",
+      "external_namespace": null,
+      "external_id": null,
+      "parent_id": "object",
+      "context_subject_id": null
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "scope:1",
+      "kind": "event",
+      "subject_id": "roi:1",
+      "context_subject_id": null
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "image",
+      "kind": "image",
+      "uri": "runs/rootlens_sessions/038a083f-af8a-4b44-a81e-05e7a9a9fde0/input/mvtec_image_root/bottle/test/unknown/public.png"
+    },
+    {
+      "asset_id": "raw",
+      "kind": "json",
+      "uri": "evidence://mvtec_bottle_test_unknown_public"
+    }
+  ],
+  "procedures": [
+    {
+      "procedure_id": "detector",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "image"
+      ],
+      "reference_id": null,
+      "definition": "Explicit detector boolean, not semantic class or probability.",
+      "model_id": "mvtec_anomaly_predictor",
+      "version": null
+    },
+    {
+      "procedure_id": "geometry",
+      "kind": "measurement",
+      "input_asset_ids": [
+        "raw"
+      ],
+      "reference_id": null,
+      "definition": "Connected-component geometry in the declared mask plane.",
+      "model_id": null,
+      "version": null
+    }
+  ],
+  "references": [],
+  "observations": [
+    {
+      "obs_id": "mvtec_bottle_test_unknown_public:detection.anomaly_present",
+      "subject_id": "roi:1",
+      "feature_id": "detection.anomaly_present",
+      "value": {
+        "kind": "boolean",
+        "boolean": false
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "detector",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    }
+  ]
+}
