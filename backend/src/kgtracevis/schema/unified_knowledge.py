@@ -41,6 +41,14 @@ class SubjectBinding(UnifiedModel):
     target_id: Identifier
 
 
+class ValueBinding(Sourced):
+    binding_id: Identifier
+    feature_id: Identifier
+    external_value: Identifier
+    canonical_value: Identifier
+    procedure_model_id: Identifier | None = None
+
+
 class FeatureDefinition(UnifiedModel):
     feature_id: Identifier
     value_kind: Literal["number", "boolean", "category", "candidate_set", "interval", "array_ref"]
@@ -230,6 +238,7 @@ class KnowledgePackage(UnifiedModel):
     entities: list[Entity] = Field(default_factory=list)
     relations: list[Relation] = Field(default_factory=list)
     subject_bindings: list[SubjectBinding] = Field(default_factory=list)
+    value_bindings: list[ValueBinding] = Field(default_factory=list)
     feature_registry: list[FeatureDefinition]
     observable_definitions: list[ObservableDefinition]
     pattern_definitions: list[PatternDefinition]
@@ -254,6 +263,7 @@ class KnowledgePackage(UnifiedModel):
         all_ids += list(hypotheses) + list(sources)
         all_ids += [r.definition_id for r in self.pattern_definitions]
         all_ids += [r.rule_id for r in self.effect_rules + self.expectation_rules]
+        all_ids += [r.binding_id for r in self.value_bindings]
         if len(all_ids) != len(set(all_ids)):
             raise ValueError("knowledge identities collide across node/rule types")
         active_ids = set(hypotheses) | set(mechanisms)
@@ -266,6 +276,24 @@ class KnowledgePackage(UnifiedModel):
         keys = [(b.namespace, b.external_id) for b in self.subject_bindings]
         if len(keys) != len(set(keys)):
             raise ValueError("ambiguous external subject binding")
+        value_keys = [
+            (b.feature_id, b.procedure_model_id, b.external_value) for b in self.value_bindings
+        ]
+        if len(value_keys) != len(set(value_keys)):
+            raise ValueError("ambiguous external feature-value binding")
+        for binding in self.value_bindings:
+            if binding.feature_id not in features or features[
+                binding.feature_id
+            ].value_kind not in {"category", "candidate_set"}:
+                raise ValueError("value bindings require a registered categorical feature")
+            for other in self.value_bindings:
+                if (
+                    binding.feature_id == other.feature_id
+                    and binding.external_value == other.external_value
+                    and None in {binding.procedure_model_id, other.procedure_model_id}
+                    and binding.canonical_value != other.canonical_value
+                ):
+                    raise ValueError("overlapping global and model value bindings disagree")
         for observable in self.observable_definitions:
             if observable.feature_id not in features:
                 raise ValueError(f"unregistered feature: {observable.feature_id}")
@@ -328,6 +356,7 @@ class KnowledgePackage(UnifiedModel):
             *self.pattern_definitions,
             *self.effect_rules,
             *self.expectation_rules,
+            *self.value_bindings,
         ]:
             if not set(row.source_assertion_ids) <= sources.keys():
                 raise ValueError("unknown source assertion reference")

@@ -51,7 +51,7 @@ export interface RootLensService {
   saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
-  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep") => Promise<WorkingGraphSummary>;
+  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep", targetContract?: "legacy" | "unified-v2") => Promise<WorkingGraphSummary>;
   exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;

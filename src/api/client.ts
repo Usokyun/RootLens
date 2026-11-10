@@ -152,7 +152,7 @@ export interface ApiClient {
   saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
-  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep") => Promise<WorkingGraphSummary>;
+  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep", targetContract?: "legacy" | "unified-v2") => Promise<WorkingGraphSummary>;
   exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
@@ -245,9 +245,9 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
     saveWorkingGraphPackage: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`, jsonInit("PUT", body)),
     importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
     mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
-    activateWorkingGraph: (buildId, title, dataset = "mvtec") => requestJson(baseUrl,
+    activateWorkingGraph: (buildId, title, dataset = "mvtec", target_contract = "legacy") => requestJson(baseUrl,
       `/api/kg/construction/builds/${encodeURIComponent(buildId)}/activate`,
-      jsonInit("POST", { title, dataset, compact_runtime: true })),
+      jsonInit("POST", { title, dataset, compact_runtime: true, ...(target_contract !== "legacy" ? { target_contract } : {}) })),
     exportRunReplay: (id) => requestJson(baseUrl, `/api/runs/${encodeURIComponent(id)}/replay`),
     listRuns: () => requestJson<RunSummary[]>(baseUrl, "/api/runs"),
     getRun: (runId) => requestJson<RunDetail>(baseUrl, `/api/runs/${runId}`),

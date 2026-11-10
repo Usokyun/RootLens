@@ -13,6 +13,7 @@ import re
 import threading
 import uuid
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -86,6 +87,8 @@ class KGConstructionBuildRequest(BaseModel):
     overwrite: bool = False
     run_id: str | None = None
     llm_concurrency: int = Field(default=DEFAULT_LLM_CONCURRENCY, ge=1)
+    target_contract: Literal["legacy", "unified-v2"] = "legacy"
+    capability_id: str | None = None
 
     @model_validator(mode="after")
     def validate_build_shape(self) -> KGConstructionBuildRequest:
@@ -93,6 +96,12 @@ class KGConstructionBuildRequest(BaseModel):
         if not self.sources:
             raise ValueError("sources must contain at least one source")
         safe_output_name(self.output_name)
+        if self.target_contract == "unified-v2":
+            if not self.capability_id:
+                raise ValueError("unified-v2 requires an adapter capability_id")
+            from kgtracevis.adapters.unified_capabilities import capability_manifest
+
+            capability_manifest(self.capability_id)
         return self
 
 
@@ -154,9 +163,7 @@ class KGConstructionEdgeReviewRequest(BaseModel):
             return self
         if self.head and self.relation and self.tail:
             return self
-        raise ValueError(
-            "construction edge review requires target_key or head/relation/tail"
-        )
+        raise ValueError("construction edge review requires target_key or head/relation/tail")
 
 
 class KGConstructionReviewQueueRequest(BaseModel):
@@ -428,12 +435,12 @@ def run_kg_construction_build(
     progress_callback: Any | None = None,
 ) -> KGConstructionBuildResponse:
     """Compile provided sources with the current source KG compiler."""
-    output_dir = (build_root or DEFAULT_SOURCE_KG_BUILD_DIR) / safe_output_name(
-        request.output_name
-    )
+    output_dir = (build_root or DEFAULT_SOURCE_KG_BUILD_DIR) / safe_output_name(request.output_name)
     run_id = request.run_id or f"sourcekg_{uuid.uuid4().hex[:12]}"
     source_paths = _materialize_source_inputs(request.sources, output_dir)
     default_scenario = _default_scenario(request.sources)
+    if request.target_contract == "unified-v2":
+        return _run_unified_build(request, source_paths, output_dir, run_id, default_scenario)
     result = run_source_kg_compiler_workflow(
         SourceKGCompilerConfig(
             source_paths=tuple(source_paths),
@@ -590,10 +597,14 @@ def list_kg_construction_source_uploads(
 ) -> KGConstructionSourceListResponse:
     """List uploaded compiler sources."""
     root = source_root or DEFAULT_SOURCE_KG_BUILD_DIR / "uploaded_sources"
-    sources = [
-        KGConstructionUploadedSource.model_validate(json.loads(path.read_text()))
-        for path in sorted(root.glob("*/metadata.json"))
-    ] if root.exists() else []
+    sources = (
+        [
+            KGConstructionUploadedSource.model_validate(json.loads(path.read_text()))
+            for path in sorted(root.glob("*/metadata.json"))
+        ]
+        if root.exists()
+        else []
+    )
     return KGConstructionSourceListResponse(source_root=root.as_posix(), sources=sources)
 
 
@@ -649,12 +660,21 @@ def get_kg_construction_build_artifact_path(
         "edges": Path(build.edges_path),
         "summary": Path(build.summary_path),
         "manifest": Path(build.manifest_path),
-        "source_units": output_dir / "source_units.jsonl",
+        "source_units": output_dir
+        / (
+            "source_units.json"
+            if (output_dir / "source_units.json").is_file()
+            else "source_units.jsonl"
+        ),
         "knowledge_cards": output_dir / "knowledge_cards.jsonl",
         "entities": output_dir / "entities.jsonl",
         "qa_report": output_dir / "qa_report.json",
         "validation_report": output_dir / "validation_report.json",
         "domain_profiles": output_dir / "domain_profiles.json",
+        "unified_knowledge": output_dir / "knowledge-package.json",
+        "unified_working_graph": output_dir / "working-graph.v2.json",
+        "unified_report": output_dir / "unified_build_report.json",
+        "capabilities": output_dir / "capabilities.json",
     }
     if "/" in artifact_key or "\\" in artifact_key or artifact_key not in artifacts:
         raise ValueError(f"unknown construction artifact key: {artifact_key}")
@@ -662,6 +682,65 @@ def get_kg_construction_build_artifact_path(
     if not path.is_file():
         raise ValueError(f"construction build artifact not found: {artifact_key}")
     return path
+
+
+def _run_unified_build(request, source_paths, output_dir, run_id, scenario):
+    from kgtracevis.adapters.unified_capabilities import capability_manifest
+    from kgtracevis.source_kg_compiler.compiler import load_source_units
+    from kgtracevis.source_kg_compiler.unified import compile_unified_knowledge
+
+    capabilities = capability_manifest(request.capability_id)
+    units = load_source_units(tuple(source_paths), default_scenario=scenario)
+    package = compile_unified_knowledge(
+        units,
+        capabilities,
+        llm_client=OpenAICompatibleSourceKGLLM(),
+        output_dir=output_dir,
+        title=request.output_name,
+        dataset=scenario,
+    )
+    report = _read_json(output_dir / "unified_build_report.json")
+    summary = _build_summary(
+        run_id=run_id,
+        output_dir=output_dir,
+        request=request,
+        compiler_summary={
+            **report,
+            "counts": {"entities": len(package.nodes), "edges": len(package.edges)},
+        },
+    )
+    summary["target_contract"] = "unified-v2"
+    summary_path = output_dir / "source_kg_build_summary.json"
+    manifest_path = output_dir / "source_kg_build_manifest.json"
+    _write_json(summary_path, summary)
+    _write_json(
+        manifest_path,
+        {
+            "artifact_type": "source_kg_compiler_build_manifest_v2",
+            "run_id": run_id,
+            "created_at": summary["created_at"],
+            "target_contract": "unified-v2",
+            "source_ids": summary["source_ids"],
+            "summary_path": str(summary_path),
+            "knowledge_path": str(output_dir / "knowledge-package.json"),
+            "working_graph_path": str(output_dir / "working-graph.v2.json"),
+            "capability_id": capabilities.capability_id,
+        },
+    )
+    _write_json(output_dir / "qa_report.json", report)
+    _write_json(output_dir / "validation_report.json", {"validated": True, **report})
+    return KGConstructionBuildResponse(
+        run_id=run_id,
+        output_dir=str(output_dir),
+        nodes_path=str(output_dir / "nodes.csv"),
+        edges_path=str(output_dir / "edges.csv"),
+        summary_path=str(summary_path),
+        manifest_path=str(manifest_path),
+        source_library_manifest_path=str(output_dir / "source_units.json"),
+        profile_manifest_path=str(output_dir / "unified_build_report.json"),
+        rca_view_manifest_path=str(output_dir / "working-graph.v2.json"),
+        summary=summary,
+    )
 
 
 def validate_kg_construction_build(
@@ -675,7 +754,9 @@ def validate_kg_construction_build(
     qa_report_path = output_dir / "qa_report.json"
     validation_report_path = output_dir / "validation_report.json"
     qa_report = _read_json(qa_report_path) if qa_report_path.is_file() else {}
-    report = _read_json(validation_report_path) if validation_report_path.is_file() else dict(qa_report)
+    report = (
+        _read_json(validation_report_path) if validation_report_path.is_file() else dict(qa_report)
+    )
     return KGConstructionBuildValidationResponse(
         build=build,
         report=report,
@@ -897,22 +978,14 @@ def _build_record_from_dir(output_dir: Path) -> KGConstructionBuildRecord:
             for item in list(manifest.get("sources") or [])
             if isinstance(item, dict) and item.get("source_id") is not None
         ]
-    run_id = (
-        summary.get("run_id")
-        or (manifest.get("run") or {}).get("run_id")
-        or output_dir.name
-    )
+    run_id = summary.get("run_id") or (manifest.get("run") or {}).get("run_id") or output_dir.name
     created_at = summary.get("created_at") or (manifest.get("summary") or {}).get("created_at")
     source_count = int(summary.get("source_count") or len(source_ids))
     node_count = int(
-        summary.get("node_count")
-        or (manifest.get("summary") or {}).get("node_count")
-        or 0
+        summary.get("node_count") or (manifest.get("summary") or {}).get("node_count") or 0
     )
     edge_count = int(
-        summary.get("edge_count")
-        or (manifest.get("summary") or {}).get("edge_count")
-        or len(edges)
+        summary.get("edge_count") or (manifest.get("summary") or {}).get("edge_count") or len(edges)
     )
     return KGConstructionBuildRecord(
         run_id=str(run_id),

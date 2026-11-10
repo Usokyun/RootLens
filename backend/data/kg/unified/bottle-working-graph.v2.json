@@ -1,0 +1,551 @@
+{
+  "schema_version": "rootlens-working-graph.v2",
+  "graph_id": null,
+  "title": "Bottle source-grounded competing mechanisms",
+  "dataset": "mvtec",
+  "build_id": "unified-import",
+  "knowledge": {
+    "schema_version": "rootlens-knowledge-package.v2",
+    "example_kind": null,
+    "graph_id": "source-compiled",
+    "semantics_version": "conjunctive-explanation-v0",
+    "title": "Glass Finish Defects: Broken vs Chipped Finish Upstream Cause Families",
+    "entities": [
+      {
+        "entity_id": "entity:industrial.object:bottle",
+        "label": "bottle",
+        "kind": "Object",
+        "aliases": []
+      }
+    ],
+    "relations": [],
+    "subject_bindings": [
+      {
+        "namespace": "industrial.object",
+        "external_id": "bottle",
+        "target_id": "entity:industrial.object:bottle"
+      }
+    ],
+    "value_bindings": [
+      {
+        "source_assertion_ids": [
+          "source:legacy-vocabulary-binding"
+        ],
+        "binding_id": "binding:legacy-broken-rim",
+        "feature_id": "appearance.semantic_candidates",
+        "external_value": "BrokenRimDefect",
+        "canonical_value": "broken_glass",
+        "procedure_model_id": "vlm:deepseek-flash"
+      }
+    ],
+    "feature_registry": [
+      {
+        "feature_id": "detection.anomaly_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "Actual detector boolean; no cause information.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.area_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Connected-component pixels / total detector-grid pixels.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.aspect_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Axis-aligned bbox longest side / shortest side.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.eccentricity",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Connected-component coordinate covariance eccentricity in [0,1].",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.component_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Number of components retained in this region.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.morphology",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "Mask-derived coarse morphology: linear, irregular, compact; not a defect class.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "geometry.location",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "Image-grid position: upper, lower, left, right, center; not anatomical parts.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "appearance.semantic_candidates",
+        "value_kind": "candidate_set",
+        "unit": null,
+        "definition": "Open ROI VLM candidates. Labels come from candidate_contains operands; absence is unknown.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "appearance.defect_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "VLM explicit normal/defect assessment; uncertain is missing.",
+        "requires_reference": false
+      }
+    ],
+    "observable_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1"
+        ],
+        "predicate_id": "signature:finish_glass_broken_out:anomaly",
+        "label": "Explicit anomaly prerequisite",
+        "feature_id": "detection.anomaly_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:0"
+        ],
+        "predicate_id": "signature:finish_glass_broken_out:condition:0",
+        "label": "VLM appearance candidate indicates broken/chipped glass",
+        "feature_id": "appearance.semantic_candidates",
+        "op": "candidate_contains",
+        "operand": {
+          "kind": "category",
+          "category": "broken_glass"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:1",
+          "source:condition:1:1"
+        ],
+        "predicate_id": "signature:finish_glass_broken_out:condition:1",
+        "label": "VLM assesses the ROI as defective",
+        "feature_id": "appearance.defect_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:0"
+        ],
+        "predicate_id": "signature:finish_small_section_broken:condition:0",
+        "label": "VLM appearance candidate indicates chipped/broken glass",
+        "feature_id": "appearance.semantic_candidates",
+        "op": "candidate_contains",
+        "operand": {
+          "kind": "category",
+          "category": "chipped_glass"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      }
+    ],
+    "pattern_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1"
+        ],
+        "definition_id": "signature:finish_glass_broken_out:definition",
+        "pattern_id": "signature:finish_glass_broken_out",
+        "label": "Finish with cracks or glass pieces broken out",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:finish_glass_broken_out:anomaly",
+            {
+              "all": [
+                "signature:finish_glass_broken_out:condition:0",
+                "signature:finish_glass_broken_out:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_same_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:1"
+        ],
+        "definition_id": "signature:finish_small_section_broken:definition",
+        "pattern_id": "signature:finish_small_section_broken",
+        "label": "Small section broken on top or side of finish",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:finish_glass_broken_out:anomaly",
+            {
+              "all": [
+                "signature:finish_small_section_broken:condition:0",
+                "signature:finish_glass_broken_out:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_same_scope"
+      }
+    ],
+    "mechanisms": [
+      {
+        "mechanism_id": "mechanism:bottle:thermal_glass_condition",
+        "label": "Thermal glass condition"
+      },
+      {
+        "mechanism_id": "mechanism:bottle:mechanical_handling_setup",
+        "label": "Mechanical setup and handling"
+      },
+      {
+        "mechanism_id": "mechanism:bottle:mold_equipment_condition",
+        "label": "Mold equipment condition"
+      },
+      {
+        "mechanism_id": "mechanism:bottle:inspection_equipment_condition",
+        "label": "Inspection equipment condition"
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hypothesis:bottle:cold_glass_feeder",
+        "label": "Glass too cold from feeder",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:machine_setup_operation",
+        "label": "Machine setup/operation maladjustment (plunger, mold timing, tongs, neck ring, blowhead)",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:mold_equipment_mismatch",
+        "label": "Bad match between blank and ring (mold equipment)",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:careless_handling_cold_ware",
+        "label": "Careless handling of cold ware (stacking equipment)",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:faulty_gauging_heads",
+        "label": "Faulty or incorrectly set gauging heads (inspection equipment)",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1.0
+      }
+    ],
+    "effect_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0",
+          "source:cause:1:0"
+        ],
+        "rule_id": "effect:hypothesis:bottle:cold_glass_feeder:mechanism:bottle:thermal_glass_condition",
+        "from_id": "hypothesis:bottle:cold_glass_feeder",
+        "to_id": "mechanism:bottle:thermal_glass_condition"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:1",
+          "source:cause:1:1"
+        ],
+        "rule_id": "effect:hypothesis:bottle:machine_setup_operation:mechanism:bottle:mechanical_handling_setup",
+        "from_id": "hypothesis:bottle:machine_setup_operation",
+        "to_id": "mechanism:bottle:mechanical_handling_setup"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:2",
+          "source:cause:1:2"
+        ],
+        "rule_id": "effect:hypothesis:bottle:mold_equipment_mismatch:mechanism:bottle:mold_equipment_condition",
+        "from_id": "hypothesis:bottle:mold_equipment_mismatch",
+        "to_id": "mechanism:bottle:mold_equipment_condition"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:3"
+        ],
+        "rule_id": "effect:hypothesis:bottle:careless_handling_cold_ware:mechanism:bottle:mechanical_handling_setup",
+        "from_id": "hypothesis:bottle:careless_handling_cold_ware",
+        "to_id": "mechanism:bottle:mechanical_handling_setup"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:4"
+        ],
+        "rule_id": "effect:hypothesis:bottle:faulty_gauging_heads:mechanism:bottle:inspection_equipment_condition",
+        "from_id": "hypothesis:bottle:faulty_gauging_heads",
+        "to_id": "mechanism:bottle:inspection_equipment_condition"
+      }
+    ],
+    "expectation_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "expectation:mechanism:bottle:thermal_glass_condition:signature:finish_glass_broken_out",
+        "from_id": "mechanism:bottle:thermal_glass_condition",
+        "pattern_id": "signature:finish_glass_broken_out",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:1",
+          "source:cause:0:3"
+        ],
+        "rule_id": "expectation:mechanism:bottle:mechanical_handling_setup:signature:finish_glass_broken_out",
+        "from_id": "mechanism:bottle:mechanical_handling_setup",
+        "pattern_id": "signature:finish_glass_broken_out",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:2"
+        ],
+        "rule_id": "expectation:mechanism:bottle:mold_equipment_condition:signature:finish_glass_broken_out",
+        "from_id": "mechanism:bottle:mold_equipment_condition",
+        "pattern_id": "signature:finish_glass_broken_out",
+        "mode": "possible"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:4"
+        ],
+        "rule_id": "expectation:mechanism:bottle:inspection_equipment_condition:signature:finish_glass_broken_out",
+        "from_id": "mechanism:bottle:inspection_equipment_condition",
+        "pattern_id": "signature:finish_glass_broken_out",
+        "mode": "possible"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "expectation:mechanism:bottle:thermal_glass_condition:signature:finish_small_section_broken",
+        "from_id": "mechanism:bottle:thermal_glass_condition",
+        "pattern_id": "signature:finish_small_section_broken",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:1"
+        ],
+        "rule_id": "expectation:mechanism:bottle:mechanical_handling_setup:signature:finish_small_section_broken",
+        "from_id": "mechanism:bottle:mechanical_handling_setup",
+        "pattern_id": "signature:finish_small_section_broken",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:2"
+        ],
+        "rule_id": "expectation:mechanism:bottle:mold_equipment_condition:signature:finish_small_section_broken",
+        "from_id": "mechanism:bottle:mold_equipment_condition",
+        "pattern_id": "signature:finish_small_section_broken",
+        "mode": "possible"
+      }
+    ],
+    "execution_policy": {
+      "conflict_weight": 2.0,
+      "assumption_weight": 0.25,
+      "score_mapping": "negative_explanation_cost",
+      "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+      "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+      "positive_coverage": "complete_joint_pattern_only",
+      "group_aggregation": "equal_budget_normalized_mean",
+      "primitive_comparison": "discrete_boolean_v0",
+      "missing": "unknown_not_negative",
+      "tie_epsilon": 1e-9
+    },
+    "source_assertions": [
+      {
+        "assertion_id": "source:signature:0",
+        "origin": "source_explicit",
+        "text": "Broken finish: a finish which has cracks or actual pieces of glass broken out of it.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:0",
+        "origin": "source_explicit",
+        "text": "Broken finish involves cracks or pieces of glass broken out of the finish.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:1",
+        "origin": "source_explicit",
+        "text": "Broken finish is a finish defect per the source defect section.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:0",
+        "origin": "source_explicit",
+        "text": "Feeder cause: glass too cold.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:1",
+        "origin": "source_explicit",
+        "text": "Machine setup and operation causes include plunger contact time, mold closing timing, take out tongs alignment/height/force, blowhead alignment, and neck ring opening speed.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:2",
+        "origin": "source_explicit",
+        "text": "Mold equipment cause: bad match between blank and ring.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:3",
+        "origin": "source_explicit",
+        "text": "Stacking equipment cause: careless handling of cold ware.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:4",
+        "origin": "source_explicit",
+        "text": "Inspection equipment causes: faulty gauging heads and incorrectly set gauging heads.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_b6eec412577fc365",
+        "locator": "{\"char_end\": 1512, \"char_start\": 0, \"page\": 13, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:signature:1",
+        "origin": "source_explicit",
+        "text": "Chipped finish: a finish from which a small section is broken on the top or side.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:0",
+        "origin": "source_explicit",
+        "text": "Chipped finish: a small section is broken on the top or side of the finish.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:1",
+        "origin": "source_explicit",
+        "text": "Chipped finish is a finish defect per the source defect section.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:0",
+        "origin": "source_explicit",
+        "text": "Feeder cause: glass too cold.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:1",
+        "origin": "source_explicit",
+        "text": "Machine setup and operation causes include neck ring closing/opening timing and force, blowhead out of center, take out tongs alignment/force, and bottom plate too high.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:2",
+        "origin": "source_explicit",
+        "text": "Mold equipment causes: bottom plate too tight in mold recess and shoulder radius too sharp causing bottles to rock and be damaged by take out fingers.",
+        "parameter_origin": "source_explicit",
+        "source_id": "emhart-glass-defects-2024",
+        "source_unit_id": "su_8b93e3dec888cc55",
+        "locator": "{\"char_end\": 1496, \"char_start\": 0, \"page\": 20, \"type\": \"page\"}"
+      },
+      {
+        "assertion_id": "source:legacy-vocabulary-binding",
+        "origin": "llm_proposed",
+        "text": "Declared legacy appearance symbol BrokenRimDefect describes a broken or chipped glass rim. Map it to broad broken_glass, without asserting break size or a manufacturing cause.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": null,
+        "source_unit_id": null,
+        "locator": "RootLens legacy visual vocabulary: BrokenRimDefect description"
+      }
+    ]
+  }
+}

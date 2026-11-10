@@ -53,6 +53,7 @@ class ActivateWorkingGraphRequest(BaseModel):
     title: str = Field(default="Working graph", min_length=1)
     dataset: Literal["mvtec", "wafer", "tep"] = "mvtec"
     compact_runtime: bool = False
+    target_contract: Literal["legacy", "unified-v2"] = "legacy"
 
 
 class WorkingGraphStore(Protocol):
@@ -162,6 +163,20 @@ def activate_compiler_build(
     repository_factory: Callable[[str], Any] = WorkingGraphRepository.connect,
 ) -> WorkingGraphRecord:
     """Validate first; expose a graph as ready only after its isolated write succeeds."""
+    if request.target_contract == "unified-v2":
+        from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
+        from kgtracevis.service.working_graph_editor import import_working_graph
+
+        package = UnifiedWorkingGraphPackage.model_validate_json(
+            get_kg_construction_build_artifact_path(build_id, "unified_working_graph").read_text()
+        )
+        if package.dataset != request.dataset:
+            raise ValueError("selected dataset differs from the compiled capability scenario")
+        return import_working_graph(
+            package.model_copy(update={"title": request.title, "build_id": build_id}),
+            store=store,
+            repository_factory=repository_factory,
+        )
     graph = KnowledgeGraph.from_csv(
         get_kg_construction_build_artifact_path(build_id, "nodes"),
         get_kg_construction_build_artifact_path(build_id, "edges"),

@@ -66,4 +66,16 @@ describe('working graph API', () => {
     expect(fetch.mock.calls[1][1].body.has('semantic_mode')).toBe(false)
     expect(fetch.mock.calls[1][1].body.has('graph_id')).toBe(false)
   })
+
+  it('opts into the unified contract explicitly and preserves its canonical package', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetch)
+    const client = createApiClient('https://example.com')
+    await client.activateWorkingGraph('build/2', 'Unified', 'mvtec', 'unified-v2')
+    expect(JSON.parse(fetch.mock.calls[0][1].body).target_contract).toBe('unified-v2')
+    const body = { schema_version: 'rootlens-working-graph.v2' as const, title: 'Common',
+      dataset: 'mvtec', build_id: 'test', knowledge: { value_bindings: [] } }
+    await client.importWorkingGraphPackage(body)
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual(body)
+  })
 })

@@ -23,12 +23,26 @@ class UnifiedWorkingGraphReasoner:
 
         paths, rankings, links = [], [], []
         for frame, result in zip(frames, results, strict=True):
-            query_paths = {}
             for row in result["ranked_root_causes"]:
                 candidate_paths = []
                 for path in row["explanation_paths"]:
                     views = path["source_edge_views"]
-                    source_edges = [edge_map[view["edge_id"]].model_dump() for view in views]
+                    physical_edges = [edge_map[view["edge_id"]].model_dump() for view in views]
+                    source_edges = [
+                        {
+                            **edge,
+                            "head": edge["tail"],
+                            "tail": edge["head"],
+                            "relation": "DIAGNOSTIC_REVERSE_" + edge["relation"],
+                            "edge_id": "view:" + edge["edge_id"],
+                            "origin_edge_id": edge["edge_id"],
+                            "origin_edge": edge,
+                            "interpretation": "diagnostic expectation view, not reverse causation",
+                        }
+                        if view["reverse"]
+                        else edge
+                        for edge, view in zip(physical_edges, views, strict=True)
+                    ]
                     projected = {
                         **path,
                         "source_entity_id": path["nodes"][0],
@@ -38,7 +52,8 @@ class UnifiedWorkingGraphReasoner:
                         "evidence_match": None,
                         "node_names": [graph.nodes[n].name for n in path["nodes"]],
                         "relations": [view["relation"] for view in source_edges],
-                        "edge_ids": [view["edge_id"] for view in source_edges],
+                        "source_edge_ids": [edge["edge_id"] for edge in source_edges],
+                        "physical_edge_ids": [edge["edge_id"] for edge in physical_edges],
                         "source_edges": source_edges,
                         "edge_views": [
                             {"edge_id": edge["edge_id"], "reversed": view["reverse"]}
@@ -52,7 +67,6 @@ class UnifiedWorkingGraphReasoner:
                     }
                     candidate_paths.append(projected)
                     paths.append(projected)
-                query_paths[row["candidate_id"]] = candidate_paths
                 rankings.append(
                     RankedRootCause(
                         ranking_id=f"rca:{frame.case_id}:{row['candidate_id']}",
@@ -78,11 +92,15 @@ class UnifiedWorkingGraphReasoner:
                     for obs_id in fact["source_obs_ids"]:
                         links.append(
                             {
+                                "link_id": f"link:{frame.case_id}:{obs_id}:{fact['predicate_id']}",
                                 "obs_id": legacy_obs(obs_id),
-                                "entity_id": fact["predicate_id"],
-                                "entity_name": graph.nodes[fact["predicate_id"]].name,
+                                "selected_entity_id": fact["predicate_id"],
+                                "selected_entity_name": graph.nodes[fact["predicate_id"]].name,
                                 "field": "observation",
-                                "method": "typed_grounding",
+                                "mention": str(fact["actual_values"]),
+                                "match_type": "typed_grounding",
+                                "ambiguous": False,
+                                "candidates": [],
                                 "score": 1.0,
                             }
                         )

@@ -558,17 +558,9 @@ def _run_mvtec_image_upload(
             if snapshot.get("schema_version") == "rootlens-working-graph.v2":
                 # V2 semantic labels are values in a registered appearance
                 # feature, not roots/mechanisms and not native file labels.
-                knowledge = snapshot["knowledge"]
-                labels = {
-                    row["operand"]["category"]
-                    for row in knowledge["observable_definitions"]
-                    if row["feature_id"] == "appearance.semantic_candidates"
-                    and row["op"] == "candidate_contains"
-                }
-                concepts = [
-                    {"concept_id": label, "label": label, "description": "ROI appearance cue"}
-                    for label in sorted(labels)
-                ]
+                from kgtracevis.kg.unified_semantics import visual_semantic_concepts
+
+                concepts = visual_semantic_concepts(snapshot["knowledge"])
             semantics = OpenAICompatibleROISemantics()
             regions = semantics.annotate(
                 case_image,

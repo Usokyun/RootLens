@@ -459,6 +459,8 @@ export interface KGMaterialBuildSourcesRequest {
   overwrite: boolean;
   run_id?: string | null;
   source_type?: "structured_records" | "manual_table";
+  target_contract?: "legacy" | "unified-v2";
+  capability_id?: string;
 }
 
 export interface KGMaterialBuildSourcesResponse {
@@ -643,6 +645,8 @@ export interface KGConstructionBuildRequest {
   output_name: string;
   overwrite: boolean;
   run_id?: string;
+  target_contract?: "legacy" | "unified-v2";
+  capability_id?: string;
 }
 
 export interface KGConstructionBuildResponse {

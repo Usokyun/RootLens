@@ -28,6 +28,7 @@ class GroundedFact:
     reference_id: str | None = None
     reason: str = ""
     fact_id: str = ""
+    applied_value_binding_ids: list[str] = field(default_factory=list)
 
     def to_json(self, program: KnowledgeProgram):
         definition = program.observables[self.predicate_id]
@@ -42,6 +43,7 @@ class GroundedFact:
             "dependency_group": self.dependency_group,
             "source_obs_ids": self.obs_ids,
             "actual_values": self.actual_values,
+            "applied_value_binding_ids": self.applied_value_binding_ids,
             "reference_id": self.reference_id,
             "reason": self.reason,
             "predicate_check": {
@@ -89,7 +91,10 @@ class Grounding:
                     continue
                 if not self._scope_matches(definition, observation.scope_id):
                     continue
-                value, status, measured, reason = self._compare(definition, observation)
+                comparison_value, bindings = self._comparison_value(observation)
+                value, status, measured, reason = self._compare(
+                    definition, observation, comparison_value
+                )
                 key = (
                     observation.subject_id,
                     observation.scope_id,
@@ -110,6 +115,9 @@ class Grounding:
                         reason=reason,
                     )
                 fact = rows[key]
+                fact.applied_value_binding_ids = sorted(
+                    set(fact.applied_value_binding_ids) | set(bindings)
+                )
                 fact.obs_ids.append(observation.obs_id)
                 if observation.value is not None:
                     encoded = observation.value.model_dump(mode="json")
@@ -165,11 +173,36 @@ class Grounding:
             )
         return scope_id == self.frame.task.scope_id
 
-    def _compare(self, definition, observation):
+    def _comparison_value(self, observation):
+        value = observation.value
+        if value is None or value.kind not in {"category", "candidate_set"}:
+            return value, []
+        procedure = self.procedures[observation.procedure_id]
+        mappings = {}
+        for binding in self.program.package.value_bindings:
+            if binding.feature_id == observation.feature_id and binding.procedure_model_id in {
+                None,
+                procedure.model_id,
+            }:
+                previous = mappings.get(binding.external_value)
+                if previous and previous.canonical_value != binding.canonical_value:
+                    raise ValueError(
+                        "overlapping feature-value bindings disagree for this procedure"
+                    )
+                mappings[binding.external_value] = binding
+        values = [value.category] if value.kind == "category" else value.items
+        applied = [mappings[v].binding_id for v in values if v in mappings]
+        mapped = [mappings[v].canonical_value if v in mappings else v for v in values]
+        return value.model_copy(
+            update={"category": mapped[0]}
+            if value.kind == "category"
+            else {"items": list(dict.fromkeys(mapped))}
+        ), applied
+
+    def _compare(self, definition, observation, value):
         if observation.status != "observed":
             return None, observation.status, False, "observation_not_available"
         feature = self.program.features[definition.feature_id]
-        value = observation.value
         if value.kind != feature.value_kind or getattr(value, "unit", None) != feature.unit:
             return None, "invalid", False, "feature_type_or_unit_mismatch"
         requires_reference = (

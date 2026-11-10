@@ -47,9 +47,12 @@ def export_working_graph(graph_id: str) -> WorkingGraphPackage | UnifiedWorkingG
 
 def import_working_graph(
     package: WorkingGraphPackage | UnifiedWorkingGraphPackage,
+    *,
+    store=None,
+    repository_factory=None,
 ) -> WorkingGraphRecord:
     """Import always creates a new isolated identity; existing graphs are never overwritten."""
-    store = working_graph_store()
+    store = store or working_graph_store()
     graph_id = "graph_" + uuid.uuid4().hex
     knowledge = (
         package.knowledge.model_copy(update={"graph_id": graph_id})
@@ -68,8 +71,12 @@ def import_working_graph(
         knowledge=knowledge,
     )
     store.create(record)
-    repository = WorkingGraphRepository.connect(record.graph_id)
+    repository = None
     try:
+        # Resolve the default at use, so injected repositories and test clients
+        # share the same actual runtime path.
+        factory = repository_factory or WorkingGraphRepository.connect
+        repository = factory(record.graph_id)
         repository.write_new(record_package(record).to_graph() if knowledge else package.to_graph())
         record = record.model_copy(update={"status": "ready"})
         store.update(record)
@@ -78,7 +85,8 @@ def import_working_graph(
         store.update(record.model_copy(update={"status": "failed", "error": str(exc)}))
         raise
     finally:
-        repository.close()
+        if repository is not None:
+            repository.close()
 
 
 def save_working_graph(

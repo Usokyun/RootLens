@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -118,7 +119,8 @@ def test_canonical_roundtrip_pipeline_edit_and_snapshot(package, storage):
     assert result.reasoning_metadata["query_results"][0]["outcome"] == "ambiguous"
     assert all(p["support_obs_ids"] == ["obs:0"] for p in result.top_k_paths)
     assert all(
-        edge["edge_id"] in {e.edge_id for e in graphs[record.graph_id].edges}
+        edge.get("origin_edge_id", edge["edge_id"])
+        in {e.edge_id for e in graphs[record.graph_id].edges}
         for p in result.top_k_paths
         for edge in p["source_edges"]
     )
@@ -160,3 +162,58 @@ def test_api_typed_contract_and_export(package, storage):
         client.get(f"/api/kg/working-graphs/{identity}/package").json()["knowledge"]["graph_id"]
         == identity
     )
+
+
+@pytest.mark.skipif(os.getenv("ROOTLENS_TEST_DATABASES") != "1", reason="isolated DB opt-in")
+def test_real_v2_registry_projection_save_and_reopen(package, tmp_path, monkeypatch):
+    from urllib.parse import urlparse
+
+    import psycopg
+
+    from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
+    from kgtracevis.service.postgres import resolve_postgres_config
+
+    config = resolve_postgres_config()
+    assert urlparse(config.dsn).port == 55433
+    monkeypatch.setattr(editor, "BACKUP_ROOT", tmp_path)
+    ids = []
+    try:
+        record = editor.import_working_graph(package)
+        ids.append(record.graph_id)
+        # Each call opens independent PG/Neo4j connections, not an in-memory cache.
+        old_pipeline = build_pipeline(graph_id=record.graph_id)
+        before = old_pipeline.analyze(visual_evidence())
+        assert len(before.ranked_root_causes) == 2
+        restored = editor.export_working_graph(record.graph_id)
+        restored.knowledge.effect_rules = [
+            r for r in restored.knowledge.effect_rules if r.from_id != "h:contact"
+        ]
+        editor.save_working_graph(record.graph_id, restored)
+        after = build_pipeline(graph_id=record.graph_id).analyze(visual_evidence())
+        assert [r.candidate_id for r in after.ranked_root_causes] == ["h:wear"]
+        reimport = editor.import_working_graph(editor.export_working_graph(record.graph_id))
+        ids.append(reimport.graph_id)
+        assert (
+            len(
+                build_pipeline(graph_id=reimport.graph_id)
+                .analyze(visual_evidence())
+                .ranked_root_causes
+            )
+            == 1
+        )
+        assert len(old_pipeline.analyze(visual_evidence()).ranked_root_causes) == 2
+    finally:
+        for identity in ids:
+            repo = WorkingGraphRepository.connect(identity)
+            try:
+                with repo.repository.driver.session(
+                    database=repo.repository.config.database
+                ) as session:
+                    session.run(
+                        "MATCH (n:KGEntity {graph_id: $graph_id}) DETACH DELETE n",
+                        graph_id=identity,
+                    ).consume()
+            finally:
+                repo.close()
+            with psycopg.connect(config.dsn) as connection:
+                connection.execute("DELETE FROM working_graphs WHERE graph_id = %s", (identity,))

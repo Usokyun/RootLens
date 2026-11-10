@@ -210,6 +210,20 @@ def project_knowledge(package: KnowledgePackage) -> dict:
             edge(
                 observable.predicate_id + "::binding", observable.predicate_id, "OBSERVES", subject
             )
+    for binding in package.value_bindings:
+        node(
+            binding.binding_id,
+            "ValueBinding",
+            **binding.model_dump(mode="json", exclude={"binding_id", "source_assertion_ids"}),
+        )
+        for observable in package.observable_definitions:
+            if observable.feature_id == binding.feature_id:
+                edge(
+                    binding.binding_id + "::normalizes::" + observable.predicate_id,
+                    binding.binding_id,
+                    "NORMALIZES_VALUE_FOR",
+                    observable.predicate_id,
+                )
 
     def expression(expr, target, definition_id, location=""):
         if isinstance(expr, str):
@@ -272,9 +286,11 @@ def project_knowledge(package: KnowledgePackage) -> dict:
         *package.pattern_definitions,
         *package.effect_rules,
         *package.expectation_rules,
+        *package.value_bindings,
     ]:
         identity = getattr(row, "predicate_id", None) or getattr(row, "definition_id", None)
         identity = identity or getattr(row, "rule_id", None)
+        identity = identity or getattr(row, "binding_id", None)
         # Structural relation provenance is carried by its edge, not a dangling node.
         if identity is not None:
             for source in row.source_assertion_ids:

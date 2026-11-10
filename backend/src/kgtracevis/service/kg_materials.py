@@ -203,6 +203,8 @@ class KGMaterialSelectedBuildRequest(BaseModel):
     run_id: str | None = None
     profile_path: str | None = None
     source_type: Literal["structured_records", "manual_table", "document"] = "document"
+    target_contract: Literal["legacy", "unified-v2"] = "legacy"
+    capability_id: str | None = None
 
     @model_validator(mode="after")
     def validate_selection(self) -> KGMaterialSelectedBuildRequest:
@@ -945,6 +947,8 @@ def prepare_kg_material_construction_build(
         output_name=request.output_name,
         overwrite=request.overwrite,
         run_id=request.run_id,
+        target_contract=request.target_contract,
+        capability_id=request.capability_id,
     )
     return KGMaterialBuildSourcesResponse(
         material_root=str(material_root or DEFAULT_SOURCE_KG_MATERIAL_DIR),

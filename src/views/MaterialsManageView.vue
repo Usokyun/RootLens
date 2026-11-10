@@ -133,6 +133,7 @@ const sourceDraftForm = reactive({
 const buildForm = reactive({
   output_name: "workspace-build",
   source_type: "structured_records" as "structured_records" | "manual_table",
+  capability: "legacy",
 });
 
 const uploadInputRef = ref<HTMLInputElement | null>(null);
@@ -495,6 +496,7 @@ async function handleActivateBuild() {
   try {
     const graph = await getRootLensService().activateWorkingGraph(
       buildDetail.value.build.run_id, `${activationDataset.value} · ${buildDetail.value.build.run_id}`, activationDataset.value,
+      buildDetail.value.summary.target_contract === "unified-v2" ? "unified-v2" : "legacy",
     );
     actionMessage.value = `已装载 ${graph.title}。在 Evidence 页的推理配置中选择它。`;
   } catch (error) {
@@ -749,6 +751,8 @@ async function handleBuild() {
       output_name: outputName,
       overwrite: false,
       source_type: buildForm.source_type,
+      target_contract: buildForm.capability === "legacy" ? "legacy" : "unified-v2",
+      ...(buildForm.capability !== "legacy" ? { capability_id: buildForm.capability } : {}),
     });
     buildSourcesPreview.value = buildSourcesResponse;
     const response = await getRootLensService().buildKGConstruction(
@@ -1347,6 +1351,10 @@ onMounted(() => {
               </div>
 
               <div class="rl-form-actions rl-form-actions--dual">
+                <a-select v-model="buildForm.capability" aria-label="构图执行契约" style="width: 190px">
+                  <a-option value="legacy">现有画像契约</a-option>
+                  <a-option value="visual-region-v2">统一推理 · 图像 ROI</a-option>
+                </a-select>
                 <a-button type="primary" @click="handleBuild">生成构图</a-button>
                 <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
                 <a-select v-model="activationDataset" style="width: 105px" aria-label="工作图场景"><a-option value="mvtec">MVTec</a-option><a-option value="wafer">Wafer</a-option><a-option value="tep">TEP</a-option></a-select>
