@@ -1,8 +1,44 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { extractFirstFileFromDataTransfer, markDragEventHandled } from '@/services/file-drop'
+import { extractFilesFromDataTransfer, extractFirstFileFromDataTransfer, markDragEventHandled } from '@/services/file-drop'
 
 describe('file drop helpers', () => {
+  it('extracts all dropped files in order without duplicating items and files', () => {
+    const files = [new File(['a'], 'paper.pdf'), new File(['b'], 'model.mdl')]
+
+    expect(extractFilesFromDataTransfer({
+      items: [
+        { kind: 'string', getAsFile: () => null },
+        { kind: 'file', getAsFile: () => null },
+        ...files.map((file) => ({ kind: 'file', getAsFile: () => file })),
+      ],
+      files,
+    })).toEqual(files)
+  })
+
+  it('extracts every file from a non-iterable FileList', () => {
+    const files = [new File(['a'], 'a.m'), new File(['b'], 'b.mat')]
+
+    expect(extractFilesFromDataTransfer({
+      files: { length: files.length, item: (index) => files[index] ?? null },
+    })).toEqual(files)
+  })
+
+  it('supports indexed multi-file lists and falls back from empty file items', () => {
+    const files = [new File(['a'], 'a.c'), new File(['b'], 'b.h')]
+
+    expect(extractFilesFromDataTransfer({
+      items: { 0: { kind: 'file', getAsFile: () => null }, length: 1 },
+      files: { 0: files[0], 1: files[1], length: 2 },
+    })).toEqual(files)
+  })
+
+  it('returns no files for empty or missing transfers', () => {
+    expect(extractFilesFromDataTransfer(null)).toEqual([])
+    expect(extractFilesFromDataTransfer(undefined)).toEqual([])
+    expect(extractFilesFromDataTransfer({ files: [] })).toEqual([])
+  })
+
   it('extracts the first dropped file from dataTransfer.items when available', () => {
     const file = new File(['hello'], 'runtime.json', { type: 'application/json' })
 

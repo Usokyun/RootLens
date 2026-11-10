@@ -1639,7 +1639,7 @@ requires-dist = [
     { name = "neo4j", specifier = ">=5.0" },
     { name = "networkx", specifier = ">=3.0" },
     { name = "numpy", specifier = ">=1.24" },
-    { name = "openai", marker = "extra == 'llm'", specifier = ">=1.0" },
+    { name = "openai", marker = "extra == 'llm'", specifier = ">=1.66.0" },
     { name = "opencv-python", marker = "extra == 'vision'", specifier = ">=4.8" },
     { name = "openvino", marker = "extra == 'ml'", specifier = ">=2026.1.0" },
     { name = "pandas", specifier = ">=2.0" },

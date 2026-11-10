@@ -43,6 +43,39 @@ function toItemArray(
   return result
 }
 
+export function extractFilesFromDataTransfer(
+  dataTransfer: DataTransferLike | null | undefined,
+): File[] {
+  if (!dataTransfer) {
+    return []
+  }
+
+  const itemFiles: File[] = []
+  for (const item of toItemArray(dataTransfer.items)) {
+    if (item.kind === 'file' && typeof item.getAsFile === 'function') {
+      const file = item.getAsFile()
+      if (file) itemFiles.push(file)
+    }
+  }
+  if (itemFiles.length) {
+    return itemFiles
+  }
+
+  const files = dataTransfer.files
+  if (!files) {
+    return []
+  }
+
+  const result: File[] = []
+  for (let index = 0; index < (files.length ?? 0); index += 1) {
+    const file = ('item' in files ? files.item?.(index) : undefined) ?? files[index]
+    if (file) {
+      result.push(file)
+    }
+  }
+  return result
+}
+
 export function extractFirstFileFromDataTransfer(
   dataTransfer: DataTransferLike | null | undefined,
 ): File | null {

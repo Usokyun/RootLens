@@ -30,7 +30,7 @@ vision = [
     "scikit-image>=0.22",
 ]
 llm = [
-    "openai>=1.0",
+    "openai>=1.66.0",
     "tenacity>=8.0",
 ]
 dev = [

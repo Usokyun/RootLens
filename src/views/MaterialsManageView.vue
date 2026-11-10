@@ -28,7 +28,8 @@ import type {
 import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import { useAppPreferences } from "@/services/app-preferences";
-import { extractFirstFileFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
+import { extractFilesFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
+import { uploadKGMaterialFiles } from "@/services/material-upload";
 import { getRootLensService } from "@/services/rootlens-service";
 import {
   buildMaterialsBuildEdgeProvenance,
@@ -77,6 +78,11 @@ const sourceDraftPreview = ref<KGSourceDraftResponse | null>(null);
 
 const materialDetailLoading = ref(false);
 const materialMutationLoading = ref(false);
+const materialSourceDrawerVisible = ref(false);
+const materialSourceTab = ref("upload");
+const materialSourceTriggerRef = ref<{ $el: HTMLButtonElement } | null>(null);
+const materialSourcePanelRef = ref<HTMLElement | null>(null);
+
 const materialExtractLoading = ref(false);
 const sourceDraftLoading = ref(false);
 
@@ -100,7 +106,7 @@ const filters = reactive({
 });
 
 const uploadForm = reactive({
-  file: null as File | null,
+  files: [] as File[],
   title: "",
   scenario: "shared",
   sourceType: "text",
@@ -130,7 +136,6 @@ const buildForm = reactive({
 const uploadInputRef = ref<HTMLInputElement | null>(null);
 const uploadDragActive = ref(false);
 const uploadDragDepth = ref(0);
-const uploadAccept = ".pdf,.txt,.md,.csv,.json,.jsonl";
 
 const selectedBuildRunId = computed(
   () => workbenchState.value.selectedConstructionRunId,
@@ -281,17 +286,20 @@ function formatMaterialStatus(material: KGMaterialRecord | null | undefined) {
   return material.processing_status;
 }
 
-function setUploadFile(file: File | null) {
-  uploadForm.file = file;
+function setUploadFiles(files: File[]) {
+  if (!materialMutationLoading.value) {
+    uploadForm.files = files;
+  }
 }
 
 function handleUploadFileChange(event: Event) {
   const input = event.target as HTMLInputElement | null;
-  setUploadFile(input?.files?.[0] ?? null);
+  setUploadFiles(Array.from(input?.files ?? []));
+  if (input) input.value = "";
 }
 
 function openUploadPicker() {
-  uploadInputRef.value?.click();
+  if (!materialMutationLoading.value) uploadInputRef.value?.click();
 }
 
 function resetUploadDragState() {
@@ -320,7 +328,7 @@ function handleUploadDragLeave(event: DragEvent) {
 
 function handleUploadDrop(event: DragEvent) {
   markDragEventHandled(event, { dropEffect: "copy" });
-  setUploadFile(extractFirstFileFromDataTransfer(event.dataTransfer));
+  setUploadFiles(extractFilesFromDataTransfer(event.dataTransfer));
   resetUploadDragState();
 }
 
@@ -532,8 +540,34 @@ async function refreshWorkspace() {
   }
 }
 
+function handleMaterialSourceKeydown(event: KeyboardEvent) {
+  if (event.key !== "Tab" || !materialSourceDrawerVisible.value) return;
+
+  const drawer = materialSourcePanelRef.value?.closest(".arco-drawer");
+  const controls = Array.from(
+    drawer?.querySelectorAll<HTMLElement>(
+      'button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])',
+    ) ?? [],
+  ).filter((control) =>
+    control.tabIndex >= 0 && !control.matches(":disabled") && control.getClientRects().length > 0,
+  );
+  const first = controls[0];
+  const last = controls[controls.length - 1];
+  if (!first || !last) return;
+
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || active === materialSourcePanelRef.value)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || active === materialSourcePanelRef.value)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 async function handleMaterialUpload() {
-  if (!uploadForm.file) {
+  if (materialMutationLoading.value) return;
+  if (!uploadForm.files.length) {
     actionMessage.value = "请选择待上传的素材文件。";
     return;
   }
@@ -543,22 +577,39 @@ async function handleMaterialUpload() {
   errorMessage.value = "";
 
   try {
-    const response = await getRootLensService().uploadKGMaterial({
-      file: uploadForm.file,
-      title: uploadForm.title || undefined,
-      scenario: uploadForm.scenario || undefined,
-      source_type: uploadForm.sourceType || undefined,
-      notes: uploadForm.notes || undefined,
-      material_id: uploadForm.materialId || undefined,
-    });
-    actionMessage.value = `素材已上传：${response.material.material_id}`;
-    uploadForm.file = null;
-    uploadForm.title = "";
-    uploadForm.notes = "";
-    uploadForm.materialId = "";
-    await refreshWorkspace();
-    selectedMaterialId.value = response.material.material_id;
-    await loadSelectedMaterialState(response.material.material_id);
+    const files = [...uploadForm.files];
+    const { uploaded, failed } = await uploadKGMaterialFiles(
+      files,
+      {
+        title: uploadForm.title || undefined,
+        scenario: uploadForm.scenario || undefined,
+        source_type: uploadForm.sourceType || undefined,
+        notes: uploadForm.notes || undefined,
+        material_id: uploadForm.materialId || undefined,
+      },
+      getRootLensService().uploadKGMaterial,
+    );
+    uploadForm.files = failed.map((item) => item.file);
+    if (!failed.length) {
+      uploadForm.title = "";
+      uploadForm.notes = "";
+      uploadForm.materialId = "";
+    }
+    const lastUploaded = uploaded[uploaded.length - 1];
+    if (lastUploaded) {
+      actionMessage.value = files.length === 1
+        ? `素材已上传：${lastUploaded.material.material_id}`
+        : `已上传 ${uploaded.length} 个素材。`;
+      await refreshWorkspace();
+      selectedMaterialId.value = lastUploaded.material.material_id;
+      await loadSelectedMaterialState(lastUploaded.material.material_id);
+    }
+    if (failed.length) {
+      errorMessage.value = [
+        errorMessage.value,
+        ...failed.map((item) => `${item.file.name}：${item.error}`),
+      ].filter(Boolean).join("；");
+    }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   } finally {
@@ -783,6 +834,16 @@ onMounted(() => {
               </div>
               <div class="rl-panel-actions">
                 <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
+                <a-button
+                  ref="materialSourceTriggerRef"
+                  type="primary"
+                  :aria-expanded="materialSourceDrawerVisible"
+                  aria-controls="material-source-drawer"
+                  @click="materialSourceDrawerVisible = true"
+                >
+                  <template #icon><icon-upload /></template>
+                  上传 / 注册素材
+                </a-button>
                 <a-button :loading="loading" @click="refreshWorkspace">
                   <template #icon><icon-refresh /></template>
                   刷新视图
@@ -972,7 +1033,7 @@ onMounted(() => {
                 id="materials-form-2"
                 :model="sourceDraftForm"
                 layout="vertical"
-                class="rl-section-card__body workspace-stack workspace-stack--tight workspace-form"
+                class="rl-section-card__body workspace-stack workspace-stack--tight workspace-form workspace-material-editor-form"
               >
                 <div class="workspace-summary-list workspace-summary-list--two-col">
                   <div class="workspace-summary-list__item">
@@ -1099,7 +1160,7 @@ onMounted(() => {
 
                 <a-spin v-if="materialDetailLoading" />
 
-                <a-tabs v-else v-model:active-key="selectedMaterialTab">
+                <a-tabs v-else v-model:active-key="selectedMaterialTab" lazy-load>
                   <a-tab-pane key="detail" title="Detail">
                     <pre class="rl-json-preview">{{
                       formatJsonPreview(materialDetail ?? selectedMaterial)
@@ -1122,279 +1183,6 @@ onMounted(() => {
                   </a-tab-pane>
                 </a-tabs>
               </a-form>
-            </article>
-
-            <article class="rl-section-card workspace-upload-source-card">
-              <header class="rl-section-card__header">
-                <div>
-                  <h3 class="rl-section-card__title">
-                    <SectionCardTitle title="上传 / 注册素材" :help="uploadSourceHelp">
-                      <icon-upload />
-                    </SectionCardTitle>
-                  </h3>
-                </div>
-              </header>
-              <div class="rl-section-card__body workspace-stack workspace-stack--tight">
-                <a-form
-                  id="materials-form-3"
-                  :model="uploadForm"
-                  layout="vertical"
-                  class="workspace-form"
-                >
-                  <a-form-item
-                    label="本地文件"
-                    label-component="span"
-                    class="workspace-form-item workspace-dropzone-field"
-                  >
-                    <div
-                      class="rl-file-dropzone rl-file-dropzone--fill"
-                      :class="{ 'rl-file-dropzone--active': uploadDragActive }"
-                      @dragenter="handleUploadDragEnter"
-                      @dragover="handleUploadDragOver"
-                      @dragleave="handleUploadDragLeave"
-                      @drop="handleUploadDrop"
-                    >
-                      <input
-                        ref="uploadInputRef"
-                        class="rl-file-input-native"
-                        type="file"
-                        :accept="uploadAccept"
-                        @change="handleUploadFileChange"
-                      />
-                      <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
-                        <div class="rl-file-dropzone__copy">
-                          <strong>
-                            {{ uploadForm.file?.name ?? '拖动素材文件到这里，或点击选择文件' }}
-                          </strong>
-                          <span>{{ uploadAccept }}</span>
-                        </div>
-                        <a-button aria-label="选择素材文件" size="small" @click="openUploadPicker">
-                          选择文件
-                        </a-button>
-                      </div>
-                    </div>
-                  </a-form-item>
-
-                  <div class="workspace-form-row workspace-form-row--two">
-                    <a-form-item
-                      field="title"
-                      label="标题"
-                      :label-attrs="{ for: 'material-uploadForm-title-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-uploadForm-title-input',
-                          'aria-label': '标题',
-                        }"
-                        id="material-uploadForm-title"
-                        aria-label="标题"
-                        v-model="uploadForm.title"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="materialId"
-                      label="素材 ID"
-                      :label-attrs="{ for: 'material-uploadForm-materialId-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-uploadForm-materialId-input',
-                          'aria-label': '素材 ID',
-                        }"
-                        id="material-uploadForm-materialId"
-                        aria-label="素材 ID"
-                        v-model="uploadForm.materialId"
-                      />
-                    </a-form-item>
-                  </div>
-                  <div class="workspace-form-row workspace-form-row--two">
-                    <a-form-item
-                      field="scenario"
-                      label="场景"
-                      :label-attrs="{ for: 'material-uploadForm-scenario-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-uploadForm-scenario-input',
-                          'aria-label': '场景',
-                        }"
-                        id="material-uploadForm-scenario"
-                        aria-label="场景"
-                        v-model="uploadForm.scenario"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="sourceType"
-                      label="类型"
-                      :label-attrs="{ for: 'material-uploadForm-sourceType-input' }"
-                      class="workspace-form-item"
-                    >
-                      <div
-                        id="material-uploadForm-sourceType"
-                        v-control-label="'类型'"
-                        class="workspace-control"
-                      >
-                        <a-select aria-label="类型" v-model="uploadForm.sourceType">
-                          <a-option value="text">text</a-option>
-                          <a-option value="markdown">markdown</a-option>
-                          <a-option value="webpage">webpage</a-option>
-                          <a-option value="pdf">pdf</a-option>
-                          <a-option value="csv">csv</a-option>
-                          <a-option value="json">json</a-option>
-                          <a-option value="jsonl">jsonl</a-option>
-                          <a-option value="other">other</a-option>
-                        </a-select>
-                      </div>
-                    </a-form-item>
-                  </div>
-                  <a-form-item
-                    field="notes"
-                    label="备注"
-                    :label-attrs="{ for: 'material-uploadForm-notes-input' }"
-                    class="workspace-form-item"
-                  >
-                    <a-textarea
-                      :textarea-attrs="{
-                        id: 'material-uploadForm-notes-input',
-                        'aria-label': '备注',
-                      }"
-                      id="material-uploadForm-notes"
-                      aria-label="备注"
-                      v-model="uploadForm.notes"
-                      :auto-size="{ minRows: 2, maxRows: 4 }"
-                    />
-                  </a-form-item>
-                  <div class="rl-form-actions">
-                    <a-button
-                      type="primary"
-                      :loading="materialMutationLoading"
-                      @click="handleMaterialUpload"
-                    >
-                      上传素材
-                    </a-button>
-                  </div>
-                </a-form>
-                <a-divider />
-                <a-form
-                  id="materials-form-4"
-                  :model="registerUrlForm"
-                  layout="vertical"
-                  class="workspace-form"
-                >
-                  <a-form-item
-                    field="url"
-                    label="URL"
-                    :label-attrs="{ for: 'material-registerUrlForm-url-input' }"
-                    class="workspace-form-item"
-                  >
-                    <a-input
-                      :input-attrs="{
-                        id: 'material-registerUrlForm-url-input',
-                        'aria-label': 'URL',
-                      }"
-                      id="material-registerUrlForm-url"
-                      aria-label="URL"
-                      v-model="registerUrlForm.url"
-                      placeholder="https://example.com/doc"
-                    />
-                  </a-form-item>
-                  <div class="workspace-form-row workspace-form-row--two">
-                    <a-form-item
-                      field="title"
-                      label="标题"
-                      :label-attrs="{ for: 'material-registerUrlForm-title-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-registerUrlForm-title-input',
-                          'aria-label': '标题',
-                        }"
-                        id="material-registerUrlForm-title"
-                        aria-label="标题"
-                        v-model="registerUrlForm.title"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="materialId"
-                      label="素材 ID"
-                      :label-attrs="{ for: 'material-registerUrlForm-materialId-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-registerUrlForm-materialId-input',
-                          'aria-label': '素材 ID',
-                        }"
-                        id="material-registerUrlForm-materialId"
-                        aria-label="素材 ID"
-                        v-model="registerUrlForm.materialId"
-                      />
-                    </a-form-item>
-                  </div>
-                  <div class="workspace-form-row workspace-form-row--two">
-                    <a-form-item
-                      field="scenario"
-                      label="场景"
-                      :label-attrs="{ for: 'material-registerUrlForm-scenario-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'material-registerUrlForm-scenario-input',
-                          'aria-label': '场景',
-                        }"
-                        id="material-registerUrlForm-scenario"
-                        aria-label="场景"
-                        v-model="registerUrlForm.scenario"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="sourceType"
-                      label="类型"
-                      :label-attrs="{ for: 'material-registerUrlForm-sourceType-input' }"
-                      class="workspace-form-item"
-                    >
-                      <div
-                        id="material-registerUrlForm-sourceType"
-                        v-control-label="'类型'"
-                        class="workspace-control"
-                      >
-                        <a-select aria-label="类型" v-model="registerUrlForm.sourceType">
-                          <a-option value="webpage">webpage</a-option>
-                          <a-option value="pdf">pdf</a-option>
-                          <a-option value="other">other</a-option>
-                        </a-select>
-                      </div>
-                    </a-form-item>
-                  </div>
-                  <a-form-item
-                    field="notes"
-                    label="备注"
-                    :label-attrs="{ for: 'material-registerUrlForm-notes-input' }"
-                    class="workspace-form-item"
-                  >
-                    <a-textarea
-                      :textarea-attrs="{
-                        id: 'material-registerUrlForm-notes-input',
-                        'aria-label': '备注',
-                      }"
-                      id="material-registerUrlForm-notes"
-                      aria-label="备注"
-                      v-model="registerUrlForm.notes"
-                      :auto-size="{ minRows: 2, maxRows: 4 }"
-                    />
-                  </a-form-item>
-                  <div class="rl-form-actions">
-                    <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
-                      注册 URL 素材
-                    </a-button>
-                  </div>
-                </a-form>
-              </div>
             </article>
           </div>
         </section>
@@ -1702,6 +1490,304 @@ onMounted(() => {
       </a-tabs>
     </div>
   </a-modal>
+
+  <a-drawer
+    v-model:visible="materialSourceDrawerVisible"
+    width="min(520px, 100vw)"
+    :body-style="{ padding: '12px' }"
+    role="dialog"
+    aria-modal="true"
+    aria-label="上传 / 注册素材"
+    :aria-hidden="!materialSourceDrawerVisible"
+    @open="materialSourcePanelRef?.focus()"
+    @close="materialSourceTriggerRef?.$el.focus()"
+    @keydown="handleMaterialSourceKeydown"
+  >
+    <template #title>
+      <SectionCardTitle title="上传 / 注册素材" :help="uploadSourceHelp">
+        <icon-upload />
+      </SectionCardTitle>
+    </template>
+    <div
+      id="material-source-drawer"
+      ref="materialSourcePanelRef"
+      tabindex="-1"
+      class="workspace-material-source-drawer workspace-stack"
+    >
+      <a-alert v-if="errorMessage" type="error" :title="errorMessage" />
+      <a-alert v-if="actionMessage" type="success" :title="actionMessage" />
+      <a-tabs v-model:active-key="materialSourceTab" lazy-load>
+        <a-tab-pane key="upload" title="本地上传">
+          <a-form
+            id="materials-form-3"
+            :model="uploadForm"
+            :disabled="materialMutationLoading"
+            layout="vertical"
+            class="workspace-form"
+          >
+            <a-form-item
+              label="本地文件"
+              label-component="span"
+              class="workspace-form-item workspace-dropzone-field"
+            >
+              <div
+                class="rl-file-dropzone rl-file-dropzone--fill"
+                :class="{ 'rl-file-dropzone--active': uploadDragActive }"
+                @dragenter="handleUploadDragEnter"
+                @dragover="handleUploadDragOver"
+                @dragleave="handleUploadDragLeave"
+                @drop="handleUploadDrop"
+              >
+                <input
+                  ref="uploadInputRef"
+                  class="rl-file-input-native"
+                  type="file"
+                  multiple
+                  :disabled="materialMutationLoading"
+                  @change="handleUploadFileChange"
+                />
+                <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
+                  <div class="rl-file-dropzone__copy">
+                    <strong>
+                      {{ uploadForm.files.length > 1 ? `已选择 ${uploadForm.files.length} 个文件` : uploadForm.files[0]?.name ?? '拖动素材文件到这里，或点击选择文件' }}
+                    </strong>
+                  </div>
+                  <a-button aria-label="选择素材文件" size="small" @click="openUploadPicker">
+                    选择文件
+                  </a-button>
+                </div>
+              </div>
+            </a-form-item>
+
+            <div class="workspace-form-row workspace-form-row--two">
+              <a-form-item
+                field="title"
+                label="标题"
+                :label-attrs="{ for: 'material-uploadForm-title-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-uploadForm-title-input',
+                    'aria-label': '标题',
+                  }"
+                  id="material-uploadForm-title"
+                  aria-label="标题"
+                  v-model="uploadForm.title"
+                  :disabled="materialMutationLoading || uploadForm.files.length > 1"
+                />
+              </a-form-item>
+              <a-form-item
+                field="materialId"
+                label="素材 ID"
+                :label-attrs="{ for: 'material-uploadForm-materialId-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-uploadForm-materialId-input',
+                    'aria-label': '素材 ID',
+                  }"
+                  id="material-uploadForm-materialId"
+                  aria-label="素材 ID"
+                  v-model="uploadForm.materialId"
+                  :disabled="materialMutationLoading || uploadForm.files.length > 1"
+                />
+              </a-form-item>
+            </div>
+            <div class="workspace-form-row workspace-form-row--two">
+              <a-form-item
+                field="scenario"
+                label="场景"
+                :label-attrs="{ for: 'material-uploadForm-scenario-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-uploadForm-scenario-input',
+                    'aria-label': '场景',
+                  }"
+                  id="material-uploadForm-scenario"
+                  aria-label="场景"
+                  v-model="uploadForm.scenario"
+                />
+              </a-form-item>
+              <a-form-item
+                field="sourceType"
+                label="类型"
+                :label-attrs="{ for: 'material-uploadForm-sourceType-input' }"
+                class="workspace-form-item"
+              >
+                <div
+                  id="material-uploadForm-sourceType"
+                  v-control-label="'类型'"
+                  class="workspace-control"
+                >
+                  <a-select aria-label="类型" v-model="uploadForm.sourceType" :disabled="materialMutationLoading || uploadForm.files.length > 1">
+                    <a-option value="text">text</a-option>
+                    <a-option value="markdown">markdown</a-option>
+                    <a-option value="webpage">webpage</a-option>
+                    <a-option value="pdf">pdf</a-option>
+                    <a-option value="csv">csv</a-option>
+                    <a-option value="json">json</a-option>
+                    <a-option value="jsonl">jsonl</a-option>
+                    <a-option value="other">other</a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
+            </div>
+            <a-form-item
+              field="notes"
+              label="备注"
+              :label-attrs="{ for: 'material-uploadForm-notes-input' }"
+              class="workspace-form-item"
+            >
+              <a-textarea
+                :textarea-attrs="{
+                  id: 'material-uploadForm-notes-input',
+                  'aria-label': '备注',
+                }"
+                id="material-uploadForm-notes"
+                aria-label="备注"
+                v-model="uploadForm.notes"
+                :auto-size="{ minRows: 2, maxRows: 4 }"
+              />
+            </a-form-item>
+            <div class="rl-form-actions">
+              <a-button
+                type="primary"
+                :loading="materialMutationLoading"
+                @click="handleMaterialUpload"
+              >
+                上传素材
+              </a-button>
+            </div>
+          </a-form>
+        </a-tab-pane>
+        <a-tab-pane key="url" title="URL 注册">
+          <a-form
+            id="materials-form-4"
+            :model="registerUrlForm"
+            layout="vertical"
+            class="workspace-form"
+          >
+            <a-form-item
+              field="url"
+              label="URL"
+              :label-attrs="{ for: 'material-registerUrlForm-url-input' }"
+              class="workspace-form-item"
+            >
+              <a-input
+                :input-attrs="{
+                  id: 'material-registerUrlForm-url-input',
+                  'aria-label': 'URL',
+                }"
+                id="material-registerUrlForm-url"
+                aria-label="URL"
+                v-model="registerUrlForm.url"
+                placeholder="https://example.com/doc"
+              />
+            </a-form-item>
+            <div class="workspace-form-row workspace-form-row--two">
+              <a-form-item
+                field="title"
+                label="标题"
+                :label-attrs="{ for: 'material-registerUrlForm-title-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-registerUrlForm-title-input',
+                    'aria-label': '标题',
+                  }"
+                  id="material-registerUrlForm-title"
+                  aria-label="标题"
+                  v-model="registerUrlForm.title"
+                />
+              </a-form-item>
+              <a-form-item
+                field="materialId"
+                label="素材 ID"
+                :label-attrs="{ for: 'material-registerUrlForm-materialId-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-registerUrlForm-materialId-input',
+                    'aria-label': '素材 ID',
+                  }"
+                  id="material-registerUrlForm-materialId"
+                  aria-label="素材 ID"
+                  v-model="registerUrlForm.materialId"
+                />
+              </a-form-item>
+            </div>
+            <div class="workspace-form-row workspace-form-row--two">
+              <a-form-item
+                field="scenario"
+                label="场景"
+                :label-attrs="{ for: 'material-registerUrlForm-scenario-input' }"
+                class="workspace-form-item"
+              >
+                <a-input
+                  :input-attrs="{
+                    id: 'material-registerUrlForm-scenario-input',
+                    'aria-label': '场景',
+                  }"
+                  id="material-registerUrlForm-scenario"
+                  aria-label="场景"
+                  v-model="registerUrlForm.scenario"
+                />
+              </a-form-item>
+              <a-form-item
+                field="sourceType"
+                label="类型"
+                :label-attrs="{ for: 'material-registerUrlForm-sourceType-input' }"
+                class="workspace-form-item"
+              >
+                <div
+                  id="material-registerUrlForm-sourceType"
+                  v-control-label="'类型'"
+                  class="workspace-control"
+                >
+                  <a-select aria-label="类型" v-model="registerUrlForm.sourceType">
+                    <a-option value="webpage">webpage</a-option>
+                    <a-option value="pdf">pdf</a-option>
+                    <a-option value="other">other</a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
+            </div>
+            <a-form-item
+              field="notes"
+              label="备注"
+              :label-attrs="{ for: 'material-registerUrlForm-notes-input' }"
+              class="workspace-form-item"
+            >
+              <a-textarea
+                :textarea-attrs="{
+                  id: 'material-registerUrlForm-notes-input',
+                  'aria-label': '备注',
+                }"
+                id="material-registerUrlForm-notes"
+                aria-label="备注"
+                v-model="registerUrlForm.notes"
+                :auto-size="{ minRows: 2, maxRows: 4 }"
+              />
+            </a-form-item>
+            <div class="rl-form-actions">
+              <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
+                注册 URL 素材
+              </a-button>
+            </div>
+          </a-form>
+        </a-tab-pane>
+      </a-tabs>
+    </div>
+    <template #footer>
+      <a-button @click="materialSourceDrawerVisible = false">收起</a-button>
+    </template>
+  </a-drawer>
 
   <ProvenanceInspectorDrawer
     v-model:visible="provenanceInspectorVisible"

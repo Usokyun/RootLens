@@ -41,6 +41,20 @@ npm run backend:test        # 后端 pytest；支持追加 -- -q 等参数
 
 工作目录统一为 `backend/`，Run、素材和反馈使用同一个 Postgres 配置。优先级为进程环境变量、`.env.local`、`.env`、本地 `configs/*.yaml`、示例配置。Vite 代理默认也是 8000；非默认端口要同时调整前端地址和代理目标。
 
+### 可选的构图 LLM
+
+构图需要额外安装 `uv sync --extra dev --extra llm --frozen`，并在被 Git 忽略的
+`backend/.env.local` 中配置 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`。
+不要把密钥放入根目录 Vite 配置、前端代码或日志。
+
+- `SOURCE_KG_LLM_API=responses` 使用 Responses API；可用
+  `SOURCE_KG_REASONING_EFFORT=high` 指定推理强度，不发送 Chat 专用参数。
+- 未设置 API 类型时保持原有 `chat_completions` 行为；原 DeepSeek 环境变量
+  继续优先于对应 OpenAI 环境变量，切换服务时应避免两套设置混用。
+- 这是**素材构图**的 LLM 配置，不是 MVTec 检测模型或 RCA 运行配置。
+  当前“执行抽取”仅登记来源就绪；构图阶段才读取 UTF-8 文本并抽取知识。
+  PDF / 图片 / 二进制解析，以及新构图发布到运行 Neo4j，仍未由这次适配接通。
+
 ### 数据库
 
 新机器建议使用容器（需要事先安装 Docker）：

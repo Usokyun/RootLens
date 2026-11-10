@@ -878,7 +878,7 @@ onBeforeUnmount(() => {
 
     <section class="workspace-shell workspace-shell--evidence">
       <div class="workspace-evidence-layout">
-        <div class="workspace-evidence-main">
+        <div class="workspace-evidence-row">
           <article class="rl-section-card workspace-run-card">
             <header class="rl-section-card__header">
               <div>
@@ -1245,53 +1245,6 @@ onBeforeUnmount(() => {
             </div>
           </article>
 
-          <article
-            class="rl-section-card workspace-root-cause-card workspace-root-cause-card--evidence"
-          >
-            <header class="rl-section-card__header">
-              <div>
-                <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="根因列表" :help="rootCauseListHelp">
-                    <icon-bulb />
-                  </SectionCardTitle>
-                </h3>
-              </div>
-              <div class="rl-inline-tags">
-                <a-tag color="arcoblue">
-                  {{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}
-                </a-tag>
-                <a-tag color="gold">{{ activeRootCauseList.length }} 条</a-tag>
-              </div>
-            </header>
-            <div
-              class="rl-section-card__body workspace-root-cause-card__body workspace-root-cause-card__body--plain"
-            >
-              <div class="workspace-scroll-list workspace-scroll-list--fill">
-                <button
-                  v-for="candidate in activeRootCauseList"
-                  :key="candidate.ranking_id"
-                  type="button"
-                  class="workspace-basic-list-item workspace-basic-list-item--root-cause"
-                  :class="{
-                    'workspace-basic-list-item--active':
-                      candidate.ranking_id === activeCandidate?.ranking_id,
-                  }"
-                  @click="selectCandidate(candidate.ranking_id)"
-                >
-                  <span class="workspace-basic-list-item__primary">
-                    #{{ candidate.rank }} {{ candidate.candidate_name }}
-                  </span>
-                  <span>{{ formatScore(candidate.score) }}</span>
-                  <span>{{ formatScoringMethodLabel(candidate.scoring_method) }}</span>
-                  <span>{{ normalizeText(candidate.candidate_role, 'candidate') }}</span>
-                </button>
-                <a-empty v-if="!activeRootCauseList.length">当前 Case 没有候选根因</a-empty>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <aside class="workspace-evidence-aside">
           <article class="rl-section-card workspace-evidence-card">
             <header class="rl-section-card__header">
               <div>
@@ -1307,8 +1260,11 @@ onBeforeUnmount(() => {
               <a-form
                 id="evidence-form-2"
                 :model="evidenceFilter"
-                layout="vertical"
-                class="workspace-inline-filters workspace-inline-filters--two-col workspace-form"
+                layout="horizontal"
+                label-align="left"
+                :label-col-props="{ flex: '64px' }"
+                :wrapper-col-props="{ flex: '1' }"
+                class="workspace-inline-filters workspace-inline-filters--two-col workspace-form workspace-form--compact-filters"
               >
                 <a-form-item
                   field="graph"
@@ -1443,26 +1399,35 @@ onBeforeUnmount(() => {
                 </a-form-item>
               </a-form>
 
-              <div class="workspace-scroll-list workspace-scroll-list--fill">
+              <div class="workspace-scroll-list workspace-scroll-list--fill workspace-scroll-list--case-evidence">
                 <div
                   v-for="item in filteredCaseEvidenceEntries"
                   :key="item.key"
-                  role="button"
-                  tabindex="0"
-                  class="workspace-basic-list-item workspace-basic-list-item--case-evidence"
+                  class="workspace-basic-list-item workspace-basic-list-item--with-action workspace-basic-list-item--case-evidence"
                   :class="{
                     'workspace-basic-list-item--active': item.caseId === activeCase?.case_id,
                   }"
-                  @click="setSelectedCase(item.caseId)"
-                  @keydown.enter.prevent="setSelectedCase(item.caseId)"
-                  @keydown.space.prevent="setSelectedCase(item.caseId)"
                 >
-                  <strong class="workspace-basic-list-item__primary">{{ item.caseLabel }}</strong>
-                  <span>{{ item.dataset }}</span>
-                  <a-tooltip position="left">
-                    <span class="workspace-basic-list-item__tooltip-anchor">
-                      {{ item.evidenceSummary }}
-                    </span>
+                  <a-tooltip position="left" :trigger="['hover', 'focus']">
+                    <button
+                      type="button"
+                      class="workspace-basic-list-item__select"
+                      :aria-pressed="item.caseId === activeCase?.case_id"
+                      :aria-label="`选择 Case ${item.caseLabel}`"
+                      @click="setSelectedCase(item.caseId)"
+                    >
+                      <strong class="workspace-basic-list-item__primary" :title="item.caseLabel">
+                        {{ item.caseLabel }}
+                      </strong>
+                      <span class="workspace-basic-list-item__meta">
+                        <span>{{ item.dataset }}</span>
+                        <span class="workspace-basic-list-item__tooltip-anchor">
+                          {{ item.evidenceSummary }}
+                        </span>
+                        <span :title="item.topCandidate">{{ item.topCandidate }}</span>
+                        <span>{{ item.reviewStatus }}</span>
+                      </span>
+                    </button>
                     <template #content>
                       <div class="workspace-tooltip-card">
                         <div class="workspace-tooltip-card__row">
@@ -1488,9 +1453,12 @@ onBeforeUnmount(() => {
                       </div>
                     </template>
                   </a-tooltip>
-                  <span>{{ item.topCandidate }}</span>
-                  <span>{{ item.reviewStatus }}</span>
-                  <a-button size="mini" type="text" @click.stop="openGraphExplore(item.caseId)">
+                  <a-button
+                    size="mini"
+                    type="text"
+                    :aria-label="`查看 ${item.caseLabel} 的根因与图谱`"
+                    @click="openGraphExplore(item.caseId)"
+                  >
                     <template #icon>
                       <icon-launch />
                     </template>
@@ -1500,6 +1468,53 @@ onBeforeUnmount(() => {
                 <a-empty v-if="!filteredCaseEvidenceEntries.length">
                   没有匹配的 Case / Evidence 条目
                 </a-empty>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="workspace-evidence-row">
+          <article
+            class="rl-section-card workspace-root-cause-card workspace-root-cause-card--evidence"
+          >
+            <header class="rl-section-card__header">
+              <div>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle title="根因列表" :help="rootCauseListHelp">
+                    <icon-bulb />
+                  </SectionCardTitle>
+                </h3>
+              </div>
+              <div class="rl-inline-tags">
+                <a-tag color="arcoblue">
+                  {{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}
+                </a-tag>
+                <a-tag color="gold">{{ activeRootCauseList.length }} 条</a-tag>
+              </div>
+            </header>
+            <div
+              class="rl-section-card__body workspace-root-cause-card__body workspace-root-cause-card__body--plain"
+            >
+              <div class="workspace-scroll-list workspace-scroll-list--fill">
+                <button
+                  v-for="candidate in activeRootCauseList"
+                  :key="candidate.ranking_id"
+                  type="button"
+                  class="workspace-basic-list-item workspace-basic-list-item--root-cause"
+                  :class="{
+                    'workspace-basic-list-item--active':
+                      candidate.ranking_id === activeCandidate?.ranking_id,
+                  }"
+                  @click="selectCandidate(candidate.ranking_id)"
+                >
+                  <span class="workspace-basic-list-item__primary">
+                    #{{ candidate.rank }} {{ candidate.candidate_name }}
+                  </span>
+                  <span>{{ formatScore(candidate.score) }}</span>
+                  <span>{{ formatScoringMethodLabel(candidate.scoring_method) }}</span>
+                  <span>{{ normalizeText(candidate.candidate_role, 'candidate') }}</span>
+                </button>
+                <a-empty v-if="!activeRootCauseList.length">当前 Case 没有候选根因</a-empty>
               </div>
             </div>
           </article>
@@ -1523,82 +1538,85 @@ onBeforeUnmount(() => {
               </div>
             </header>
             <div class="rl-section-card__body workspace-observation-card__body">
-              <div class="workspace-summary-list workspace-summary-list--two-col">
-                <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-relation />
-                    <span>Current Case</span>
-                  </span>
-                  <strong>{{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}</strong>
+              <div class="workspace-observation-toolbar">
+                <div class="workspace-observation-toolbar__selection" aria-live="polite">
+                  <span>当前选择</span>
+                  <strong :title="activeObservation?.id">{{ activeObservation?.id ?? '未选择' }}</strong>
                 </div>
-                <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-bulb />
-                    <span>Selected Obs</span>
-                  </span>
-                  <strong>{{ activeObservation?.id ?? '--' }}</strong>
+                <div class="rl-inline-tags">
+                  <a-button
+                    size="mini"
+                    :disabled="!activeObservation"
+                    @click="openObservationDetail(activeObservation?.id ?? null)"
+                  >
+                    查看详情
+                  </a-button>
+                  <a-button
+                    size="mini"
+                    :disabled="!activeObservation || !activeCase"
+                    @click="
+                      activeCase?.case_id &&
+                      openGraphExplore(activeCase.case_id, activeObservation?.id ?? null)
+                    "
+                  >
+                    根因与图谱
+                  </a-button>
                 </div>
               </div>
 
               <div
                 class="workspace-scroll-list workspace-scroll-list--fill workspace-scroll-list--observation"
               >
-                <button
+                <div
                   v-for="item in filteredActiveObservationItems"
                   :key="item.id"
-                  type="button"
-                  class="workspace-basic-list-item workspace-basic-list-item--observation"
+                  class="workspace-basic-list-item workspace-basic-list-item--with-action workspace-basic-list-item--observation"
                   :class="{
                     'workspace-basic-list-item--active': item.id === selectedObservationId,
                   }"
-                  @click="setSelectedObservation(item.id)"
                 >
-                  <div class="workspace-basic-list-item__head">
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ formatScore(item.confidence) }}</span>
-                  </div>
-                  <div class="workspace-basic-list-item__meta">
-                    <span>{{ formatObservationModalityLabel(item.modality) }}</span>
-                    <span>{{ item.source }}</span>
-                    <span>{{ item.timeLabel }}</span>
-                  </div>
-                  <div
-                    class="workspace-basic-list-item__meta workspace-basic-list-item__meta--observation"
+                  <button
+                    type="button"
+                    class="workspace-basic-list-item__select"
+                    :aria-pressed="item.id === selectedObservationId"
+                    :aria-label="`选择 Observation ${item.title}`"
+                    @click="setSelectedObservation(item.id)"
                   >
-                    <span>{{ item.linkedEntityCount }} linked</span>
-                    <span>{{ item.rawRefCount }} refs</span>
-                    <a-button size="mini" type="text" @click.stop="openObservationDetail(item.id)">
-                      详情
-                    </a-button>
-                  </div>
-                </button>
+                    <span class="workspace-basic-list-item__head">
+                      <strong class="workspace-basic-list-item__primary" :title="item.title">
+                        {{ item.title }}
+                      </strong>
+                      <span :title="`置信度 ${formatScore(item.confidence)}`">
+                        {{ formatScore(item.confidence) }}
+                      </span>
+                    </span>
+                    <span class="workspace-basic-list-item__meta">
+                      <span>{{ formatObservationModalityLabel(item.modality) }}</span>
+                      <span
+                        v-if="item.source !== item.modality && item.source !== '--'"
+                        :title="`Source: ${item.source}`"
+                      >{{ item.source }}</span>
+                      <span v-if="item.timestamp" :title="item.timeLabel">{{ item.timeLabel }}</span>
+                      <span>{{ item.linkedEntityCount }} linked</span>
+                      <span>{{ item.rawRefCount }} refs</span>
+                    </span>
+                  </button>
+                  <a-button
+                    size="mini"
+                    type="text"
+                    :aria-label="`查看 ${item.title} 的 Observation 详情`"
+                    @click="openObservationDetail(item.id)"
+                  >
+                    详情
+                  </a-button>
+                </div>
                 <a-empty v-if="!filteredActiveObservationItems.length">
                   当前 Case 没有匹配的 observation
                 </a-empty>
               </div>
-
-              <div class="rl-form-actions rl-form-actions--dual">
-                <a-button
-                  size="small"
-                  :disabled="!activeObservation"
-                  @click="openObservationDetail(activeObservation?.id ?? null)"
-                >
-                  查看详情
-                </a-button>
-                <a-button
-                  size="small"
-                  :disabled="!activeObservation || !activeCase"
-                  @click="
-                    activeCase?.case_id &&
-                    openGraphExplore(activeCase.case_id, activeObservation?.id ?? null)
-                  "
-                >
-                  根因与图谱
-                </a-button>
-              </div>
             </div>
           </article>
-        </aside>
+        </div>
       </div>
     </section>
   </div>
@@ -1704,7 +1722,7 @@ onBeforeUnmount(() => {
     v-model:visible="observationDetailModalVisible"
     title="Observation 详情"
     :footer="false"
-    width="880px"
+    width="min(880px, calc(100vw - 24px))"
     class="workspace-observation-modal"
   >
     <div v-if="activeObservation" class="workspace-stack workspace-stack--tight">

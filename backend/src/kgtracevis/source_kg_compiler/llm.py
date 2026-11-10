@@ -23,10 +23,12 @@ class OpenAICompatibleSourceKGLLM:
         model: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 8192,
+        wire_api: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
         load_source_kg_env()
-        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get(
-            "OPENAI_API_KEY"
+        self.api_key = (
+            api_key or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY")
         )
         self.base_url = (
             base_url
@@ -40,6 +42,10 @@ class OpenAICompatibleSourceKGLLM:
             or os.environ.get("OPENAI_MODEL")
             or "deepseek-v4-flash"
         )
+        self.wire_api = wire_api or os.environ.get("SOURCE_KG_LLM_API", "chat_completions")
+        if self.wire_api not in {"chat_completions", "responses"}:
+            raise ValueError("SOURCE_KG_LLM_API must be chat_completions or responses")
+        self.reasoning_effort = reasoning_effort or os.environ.get("SOURCE_KG_REASONING_EFFORT")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.calls = 0
@@ -55,12 +61,14 @@ class OpenAICompatibleSourceKGLLM:
             return self.input_tokens + self.output_tokens
 
     def complete_json(self, *, system_prompt: str, user_prompt: str) -> str:
-        """Call the configured chat model and return raw JSON text."""
+        """Call the configured API and return raw JSON text."""
         if not self.api_key:
             raise ValueError(
                 "Missing LLM API key. Set DEEPSEEK_API_KEY or OPENAI_API_KEY, "
                 "or configure .env.local/.env."
             )
+        if self.wire_api == "responses":
+            return self._complete_responses(system_prompt, user_prompt)
         kwargs: dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
@@ -71,19 +79,47 @@ class OpenAICompatibleSourceKGLLM:
             ],
             "response_format": {"type": "json_object"},
         }
+        if self.reasoning_effort:
+            kwargs["reasoning_effort"] = self.reasoning_effort
         if "deepseek" in f"{self.base_url} {self.model}".lower():
             kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         completion = self._resolved_client().chat.completions.create(**kwargs)
-        usage = getattr(completion, "usage", None)
-        with self._lock:
-            self.calls += 1
-            if usage is not None:
-                self.input_tokens += int(getattr(usage, "prompt_tokens", 0) or 0)
-                self.output_tokens += int(getattr(usage, "completion_tokens", 0) or 0)
+        self._record_usage(getattr(completion, "usage", None), responses=False)
         content = completion.choices[0].message.content
         if not content:
             raise ValueError("LLM returned empty content")
         return str(content)
+
+    def _complete_responses(self, system_prompt: str, user_prompt: str) -> str:
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "input": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "text": {"format": {"type": "json_object"}},
+            "max_output_tokens": self.max_tokens,
+            "store": False,
+        }
+        # Reasoning models may reject temperature; do not forward chat-only fields.
+        if self.reasoning_effort:
+            kwargs["reasoning"] = {"effort": self.reasoning_effort}
+        response = self._resolved_client().responses.create(**kwargs)
+        self._record_usage(getattr(response, "usage", None), responses=True)
+        if response.status != "completed":
+            raise ValueError(f"LLM response did not complete: {response.status}")
+        if not response.output_text:
+            raise ValueError("LLM returned empty content")
+        return str(response.output_text)
+
+    def _record_usage(self, usage: Any, *, responses: bool) -> None:
+        input_field = "input_tokens" if responses else "prompt_tokens"
+        output_field = "output_tokens" if responses else "completion_tokens"
+        with self._lock:
+            self.calls += 1
+            if usage is not None:
+                self.input_tokens += int(getattr(usage, input_field, 0) or 0)
+                self.output_tokens += int(getattr(usage, output_field, 0) or 0)
 
     def repair_json(self, broken_json: str, error: str) -> str:
         """Ask the same model to repair invalid JSON."""
