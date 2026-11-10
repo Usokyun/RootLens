@@ -1,0 +1,35 @@
+# Dependencies, caches and private configuration
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+!.env.example
+configs/database.yaml
+configs/neo4j.yaml
+
+# Runtime state is not source code
+runs/*
+!runs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+artifacts/*
+!artifacts/.gitkeep
+data/external/*
+!data/external/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/raw/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+openvino_cache/
+.DS_Store

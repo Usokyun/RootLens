@@ -10,7 +10,15 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:backend": "node scripts/backend.mjs serve",
+    "dev:all": "node scripts/dev-all.mjs",
+    "backend:check": "node scripts/backend.mjs check",
+    "backend:init": "node scripts/backend.mjs init",
+    "backend:test": "node scripts/backend.mjs test",
+    "backend:db:start": "node scripts/backend.mjs db-start",
+    "backend:db:stop": "node scripts/backend.mjs db-stop",
+    "backend:db:status": "node scripts/backend.mjs db-status"
   },
   "dependencies": {
     "@arco-design/web-vue": "^2.57.0",

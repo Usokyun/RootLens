@@ -1,0 +1,88 @@
+{
+  "case_id": "tep_0001",
+  "dataset": "tep",
+  "source": "time_series",
+  "object": "process",
+  "anomaly_type": "process_fault",
+  "location": "reactor",
+  "morphology": null,
+  "severity": 0.6,
+  "confidence": 0.75,
+  "timestamp": null,
+  "raw_evidence": {
+    "image_region": null,
+    "heatmap_path": null,
+    "variables": ["XMEAS_1"],
+    "variable_contributions": {
+      "XMEAS_1": 0.42
+    },
+    "log_events": [],
+    "description": "观测到的 process anomaly evidence only：adapter/manual demo annotation 记录 anomaly_type、process location 和 observed variable signals；不包含 root-cause label。",
+    "extra": {
+      "demo_scope": "adapters/manual demo annotations provide observed anomaly evidence only；不提供 root-cause label",
+      "analysis_boundary": "KGTracePipeline computes linking/consistency/corrections/candidate RCA paths at runtime."
+    }
+  },
+  "observations": [
+    {
+      "obs_id": "obs_tep_0001_object_process",
+      "facet": "object",
+      "name": "process",
+      "confidence": 0.75,
+      "source_ref": "adapter:tep",
+      "raw_ref": "object"
+    },
+    {
+      "obs_id": "obs_tep_0001_anomaly_type_process_fault",
+      "facet": "anomaly_type",
+      "name": "process_fault",
+      "confidence": 0.75,
+      "source_ref": "adapter:tep",
+      "raw_ref": "anomaly_type"
+    },
+    {
+      "obs_id": "obs_tep_0001_location_reactor",
+      "facet": "location",
+      "name": "reactor",
+      "confidence": 0.75,
+      "source_ref": "adapter:tep",
+      "raw_ref": "location"
+    },
+    {
+      "obs_id": "obs_tep_0001_variable_xmeas_1",
+      "facet": "variable",
+      "name": "XMEAS_1",
+      "value": 0.42,
+      "value_type": "contribution",
+      "confidence": 0.75,
+      "source_ref": "adapter:tep",
+      "raw_ref": "raw_evidence.variables[0]",
+      "metadata": {
+        "rank": 1
+      }
+    },
+    {
+      "obs_id": "obs_tep_0001_severity_severity",
+      "facet": "severity",
+      "name": "severity",
+      "value": 0.6,
+      "value_type": "float",
+      "confidence": 0.75,
+      "source_ref": "adapter:tep",
+      "raw_ref": "severity"
+    }
+  ],
+  "adapter": {
+    "name": "tep",
+    "produces_root_cause": false
+  },
+  "normalized_evidence": {},
+  "kg_analysis": {
+    "linked_entities": [],
+    "consistency_score": null,
+    "inconsistent_fields": [],
+    "correction_candidates": [],
+    "top_k_paths": []
+  },
+  "human_feedback": null
+}

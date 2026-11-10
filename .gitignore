@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .rootlens-cache/
+
+# Local configuration (templates remain versioned)
+.env
+.env.*
+!.env.example

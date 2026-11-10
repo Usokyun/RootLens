@@ -22,7 +22,6 @@ import type {
 import KnowledgeForceGraph from "@/components/graphs/KnowledgeForceGraph.vue";
 import RunPathGraph from "@/components/graphs/RunPathGraph.vue";
 import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
-import WorkbenchHero from "@/components/layout/WorkbenchHero.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import {
   type GraphCurationDecision,
@@ -85,8 +84,6 @@ import {
 } from "@/services/review-ledger";
 import {
   formatClaimBoundaryCopy,
-  formatReasonerAdapterLabel,
-  formatReasoningSelectionModeLabel,
   formatScoringMethodLabel,
   resolveRunReasoningSummary,
 } from "@/services/ui-copy";
@@ -746,33 +743,6 @@ const localGraphFocusedEdgeIds = computed(() => {
   return [...ids];
 });
 
-const heroMetrics = computed(() => [
-  {
-    label: "总图谱节点",
-    value: totalGraphDataset.value?.nodes.length ?? 0,
-    hint:
-      preferences.value.dataSourceMode === "backend"
-        ? "KG Studio 返回的总图节点数"
-        : "论文演示静态 RCA graph 节点数",
-    tone: "blue" as const,
-  },
-  {
-    label: "局部子图边",
-    value: activeLocalGraphDataset.value?.edges.length ?? 0,
-    hint:
-      activeSubgraphMode.value === "neighborhood"
-        ? "当前选中节点的一阶邻域边数"
-        : "当前 case path_graph union 边数",
-    tone: "teal" as const,
-  },
-  {
-    label: "根因候选",
-    value: activeCase.value?.ranked_root_causes?.length ?? 0,
-    hint: "右侧候选会同步驱动图谱联动",
-    tone: "amber" as const,
-  },
-]);
-
 const graphClaimBoundaryCopy = computed(() =>
   formatClaimBoundaryCopy(
     runDetail.value?.claim_boundary ?? kgStudio.value?.claim_boundary,
@@ -898,34 +868,6 @@ const feedbackCardBadge = computed(() => {
     "切到候选后查看链路"
   );
 });
-
-const workspaceTags = computed(() => [
-  {
-    label:
-      preferences.value.dataSourceMode === "backend"
-        ? "后端模式"
-        : "论文 Mock 模式",
-    color: "arcoblue" as const,
-  },
-  {
-    label:
-      activeCase.value?.dataset ?? runDetail.value?.run.dataset ?? "暂无案例",
-    color: "green" as const,
-  },
-  {
-    label:
-      activeSubgraphMode.value === "neighborhood" ? "邻域子图" : "路径子图",
-    color: "gold" as const,
-  },
-  ...(activeObservationContext.value
-    ? [
-        {
-          label: `Observation · ${activeObservationContext.value.id}`,
-          color: "purple" as const,
-        },
-      ]
-    : []),
-]);
 
 const hasUnsavedCurationChanges = computed(() => {
   if (!activeCase.value) {
@@ -2218,40 +2160,7 @@ onMounted(() => {
     class="rl-page rl-screen"
     :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
   >
-    <WorkbenchHero
-      eyebrow="根因与图谱"
-      title="根因候选、图谱联动与反馈审阅"
-      :metrics="heroMetrics"
-    >
-      <template #badges>
-        <a-tag
-          v-for="tag in workspaceTags"
-          :key="tag.label"
-          size="small"
-          :color="tag.color"
-        >
-          {{ tag.label }}
-        </a-tag>
-      </template>
-      <template #actions>
-        <a-button size="small" :loading="loading" @click="refreshWorkspace">
-          <template #icon>
-            <icon-refresh />
-          </template>
-          刷新视图
-        </a-button>
-        <a-button size="small" @click="router.push({ name: 'evidence' })"
-          >返回运行与证据</a-button
-        >
-      </template>
-    </WorkbenchHero>
-
-    <a-alert
-      v-if="errorMessage"
-      class="rl-alert"
-      type="error"
-      :title="errorMessage"
-    />
+    <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
 
     <section class="workspace-shell">
       <div class="workspace-shell__main workspace-stack">
@@ -2264,13 +2173,16 @@ onMounted(() => {
                 </SectionCardTitle>
               </h3>
             </div>
-            <div class="rl-inline-tags">
-              <a-tag color="green"
-                >{{ totalGraphDataset?.nodes.length ?? 0 }} 节点</a-tag
-              >
-              <a-tag color="gold"
-                >{{ totalGraphDataset?.edges.length ?? 0 }} 边</a-tag
-              >
+            <div class="rl-panel-actions">
+              <div class="rl-inline-tags">
+                <a-tag color="green">{{ totalGraphDataset?.nodes.length ?? 0 }} 节点</a-tag>
+                <a-tag color="gold">{{ totalGraphDataset?.edges.length ?? 0 }} 边</a-tag>
+              </div>
+              <a-button :loading="loading" @click="refreshWorkspace">
+                <template #icon><icon-refresh /></template>
+                刷新视图
+              </a-button>
+              <a-button @click="router.push({ name: 'evidence' })">返回运行与证据</a-button>
             </div>
           </header>
           <div class="rl-section-card__body workspace-graph-stage">
@@ -2283,9 +2195,7 @@ onMounted(() => {
               :focused-edge-ids="totalGraphFocusedEdgeIds"
               :selected-node-id="workbenchState.selectedGraphNodeId"
               @select="handleTotalGraphSelect"
-              @render-state="
-                (payload) => (totalGraphRenderMessage = payload.message)
-              "
+              @render-state="(payload) => (totalGraphRenderMessage = payload.message)"
             />
             <a-empty v-else>暂无总图谱数据</a-empty>
           </div>
@@ -2294,9 +2204,7 @@ onMounted(() => {
           </div>
         </article>
 
-        <section
-          class="workspace-bottom-grid workspace-bottom-grid--graphs-main"
-        >
+        <section class="workspace-bottom-grid workspace-bottom-grid--graphs-main">
           <article class="rl-section-card workspace-graph-bottom-card">
             <header class="rl-section-card__header">
               <div>
@@ -2307,9 +2215,7 @@ onMounted(() => {
                 </h3>
               </div>
             </header>
-            <div
-              class="rl-section-card__body workspace-graph-stage workspace-graph-stage--local"
-            >
+            <div class="rl-section-card__body workspace-graph-stage workspace-graph-stage--local">
               <RunPathGraph
                 v-if="activeLocalGraphDataset"
                 :dataset="activeLocalGraphDataset"
@@ -2320,1122 +2226,948 @@ onMounted(() => {
                 :selected-node-id="workbenchState.selectedSubgraphNodeId"
                 :selected-edge-id="workbenchState.selectedSubgraphEdgeId"
                 @select="handleLocalGraphSelect"
-                @render-state="
-                  (payload) => (localGraphRenderMessage = payload.message)
-                "
+                @render-state="(payload) => (localGraphRenderMessage = payload.message)"
               />
               <div v-else class="workspace-graph-stage__empty">
                 <a-empty>暂无局部子图</a-empty>
               </div>
             </div>
             <div class="rl-section-card__footer">
-              <span class="workspace-subtle">{{
-                localGraphRenderMessage
-              }}</span>
+              <span class="workspace-subtle">{{ localGraphRenderMessage }}</span>
             </div>
           </article>
 
           <article class="rl-section-card workspace-feedback-card workspace-graph-bottom-card">
-            <header
-              class="rl-section-card__header workspace-feedback-card__header"
-            >
+            <header class="rl-section-card__header workspace-feedback-card__header">
               <h3 class="rl-section-card__title">
                 <SectionCardTitle title="审阅与策展卡" :help="feedbackCardHelp">
                   <icon-info-circle />
                 </SectionCardTitle>
               </h3>
               <a-tooltip :content="feedbackCardBadge" position="left">
-                <span class="workspace-feedback-card__badge">
+                <a-tag color="gold" class="workspace-feedback-card__badge">
                   {{ feedbackCardBadge }}
-                </span>
+                </a-tag>
               </a-tooltip>
             </header>
             <div class="rl-section-card__body workspace-feedback-card__body">
-              <div
+              <a-tabs
+                v-model:active-key="feedbackCardTab"
+                lazy-load
+                destroy-on-hide
                 class="workspace-feedback-tabs"
-                role="tablist"
-                aria-label="切换审阅与策展卡内容"
+                aria-label="审阅与策展"
               >
-                <button
-                  type="button"
-                  class="workspace-feedback-tabs__item"
-                  :class="{
-                    'workspace-feedback-tabs__item--active':
-                      feedbackCardTab === 'rca',
-                  }"
-                  title="RCA 反馈"
-                  @click="feedbackCardTab = 'rca'"
-                >
-                  RCA
-                </button>
-                <button
-                  type="button"
-                  class="workspace-feedback-tabs__item"
-                  :class="{
-                    'workspace-feedback-tabs__item--active':
-                      feedbackCardTab === 'curation',
-                  }"
-                  title="图谱策展"
-                  @click="feedbackCardTab = 'curation'"
-                >
-                  策展
-                </button>
-                <button
-                  type="button"
-                  class="workspace-feedback-tabs__item"
-                  :class="{
-                    'workspace-feedback-tabs__item--active':
-                      feedbackCardTab === 'trace',
-                  }"
-                  title="推理链路"
-                  @click="feedbackCardTab = 'trace'"
-                >
-                  链路
-                </button>
-                <button
-                  type="button"
-                  class="workspace-feedback-tabs__item"
-                  :class="{
-                    'workspace-feedback-tabs__item--active':
-                      feedbackCardTab === 'ledger',
-                  }"
-                  title="Review Ledger"
-                  @click="feedbackCardTab = 'ledger'"
-                >
-                  Ledger
-                </button>
-              </div>
-
-
-              <template v-if="feedbackCardTab === 'rca'">
-                <section
-                  class="workspace-feedback-compact workspace-feedback-compact--dense"
-                >
-                  <div
-                    class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list workspace-feedback-compact__summary"
-                  >
-                    <div class="workspace-summary-list__item">
-                      <span class="workspace-summary-label">
-                        <icon-bulb />
-                        <span>当前候选</span>
-                      </span>
-                      <strong
-                        :title="activeCandidate?.candidate_name ?? '--'"
-                        >{{ activeCandidate?.candidate_name ?? "--" }}</strong
-                      >
-                    </div>
-                    <div class="workspace-summary-list__item">
-                      <span class="workspace-summary-label">
-                        <icon-relation />
-                        <span>当前路径</span>
-                      </span>
-                      <strong :title="activePath?.path_id ?? '--'">{{
-                        activePath?.path_id ?? "--"
-                      }}</strong>
-                    </div>
-                    <div class="workspace-summary-list__item">
-                      <span class="workspace-summary-label">
-                        <icon-info-circle />
-                        <span>反馈目标</span>
-                      </span>
-                      <strong
-                        :title="
-                          activeSubmitTarget?.label ??
-                          activeSubmitTarget?.target_type ??
-                          '--'
-                        "
-                        >{{ activeSubmitTarget?.target_type ?? "--" }}</strong
-                      >
-                    </div>
-                    <div class="workspace-summary-list__item">
-                      <span class="workspace-summary-label">
-                        <icon-storage />
-                        <span>得分</span>
-                      </span>
-                      <strong>{{ formatScore(activeCandidate?.score) }}</strong>
-                    </div>
-                  </div>
-
-                  <div class="workspace-feedback-compact__decision-bar">
-                    <a-button
-                      size="small"
-                      :type="
-                        feedbackForm.action === 'accept' ? 'primary' : 'outline'
-                      "
-                      class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--accept"
-                      @click="feedbackForm.action = 'accept'"
-                    >
-                      接受
-                    </a-button>
-                    <a-button
-                      size="small"
-                      status="danger"
-                      :type="
-                        feedbackForm.action === 'reject' ? 'primary' : 'outline'
-                      "
-                      class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--reject"
-                      @click="feedbackForm.action = 'reject'"
-                    >
-                      拒绝
-                    </a-button>
-                  </div>
-
-                  <div class="rl-form-field workspace-feedback-compact__field workspace-feedback-compact__field--grow">
-                    <span class="workspace-field-label">
-                      <icon-info-circle />
-                      <span>备注</span>
-                    </span>
-                    <a-textarea
-                      v-model="feedbackForm.note"
-                      class="workspace-feedback-compact__textarea"
-                      placeholder="记录备注"
-                    />
-                  </div>
-
-                  <div class="workspace-feedback-compact__footer">
-                    <a-button type="primary" @click="handleFeedbackSubmit">
-                      <template #icon>
-                        <icon-send />
-                      </template>
-                      提交反馈
-                    </a-button>
-                  </div>
-
-                  <a-alert
-                    v-if="reviewMessage"
-                    class="workspace-feedback-inline-alert"
-                    :type="
-                      reviewMessage.startsWith('反馈已记录')
-                        ? 'success'
-                        : 'warning'
-                    "
-                    :show-icon="false"
-                    :title="reviewMessage"
-                  />
-                </section>
-              </template>
-
-              <template v-else-if="feedbackCardTab === 'trace'">
-                <section
-                  class="workspace-feedback-pane workspace-feedback-pane--trace"
-                >
-                  <div
-                    class="workspace-feedback-pane__section workspace-feedback-pane__section--trace"
+                <a-tab-pane key="rca" title="RCA">
+                  <a-form
+                    id="graph-form-1"
+                    :model="feedbackForm"
+                    layout="vertical"
+                    class="workspace-feedback-compact workspace-feedback-compact--dense workspace-form"
                   >
                     <div
-                      class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                      class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list workspace-feedback-compact__summary"
                     >
-                      <strong>推理链路</strong>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-bulb />
+                          <span>当前候选</span>
+                        </span>
+                        <strong :title="activeCandidate?.candidate_name ?? '--'">
+                          {{ activeCandidate?.candidate_name ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-relation />
+                          <span>当前路径</span>
+                        </span>
+                        <strong :title="activePath?.path_id ?? '--'">
+                          {{ activePath?.path_id ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-info-circle />
+                          <span>反馈目标</span>
+                        </span>
+                        <strong
+                          :title="
+                            activeSubmitTarget?.label ?? activeSubmitTarget?.target_type ?? '--'
+                          "
+                        >
+                          {{ activeSubmitTarget?.target_type ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-storage />
+                          <span>得分</span>
+                        </span>
+                        <strong>{{ formatScore(activeCandidate?.score) }}</strong>
+                      </div>
+                    </div>
+
+                    <div class="workspace-feedback-compact__decision-bar">
                       <a-button
-                        size="mini"
-                        :disabled="!activeReasoningInspection.candidate"
-                        @click="openCrossCaseCompare"
+                        size="small"
+                        :type="feedbackForm.action === 'accept' ? 'primary' : 'outline'"
+                        class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--accept"
+                        @click="feedbackForm.action = 'accept'"
                       >
-                        Compare
+                        接受
+                      </a-button>
+                      <a-button
+                        size="small"
+                        status="danger"
+                        :type="feedbackForm.action === 'reject' ? 'primary' : 'outline'"
+                        class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--reject"
+                        @click="feedbackForm.action = 'reject'"
+                      >
+                        拒绝
                       </a-button>
                     </div>
 
-                    <template v-if="activeReasoningInspection.candidate">
-                      <div class="workspace-reasoning-trace">
-                        <section class="workspace-reasoning-trace__section">
-                          <div
-                            class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                          >
-                            <strong>Candidate</strong>
-                            <span
-                              :title="
-                                activeReasoningInspection.candidate
-                                  .selectedPathId ?? '--'
-                              "
-                              >{{
-                                activeReasoningInspection.candidate
-                                  .selectedPathId ?? "--"
-                              }}</span
-                            >
-                          </div>
-                          <div
-                            class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
-                          >
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label"
-                                >Candidate</span
-                              >
-                              <strong
-                                :title="
-                                  activeReasoningInspection.candidate
-                                    .candidateName
-                                "
-                                >{{
-                                  activeReasoningInspection.candidate
-                                    .candidateName
-                                }}</strong
-                              >
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label"
-                                >Rank / Score</span
-                              >
-                              <strong
-                                >#{{
-                                  activeReasoningInspection.candidate.rank ??
-                                  "--"
-                                }}
-                                ·
-                                {{
-                                  formatScore(
-                                    activeReasoningInspection.candidate.score,
-                                  )
-                                }}</strong
-                              >
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label"
-                                >Method / Role</span
-                              >
-                              <strong
-                                :title="`${formatScoringMethodLabel(activeReasoningInspection.candidate.scoringMethod)} · ${normalizeText(activeReasoningInspection.candidate.role, 'candidate')}`"
-                                >{{
-                                  formatScoringMethodLabel(
-                                    activeReasoningInspection.candidate
-                                      .scoringMethod,
-                                  )
-                                }}
-                                ·
-                                {{
-                                  normalizeText(
-                                    activeReasoningInspection.candidate.role,
-                                    "candidate",
-                                  )
-                                }}</strong
-                              >
-                            </div>
-                            <div class="workspace-summary-list__item">
-                              <span class="workspace-summary-label"
-                                >Obs / Links</span
-                              >
-                              <strong
-                                >{{
-                                  activeReasoningInspection.candidate
-                                    .supportingObservationCount
-                                }}
-                                /
-                                {{
-                                  activeReasoningInspection.candidate
-                                    .linkedEntityCount
-                                }}</strong
-                              >
-                            </div>
-                          </div>
-                        </section>
+                    <a-form-item
+                      field="note"
+                      label="备注"
+                      :label-attrs="{ for: 'graph-feedbackForm-note-input' }"
+                      class="workspace-form-item workspace-feedback-compact__field workspace-feedback-compact__field--grow"
+                    >
+                      <a-textarea
+                        :textarea-attrs="{
+                          id: 'graph-feedbackForm-note-input',
+                          'aria-label': '备注',
+                        }"
+                        id="graph-feedbackForm-note"
+                        aria-label="备注"
+                        v-model="feedbackForm.note"
+                        class="workspace-feedback-compact__textarea"
+                        placeholder="记录备注"
+                      />
+                    </a-form-item>
 
-                        <section class="workspace-reasoning-trace__section">
-                          <div
-                            class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                          >
-                            <strong>Primary Observation</strong>
-                            <span>{{
-                              activeReasoningInspection.primaryObservation
-                                ?.obsId ?? "未推导出"
-                            }}</span>
-                          </div>
-                          <button
-                            v-if="activeReasoningInspection.primaryObservation"
-                            type="button"
-                            class="workspace-basic-list-item workspace-basic-list-item--reasoning"
-                            :class="{
-                              'workspace-basic-list-item--active':
-                                isReasoningObservationActive(
-                                  activeReasoningInspection.primaryObservation
-                                    .obsId,
-                                  activeReasoningInspection.primaryObservation
-                                    .sharedObservationId,
-                                ),
-                            }"
-                            @click="
-                              activateReasoningStep(
-                                `observation:${activeReasoningInspection.primaryObservation.obsId}`,
+                    <div class="workspace-feedback-compact__footer">
+                      <a-button type="primary" @click="handleFeedbackSubmit">
+                        <template #icon>
+                          <icon-send />
+                        </template>
+                        提交反馈
+                      </a-button>
+                    </div>
+
+                    <a-alert
+                      v-if="reviewMessage"
+                      class="workspace-feedback-inline-alert"
+                      :type="reviewMessage.startsWith('反馈已记录') ? 'success' : 'warning'"
+                      :show-icon="false"
+                      :title="reviewMessage"
+                    />
+                  </a-form>
+                </a-tab-pane>
+                <a-tab-pane key="curation" title="策展">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--curation">
+                    <div class="workspace-feedback-pane__section">
+                      <div class="workspace-feedback-pane__section-head">
+                        <strong>
+                          {{
+                            activeCurationEdge
+                              ? '边策展'
+                              : activeCurationNode
+                                ? '节点策展'
+                                : '图谱策展'
+                          }}
+                        </strong>
+                        <span>
+                          {{ activeCurationEdge ? '边' : activeCurationNode ? '节点' : '待选' }}
+                        </span>
+                      </div>
+
+                      <a-form
+                        id="graph-form-2"
+                        :model="selectedEdgeDraft ?? {}"
+                        layout="vertical"
+                        v-if="activeCurationEdge"
+                        class="workspace-curation-panel workspace-form"
+                      >
+                        <div class="workspace-curation-meta">
+                          <a-tooltip
+                            :content="
+                              normalizeText(
+                                readStringAttribute(activeCurationEdge.attributes, 'evidence'),
+                                '当前边没有附带 evidence snippet。',
                               )
                             "
+                            position="top"
                           >
-                            <div class="workspace-basic-list-item__primary">
+                            <div class="workspace-claim-note workspace-feedback-snippet-card">
+                              <span class="workspace-summary-label">
+                                <icon-info-circle />
+                                <span>Evidence</span>
+                              </span>
+                              <strong class="workspace-feedback-snippet">
+                                {{
+                                  normalizeText(
+                                    readStringAttribute(activeCurationEdge.attributes, 'evidence'),
+                                    '当前边没有附带 evidence snippet。',
+                                  )
+                                }}
+                              </strong>
+                            </div>
+                          </a-tooltip>
+                          <a-button size="small" @click="openSelectedEdgeProvenance">
+                            Inspect Provenance
+                          </a-button>
+                        </div>
+
+                        <a-form-item
+                          label="审阅决策"
+                          :label-attrs="{ for: 'graph-edgeDecisionModel-input' }"
+                          class="workspace-form-item"
+                        >
+                          <div
+                            id="graph-edgeDecisionModel"
+                            v-control-label="'审阅决策'"
+                            class="workspace-control"
+                          >
+                            <a-select aria-label="审阅决策" v-model="edgeDecisionModel">
+                              <a-option value="accept">accept</a-option>
+                              <a-option value="reject">reject</a-option>
+                              <a-option value="revise">revise</a-option>
+                              <a-option value="needs_completion">needs_completion</a-option>
+                            </a-select>
+                          </div>
+                        </a-form-item>
+
+                        <div class="workspace-form-row workspace-form-row--two">
+                          <a-form-item
+                            label="关系"
+                            :label-attrs="{ for: 'graph-edgeRelationModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-edgeRelationModel-input',
+                                'aria-label': '关系',
+                              }"
+                              id="graph-edgeRelationModel"
+                              aria-label="关系"
+                              v-model="edgeRelationModel"
+                              placeholder="修改 relation 文本"
+                            />
+                          </a-form-item>
+                          <a-form-item
+                            label="置信度"
+                            :label-attrs="{ for: 'graph-edgeConfidenceModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input-number
+                              :input-attrs="{
+                                id: 'graph-edgeConfidenceModel-input',
+                                'aria-label': '置信度',
+                              }"
+                              id="graph-edgeConfidenceModel"
+                              aria-label="置信度"
+                              v-model="edgeConfidenceModel"
+                              :min="0"
+                              :max="1"
+                              :step="0.01"
+                              :precision="2"
+                            />
+                          </a-form-item>
+                        </div>
+
+                        <a-form-item
+                          label="备注"
+                          :label-attrs="{ for: 'graph-edgeNoteModel-input' }"
+                          class="workspace-form-item workspace-curation-panel__field workspace-curation-panel__field--grow"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-edgeNoteModel-input',
+                              'aria-label': '备注',
+                            }"
+                            id="graph-edgeNoteModel"
+                            aria-label="备注"
+                            v-model="edgeNoteModel"
+                            class="workspace-curation-panel__textarea"
+                            placeholder="记录为什么接受、拒绝或修订这条边。"
+                          />
+                        </a-form-item>
+                      </a-form>
+
+                      <a-form
+                        id="graph-form-3"
+                        :model="selectedNodeDraft ?? {}"
+                        layout="vertical"
+                        v-else-if="activeCurationNode"
+                        class="workspace-curation-panel workspace-form"
+                      >
+                        <div
+                          class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
+                        >
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-relation />
+                              <span>节点 ID</span>
+                            </span>
+                            <strong>{{ activeCurationNode.id }}</strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-info-circle />
+                              <span>场景</span>
+                            </span>
+                            <strong>
                               {{
-                                activeReasoningInspection.primaryObservation
-                                  .title
+                                normalizeText(
+                                  readStringAttribute(activeCurationNode.attributes, 'scenario'),
+                                  activeCurationNode.category,
+                                )
                               }}
+                            </strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-storage />
+                              <span>Kind</span>
+                            </span>
+                            <strong>{{ normalizeText(activeCurationNode.kind) }}</strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-bulb />
+                              <span>说明</span>
+                            </span>
+                            <strong>{{ normalizeText(activeCurationNode.description) }}</strong>
+                          </div>
+                        </div>
+
+                        <div class="workspace-form-row workspace-form-row--two">
+                          <a-form-item
+                            label="显示名称"
+                            :label-attrs="{ for: 'graph-nodeDisplayNameModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-nodeDisplayNameModel-input',
+                                'aria-label': '显示名称',
+                              }"
+                              id="graph-nodeDisplayNameModel"
+                              aria-label="显示名称"
+                              v-model="nodeDisplayNameModel"
+                              placeholder="节点展示名"
+                            />
+                          </a-form-item>
+                          <a-form-item
+                            label="别名"
+                            :label-attrs="{ for: 'graph-nodeAliasesModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-nodeAliasesModel-input',
+                                'aria-label': '别名',
+                              }"
+                              id="graph-nodeAliasesModel"
+                              aria-label="别名"
+                              v-model="nodeAliasesModel"
+                              placeholder="alias1, alias2"
+                            />
+                          </a-form-item>
+                        </div>
+
+                        <a-form-item
+                          label="描述"
+                          :label-attrs="{ for: 'graph-nodeDescriptionModel-input' }"
+                          class="workspace-form-item workspace-curation-panel__field workspace-curation-panel__field--grow"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-nodeDescriptionModel-input',
+                              'aria-label': '描述',
+                            }"
+                            id="graph-nodeDescriptionModel"
+                            aria-label="描述"
+                            v-model="nodeDescriptionModel"
+                            class="workspace-curation-panel__textarea"
+                            placeholder="补充节点说明或更保守的解释文案。"
+                          />
+                        </a-form-item>
+
+                        <a-form-item
+                          label="备注"
+                          :label-attrs="{ for: 'graph-nodeNoteModel-input' }"
+                          class="workspace-form-item"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-nodeNoteModel-input',
+                              'aria-label': '备注',
+                            }"
+                            id="graph-nodeNoteModel"
+                            aria-label="备注"
+                            v-model="nodeNoteModel"
+                            :auto-size="{ minRows: 3, maxRows: 5 }"
+                            placeholder="记录节点策展备注。"
+                          />
+                        </a-form-item>
+                      </a-form>
+
+                      <div v-else class="workspace-curation-empty">
+                        <p>先在左侧局部子图中点击节点或边，再进入对应的本地策展表单。</p>
+                        <div
+                          v-if="activeCurationSuggestions.length"
+                          class="workspace-curation-suggestions"
+                        >
+                          <button
+                            v-for="item in activeCurationSuggestions"
+                            :key="`${item.kind}:${item.id}`"
+                            type="button"
+                            class="workspace-curation-suggestion"
+                            @click="focusCurationSuggestion(item)"
+                          >
+                            <strong>
+                              {{ item.kind === 'edge' ? '边' : '节点' }} · {{ item.label }}
+                            </strong>
+                            <span>{{ item.subtitle }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="workspace-curation-actions">
+                      <a-button type="primary" @click="saveCurrentCaseDraft">
+                        <template #icon>
+                          <icon-save />
+                        </template>
+                        保存草稿
+                      </a-button>
+                      <a-button
+                        :disabled="!canRevertCurrentSelection"
+                        @click="revertCurrentSelectionDraft"
+                      >
+                        撤销修改
+                      </a-button>
+                      <a-button status="warning" @click="resetCurrentCaseDraft">重置草稿</a-button>
+                    </div>
+
+                    <div
+                      class="workspace-feedback-status"
+                      :class="{
+                        'workspace-feedback-status--success':
+                          hasUnsavedCurationChanges === false && !!actionMessage,
+                      }"
+                    >
+                      <div class="workspace-feedback-status__header">
+                        <icon-check-circle v-if="actionMessage" />
+                        <strong>
+                          {{
+                            actionMessage ||
+                            (hasUnsavedCurationChanges
+                              ? '当前有未保存的本地策展修改。'
+                              : '当前 case 没有未保存改动。')
+                          }}
+                        </strong>
+                      </div>
+                      <div class="workspace-feedback-status__meta">
+                        <span>未保存修改：{{ hasUnsavedCurationChanges ? '有' : '无' }}</span>
+                        <span>节点草稿：{{ activeWorkingCaseDraft?.node_drafts.length ?? 0 }}</span>
+                        <span>边草稿：{{ activeWorkingCaseDraft?.edge_drafts.length ?? 0 }}</span>
+                      </div>
+                    </div>
+                  </section>
+                </a-tab-pane>
+                <a-tab-pane key="trace" title="链路">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--trace">
+                    <div
+                      class="workspace-feedback-pane__section workspace-feedback-pane__section--trace"
+                    >
+                      <div
+                        class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                      >
+                        <strong>推理链路</strong>
+                        <a-button
+                          size="mini"
+                          :disabled="!activeReasoningInspection.candidate"
+                          @click="openCrossCaseCompare"
+                        >
+                          Compare
+                        </a-button>
+                      </div>
+
+                      <template v-if="activeReasoningInspection.candidate">
+                        <div class="workspace-reasoning-trace">
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Candidate</strong>
+                              <span
+                                :title="activeReasoningInspection.candidate.selectedPathId ?? '--'"
+                              >
+                                {{ activeReasoningInspection.candidate.selectedPathId ?? '--' }}
+                              </span>
                             </div>
                             <div
-                              class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                              class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
                             >
-                              <span>{{
-                                activeReasoningInspection.primaryObservation
-                                  .obsId
-                              }}</span>
-                              <span>{{
-                                activeReasoningInspection.primaryObservation
-                                  .modality
-                              }}</span>
-                              <span
-                                >confidence
-                                {{
-                                  formatScore(
-                                    activeReasoningInspection.primaryObservation
-                                      .confidence,
-                                  )
-                                }}</span
-                              >
-                              <span
-                                >{{
-                                  activeReasoningInspection.primaryObservation
-                                    .linkedEntityCount
-                                }}
-                                linked entity</span
-                              >
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Candidate</span>
+                                <strong :title="activeReasoningInspection.candidate.candidateName">
+                                  {{ activeReasoningInspection.candidate.candidateName }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Rank / Score</span>
+                                <strong>
+                                  #{{ activeReasoningInspection.candidate.rank ?? '--' }}
+                                  ·
+                                  {{ formatScore(activeReasoningInspection.candidate.score) }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Method / Role</span>
+                                <strong
+                                  :title="`${formatScoringMethodLabel(activeReasoningInspection.candidate.scoringMethod)} · ${normalizeText(activeReasoningInspection.candidate.role, 'candidate')}`"
+                                >
+                                  {{
+                                    formatScoringMethodLabel(
+                                      activeReasoningInspection.candidate.scoringMethod,
+                                    )
+                                  }}
+                                  ·
+                                  {{
+                                    normalizeText(
+                                      activeReasoningInspection.candidate.role,
+                                      'candidate',
+                                    )
+                                  }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Obs / Links</span>
+                                <strong>
+                                  {{
+                                    activeReasoningInspection.candidate.supportingObservationCount
+                                  }}
+                                  /
+                                  {{ activeReasoningInspection.candidate.linkedEntityCount }}
+                                </strong>
+                              </div>
                             </div>
-                          </button>
-                          <a-empty
-                            v-else
-                            description="当前候选暂无可解释 observation。"
-                          />
-                        </section>
+                          </section>
 
-                        <section class="workspace-reasoning-trace__section">
-                          <div
-                            class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                          >
-                            <strong>Supporting Observations</strong>
-                            <span
-                              >{{
-                                activeReasoningInspection.supportingObservations
-                                  .length
-                              }}
-                              项</span
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
                             >
-                          </div>
-                          <div
-                            v-if="
-                              activeReasoningInspection.supportingObservations
-                                .length
-                            "
-                            class="workspace-scroll-list workspace-scroll-list--reasoning"
-                          >
+                              <strong>Primary Observation</strong>
+                              <span>
+                                {{
+                                  activeReasoningInspection.primaryObservation?.obsId ?? '未推导出'
+                                }}
+                              </span>
+                            </div>
                             <button
-                              v-for="observation in activeReasoningInspection.supportingObservations.filter(
-                                (item) =>
-                                  item.obsId !==
-                                  activeReasoningInspection.primaryObservation
-                                    ?.obsId,
-                              )"
-                              :key="observation.obsId"
+                              v-if="activeReasoningInspection.primaryObservation"
                               type="button"
                               class="workspace-basic-list-item workspace-basic-list-item--reasoning"
                               :class="{
-                                'workspace-basic-list-item--active':
-                                  isReasoningObservationActive(
-                                    observation.obsId,
-                                    observation.sharedObservationId,
-                                  ),
+                                'workspace-basic-list-item--active': isReasoningObservationActive(
+                                  activeReasoningInspection.primaryObservation.obsId,
+                                  activeReasoningInspection.primaryObservation.sharedObservationId,
+                                ),
                               }"
                               @click="
                                 activateReasoningStep(
-                                  `observation:${observation.obsId}`,
+                                  `observation:${activeReasoningInspection.primaryObservation.obsId}`,
                                 )
                               "
                             >
                               <div class="workspace-basic-list-item__primary">
-                                {{ observation.title }}
+                                {{ activeReasoningInspection.primaryObservation.title }}
                               </div>
                               <div
                                 class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
                               >
-                                <span>{{ observation.obsId }}</span>
-                                <span>{{ observation.modality }}</span>
-                                <span
-                                  >confidence
+                                <span>
+                                  {{ activeReasoningInspection.primaryObservation.obsId }}
+                                </span>
+                                <span>
+                                  {{ activeReasoningInspection.primaryObservation.modality }}
+                                </span>
+                                <span>
+                                  confidence
                                   {{
-                                    formatScore(observation.confidence)
-                                  }}</span
-                                >
-                                <span
-                                  >{{ observation.linkedEntityCount }} linked
-                                  entity</span
-                                >
+                                    formatScore(
+                                      activeReasoningInspection.primaryObservation.confidence,
+                                    )
+                                  }}
+                                </span>
+                                <span>
+                                  {{
+                                    activeReasoningInspection.primaryObservation.linkedEntityCount
+                                  }}
+                                  linked entity
+                                </span>
                               </div>
                             </button>
-                          </div>
-                          <a-empty
-                            v-else
-                            description="当前候选没有 supporting observations。"
-                          />
-                        </section>
+                            <a-empty v-else description="当前候选暂无可解释 observation。" />
+                          </section>
 
-                        <section class="workspace-reasoning-trace__section">
-                          <div
-                            class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                          >
-                            <strong>Linked entities</strong>
-                            <span
-                              >{{
-                                activeReasoningInspection.linkedEntities.length
-                              }}
-                              项</span
-                            >
-                          </div>
-                          <div
-                            v-if="
-                              activeReasoningInspection.linkedEntities.length
-                            "
-                            class="workspace-scroll-list workspace-scroll-list--reasoning"
-                          >
+                          <section class="workspace-reasoning-trace__section">
                             <div
-                              v-for="entity in activeReasoningInspection.linkedEntities"
-                              :key="`entity-card:${entity.linkId}`"
-                              class="workspace-basic-list-item workspace-basic-list-item--reasoning"
-                              :class="{
-                                'workspace-basic-list-item--active':
-                                  isReasoningStepActive(
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Supporting Observations</strong>
+                              <span>
+                                {{ activeReasoningInspection.supportingObservations.length }} 项
+                              </span>
+                            </div>
+                            <div
+                              v-if="activeReasoningInspection.supportingObservations.length"
+                              class="workspace-scroll-list workspace-scroll-list--reasoning"
+                            >
+                              <button
+                                v-for="observation in activeReasoningInspection.supportingObservations.filter(
+                                  (item) =>
+                                    item.obsId !==
+                                    activeReasoningInspection.primaryObservation?.obsId,
+                                )"
+                                :key="observation.obsId"
+                                type="button"
+                                class="workspace-basic-list-item workspace-basic-list-item--reasoning"
+                                :class="{
+                                  'workspace-basic-list-item--active': isReasoningObservationActive(
+                                    observation.obsId,
+                                    observation.sharedObservationId,
+                                  ),
+                                }"
+                                @click="activateReasoningStep(`observation:${observation.obsId}`)"
+                              >
+                                <div class="workspace-basic-list-item__primary">
+                                  {{ observation.title }}
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                                >
+                                  <span>{{ observation.obsId }}</span>
+                                  <span>{{ observation.modality }}</span>
+                                  <span>confidence {{ formatScore(observation.confidence) }}</span>
+                                  <span>{{ observation.linkedEntityCount }} linked entity</span>
+                                </div>
+                              </button>
+                            </div>
+                            <a-empty v-else description="当前候选没有 supporting observations。" />
+                          </section>
+
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Linked entities</strong>
+                              <span>{{ activeReasoningInspection.linkedEntities.length }} 项</span>
+                            </div>
+                            <div
+                              v-if="activeReasoningInspection.linkedEntities.length"
+                              class="workspace-scroll-list workspace-scroll-list--reasoning"
+                            >
+                              <div
+                                v-for="entity in activeReasoningInspection.linkedEntities"
+                                :key="`entity-card:${entity.linkId}`"
+                                class="workspace-basic-list-item workspace-basic-list-item--reasoning"
+                                :class="{
+                                  'workspace-basic-list-item--active': isReasoningStepActive(
                                     `entity:${entity.linkId}`,
                                   ),
-                              }"
-                            >
-                              <div class="workspace-basic-list-item__primary">
-                                {{ entity.entityName }}
-                              </div>
-                              <div
-                                class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                                }"
                               >
-                                <span
-                                  >{{ entity.field }} ·
-                                  {{ entity.mention }}</span
+                                <div class="workspace-basic-list-item__primary">
+                                  {{ entity.entityName }}
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
                                 >
-                                <span>{{ entity.matchType ?? "--" }}</span>
-                                <span
-                                  >confidence
-                                  {{ formatScore(entity.score) }}</span
+                                  <span>{{ entity.field }} · {{ entity.mention }}</span>
+                                  <span>{{ entity.matchType ?? '--' }}</span>
+                                  <span>confidence {{ formatScore(entity.score) }}</span>
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
                                 >
-                              </div>
-                              <div
-                                class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
-                              >
-                                <a-button
-                                  size="mini"
-                                  type="text"
-                                  @click="
-                                    activateReasoningStep(
-                                      `entity:${entity.linkId}`,
-                                    )
-                                  "
-                                >
-                                  定位
-                                </a-button>
-                                <a-button
-                                  size="mini"
-                                  type="text"
-                                  @click="
-                                    openEntityLinkProvenance(entity.linkId)
-                                  "
-                                >
-                                  Provenance
-                                </a-button>
+                                  <a-button
+                                    size="mini"
+                                    type="text"
+                                    @click="activateReasoningStep(`entity:${entity.linkId}`)"
+                                  >
+                                    定位
+                                  </a-button>
+                                  <a-button
+                                    size="mini"
+                                    type="text"
+                                    @click="openEntityLinkProvenance(entity.linkId)"
+                                  >
+                                    Provenance
+                                  </a-button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <a-empty
-                            v-else
-                            description="当前候选没有可展示的 linked entities。"
-                          />
-                        </section>
+                            <a-empty v-else description="当前候选没有可展示的 linked entities。" />
+                          </section>
 
-                        <section class="workspace-reasoning-trace__section">
-                          <div
-                            class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                          >
-                            <strong>Entity / Path / Cause chain</strong>
-                            <span
-                              >{{
-                                activeReasoningInspection.traceSteps.length
-                              }}
-                              steps</span
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
                             >
-                          </div>
-                          <div class="workspace-reasoning-chain">
-                            <div class="workspace-reasoning-chain__group">
-                              <span class="workspace-summary-label"
-                                >Observations</span
-                              >
-                              <div class="workspace-reasoning-chain__items">
-                                <button
-                                  v-for="observation in activeReasoningInspection.supportingObservations"
-                                  :key="`chain-observation:${observation.obsId}`"
-                                  type="button"
-                                  class="workspace-reasoning-chip"
-                                  :class="{
-                                    'workspace-reasoning-chip--active':
-                                      isReasoningObservationActive(
-                                        observation.obsId,
-                                        observation.sharedObservationId,
-                                      ),
-                                  }"
-                                  @click="
-                                    activateReasoningStep(
-                                      `observation:${observation.obsId}`,
-                                    )
-                                  "
-                                >
-                                  {{ observation.title }}
-                                </button>
+                              <strong>Entity / Path / Cause chain</strong>
+                              <span>{{ activeReasoningInspection.traceSteps.length }} steps</span>
+                            </div>
+                            <div class="workspace-reasoning-chain">
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Observations</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <button
+                                    v-for="observation in activeReasoningInspection.supportingObservations"
+                                    :key="`chain-observation:${observation.obsId}`"
+                                    type="button"
+                                    class="workspace-reasoning-chip"
+                                    :class="{
+                                      'workspace-reasoning-chip--active':
+                                        isReasoningObservationActive(
+                                          observation.obsId,
+                                          observation.sharedObservationId,
+                                        ),
+                                    }"
+                                    @click="
+                                      activateReasoningStep(`observation:${observation.obsId}`)
+                                    "
+                                  >
+                                    {{ observation.title }}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div class="workspace-reasoning-chain__arrow">
-                              →
-                            </div>
-                            <div class="workspace-reasoning-chain__group">
-                              <span class="workspace-summary-label"
-                                >Linked entities</span
-                              >
-                              <div class="workspace-reasoning-chain__items">
-                                <button
-                                  v-for="entity in activeReasoningInspection.linkedEntities"
-                                  :key="entity.linkId"
-                                  type="button"
-                                  class="workspace-reasoning-chip"
-                                  :class="{
-                                    'workspace-reasoning-chip--active':
-                                      isReasoningStepActive(
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Linked entities</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <button
+                                    v-for="entity in activeReasoningInspection.linkedEntities"
+                                    :key="entity.linkId"
+                                    type="button"
+                                    class="workspace-reasoning-chip"
+                                    :class="{
+                                      'workspace-reasoning-chip--active': isReasoningStepActive(
                                         `entity:${entity.linkId}`,
                                       ),
-                                  }"
-                                  @click="
-                                    activateReasoningStep(
-                                      `entity:${entity.linkId}`,
-                                    )
-                                  "
-                                >
-                                  {{ entity.entityName }}
-                                </button>
+                                    }"
+                                    @click="activateReasoningStep(`entity:${entity.linkId}`)"
+                                  >
+                                    {{ entity.entityName }}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div class="workspace-reasoning-chain__arrow">
-                              →
-                            </div>
-                            <div class="workspace-reasoning-chain__group">
-                              <span class="workspace-summary-label">Path</span>
-                              <div class="workspace-reasoning-chain__items">
-                                <div
-                                  v-if="activeReasoningInspection.selectedPath"
-                                  class="workspace-reasoning-chain__path-block"
-                                >
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Path</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <div
+                                    v-if="activeReasoningInspection.selectedPath"
+                                    class="workspace-reasoning-chain__path-block"
+                                  >
+                                    <button
+                                      type="button"
+                                      class="workspace-reasoning-chip workspace-reasoning-chip--wide"
+                                      :class="{
+                                        'workspace-reasoning-chip--active': isReasoningStepActive(
+                                          `path:${activeReasoningInspection.selectedPath.pathId}`,
+                                        ),
+                                      }"
+                                      @click="
+                                        activateReasoningStep(
+                                          `path:${activeReasoningInspection.selectedPath.pathId}`,
+                                        )
+                                      "
+                                    >
+                                      {{ activeReasoningInspection.selectedPath.pathId }}
+                                      ·
+                                      {{
+                                        activeReasoningInspection.selectedPath.relationSequence.join(
+                                          ' → ',
+                                        ) || activeReasoningInspection.selectedPath.targetEntityName
+                                      }}
+                                    </button>
+                                    <a-button
+                                      size="mini"
+                                      type="text"
+                                      class="workspace-reasoning-inline-action"
+                                      @click="openSelectedPathProvenance"
+                                    >
+                                      Inspect Provenance
+                                    </a-button>
+                                  </div>
+                                  <span v-else class="workspace-reasoning-trace__hint">
+                                    当前候选没有显式 path。
+                                  </span>
+                                </div>
+                              </div>
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Candidate cause</span>
+                                <div class="workspace-reasoning-chain__items">
                                   <button
                                     type="button"
                                     class="workspace-reasoning-chip workspace-reasoning-chip--wide"
                                     :class="{
-                                      'workspace-reasoning-chip--active':
-                                        isReasoningStepActive(
-                                          `path:${activeReasoningInspection.selectedPath.pathId}`,
-                                        ),
+                                      'workspace-reasoning-chip--active': isReasoningStepActive(
+                                        `candidate:${activeReasoningInspection.candidate.rankingId}`,
+                                      ),
                                     }"
                                     @click="
                                       activateReasoningStep(
-                                        `path:${activeReasoningInspection.selectedPath.pathId}`,
+                                        `candidate:${activeReasoningInspection.candidate.rankingId}`,
                                       )
                                     "
                                   >
-                                    {{
-                                      activeReasoningInspection.selectedPath
-                                        .pathId
-                                    }}
-                                    ·
-                                    {{
-                                      activeReasoningInspection.selectedPath.relationSequence.join(
-                                        " → ",
-                                      ) ||
-                                      activeReasoningInspection.selectedPath
-                                        .targetEntityName
-                                    }}
+                                    #{{ activeReasoningInspection.candidate.rank ?? '--' }}
+                                    {{ activeReasoningInspection.candidate.candidateName }}
                                   </button>
-                                  <a-button
-                                    size="mini"
-                                    type="text"
-                                    class="workspace-reasoning-inline-action"
-                                    @click="openSelectedPathProvenance"
-                                  >
-                                    Inspect Provenance
-                                  </a-button>
                                 </div>
-                                <span
-                                  v-else
-                                  class="workspace-reasoning-trace__hint"
-                                  >当前候选没有显式 path。</span
-                                >
                               </div>
                             </div>
-                            <div class="workspace-reasoning-chain__arrow">
-                              →
-                            </div>
-                            <div class="workspace-reasoning-chain__group">
-                              <span class="workspace-summary-label"
-                                >Candidate cause</span
-                              >
-                              <div class="workspace-reasoning-chain__items">
-                                <button
-                                  type="button"
-                                  class="workspace-reasoning-chip workspace-reasoning-chip--wide"
-                                  :class="{
-                                    'workspace-reasoning-chip--active':
-                                      isReasoningStepActive(
-                                        `candidate:${activeReasoningInspection.candidate.rankingId}`,
-                                      ),
-                                  }"
-                                  @click="
-                                    activateReasoningStep(
-                                      `candidate:${activeReasoningInspection.candidate.rankingId}`,
-                                    )
-                                  "
-                                >
-                                  #{{
-                                    activeReasoningInspection.candidate.rank ??
-                                    "--"
-                                  }}
-                                  {{
-                                    activeReasoningInspection.candidate
-                                      .candidateName
-                                  }}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      </div>
-                    </template>
-                    <a-empty
-                      v-else
-                      description="先从右侧根因列表中选中一个候选，再查看 evidence → entity → path → candidate 的联动链路。"
-                    />
-                  </div>
-                </section>
-              </template>
-              <template v-else-if="feedbackCardTab === 'ledger'">
-                <section
-                  class="workspace-feedback-pane workspace-feedback-pane--ledger"
-                >
-                  <div class="workspace-feedback-pane__section workspace-feedback-pane__section--ledger">
-                    <div
-                      class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
-                    >
-                      <strong>Review Ledger</strong>
-                      <span
-                        :title="
-                          activeCase?.case_label ?? activeCase?.case_id ?? '--'
-                        "
-                        >{{
-                          activeCase?.case_label ?? activeCase?.case_id ?? "--"
-                        }}</span
-                      >
+                          </section>
+                        </div>
+                      </template>
+                      <a-empty
+                        v-else
+                        description="先从右侧根因列表中选中一个候选，再查看 evidence → entity → path → candidate 的联动链路。"
+                      />
                     </div>
-
+                  </section>
+                </a-tab-pane>
+                <a-tab-pane key="ledger" title="记录">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--ledger">
                     <div
-                      class="workspace-feedback-toolbar workspace-feedback-toolbar--ledger"
-                    >
-                      <div class="workspace-feedback-toolbar__group">
-                        <a-tooltip :content="ledgerIntroCopy" position="top">
-                          <span class="workspace-feedback-toolbar__pill">
-                            bounded only
-                          </span>
-                        </a-tooltip>
-                      </div>
-                      <div
-                        class="rl-form-field workspace-feedback-toolbar__field"
-                      >
-                        <span class="workspace-field-label">Target</span>
-                        <a-select v-model="ledgerTargetTypeFilter" size="small">
-                          <a-option
-                            v-for="option in ledgerBoundedTargetOptions"
-                            :key="option.value"
-                            :value="option.value"
-                          >
-                            {{ option.label }}
-                          </a-option>
-                        </a-select>
-                      </div>
-                    </div>
-
-                    <a-alert
-                      v-if="ledgerErrorMessage"
-                      type="warning"
-                      :show-icon="false"
-                      :title="ledgerErrorMessage"
-                    />
-
-                    <div
-                      v-if="ledgerLoading"
-                      class="workspace-build-detail-modal__loading"
-                    >
-                      <a-spin />
-                    </div>
-                    <div
-                      v-else-if="ledgerDisplayItems.length"
-                      class="workspace-scroll-list workspace-scroll-list--ledger"
+                      class="workspace-feedback-pane__section workspace-feedback-pane__section--ledger"
                     >
                       <div
-                        v-for="item in ledgerDisplayItems"
-                        :key="item.feedback_id"
-                        class="workspace-basic-list-item workspace-basic-list-item--ledger"
-                        @click="handleLedgerRecordClick(item)"
+                        class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
                       >
-                        <div
-                          class="workspace-basic-list-item__primary"
-                          :title="item.title"
-                        >
-                          {{ item.title }}
-                        </div>
-                        <div
-                          class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
-                        >
-                          <span
-                            >{{ item.targetTypeLabel }} ·
-                            {{ item.target_id }}</span
-                          >
-                          <span
-                            >{{ item.actionLabel }} ·
-                            {{ item.reviewer ?? "anonymous" }}</span
-                          >
-                          <span>{{ formatDateTime(item.created_at) }}</span>
-                        </div>
-                        <p
-                          class="workspace-ledger-record__subtitle"
-                          :title="item.subtitle"
-                        >
-                          {{ item.subtitle }}
-                        </p>
-                        <p
-                          v-if="item.note"
-                          class="workspace-ledger-record__note"
-                          :title="item.note"
-                        >
-                          {{ item.note }}
-                        </p>
-                        <div
-                          class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
-                        >
-                          <a-button
-                            size="mini"
-                            type="text"
-                            :disabled="!item.targetAvailable"
-                            @click.stop="handleLedgerRecordClick(item)"
-                          >
-                            定位
-                          </a-button>
-                          <a-button
-                            size="mini"
-                            type="text"
-                            :disabled="!item.targetAvailable"
-                            @click.stop="openLedgerRecordProvenance(item)"
-                          >
-                            Inspect Provenance
-                          </a-button>
-                        </div>
+                        <strong>Review Ledger</strong>
+                        <span :title="activeCase?.case_label ?? activeCase?.case_id ?? '--'">
+                          {{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}
+                        </span>
                       </div>
-                    </div>
-                    <a-empty
-                      v-else
-                      description="当前 run / case 暂无 bounded review ledger 记录。"
-                    />
-                  </div>
-                </section>
-              </template>
-              <template v-else-if="feedbackCardTab === 'curation'">
-                <section
-                  class="workspace-feedback-pane workspace-feedback-pane--curation"
-                >
-                  <div class="workspace-feedback-pane__section">
-                    <div class="workspace-feedback-pane__section-head">
-                      <strong>{{
-                        activeCurationEdge
-                          ? "边策展"
-                          : activeCurationNode
-                            ? "节点策展"
-                            : "图谱策展"
-                      }}</strong>
-                      <span>{{
-                        activeCurationEdge
-                          ? "边"
-                          : activeCurationNode
-                            ? "节点"
-                            : "待选"
-                      }}</span>
-                    </div>
 
-                    <div
-                      v-if="activeCurationEdge"
-                      class="workspace-curation-panel"
-                    >
-                      <div class="workspace-curation-meta">
-                        <a-tooltip
-                          :content="
-                            normalizeText(
-                              readStringAttribute(
-                                activeCurationEdge.attributes,
-                                'evidence',
-                              ),
-                              '当前边没有附带 evidence snippet。',
-                            )
-                          "
-                          position="top"
+                      <a-form
+                        id="graph-form-4"
+                        :model="{ target: ledgerTargetTypeFilter }"
+                        layout="vertical"
+                        class="workspace-feedback-toolbar workspace-feedback-toolbar--ledger workspace-form"
+                      >
+                        <div class="workspace-feedback-toolbar__group">
+                          <a-tooltip :content="ledgerIntroCopy" position="top">
+                            <span class="workspace-feedback-toolbar__pill">bounded only</span>
+                          </a-tooltip>
+                        </div>
+                        <a-form-item
+                          label="目标"
+                          :label-attrs="{ for: 'graph-ledgerTargetTypeFilter-input' }"
+                          class="workspace-form-item workspace-feedback-toolbar__field"
                         >
                           <div
-                            class="workspace-claim-note workspace-feedback-snippet-card"
+                            id="graph-ledgerTargetTypeFilter"
+                            v-control-label="'目标'"
+                            class="workspace-control"
                           >
-                            <span class="workspace-summary-label">
-                              <icon-info-circle />
-                              <span>Evidence</span>
-                            </span>
-                            <strong class="workspace-feedback-snippet">{{
-                              normalizeText(
-                                readStringAttribute(
-                                  activeCurationEdge.attributes,
-                                  "evidence",
-                                ),
-                                "当前边没有附带 evidence snippet。",
-                              )
-                            }}</strong>
+                            <a-select
+                              aria-label="目标"
+                              v-model="ledgerTargetTypeFilter"
+                              size="small"
+                            >
+                              <a-option
+                                v-for="option in ledgerBoundedTargetOptions"
+                                :key="option.value"
+                                :value="option.value"
+                              >
+                                {{ option.label }}
+                              </a-option>
+                            </a-select>
                           </div>
-                        </a-tooltip>
-                        <a-button
-                          size="small"
-                          @click="openSelectedEdgeProvenance"
-                        >
-                          Inspect Provenance
-                        </a-button>
-                      </div>
+                        </a-form-item>
+                      </a-form>
 
-                      <div class="rl-form-field">
-                        <span class="workspace-field-label">
-                          <icon-bulb />
-                          <span>审阅决策</span>
-                        </span>
-                        <a-select v-model="edgeDecisionModel">
-                          <a-option value="accept">accept</a-option>
-                          <a-option value="reject">reject</a-option>
-                          <a-option value="revise">revise</a-option>
-                          <a-option value="needs_completion"
-                            >needs_completion</a-option
-                          >
-                        </a-select>
-                      </div>
+                      <a-alert
+                        v-if="ledgerErrorMessage"
+                        type="warning"
+                        :show-icon="false"
+                        :title="ledgerErrorMessage"
+                      />
 
-                      <div class="workspace-form-row workspace-form-row--two">
-                        <div class="rl-form-field">
-                          <span class="workspace-field-label">
-                            <icon-relation />
-                            <span>Relation</span>
-                          </span>
-                          <a-input
-                            v-model="edgeRelationModel"
-                            placeholder="修改 relation 文本"
-                          />
-                        </div>
-                        <div class="rl-form-field">
-                          <span class="workspace-field-label">
-                            <icon-storage />
-                            <span>Confidence</span>
-                          </span>
-                          <a-input-number
-                            v-model="edgeConfidenceModel"
-                            :min="0"
-                            :max="1"
-                            :step="0.01"
-                            :precision="2"
-                          />
-                        </div>
+                      <div v-if="ledgerLoading" class="workspace-build-detail-modal__loading">
+                        <a-spin />
                       </div>
-
-                      <div class="rl-form-field workspace-curation-panel__field workspace-curation-panel__field--grow">
-                        <span class="workspace-field-label">
-                          <icon-info-circle />
-                          <span>Note</span>
-                        </span>
-                        <a-textarea
-                          v-model="edgeNoteModel"
-                          class="workspace-curation-panel__textarea"
-                          placeholder="记录为什么接受、拒绝或修订这条边。"
-                        />
-                      </div>
-                    </div>
-
-                    <div
-                      v-else-if="activeCurationNode"
-                      class="workspace-curation-panel"
-                    >
                       <div
-                        class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
+                        v-else-if="ledgerDisplayItems.length"
+                        class="workspace-scroll-list workspace-scroll-list--ledger"
                       >
-                        <div class="workspace-summary-list__item">
-                          <span class="workspace-summary-label">
-                            <icon-relation />
-                            <span>节点 ID</span>
-                          </span>
-                          <strong>{{ activeCurationNode.id }}</strong>
-                        </div>
-                        <div class="workspace-summary-list__item">
-                          <span class="workspace-summary-label">
-                            <icon-info-circle />
-                            <span>场景</span>
-                          </span>
-                          <strong>{{
-                            normalizeText(
-                              readStringAttribute(
-                                activeCurationNode.attributes,
-                                "scenario",
-                              ),
-                              activeCurationNode.category,
-                            )
-                          }}</strong>
-                        </div>
-                        <div class="workspace-summary-list__item">
-                          <span class="workspace-summary-label">
-                            <icon-storage />
-                            <span>Kind</span>
-                          </span>
-                          <strong>{{
-                            normalizeText(activeCurationNode.kind)
-                          }}</strong>
-                        </div>
-                        <div class="workspace-summary-list__item">
-                          <span class="workspace-summary-label">
-                            <icon-bulb />
-                            <span>说明</span>
-                          </span>
-                          <strong>{{
-                            normalizeText(activeCurationNode.description)
-                          }}</strong>
-                        </div>
-                      </div>
-
-                      <div class="workspace-form-row workspace-form-row--two">
-                        <div class="rl-form-field">
-                          <span class="workspace-field-label">
-                            <icon-info-circle />
-                            <span>Display name</span>
-                          </span>
-                          <a-input
-                            v-model="nodeDisplayNameModel"
-                            placeholder="节点展示名"
-                          />
-                        </div>
-                        <div class="rl-form-field">
-                          <span class="workspace-field-label">
-                            <icon-relation />
-                            <span>Aliases</span>
-                          </span>
-                          <a-input
-                            v-model="nodeAliasesModel"
-                            placeholder="alias1, alias2"
-                          />
-                        </div>
-                      </div>
-
-                      <div class="rl-form-field workspace-curation-panel__field workspace-curation-panel__field--grow">
-                        <span class="workspace-field-label">
-                          <icon-bulb />
-                          <span>Description</span>
-                        </span>
-                        <a-textarea
-                          v-model="nodeDescriptionModel"
-                          class="workspace-curation-panel__textarea"
-                          placeholder="补充节点说明或更保守的解释文案。"
-                        />
-                      </div>
-
-                      <div class="rl-form-field">
-                        <span class="workspace-field-label">
-                          <icon-info-circle />
-                          <span>Note</span>
-                        </span>
-                        <a-textarea
-                          v-model="nodeNoteModel"
-                          :auto-size="{ minRows: 3, maxRows: 5 }"
-                          placeholder="记录节点策展备注。"
-                        />
-                      </div>
-                    </div>
-
-                    <div v-else class="workspace-curation-empty">
-                      <p>
-                        先在左侧局部子图中点击节点或边，再进入对应的本地策展表单。
-                      </p>
-                      <div
-                        v-if="activeCurationSuggestions.length"
-                        class="workspace-curation-suggestions"
-                      >
-                        <button
-                          v-for="item in activeCurationSuggestions"
-                          :key="`${item.kind}:${item.id}`"
-                          type="button"
-                          class="workspace-curation-suggestion"
-                          @click="focusCurationSuggestion(item)"
+                        <div
+                          v-for="item in ledgerDisplayItems"
+                          :key="item.feedback_id"
+                          class="workspace-basic-list-item workspace-basic-list-item--ledger"
+                          @click="handleLedgerRecordClick(item)"
                         >
-                          <strong
-                            >{{ item.kind === "edge" ? "边" : "节点" }} ·
-                            {{ item.label }}</strong
+                          <div class="workspace-basic-list-item__primary" :title="item.title">
+                            {{ item.title }}
+                          </div>
+                          <div
+                            class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
                           >
-                          <span>{{ item.subtitle }}</span>
-                        </button>
+                            <span>{{ item.targetTypeLabel }} · {{ item.target_id }}</span>
+                            <span>{{ item.actionLabel }} · {{ item.reviewer ?? 'anonymous' }}</span>
+                            <span>{{ formatDateTime(item.created_at) }}</span>
+                          </div>
+                          <p class="workspace-ledger-record__subtitle" :title="item.subtitle">
+                            {{ item.subtitle }}
+                          </p>
+                          <p
+                            v-if="item.note"
+                            class="workspace-ledger-record__note"
+                            :title="item.note"
+                          >
+                            {{ item.note }}
+                          </p>
+                          <div
+                            class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
+                          >
+                            <a-button
+                              size="mini"
+                              type="text"
+                              :disabled="!item.targetAvailable"
+                              @click.stop="handleLedgerRecordClick(item)"
+                            >
+                              定位
+                            </a-button>
+                            <a-button
+                              size="mini"
+                              type="text"
+                              :disabled="!item.targetAvailable"
+                              @click.stop="openLedgerRecordProvenance(item)"
+                            >
+                              Inspect Provenance
+                            </a-button>
+                          </div>
+                        </div>
                       </div>
+                      <a-empty
+                        v-else
+                        description="当前 run / case 暂无 bounded review ledger 记录。"
+                      />
                     </div>
-                  </div>
-
-                  <div class="workspace-curation-actions">
-                    <a-button type="primary" @click="saveCurrentCaseDraft">
-                      <template #icon>
-                        <icon-save />
-                      </template>
-                      保存草稿
-                    </a-button>
-                    <a-button
-                      :disabled="!canRevertCurrentSelection"
-                      @click="revertCurrentSelectionDraft"
-                      >撤销修改</a-button
-                    >
-                    <a-button status="warning" @click="resetCurrentCaseDraft"
-                      >重置草稿</a-button
-                    >
-                  </div>
-
-                  <div
-                    class="workspace-feedback-status"
-                    :class="{
-                      'workspace-feedback-status--success':
-                        hasUnsavedCurationChanges === false && !!actionMessage,
-                    }"
-                  >
-                    <div class="workspace-feedback-status__header">
-                      <icon-check-circle v-if="actionMessage" />
-                      <strong>{{
-                        actionMessage ||
-                        (hasUnsavedCurationChanges
-                          ? "当前有未保存的本地策展修改。"
-                          : "当前 case 没有未保存改动。")
-                      }}</strong>
-                    </div>
-                    <div class="workspace-feedback-status__meta">
-                      <span
-                        >未保存修改：{{
-                          hasUnsavedCurationChanges ? "有" : "无"
-                        }}</span
-                      >
-                      <span
-                        >节点草稿：{{
-                          activeWorkingCaseDraft?.node_drafts.length ?? 0
-                        }}</span
-                      >
-                      <span
-                        >边草稿：{{
-                          activeWorkingCaseDraft?.edge_drafts.length ?? 0
-                        }}</span
-                      >
-                    </div>
-                  </div>
-                </section>
-              </template>
+                  </section>
+                </a-tab-pane>
+              </a-tabs>
             </div>
           </article>
         </section>
@@ -3451,84 +3183,70 @@ onMounted(() => {
                 </SectionCardTitle>
               </h3>
             </div>
-            <a-tag color="green">{{
-              activeCase?.ranked_root_causes?.length ?? 0
-            }}</a-tag>
+            <a-tag color="green">{{ activeCase?.ranked_root_causes?.length ?? 0 }}</a-tag>
           </header>
-          <div
-            class="rl-section-card__body workspace-root-cause-aside-card__body"
-          >
-            <section
-              class="workspace-root-cause-aside-card__context workspace-stack workspace-stack--tight"
+          <div class="rl-section-card__body workspace-root-cause-aside-card__body">
+            <a-form
+              id="graph-form-5"
+              :model="workbenchState"
+              layout="vertical"
+              class="workspace-root-cause-aside-card__context workspace-stack workspace-stack--tight workspace-form"
             >
-              <div class="rl-form-field">
-                <span class="workspace-field-label">
-                  <icon-storage />
-                  <span>Run</span>
-                </span>
-                <a-select
-                  :model-value="runDetail?.run.run_id"
-                  @change="handleRunChange"
-                >
-                  <a-option
-                    v-for="run in runs"
-                    :key="run.run_id"
-                    :value="run.run_id"
+              <a-form-item
+                label="运行"
+                :label-attrs="{ for: 'graph-run-input' }"
+                class="workspace-form-item"
+              >
+                <div id="graph-run" v-control-label="'运行'" class="workspace-control">
+                  <a-select
+                    aria-label="运行"
+                    :model-value="runDetail?.run.run_id"
+                    @change="handleRunChange"
                   >
-                    {{ run.label }}
-                  </a-option>
-                </a-select>
-              </div>
-              <div class="rl-form-field">
-                <span class="workspace-field-label">
-                  <icon-relation />
-                  <span>Case</span>
-                </span>
-                <a-select
-                  :model-value="activeCase?.case_id"
-                  @change="handleCaseChange"
-                >
-                  <a-option
-                    v-for="caseItem in runDetail?.cases ?? []"
-                    :key="caseItem.case_id"
-                    :value="caseItem.case_id"
+                    <a-option v-for="run in runs" :key="run.run_id" :value="run.run_id">
+                      {{ run.label }}
+                    </a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
+              <a-form-item
+                label="案例"
+                :label-attrs="{ for: 'graph-case-input' }"
+                class="workspace-form-item"
+              >
+                <div id="graph-case" v-control-label="'案例'" class="workspace-control">
+                  <a-select
+                    aria-label="案例"
+                    :model-value="activeCase?.case_id"
+                    @change="handleCaseChange"
                   >
-                    {{ caseItem.case_label ?? caseItem.case_id }}
-                  </a-option>
-                </a-select>
-              </div>
-              <div class="workspace-claim-note workspace-claim-note--compact">
-                <span class="workspace-summary-label">
-                  <icon-info-circle />
-                  <span>Effective reasoning</span>
-                </span>
-                <span class="rl-inline-tags">
-                  <a-tag size="small" color="purple"
-                    >Adapter · {{ formatReasonerAdapterLabel(activeReasoningSummary.adapter) }}</a-tag
-                  >
-                  <a-tag size="small" color="arcoblue"
-                    >Profile · {{ activeReasoningSummary.profileId ?? "--" }}</a-tag
-                  >
-                  <a-tag size="small" color="gold"
-                    >Mode · {{ formatReasoningSelectionModeLabel(activeReasoningSummary.selectionMode) }}</a-tag
-                  >
-                </span>
-              </div>
+                    <a-option
+                      v-for="caseItem in runDetail?.cases ?? []"
+                      :key="caseItem.case_id"
+                      :value="caseItem.case_id"
+                    >
+                      {{ caseItem.case_label ?? caseItem.case_id }}
+                    </a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
 
               <a-alert
                 v-if="activeReasoningSummary.fallbackApplied"
                 type="info"
                 :show-icon="false"
-                :title="activeReasoningSummary.fallbackReason ? `当前结果已回退到通用路径推理：${activeReasoningSummary.fallbackReason}` : '当前结果已回退到通用路径推理'"
+                :title="
+                  activeReasoningSummary.fallbackReason
+                    ? `当前结果已回退到通用路径推理：${activeReasoningSummary.fallbackReason}`
+                    : '当前结果已回退到通用路径推理'
+                "
               />
-            </section>
+            </a-form>
 
             <section class="workspace-root-cause-aside-card__list">
               <div class="workspace-root-cause-aside-card__section-header">
                 <strong>候选根因</strong>
-                <span>{{
-                  activeCandidate ? "已选中 1 项" : "当前未选中"
-                }}</span>
+                <span>{{ activeCandidate ? '已选中 1 项' : '当前未选中' }}</span>
               </div>
               <div class="workspace-scroll-list workspace-scroll-list--fill">
                 <button
@@ -3543,24 +3261,15 @@ onMounted(() => {
                   @click="selectCandidate(candidate.ranking_id)"
                 >
                   <div class="workspace-list-item__head">
-                    <strong
-                      >#{{ candidate.rank }}
-                      {{ candidate.candidate_name }}</strong
-                    >
+                    <strong>#{{ candidate.rank }} {{ candidate.candidate_name }}</strong>
                     <span>{{ formatScore(candidate.score) }}</span>
                   </div>
                   <div class="workspace-list-item__meta">
-                    <span>{{
-                      formatScoringMethodLabel(candidate.scoring_method)
-                    }}</span>
-                    <span>{{
-                      normalizeText(candidate.candidate_role, "candidate")
-                    }}</span>
+                    <span>{{ formatScoringMethodLabel(candidate.scoring_method) }}</span>
+                    <span>{{ normalizeText(candidate.candidate_role, 'candidate') }}</span>
                   </div>
                 </button>
-                <a-empty v-if="!activeCase?.ranked_root_causes?.length"
-                  >暂无候选根因</a-empty
-                >
+                <a-empty v-if="!activeCase?.ranked_root_causes?.length">暂无候选根因</a-empty>
               </div>
             </section>
           </div>
@@ -3586,11 +3295,10 @@ onMounted(() => {
             </span>
             <strong>
               {{
-                activeReasoningInspection.crossCaseRecurrence
-                  ?.currentCaseLabel ??
+                activeReasoningInspection.crossCaseRecurrence?.currentCaseLabel ??
                 activeCase?.case_label ??
                 activeCase?.case_id ??
-                "--"
+                '--'
               }}
               · same run only
             </strong>
@@ -3601,24 +3309,18 @@ onMounted(() => {
               class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
             >
               <strong>Recurring entities</strong>
-              <span
-                >{{
-                  activeReasoningInspection.crossCaseRecurrence
-                    ?.recurringEntities.length ?? 0
-                }}
-                项</span
-              >
+              <span>
+                {{ activeReasoningInspection.crossCaseRecurrence?.recurringEntities.length ?? 0 }}
+                项
+              </span>
             </div>
             <div
-              v-if="
-                activeReasoningInspection.crossCaseRecurrence?.recurringEntities
-                  .length
-              "
+              v-if="activeReasoningInspection.crossCaseRecurrence?.recurringEntities.length"
               class="workspace-recurrence-list"
             >
               <article
-                v-for="entity in activeReasoningInspection.crossCaseRecurrence
-                  ?.recurringEntities ?? []"
+                v-for="entity in activeReasoningInspection.crossCaseRecurrence?.recurringEntities ??
+                []"
                 :key="entity.entityId"
                 class="workspace-recurrence-card"
               >
@@ -3628,10 +3330,9 @@ onMounted(() => {
                 </div>
                 <div class="workspace-recurrence-card__meta">
                   <span>{{ entity.entityId }}</span>
-                  <span
-                    >当前 observation:
-                    {{ entity.currentObservationIds.join(", ") || "--" }}</span
-                  >
+                  <span>
+                    当前 observation: {{ entity.currentObservationIds.join(', ') || '--' }}
+                  </span>
                 </div>
                 <div class="workspace-recurrence-card__hits">
                   <button
@@ -3648,9 +3349,7 @@ onMounted(() => {
                       class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
                     >
                       <span>{{ hit.caseId }}</span>
-                      <span>{{
-                        hit.matchedPathIds.join(", ") || "entity recurrence"
-                      }}</span>
+                      <span>{{ hit.matchedPathIds.join(', ') || 'entity recurrence' }}</span>
                     </div>
                   </button>
                 </div>
@@ -3667,24 +3366,17 @@ onMounted(() => {
               class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
             >
               <strong>Recurring paths</strong>
-              <span
-                >{{
-                  activeReasoningInspection.crossCaseRecurrence?.recurringPaths
-                    .length ?? 0
-                }}
-                项</span
-              >
+              <span>
+                {{ activeReasoningInspection.crossCaseRecurrence?.recurringPaths.length ?? 0 }} 项
+              </span>
             </div>
             <div
-              v-if="
-                activeReasoningInspection.crossCaseRecurrence?.recurringPaths
-                  .length
-              "
+              v-if="activeReasoningInspection.crossCaseRecurrence?.recurringPaths.length"
               class="workspace-recurrence-list"
             >
               <article
-                v-for="pathSummary in activeReasoningInspection
-                  .crossCaseRecurrence?.recurringPaths ?? []"
+                v-for="pathSummary in activeReasoningInspection.crossCaseRecurrence
+                  ?.recurringPaths ?? []"
                 :key="pathSummary.signature"
                 class="workspace-recurrence-card"
               >
@@ -3694,9 +3386,7 @@ onMounted(() => {
                 </div>
                 <div class="workspace-recurrence-card__meta">
                   <span>{{ pathSummary.signature }}</span>
-                  <span>{{
-                    pathSummary.relationSequence.join(" → ") || "--"
-                  }}</span>
+                  <span>{{ pathSummary.relationSequence.join(' → ') || '--' }}</span>
                 </div>
                 <div class="workspace-recurrence-card__hits">
                   <button
@@ -3713,18 +3403,13 @@ onMounted(() => {
                       class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
                     >
                       <span>{{ hit.caseId }}</span>
-                      <span>{{
-                        hit.matchedPathIds.join(", ") || "path recurrence"
-                      }}</span>
+                      <span>{{ hit.matchedPathIds.join(', ') || 'path recurrence' }}</span>
                     </div>
                   </button>
                 </div>
               </article>
             </div>
-            <a-empty
-              v-else
-              description="当前候选路径在同 run 其他 case 中没有显式 recurrence。"
-            />
+            <a-empty v-else description="当前候选路径在同 run 其他 case 中没有显式 recurrence。" />
           </section>
         </div>
       </a-drawer>

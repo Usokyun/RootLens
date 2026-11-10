@@ -26,7 +26,6 @@ import type {
   KGStudioPayload,
 } from "@/api/contracts";
 import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
-import WorkbenchHero from "@/components/layout/WorkbenchHero.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import { useAppPreferences } from "@/services/app-preferences";
 import { extractFirstFileFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
@@ -158,29 +157,6 @@ const materialClaimBoundaryCopy = computed(() =>
 );
 
 const canExportBuild = computed(() => !!buildDetail.value);
-const extractedMaterialCount = computed(
-  () => materials.value.filter((item) => item.extraction_status === "extracted").length,
-);
-const heroMetrics = computed(() => [
-  {
-    label: "素材数",
-    value: materials.value.length,
-    hint: "后端 material library 中可管理的素材数",
-    tone: "blue" as const,
-  },
-  {
-    label: "已抽取",
-    value: extractedMaterialCount.value,
-    hint: "已经生成 structured records 的素材数",
-    tone: "teal" as const,
-  },
-  {
-    label: "构图记录",
-    value: builds.value?.builds.length ?? 0,
-    hint: "现有 candidate KG 构图批次",
-    tone: "amber" as const,
-  },
-]);
 
 const materialsLibraryHelp =
   "backend mode 下优先展示真实素材库，再从 extract 推进到 build-sources。";
@@ -790,34 +766,8 @@ onMounted(() => {
     class="rl-page rl-screen"
     :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
   >
-    <WorkbenchHero
-      eyebrow="素材与构图"
-      title="素材管理、抽取链路与候选图谱构建"
-      :metrics="heroMetrics"
-      tone="amber"
-    >
-      <template #actions>
-        <a-button size="small" @click="refreshWorkspace">
-          <template #icon>
-            <icon-refresh />
-          </template>
-          刷新视图
-        </a-button>
-      </template>
-    </WorkbenchHero>
-
-    <a-alert
-      v-if="errorMessage"
-      class="rl-alert"
-      type="error"
-      :title="errorMessage"
-    />
-    <a-alert
-      v-if="actionMessage"
-      class="rl-alert"
-      type="success"
-      :title="actionMessage"
-    />
+    <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
+    <a-alert v-if="actionMessage" class="rl-alert" type="success" :title="actionMessage" />
 
     <section class="workspace-shell workspace-shell--materials">
       <div class="workspace-materials-layout">
@@ -826,51 +776,132 @@ onMounted(() => {
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="Material Library" :help="materialsLibraryHelp">
+                  <SectionCardTitle title="素材库" :help="materialsLibraryHelp">
                     <icon-relation />
                   </SectionCardTitle>
                 </h3>
               </div>
-              <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
+              <div class="rl-panel-actions">
+                <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
+                <a-button :loading="loading" @click="refreshWorkspace">
+                  <template #icon><icon-refresh /></template>
+                  刷新视图
+                </a-button>
+              </div>
             </header>
             <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
-              <div class="workspace-filter-row">
-                <a-input v-model="filters.search" placeholder="搜索 material / 路径 / 说明" />
-                <a-select v-model="filters.dataset">
-                  <a-option value="all">全部场景</a-option>
-                  <a-option value="shared">shared</a-option>
-                  <a-option value="tep">tep</a-option>
-                  <a-option value="mvtec">mvtec</a-option>
-                  <a-option value="wafer">wafer</a-option>
-                </a-select>
-                <a-select v-model="filters.type">
-                  <a-option value="all">全部类型</a-option>
-                  <a-option value="text">text</a-option>
-                  <a-option value="markdown">markdown</a-option>
-                  <a-option value="webpage">webpage</a-option>
-                  <a-option value="pdf">pdf</a-option>
-                  <a-option value="csv">csv</a-option>
-                  <a-option value="json">json</a-option>
-                  <a-option value="jsonl">jsonl</a-option>
-                </a-select>
-                <a-select v-model="filters.status">
-                  <a-option value="all">全部状态</a-option>
-                  <a-option value="registered">registered</a-option>
-                  <a-option value="uploaded">uploaded</a-option>
-                  <a-option value="extracted">extracted</a-option>
-                </a-select>
-                <a-select v-model="filters.sortField">
-                  <a-option value="updatedAt">按更新时间</a-option>
-                  <a-option value="title">按名称</a-option>
-                  <a-option value="type">按类型</a-option>
-                </a-select>
-                <a-select v-model="filters.sortOrder">
-                  <a-option value="desc">降序</a-option>
-                  <a-option value="asc">升序</a-option>
-                </a-select>
-              </div>
+              <a-form
+                id="materials-form-1"
+                :model="filters"
+                layout="vertical"
+                class="workspace-filter-row workspace-form"
+              >
+                <a-form-item
+                  field="search"
+                  label="搜索"
+                  :label-attrs="{ for: 'material-filter-search-input' }"
+                >
+                  <a-input
+                    :input-attrs="{ id: 'material-filter-search-input', 'aria-label': '搜索' }"
+                    id="material-filter-search"
+                    aria-label="搜索"
+                    v-model="filters.search"
+                    placeholder="搜索 material / 路径 / 说明"
+                  />
+                </a-form-item>
+                <a-form-item
+                  field="dataset"
+                  label="场景"
+                  :label-attrs="{ for: 'material-filter-dataset-input' }"
+                >
+                  <div
+                    id="material-filter-dataset"
+                    v-control-label="'场景'"
+                    class="workspace-control"
+                  >
+                    <a-select aria-label="场景" v-model="filters.dataset">
+                      <a-option value="all">全部场景</a-option>
+                      <a-option value="shared">shared</a-option>
+                      <a-option value="tep">tep</a-option>
+                      <a-option value="mvtec">mvtec</a-option>
+                      <a-option value="wafer">wafer</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
+                <a-form-item
+                  field="type"
+                  label="类型"
+                  :label-attrs="{ for: 'material-filter-type-input' }"
+                >
+                  <div id="material-filter-type" v-control-label="'类型'" class="workspace-control">
+                    <a-select aria-label="类型" v-model="filters.type">
+                      <a-option value="all">全部类型</a-option>
+                      <a-option value="text">text</a-option>
+                      <a-option value="markdown">markdown</a-option>
+                      <a-option value="webpage">webpage</a-option>
+                      <a-option value="pdf">pdf</a-option>
+                      <a-option value="csv">csv</a-option>
+                      <a-option value="json">json</a-option>
+                      <a-option value="jsonl">jsonl</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
+                <a-form-item
+                  field="status"
+                  label="状态"
+                  :label-attrs="{ for: 'material-filter-status-input' }"
+                >
+                  <div
+                    id="material-filter-status"
+                    v-control-label="'状态'"
+                    class="workspace-control"
+                  >
+                    <a-select aria-label="状态" v-model="filters.status">
+                      <a-option value="all">全部状态</a-option>
+                      <a-option value="registered">registered</a-option>
+                      <a-option value="uploaded">uploaded</a-option>
+                      <a-option value="extracted">extracted</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
+                <a-form-item
+                  field="sortField"
+                  label="排序字段"
+                  :label-attrs="{ for: 'material-filter-sortField-input' }"
+                >
+                  <div
+                    id="material-filter-sortField"
+                    v-control-label="'排序字段'"
+                    class="workspace-control"
+                  >
+                    <a-select aria-label="排序字段" v-model="filters.sortField">
+                      <a-option value="updatedAt">按更新时间</a-option>
+                      <a-option value="title">按名称</a-option>
+                      <a-option value="type">按类型</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
+                <a-form-item
+                  field="sortOrder"
+                  label="排序方向"
+                  :label-attrs="{ for: 'material-filter-sortOrder-input' }"
+                >
+                  <div
+                    id="material-filter-sortOrder"
+                    v-control-label="'排序方向'"
+                    class="workspace-control"
+                  >
+                    <a-select aria-label="排序方向" v-model="filters.sortOrder">
+                      <a-option value="desc">降序</a-option>
+                      <a-option value="asc">升序</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
+              </a-form>
 
-              <div class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill">
+              <div
+                class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill"
+              >
                 <table class="workspace-table">
                   <thead>
                     <tr>
@@ -894,11 +925,11 @@ onMounted(() => {
                       @click="selectedMaterialId = material.material_id"
                     >
                       <td>
-                        <input
-                          type="checkbox"
-                          :checked="selectedMaterialIds.includes(material.material_id)"
+                        <a-checkbox
+                          :model-value="selectedMaterialIds.includes(material.material_id)"
+                          :aria-label="'选择素材 ' + material.title"
                           @click.stop
-                          @change="toggleMaterialSelection(material.material_id, ($event.target as HTMLInputElement).checked)"
+                          @change="toggleMaterialSelection(material.material_id, Boolean($event))"
                         />
                       </td>
                       <td>
@@ -937,7 +968,12 @@ onMounted(() => {
                 </div>
                 <a-tag color="arcoblue">{{ selectedMaterial?.material_id ?? '未选择' }}</a-tag>
               </header>
-              <div class="rl-section-card__body workspace-stack workspace-stack--tight">
+              <a-form
+                id="materials-form-2"
+                :model="sourceDraftForm"
+                layout="vertical"
+                class="rl-section-card__body workspace-stack workspace-stack--tight workspace-form"
+              >
                 <div class="workspace-summary-list workspace-summary-list--two-col">
                   <div class="workspace-summary-list__item">
                     <span class="workspace-summary-label">
@@ -983,49 +1019,91 @@ onMounted(() => {
                   </div>
                 </div>
 
-
                 <div class="workspace-summary-list__item">
                   <span class="workspace-summary-label">
                     <icon-info-circle />
                     <span>Location</span>
                   </span>
-                  <strong :title="formatMaterialLocation(selectedMaterial)">{{ formatMaterialLocation(selectedMaterial) }}</strong>
+                  <strong :title="formatMaterialLocation(selectedMaterial)">
+                    {{ formatMaterialLocation(selectedMaterial) }}
+                  </strong>
                 </div>
 
                 <div class="rl-form-actions rl-form-actions--dual">
-                  <a-button size="small" :disabled="!selectedMaterial" @click="selectedMaterial?.material_id && loadSelectedMaterialState(selectedMaterial.material_id)">
+                  <a-button
+                    size="small"
+                    :disabled="!selectedMaterial"
+                    @click="
+                      selectedMaterial?.material_id &&
+                      loadSelectedMaterialState(selectedMaterial.material_id)
+                    "
+                  >
                     刷新详情
                   </a-button>
-                  <a-button type="primary" size="small" :disabled="!selectedMaterial" :loading="materialExtractLoading" @click="handleMaterialExtract">
+                  <a-button
+                    type="primary"
+                    size="small"
+                    :disabled="!selectedMaterial"
+                    :loading="materialExtractLoading"
+                    @click="handleMaterialExtract"
+                  >
                     执行抽取
                   </a-button>
-                  <a-button size="small" :disabled="!selectedMaterial || !materialChunks.length" :loading="sourceDraftLoading" @click="handleGenerateSourceDraftPreview">
+                  <a-button
+                    size="small"
+                    :disabled="!selectedMaterial || !materialChunks.length"
+                    :loading="sourceDraftLoading"
+                    @click="handleGenerateSourceDraftPreview"
+                  >
                     生成预览
                   </a-button>
                 </div>
 
                 <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-bulb />
-                      <span>Preview scenario</span>
-                    </span>
-                    <a-input v-model="sourceDraftForm.defaultScenario" />
-                  </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label">
-                      <icon-info-circle />
-                      <span>Preview confidence</span>
-                    </span>
-                    <a-input-number v-model="sourceDraftForm.confidence" :min="0" :max="1" :step="0.05" />
-                  </div>
+                  <a-form-item
+                    field="defaultScenario"
+                    label="预览场景"
+                    :label-attrs="{ for: 'material-sourceDraftForm-defaultScenario-input' }"
+                    class="workspace-form-item"
+                  >
+                    <a-input
+                      :input-attrs="{
+                        id: 'material-sourceDraftForm-defaultScenario-input',
+                        'aria-label': '预览场景',
+                      }"
+                      id="material-sourceDraftForm-defaultScenario"
+                      aria-label="预览场景"
+                      v-model="sourceDraftForm.defaultScenario"
+                    />
+                  </a-form-item>
+                  <a-form-item
+                    field="confidence"
+                    label="预览置信度"
+                    :label-attrs="{ for: 'material-sourceDraftForm-confidence-input' }"
+                    class="workspace-form-item"
+                  >
+                    <a-input-number
+                      :input-attrs="{
+                        id: 'material-sourceDraftForm-confidence-input',
+                        'aria-label': '预览置信度',
+                      }"
+                      id="material-sourceDraftForm-confidence"
+                      aria-label="预览置信度"
+                      v-model="sourceDraftForm.confidence"
+                      :min="0"
+                      :max="1"
+                      :step="0.05"
+                    />
+                  </a-form-item>
                 </div>
 
                 <a-spin v-if="materialDetailLoading" />
 
                 <a-tabs v-else v-model:active-key="selectedMaterialTab">
                   <a-tab-pane key="detail" title="Detail">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(materialDetail ?? selectedMaterial) }}</pre>
+                    <pre class="rl-json-preview">{{
+                      formatJsonPreview(materialDetail ?? selectedMaterial)
+                    }}</pre>
                   </a-tab-pane>
                   <a-tab-pane key="chunks" title="Chunks">
                     <pre class="rl-json-preview">{{ formatJsonPreview(materialChunks) }}</pre>
@@ -1043,7 +1121,7 @@ onMounted(() => {
                     <pre class="rl-json-preview">{{ formatJsonPreview(sourceDraftPreview) }}</pre>
                   </a-tab-pane>
                 </a-tabs>
-              </div>
+              </a-form>
             </article>
 
             <article class="rl-section-card workspace-upload-source-card">
@@ -1057,113 +1135,265 @@ onMounted(() => {
                 </div>
               </header>
               <div class="rl-section-card__body workspace-stack workspace-stack--tight">
-                <div class="rl-form-field workspace-dropzone-field">
-                  <span class="workspace-field-label">
-                    <icon-upload />
-                    <span>本地文件</span>
-                  </span>
-                  <div
-                    class="rl-file-dropzone rl-file-dropzone--fill"
-                    :class="{ 'rl-file-dropzone--active': uploadDragActive }"
-                    @dragenter="handleUploadDragEnter"
-                    @dragover="handleUploadDragOver"
-                    @dragleave="handleUploadDragLeave"
-                    @drop="handleUploadDrop"
+                <a-form
+                  id="materials-form-3"
+                  :model="uploadForm"
+                  layout="vertical"
+                  class="workspace-form"
+                >
+                  <a-form-item
+                    label="本地文件"
+                    label-component="span"
+                    class="workspace-form-item workspace-dropzone-field"
                   >
-                    <input
-                      ref="uploadInputRef"
-                      class="rl-file-input-native"
-                      type="file"
-                      :accept="uploadAccept"
-                      @change="handleUploadFileChange"
-                    />
-                    <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
-                      <div class="rl-file-dropzone__copy">
-                        <strong>{{ uploadForm.file?.name ?? '拖动素材文件到这里，或点击选择文件' }}</strong>
-                        <span>{{ uploadAccept }}</span>
+                    <div
+                      class="rl-file-dropzone rl-file-dropzone--fill"
+                      :class="{ 'rl-file-dropzone--active': uploadDragActive }"
+                      @dragenter="handleUploadDragEnter"
+                      @dragover="handleUploadDragOver"
+                      @dragleave="handleUploadDragLeave"
+                      @drop="handleUploadDrop"
+                    >
+                      <input
+                        ref="uploadInputRef"
+                        class="rl-file-input-native"
+                        type="file"
+                        :accept="uploadAccept"
+                        @change="handleUploadFileChange"
+                      />
+                      <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
+                        <div class="rl-file-dropzone__copy">
+                          <strong>
+                            {{ uploadForm.file?.name ?? '拖动素材文件到这里，或点击选择文件' }}
+                          </strong>
+                          <span>{{ uploadAccept }}</span>
+                        </div>
+                        <a-button aria-label="选择素材文件" size="small" @click="openUploadPicker">
+                          选择文件
+                        </a-button>
                       </div>
-                      <a-button size="small" @click="openUploadPicker">选择文件</a-button>
                     </div>
-                  </div>
-                </div>
+                  </a-form-item>
 
-                <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-info-circle /><span>标题</span></span>
-                    <a-input v-model="uploadForm.title" />
+                  <div class="workspace-form-row workspace-form-row--two">
+                    <a-form-item
+                      field="title"
+                      label="标题"
+                      :label-attrs="{ for: 'material-uploadForm-title-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-uploadForm-title-input',
+                          'aria-label': '标题',
+                        }"
+                        id="material-uploadForm-title"
+                        aria-label="标题"
+                        v-model="uploadForm.title"
+                      />
+                    </a-form-item>
+                    <a-form-item
+                      field="materialId"
+                      label="素材 ID"
+                      :label-attrs="{ for: 'material-uploadForm-materialId-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-uploadForm-materialId-input',
+                          'aria-label': '素材 ID',
+                        }"
+                        id="material-uploadForm-materialId"
+                        aria-label="素材 ID"
+                        v-model="uploadForm.materialId"
+                      />
+                    </a-form-item>
                   </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-storage /><span>material_id</span></span>
-                    <a-input v-model="uploadForm.materialId" />
+                  <div class="workspace-form-row workspace-form-row--two">
+                    <a-form-item
+                      field="scenario"
+                      label="场景"
+                      :label-attrs="{ for: 'material-uploadForm-scenario-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-uploadForm-scenario-input',
+                          'aria-label': '场景',
+                        }"
+                        id="material-uploadForm-scenario"
+                        aria-label="场景"
+                        v-model="uploadForm.scenario"
+                      />
+                    </a-form-item>
+                    <a-form-item
+                      field="sourceType"
+                      label="类型"
+                      :label-attrs="{ for: 'material-uploadForm-sourceType-input' }"
+                      class="workspace-form-item"
+                    >
+                      <div
+                        id="material-uploadForm-sourceType"
+                        v-control-label="'类型'"
+                        class="workspace-control"
+                      >
+                        <a-select aria-label="类型" v-model="uploadForm.sourceType">
+                          <a-option value="text">text</a-option>
+                          <a-option value="markdown">markdown</a-option>
+                          <a-option value="webpage">webpage</a-option>
+                          <a-option value="pdf">pdf</a-option>
+                          <a-option value="csv">csv</a-option>
+                          <a-option value="json">json</a-option>
+                          <a-option value="jsonl">jsonl</a-option>
+                          <a-option value="other">other</a-option>
+                        </a-select>
+                      </div>
+                    </a-form-item>
                   </div>
-                </div>
-                <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-bulb /><span>场景</span></span>
-                    <a-input v-model="uploadForm.scenario" />
+                  <a-form-item
+                    field="notes"
+                    label="备注"
+                    :label-attrs="{ for: 'material-uploadForm-notes-input' }"
+                    class="workspace-form-item"
+                  >
+                    <a-textarea
+                      :textarea-attrs="{
+                        id: 'material-uploadForm-notes-input',
+                        'aria-label': '备注',
+                      }"
+                      id="material-uploadForm-notes"
+                      aria-label="备注"
+                      v-model="uploadForm.notes"
+                      :auto-size="{ minRows: 2, maxRows: 4 }"
+                    />
+                  </a-form-item>
+                  <div class="rl-form-actions">
+                    <a-button
+                      type="primary"
+                      :loading="materialMutationLoading"
+                      @click="handleMaterialUpload"
+                    >
+                      上传素材
+                    </a-button>
                   </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-relation /><span>类型</span></span>
-                    <a-select v-model="uploadForm.sourceType">
-                      <a-option value="text">text</a-option>
-                      <a-option value="markdown">markdown</a-option>
-                      <a-option value="webpage">webpage</a-option>
-                      <a-option value="pdf">pdf</a-option>
-                      <a-option value="csv">csv</a-option>
-                      <a-option value="json">json</a-option>
-                      <a-option value="jsonl">jsonl</a-option>
-                      <a-option value="other">other</a-option>
-                    </a-select>
+                </a-form>
+                <a-divider />
+                <a-form
+                  id="materials-form-4"
+                  :model="registerUrlForm"
+                  layout="vertical"
+                  class="workspace-form"
+                >
+                  <a-form-item
+                    field="url"
+                    label="URL"
+                    :label-attrs="{ for: 'material-registerUrlForm-url-input' }"
+                    class="workspace-form-item"
+                  >
+                    <a-input
+                      :input-attrs="{
+                        id: 'material-registerUrlForm-url-input',
+                        'aria-label': 'URL',
+                      }"
+                      id="material-registerUrlForm-url"
+                      aria-label="URL"
+                      v-model="registerUrlForm.url"
+                      placeholder="https://example.com/doc"
+                    />
+                  </a-form-item>
+                  <div class="workspace-form-row workspace-form-row--two">
+                    <a-form-item
+                      field="title"
+                      label="标题"
+                      :label-attrs="{ for: 'material-registerUrlForm-title-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-registerUrlForm-title-input',
+                          'aria-label': '标题',
+                        }"
+                        id="material-registerUrlForm-title"
+                        aria-label="标题"
+                        v-model="registerUrlForm.title"
+                      />
+                    </a-form-item>
+                    <a-form-item
+                      field="materialId"
+                      label="素材 ID"
+                      :label-attrs="{ for: 'material-registerUrlForm-materialId-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-registerUrlForm-materialId-input',
+                          'aria-label': '素材 ID',
+                        }"
+                        id="material-registerUrlForm-materialId"
+                        aria-label="素材 ID"
+                        v-model="registerUrlForm.materialId"
+                      />
+                    </a-form-item>
                   </div>
-                </div>
-                <div class="rl-form-field">
-                  <span class="workspace-field-label"><icon-info-circle /><span>备注</span></span>
-                  <a-textarea v-model="uploadForm.notes" :auto-size="{ minRows: 2, maxRows: 4 }" />
-                </div>
-                <div class="rl-form-actions">
-                  <a-button type="primary" :loading="materialMutationLoading" @click="handleMaterialUpload">
-                    上传素材
-                  </a-button>
-                </div>
-
-
-                <div class="rl-form-field">
-                  <span class="workspace-field-label"><icon-storage /><span>URL</span></span>
-                  <a-input v-model="registerUrlForm.url" placeholder="https://example.com/doc" />
-                </div>
-                <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-info-circle /><span>标题</span></span>
-                    <a-input v-model="registerUrlForm.title" />
+                  <div class="workspace-form-row workspace-form-row--two">
+                    <a-form-item
+                      field="scenario"
+                      label="场景"
+                      :label-attrs="{ for: 'material-registerUrlForm-scenario-input' }"
+                      class="workspace-form-item"
+                    >
+                      <a-input
+                        :input-attrs="{
+                          id: 'material-registerUrlForm-scenario-input',
+                          'aria-label': '场景',
+                        }"
+                        id="material-registerUrlForm-scenario"
+                        aria-label="场景"
+                        v-model="registerUrlForm.scenario"
+                      />
+                    </a-form-item>
+                    <a-form-item
+                      field="sourceType"
+                      label="类型"
+                      :label-attrs="{ for: 'material-registerUrlForm-sourceType-input' }"
+                      class="workspace-form-item"
+                    >
+                      <div
+                        id="material-registerUrlForm-sourceType"
+                        v-control-label="'类型'"
+                        class="workspace-control"
+                      >
+                        <a-select aria-label="类型" v-model="registerUrlForm.sourceType">
+                          <a-option value="webpage">webpage</a-option>
+                          <a-option value="pdf">pdf</a-option>
+                          <a-option value="other">other</a-option>
+                        </a-select>
+                      </div>
+                    </a-form-item>
                   </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-storage /><span>material_id</span></span>
-                    <a-input v-model="registerUrlForm.materialId" />
+                  <a-form-item
+                    field="notes"
+                    label="备注"
+                    :label-attrs="{ for: 'material-registerUrlForm-notes-input' }"
+                    class="workspace-form-item"
+                  >
+                    <a-textarea
+                      :textarea-attrs="{
+                        id: 'material-registerUrlForm-notes-input',
+                        'aria-label': '备注',
+                      }"
+                      id="material-registerUrlForm-notes"
+                      aria-label="备注"
+                      v-model="registerUrlForm.notes"
+                      :auto-size="{ minRows: 2, maxRows: 4 }"
+                    />
+                  </a-form-item>
+                  <div class="rl-form-actions">
+                    <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
+                      注册 URL 素材
+                    </a-button>
                   </div>
-                </div>
-                <div class="workspace-form-row workspace-form-row--two">
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-bulb /><span>场景</span></span>
-                    <a-input v-model="registerUrlForm.scenario" />
-                  </div>
-                  <div class="rl-form-field">
-                    <span class="workspace-field-label"><icon-relation /><span>类型</span></span>
-                    <a-select v-model="registerUrlForm.sourceType">
-                      <a-option value="webpage">webpage</a-option>
-                      <a-option value="pdf">pdf</a-option>
-                      <a-option value="other">other</a-option>
-                    </a-select>
-                  </div>
-                </div>
-                <div class="rl-form-field">
-                  <span class="workspace-field-label"><icon-info-circle /><span>备注</span></span>
-                  <a-textarea v-model="registerUrlForm.notes" :auto-size="{ minRows: 2, maxRows: 4 }" />
-                </div>
-                <div class="rl-form-actions">
-                  <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
-                    注册 URL 素材
-                  </a-button>
-                </div>
+                </a-form>
               </div>
             </article>
           </div>
@@ -1174,10 +1404,7 @@ onMounted(() => {
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title">
-                  <SectionCardTitle
-                    title="构图结果 / 已生成图谱"
-                    :help="buildResultsHelp"
-                  >
+                  <SectionCardTitle title="构图结果 / 已生成图谱" :help="buildResultsHelp">
                     <icon-relation />
                   </SectionCardTitle>
                 </h3>
@@ -1185,7 +1412,9 @@ onMounted(() => {
               <a-tag color="gold">{{ builds?.builds.length ?? 0 }} 次</a-tag>
             </header>
             <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
-              <div class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill">
+              <div
+                class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill"
+              >
                 <table class="workspace-table">
                   <thead>
                     <tr>
@@ -1201,16 +1430,26 @@ onMounted(() => {
                     <tr
                       v-for="build in builds?.builds ?? []"
                       :key="build.run_id"
-                      :class="{ 'workspace-table__row--active': build.run_id === buildDetail?.build.run_id }"
+                      :class="{
+                        'workspace-table__row--active': build.run_id === buildDetail?.build.run_id,
+                      }"
                       @click="loadBuildDetail(build.run_id)"
                     >
-                      <td><strong>{{ build.run_id }}</strong></td>
+                      <td>
+                        <strong>{{ build.run_id }}</strong>
+                      </td>
                       <td>{{ build.source_count }}</td>
                       <td>{{ build.node_count }} / {{ build.edge_count }}</td>
                       <td>{{ build.status }}</td>
                       <td>{{ formatDateTime(build.created_at) }}</td>
                       <td>
-                        <a-button size="mini" type="text" @click.stop="openBuildDetailModal(build.run_id)">查看详情</a-button>
+                        <a-button
+                          size="mini"
+                          type="text"
+                          @click.stop="openBuildDetailModal(build.run_id)"
+                        >
+                          查看详情
+                        </a-button>
                       </td>
                     </tr>
                   </tbody>
@@ -1239,41 +1478,80 @@ onMounted(() => {
               </div>
               <a-tag color="arcoblue">{{ selectedMaterials.length }} 份已选</a-tag>
             </header>
-            <div class="rl-section-card__body workspace-stack">
-
+            <a-form
+              id="materials-form-5"
+              :model="buildForm"
+              layout="vertical"
+              class="rl-section-card__body workspace-stack workspace-form"
+            >
               <div class="workspace-summary-list workspace-summary-list--two-col">
                 <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label"><icon-upload /><span>已选素材</span></span>
+                  <span class="workspace-summary-label">
+                    <icon-upload />
+                    <span>已选素材</span>
+                  </span>
                   <strong>{{ selectedMaterials.length }}</strong>
                 </div>
                 <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label"><icon-storage /><span>默认图谱</span></span>
+                  <span class="workspace-summary-label">
+                    <icon-storage />
+                    <span>默认图谱</span>
+                  </span>
                   <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
                 </div>
               </div>
 
               <div class="workspace-form-row workspace-form-row--two">
-                <div class="rl-form-field">
-                  <span class="workspace-field-label"><icon-info-circle /><span>输出图谱名</span></span>
-                  <a-input v-model="buildForm.output_name" />
-                </div>
-                <div class="rl-form-field">
-                  <span class="workspace-field-label"><icon-relation /><span>source_type</span></span>
-                  <a-select v-model="buildForm.source_type">
-                    <a-option value="structured_records">structured_records</a-option>
-                    <a-option value="manual_table">manual_table</a-option>
-                  </a-select>
-                </div>
+                <a-form-item
+                  field="output_name"
+                  label="输出图谱名"
+                  :label-attrs="{ for: 'material-buildForm-output_name-input' }"
+                  class="workspace-form-item"
+                >
+                  <a-input
+                    :input-attrs="{
+                      id: 'material-buildForm-output_name-input',
+                      'aria-label': '输出图谱名',
+                    }"
+                    id="material-buildForm-output_name"
+                    aria-label="输出图谱名"
+                    v-model="buildForm.output_name"
+                  />
+                </a-form-item>
+                <a-form-item
+                  field="source_type"
+                  label="来源类型"
+                  :label-attrs="{ for: 'material-buildForm-source_type-input' }"
+                  class="workspace-form-item"
+                >
+                  <div
+                    id="material-buildForm-source_type"
+                    v-control-label="'来源类型'"
+                    class="workspace-control"
+                  >
+                    <a-select aria-label="来源类型" v-model="buildForm.source_type">
+                      <a-option value="structured_records">structured_records</a-option>
+                      <a-option value="manual_table">manual_table</a-option>
+                    </a-select>
+                  </div>
+                </a-form-item>
               </div>
 
               <div class="rl-form-actions rl-form-actions--dual">
                 <a-button type="primary" @click="handleBuild">生成构图</a-button>
                 <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
-                <a-button :disabled="!buildDetail" @click="buildDetail?.build.run_id && openBuildDetailModal(buildDetail.build.run_id)">构图详情</a-button>
+                <a-button
+                  :disabled="!buildDetail"
+                  @click="
+                    buildDetail?.build.run_id && openBuildDetailModal(buildDetail.build.run_id)
+                  "
+                >
+                  构图详情
+                </a-button>
               </div>
 
               <pre class="rl-json-preview">{{ formatJsonPreview(buildSourcesPreview) }}</pre>
-            </div>
+            </a-form>
           </article>
         </section>
       </div>
@@ -1294,14 +1572,14 @@ onMounted(() => {
             <icon-storage />
             <span>Build</span>
           </span>
-          <strong>{{ buildDetail?.build.run_id ?? "--" }}</strong>
+          <strong>{{ buildDetail?.build.run_id ?? '--' }}</strong>
         </div>
         <div class="workspace-summary-list__item">
           <span class="workspace-summary-label">
             <icon-info-circle />
             <span>Status</span>
           </span>
-          <strong>{{ buildDetail?.build.status ?? "--" }}</strong>
+          <strong>{{ buildDetail?.build.status ?? '--' }}</strong>
         </div>
         <div class="workspace-summary-list__item">
           <span class="workspace-summary-label">
@@ -1315,7 +1593,9 @@ onMounted(() => {
             <icon-relation />
             <span>Nodes / Edges</span>
           </span>
-          <strong>{{ buildDetail?.build.node_count ?? 0 }} / {{ buildDetail?.build.edge_count ?? 0 }}</strong>
+          <strong>
+            {{ buildDetail?.build.node_count ?? 0 }} / {{ buildDetail?.build.edge_count ?? 0 }}
+          </strong>
         </div>
       </div>
 
@@ -1358,7 +1638,9 @@ onMounted(() => {
               </div>
             </div>
             <div class="workspace-feedback-pane__footer">
-              <a-button size="small" @click="openBuildProvenance">Inspect Build Provenance</a-button>
+              <a-button size="small" @click="openBuildProvenance">
+                Inspect Build Provenance
+              </a-button>
             </div>
             <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.manifest ?? {}) }}</pre>
           </div>
@@ -1367,13 +1649,22 @@ onMounted(() => {
         <a-tab-pane key="qa" title="QA / Summary">
           <div class="workspace-stack workspace-stack--tight">
             <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.summary ?? {}) }}</pre>
-            <pre class="rl-json-preview">{{ formatJsonPreview(buildValidation?.qa_report ?? { note: '暂无 QA 详情（mock 占位）' }) }}</pre>
+            <pre class="rl-json-preview">{{
+              formatJsonPreview(buildValidation?.qa_report ?? { note: '暂无 QA 详情（mock 占位）' })
+            }}</pre>
           </div>
         </a-tab-pane>
 
         <a-tab-pane key="queue" title="Review Queue">
-          <div v-if="buildReviewQueue?.edges.length" class="workspace-scroll-list workspace-scroll-list--fill workspace-build-review-queue">
-            <div class="workspace-build-review-edge" v-for="edge in buildReviewQueue.edges" :key="edge.target_key">
+          <div
+            v-if="buildReviewQueue?.edges.length"
+            class="workspace-scroll-list workspace-scroll-list--fill workspace-build-review-queue"
+          >
+            <div
+              class="workspace-build-review-edge"
+              v-for="edge in buildReviewQueue.edges"
+              :key="edge.target_key"
+            >
               <div class="workspace-build-review-edge__head">
                 <strong>{{ edge.head }} —{{ edge.relation }}→ {{ edge.tail }}</strong>
                 <span>{{ edge.review_status }}</span>
@@ -1387,10 +1678,20 @@ onMounted(() => {
                 <a-button size="mini" type="text" @click="openBuildReviewEdgeProvenance(edge)">
                   Provenance
                 </a-button>
-                <a-button size="mini" type="primary" :loading="buildReviewActionTargetKey === edge.target_key" @click="handleBuildReviewAction(edge.target_key, 'accept')">
+                <a-button
+                  size="mini"
+                  type="primary"
+                  :loading="buildReviewActionTargetKey === edge.target_key"
+                  @click="handleBuildReviewAction(edge.target_key, 'accept')"
+                >
                   接受
                 </a-button>
-                <a-button size="mini" status="danger" :loading="buildReviewActionTargetKey === edge.target_key" @click="handleBuildReviewAction(edge.target_key, 'reject')">
+                <a-button
+                  size="mini"
+                  status="danger"
+                  :loading="buildReviewActionTargetKey === edge.target_key"
+                  @click="handleBuildReviewAction(edge.target_key, 'reject')"
+                >
                   拒绝
                 </a-button>
               </div>

@@ -1,0 +1,81 @@
+{
+  "case_id": "mvtec_0001",
+  "dataset": "mvtec",
+  "source": "image",
+  "object": "bottle",
+  "anomaly_type": "scratch",
+  "location": "surface",
+  "morphology": "linear",
+  "severity": 0.4,
+  "confidence": 0.8,
+  "timestamp": null,
+  "raw_evidence": {
+    "image_region": "mask_region_001",
+    "heatmap_path": null,
+    "variables": [],
+    "variable_contributions": {},
+    "log_events": [],
+    "description": "观测到的 visual anomaly evidence only：manual demo annotation 记录 object、anomaly_type、location 和 morphology；不包含 root-cause label。",
+    "extra": {
+      "demo_scope": "adapters/manual demo annotations provide observed anomaly evidence only；不是 MVTec factory root-cause label",
+      "analysis_boundary": "KGTracePipeline computes linking/consistency/corrections/candidate RCA paths at runtime."
+    }
+  },
+  "observations": [
+    {
+      "obs_id": "obs_mvtec_0001_object_bottle",
+      "facet": "object",
+      "name": "bottle",
+      "confidence": 0.8,
+      "source_ref": "adapter:mvtec",
+      "raw_ref": "object"
+    },
+    {
+      "obs_id": "obs_mvtec_0001_anomaly_type_scratch",
+      "facet": "anomaly_type",
+      "name": "scratch",
+      "confidence": 0.8,
+      "source_ref": "adapter:mvtec",
+      "raw_ref": "anomaly_type"
+    },
+    {
+      "obs_id": "obs_mvtec_0001_location_surface",
+      "facet": "location",
+      "name": "surface",
+      "confidence": 0.8,
+      "source_ref": "adapter:mvtec",
+      "raw_ref": "location"
+    },
+    {
+      "obs_id": "obs_mvtec_0001_morphology_linear",
+      "facet": "morphology",
+      "name": "linear",
+      "confidence": 0.8,
+      "source_ref": "adapter:mvtec",
+      "raw_ref": "morphology"
+    },
+    {
+      "obs_id": "obs_mvtec_0001_severity_severity",
+      "facet": "severity",
+      "name": "severity",
+      "value": 0.4,
+      "value_type": "float",
+      "confidence": 0.8,
+      "source_ref": "adapter:mvtec",
+      "raw_ref": "severity"
+    }
+  ],
+  "adapter": {
+    "name": "mvtec",
+    "produces_root_cause": false
+  },
+  "normalized_evidence": {},
+  "kg_analysis": {
+    "linked_entities": [],
+    "consistency_score": null,
+    "inconsistent_fields": [],
+    "correction_candidates": [],
+    "top_k_paths": []
+  },
+  "human_feedback": null
+}

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  IconApps,
   IconCloud,
   IconBulb,
   IconDashboard,
   IconExperiment,
+  IconInfoCircle,
   IconMenuFold,
   IconMenuUnfold,
   IconRelation,
@@ -137,134 +137,150 @@ function handleBackendConfigSave() {
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="ocean-header">
-      <div class="ocean-header__left">
-        <div class="ocean-header__logo">
-          <span class="ocean-header__logo-mark">RL</span>
-          <span class="ocean-header__logo-text">RootLens</span>
+  <a-config-provider size="small">
+    <div class="app-shell">
+      <header class="ocean-header">
+        <div class="ocean-header__left">
+          <div class="ocean-header__logo">
+            <span class="ocean-header__logo-mark">RL</span>
+            <span class="ocean-header__logo-text">RootLens</span>
+          </div>
+          <div class="ocean-header__divider" />
+          <h1 class="ocean-header__title">
+            <icon-dashboard />
+            <span>{{ currentPageLabel }}</span>
+          </h1>
         </div>
-        <div class="ocean-header__divider" />
-        <h1 class="ocean-header__title">
-          <icon-dashboard />
-          <span>{{ currentPageLabel }}</span>
-        </h1>
-      </div>
-      <div class="ocean-header__right">
-        <div class="ocean-header__mode-toggle" role="tablist" aria-label="切换数据源模式">
-          <button
-            v-for="item in sourceModeOptions"
-            :key="item.value"
+        <div class="ocean-header__right">
+          <a-radio-group
+            :model-value="preferences.dataSourceMode"
             type="button"
-            class="ocean-header__mode-toggle-button"
-            :class="{
-              'ocean-header__mode-toggle-button--active': preferences.dataSourceMode === item.value,
-            }"
-            @click="handleSourceModeChange(item.value)"
+            aria-label="数据源模式"
+            @change="handleSourceModeChange"
           >
-            <component :is="item.icon" />
-            <span>{{ item.label }}</span>
-          </button>
-        </div>
-        <a-tag size="small" color="arcoblue">
-          <icon-apps />
-          <span>{{ preferences.dataSourceMode === 'backend' ? '后端模式' : '内置 Demo' }}</span>
-        </a-tag>
-        <button
-          v-if="preferences.dataSourceMode === 'backend'"
-          type="button"
-          class="ocean-header__api-base-trigger"
-          @click="openBackendConfigModal"
-        >
-          <a-tag size="small" color="green">
+            <a-radio v-for="item in sourceModeOptions" :key="item.value" :value="item.value">
+              <component :is="item.icon" />
+              {{ item.label }}
+            </a-radio>
+          </a-radio-group>
+
+          <a-button
+            v-if="preferences.dataSourceMode === 'backend'"
+            type="text"
+            class="ocean-header__api-base-trigger"
+            aria-label="修改后端地址"
+            @click="openBackendConfigModal"
+          >
+            <template #icon><icon-cloud /></template>
+            {{ apiBaseLabel }}
+          </a-button>
+          <a-tag v-else size="small" color="green">
             <icon-bulb />
             <span>{{ apiBaseLabel }}</span>
           </a-tag>
-        </button>
-        <a-tag v-else size="small" color="green">
-          <icon-bulb />
-          <span>{{ apiBaseLabel }}</span>
-        </a-tag>
-      </div>
-      <div class="ocean-header__profile">
-        <div class="ocean-header__profile-label">当前上下文</div>
-        <div class="ocean-header__profile-value">
-          {{ currentContextLabel }}
         </div>
-      </div>
-    </header>
+        <a-tooltip :content="currentContextLabel">
+          <div class="ocean-header__profile" aria-label="当前上下文">{{ currentContextLabel }}</div>
+        </a-tooltip>
+      </header>
 
-    <a-layout class="ads-brain-workbench-layout" has-sider>
-      <a-layout-sider
-        class="app-sider-menu"
-        :width="220"
-        :collapsed-width="56"
-        :collapsed="collapsed"
-        hide-trigger
-        breakpoint="xl"
+      <a-layout class="ads-brain-workbench-layout" has-sider>
+        <a-layout-sider
+          class="app-sider-menu"
+          :width="220"
+          :collapsed-width="56"
+          :collapsed="collapsed"
+          hide-trigger
+          breakpoint="xl"
+        >
+          <a-menu
+            class="app-sider-menu__menu"
+            :selected-keys="[activeMenuKey]"
+            :collapse="collapsed"
+            @menu-item-click="handleNavigate"
+          >
+            <a-menu-item v-for="item in navItems" :key="item.name">
+              <template #icon>
+                <component :is="item.icon" />
+              </template>
+              {{ item.label }}
+            </a-menu-item>
+          </a-menu>
+
+          <a-button
+            type="text"
+            shape="square"
+            class="app-sider-menu__collapse-btn"
+            :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
+            @click="collapsed = !collapsed"
+          >
+            <IconMenuUnfold v-if="collapsed" />
+            <IconMenuFold v-else />
+          </a-button>
+        </a-layout-sider>
+
+        <a-layout-content class="ads-brain-workbench-layout__content">
+          <RouterView />
+        </a-layout-content>
+      </a-layout>
+
+      <a-modal
+        v-model:visible="backendConfigModalVisible"
+        title="修改后端地址"
+        width="420px"
+        @ok="handleBackendConfigSave"
       >
-        <a-menu
-          class="app-sider-menu__menu"
-          :selected-keys="[activeMenuKey]"
-          :collapse="collapsed"
-          @menu-item-click="handleNavigate"
+        <a-form
+          id="app-form-1"
+          :model="backendConfigForm"
+          layout="vertical"
+          class="ocean-header__modal-stack workspace-form"
         >
-          <a-menu-item v-for="item in navItems" :key="item.name">
-            <template #icon>
-              <component :is="item.icon" />
-            </template>
-            {{ item.label }}
-          </a-menu-item>
-        </a-menu>
-
-        <button
-          type="button"
-          class="app-sider-menu__collapse-btn"
-          :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
-          @click="collapsed = !collapsed"
-        >
-          <icon-menu-unfold v-if="collapsed" />
-          <icon-menu-fold v-else />
-        </button>
-      </a-layout-sider>
-
-      <a-layout-content class="ads-brain-workbench-layout__content">
-        <RouterView />
-      </a-layout-content>
-    </a-layout>
-
-    <a-modal
-      v-model:visible="backendConfigModalVisible"
-      title="修改后端地址"
-      width="420px"
-      @ok="handleBackendConfigSave"
-    >
-      <div class="ocean-header__modal-stack">
-        <div class="rl-form-field">
-          <span class="workspace-field-label">
-            <icon-storage />
-            <span>域名 / IP</span>
-          </span>
-          <a-input v-model="backendConfigForm.host" placeholder="127.0.0.1" />
-        </div>
-        <div class="rl-form-field">
-          <span class="workspace-field-label">
-            <icon-bulb />
-            <span>端口</span>
-          </span>
-          <a-input v-model="backendConfigForm.port" placeholder="8000" />
-        </div>
-        <div class="workspace-claim-note workspace-claim-note--compact">
-          <span class="workspace-summary-label">
-            <icon-info-circle />
-            <span>预览</span>
-          </span>
-          <strong>{{ backendConfigPreview }}</strong>
-        </div>
-        <div class="rl-form-actions rl-form-actions--dual">
-          <a-button size="small" @click="handleBackendConfigReset">恢复默认 127.0.0.1:8000</a-button>
-        </div>
-      </div>
-    </a-modal>
-  </div>
+          <a-form-item
+            field="host"
+            label="域名 / IP"
+            :label-attrs="{ for: 'backend-backendConfigForm-host-input' }"
+            class="workspace-form-item"
+          >
+            <a-input
+              :input-attrs="{
+                id: 'backend-backendConfigForm-host-input',
+                'aria-label': '域名 / IP',
+              }"
+              id="backend-backendConfigForm-host"
+              aria-label="域名 / IP"
+              v-model="backendConfigForm.host"
+              placeholder="127.0.0.1"
+            />
+          </a-form-item>
+          <a-form-item
+            field="port"
+            label="端口"
+            :label-attrs="{ for: 'backend-backendConfigForm-port-input' }"
+            class="workspace-form-item"
+          >
+            <a-input
+              :input-attrs="{ id: 'backend-backendConfigForm-port-input', 'aria-label': '端口' }"
+              id="backend-backendConfigForm-port"
+              aria-label="端口"
+              v-model="backendConfigForm.port"
+              placeholder="8000"
+            />
+          </a-form-item>
+          <div class="workspace-claim-note workspace-claim-note--compact">
+            <span class="workspace-summary-label">
+              <icon-info-circle />
+              <span>预览</span>
+            </span>
+            <strong>{{ backendConfigPreview }}</strong>
+          </div>
+          <div class="rl-form-actions rl-form-actions--dual">
+            <a-button size="small" @click="handleBackendConfigReset">
+              恢复默认 127.0.0.1:8000
+            </a-button>
+          </div>
+        </a-form>
+      </a-modal>
+    </div>
+  </a-config-provider>
 </template>

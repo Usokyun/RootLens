@@ -1,0 +1,562 @@
+# KG Construction
+
+KG construction is source-constrained.
+
+Candidate entities and triples may come from dataset labels, official tables,
+curated project notes, SOP excerpts, or LLM-assisted extraction from provided
+sources. LLM output is never treated as ground truth by default.
+
+Each edge must keep its source, evidence text or row, confidence, weight, and
+review status.
+
+For the full source-to-KG methodology and future system design, see
+[`source_to_kg_construction_system.md`](source_to_kg_construction_system.md).
+For the new RCA-oriented generation architecture, domain pack boundary, TEP_KG
+integration strategy, and layer manifests, see
+[`rca_kg_generation_architecture.md`](rca_kg_generation_architecture.md).
+For the current executable acceptance matrix and verification commands, see
+[`rca_kg_construction_acceptance_matrix.md`](rca_kg_construction_acceptance_matrix.md).
+
+## Construction Lifecycle
+
+KGTraceVis treats KG construction as a reusable supply pipeline for the runtime
+reasoning pipeline:
+
+```text
+source management
+-> pluggable extraction
+-> draft entities and relations
+-> optional user review/editing
+-> Neo4j publication
+-> versioned KG consumed by KGTracePipeline
+```
+
+The current CSV files under `data/kg/` are seed and snapshot artifacts. The
+runtime graph is imported into Neo4j for app and service queries, while CSVs
+remain useful for reproducible examples, tests, and paper-facing exports.
+
+## Source Types
+
+Supported or planned source classes include:
+
+- dataset labels and benchmark tables;
+- adapter/model output records;
+- mask geometry and wafer-map feature outputs;
+- official papers and dataset documentation;
+- manual curation tables;
+- SOP/manual/log summaries;
+- LLM-extracted candidates from provided text;
+- future TEP/source-code files parsed by AST extractors.
+
+All source types should converge to the same candidate entity/relation
+intermediate representation before cleaning, review, and publication.
+
+The reusable backend MVP is implemented under `src/kgtracevis/kg_construction/`:
+
+- `draft.py` defines the draft KG intermediate representation;
+- `extractors.py` defines the extractor protocol and registry;
+- `models.py` defines construction run, draft-row, review-decision, summary,
+  and manifest DTOs;
+- `pipeline.py` runs registered extractors and validates KG rows;
+- `tep_import.py` adapts TEP semantic-lift outputs into `scenario=tep` drafts.
+
+Use the maintained CLI entry point to materialize candidate CSV artifacts:
+
+```bash
+uv run python scripts/build_source_kg.py \
+  --tep-semantic-lift-dir /Users/hhm/code/TEP_KG/data/processed/kg \
+  --tep-variable-mapping /Users/hhm/code/TEP_KG/outputs/kg/tep_variable_mapping.csv \
+  --output-dir runs/source_kg_build/tep_candidate \
+  --overwrite
+```
+
+Candidate CSVs can then be consumed as an overlay without changing the tracked
+seed KG:
+
+```bash
+uv run python scripts/run_examples.py \
+  --kg-node-path runs/source_kg_build/tep_candidate/nodes.csv \
+  --kg-edge-path runs/source_kg_build/tep_candidate/edges.csv
+```
+
+For a single reusable validation report that covers runtime RCA consumption and
+Neo4j import dry-run readiness, run:
+
+```bash
+uv run python scripts/validate_kg_overlay.py \
+  --build-dir runs/source_kg_build/tep_candidate \
+  --overlay-only-runtime \
+  --overlay-only-import
+```
+
+This writes `kg_overlay_validation_report.json` beside the build. The report
+records example-level linking/path counts, RCA path metadata such as
+`path_strength`, `rca_score`, `source_edge_ids`, and `kg_build_ids`, plus the
+runtime graph and import dry-run counts. It separates `contract_validated`,
+`runtime_validated`, and `overlay_contributed`, so loading a candidate overlay
+successfully is not confused with the overlay actually appearing in RCA paths.
+If no top-k RCA path references the overlay `kg_build_id` or candidate edge ID,
+the report sets `validated=false` and includes a
+`missing_overlay_contribution_warning`. It does not rebuild KG artifacts,
+review candidates, or publish anything.
+
+Use `--overlay-only-runtime` / `--overlay-only-import` for TEP candidate builds
+that intentionally supersede checked-in seed TEP nodes during validation. This
+keeps default seed conflicts from hiding whether Root-KGD runtime paths preserve
+candidate overlay provenance.
+
+Before publishing to Neo4j, validate the merged default KG plus candidate layer:
+
+```bash
+uv run python scripts/import_kg.py \
+  --include-defaults \
+  --nodes runs/source_kg_build/tep_candidate/nodes.csv \
+  --edges runs/source_kg_build/tep_candidate/edges.csv \
+  --dry-run
+```
+
+The same build writes `kg_construction_manifest.json`, which ties together the
+construction run ID, source records, draft rows, reviewable KG payloads, summary
+counts, and artifact paths. Each fresh build also writes a no-op
+`kg_construction_diff.json`; replaying review decisions refreshes that file with
+before/after row and manifest changes plus the decision provenance. KG Studio
+can inspect both legacy candidate directories (`nodes_candidate.csv` /
+`edges_candidate.csv`) and these newer source-to-KG build directories
+(`nodes.csv` / `edges.csv` plus the manifest).
+
+The reusable runtime workflow lives in
+`kgtracevis.workflows.source_kg_construction`. It is also exposed through the
+local API:
+
+```http
+POST /api/kg/construction/build
+```
+
+The API intentionally accepts only explicit structured/manual source records or
+explicit TEP semantic-lift / variable-mapping artifact paths. It writes the same
+candidate `nodes.csv`, `edges.csv`, `entity_alignment_manifest.json`,
+`kg_construction_summary.json`, and `kg_construction_manifest.json` files under
+`runs/source_kg_build/<output_name>`.
+It does not call live LLM extractors, parse source code, or publish to Neo4j.
+
+Completed construction builds can be inspected and validated before any future
+publish step:
+
+```http
+GET /api/kg/construction/builds
+GET /api/kg/construction/builds/{run_id}
+GET /api/kg/construction/builds/{run_id}/artifacts/{artifact_key}
+POST /api/kg/construction/builds/{run_id}/validate
+POST /api/kg/construction/builds/{run_id}/validate-overlay
+GET /api/kg/construction/builds/{run_id}/review-queue
+POST /api/kg/construction/builds/{run_id}/review
+POST /api/kg/construction/builds/{run_id}/publish
+```
+
+The registry is file-backed in v0. It scans `runs/source_kg_build/*` for
+`kg_construction_manifest.json`, returns artifact paths and summary counts, and
+runs structured KG CSV QA on the selected build. Validation is read-only and
+does not import to Neo4j.
+The artifact endpoint serves one conventional construction artifact by stable
+key, such as `nodes`, `review_queue`, `review_decisions`, or
+`kg_construction_diff`, without accepting raw filesystem paths. After overlay
+validation runs, the same endpoint can serve `kg_overlay_validation_report`.
+
+`validate-overlay` runs the candidate build through the same reusable overlay
+validation workflow as `scripts/validate_kg_overlay.py`. It writes
+`kg_overlay_validation_report.json` beside the build and returns the report
+payload, including runtime RCA path metadata, candidate contribution counts,
+and import dry-run counts. It does not rebuild construction artifacts, record
+review decisions, or publish to Neo4j.
+
+Alignment is exported as its own audit layer. `entity_alignment_manifest.json`
+contains canonical entity table rows, nontrivial deterministic `ALIGNS_TO`
+candidate rows, merge candidates, unresolved entities, and conflicts. These
+alignment rows document why endpoints were canonicalized, but they do not
+become runtime RCA propagation edges unless an extractor emits an explicit
+semantic relation.
+
+The review endpoint is the pre-publish control point for candidate edges. It
+updates only the selected construction build's `edges.csv` and manifest. A
+review target can be identified by the stable edge key
+`head|relation|tail|scenario`:
+
+```json
+{
+  "target_key": "ApiManualSource|BELONGS_TO|ApiManualTarget|tep",
+  "action": "accept",
+  "reviewer": "operator-a",
+  "note": "source-backed relation"
+}
+```
+
+`accept` sets `review_status=reviewed` and increments the accepted feedback
+counter. `reject` sets `review_status=rejected` and increments the rejected
+feedback counter. Both actions append a review decision to
+`kg_construction_manifest.json`. The endpoint does not publish to Neo4j.
+
+The review queue endpoint is the read side of the same workflow. It returns
+candidate edge rows with stable `target_key` values and can be filtered by
+`review_status`, `source`, `scenario`, `relation`, and `query`, with `offset`
+and `limit` pagination:
+
+```http
+GET /api/kg/construction/builds/kgbuild_demo/review-queue?review_status=auto&scenario=tep
+```
+
+The queue is read-only and exists to support backend workflows and the KG Studio
+construction review panel without requiring clients to parse construction CSV
+files. The maintained web workbench can select a construction build, inspect
+pending queue items, submit accept/reject decisions through the same review
+endpoint, and run overlay validation to show `validated`,
+`overlay_contributed`, and the saved report path.
+
+The publish endpoint is also safe-by-default. Calling it with an empty JSON body
+performs a dry-run import count over the default seed KG plus the selected
+candidate build:
+
+```json
+{}
+```
+
+To inspect only the candidate overlay, pass:
+
+```json
+{"include_defaults": false}
+```
+
+Real Neo4j writes require both `{"dry_run": false}` and
+`{"confirm_publish": true}` in the request body. This keeps exploratory
+candidate knowledge explicit: publication writes source, evidence, confidence,
+and review status into Neo4j, but it does not turn `auto` rows into reviewed or
+verified facts.
+
+Source files can also be staged through the backend before a build:
+
+```http
+POST /api/kg/construction/sources/upload
+GET /api/kg/construction/sources
+```
+
+The upload endpoint stores single-file `manual_table`, `structured_records`, or
+`tep_variable_mapping` artifacts under `runs/source_kg_sources/` and returns a
+build-ready `KGConstructionSourceInput`. Multi-file TEP semantic-lift bundles
+still require explicit local node/edge paths in v0.
+
+The maintained React workbench exposes this local workflow in KG Studio's
+`Build` tab. That page composes the same API-safe request shapes, displays the
+resulting artifact paths and summary manifest, and refreshes KG Studio so the
+candidate graph can be inspected in the existing `Graph`, `Review`, and
+`Draft Lab` tabs.
+
+## Material Library And Document IE
+
+The first material-library layer is available for source-grounded KG
+construction inputs:
+
+```http
+GET /api/kg/materials
+POST /api/kg/materials/upload
+POST /api/kg/materials/register-url
+POST /api/kg/materials/{material_id}/extract
+POST /api/kg/materials/build-sources
+POST /api/kg/materials/build
+```
+
+Uploads and URL registrations are stored under `runs/source_kg_materials/`.
+They are provenance records only; registering a material does not mutate KG
+artifacts and does not publish anything to Neo4j.
+
+The extraction endpoint parses supported local material content into text
+chunks, calls an OpenAI-compatible IE client, writes
+`document_ie_raw_responses.jsonl`, `document_ie_payload_repairs.jsonl`,
+`structured_records.jsonl`, `chunk_extraction_results.jsonl`, and
+`extraction_manifest.json`, then updates the material's extraction metadata.
+The manifest records parser/chunking settings, prompt version, extractor
+version, the relation whitelist, chunk counts, error counts, and the explicit
+claim boundary that LLM output is only candidate material. It stores chunk
+locators and text hashes rather than duplicating the full source text; the
+full parsed chunks stay in the source-chunk audit store. These records can then
+be converted into an ordinary
+`KGConstructionBuildRequest` through `POST /api/kg/materials/build-sources` and
+passed to the existing source-to-KG build endpoint.
+For pre-extracted materials, `POST /api/kg/materials/build` runs the reusable
+material construction workflow directly and returns the artifact-complete build
+payload, including `nodes.csv`, `edges.csv`, published snapshot paths,
+`source_library_manifest.json`, layer manifests, `review_queue.json`,
+`document_understanding_manifest.json`, `document_map.json`,
+`chunk_prompt_context.jsonl`, `cross_chunk_proposals.jsonl`,
+`publish_manifest.json`, `publish_report.json`, and `kg_construction_diff.json`.
+The direct route defaults to
+`extraction_mode=never`, so it does not require an LLM key unless extraction is
+explicitly requested.
+
+The extractor is intentionally candidate-only. Each extracted relation keeps
+source evidence, confidence, and `review_status=auto` after it enters the KG
+CSV contract. Missing API keys, unavailable optional parsers such as `pypdf`,
+ungrounded model evidence, invalid scenarios, or relation names outside the
+RCA-oriented KG construction whitelist fail before a candidate build is
+produced. Document IE also coerces model-returned entity references into the
+same PascalCase-ish node ID style used by KG CSV validation.
+
+Material extraction now exposes the document IE provider explicitly:
+
+- `provider=openai` calls the OpenAI-compatible IE client and requires a valid
+  API key or injected compatible client.
+- `provider=offline_fixture` replays `document_ie_payload` or
+  `document_ie_fixture_path` supplied in the extraction request or material
+  metadata. It uses the same parser, chunking, schema validation, confidence,
+  and evidence-grounding checks, but it does not call an external model.
+
+Both providers write `structured_records.jsonl`,
+`chunk_extraction_results.jsonl`, `document_ie_raw_responses.jsonl`,
+`document_ie_payload_repairs.jsonl`, and `extraction_manifest.json`. Raw IE
+responses are persisted before schema normalization or repair, with a response
+hash and chunk locator. Payload repair records then show the normalized payload
+or the validation error for replayable audit without another model call. The
+manifest records the provider, extractor name, prompt version, allowed relation
+whitelist, raw-response capture paths, and the claim boundary that extracted
+rows are reviewable candidates.
+The KG Studio material workflow exposes the same provider selector, so a no-key
+review/demo path is visible instead of hidden inside tests.
+
+Material extraction also supports explicit document understanding modes:
+
+- `document_understanding_mode=chunk` is the default and keeps extraction scoped
+  to each parsed chunk.
+- `document_understanding_mode=long_context` can call a configured
+  `DocumentUnderstandingClient` before chunk IE. `document_understanding_provider=openai`
+  uses the OpenAI-compatible document-understanding client, while
+  `document_understanding_provider=offline_fixture` replays a map fixture for
+  no-key tests and demos. If no document-understanding provider is configured,
+  the workflow keeps the deterministic advisory fallback for compatibility.
+- `document_understanding_mode=agentic` runs `AgenticDocumentReader`, a named
+  multi-step reader (`outline`, `glossary`, `entity_inventory`,
+  `relation_hints`, `cross_chunk_proposals`). The reader first builds a
+  deterministic document reading plan with chunk summaries and step-specific
+  selected chunk IDs, then sends only the selected chunk group plus prior step
+  outputs to the configured client. Without a client, the mode records an
+  explicit deterministic fallback in `agent_steps`.
+
+Both non-chunk modes write `document_understanding_map.json` with parser/chunk
+coverage, sections, glossary, entity-inventory, ontology-suggestion,
+relation-hint, cross-chunk proposal, unresolved-question, review-hint, and
+reader metadata. The map is then injected into chunk prompts as chunk-scoped
+terminology-only context, with the injected rows recorded in
+`chunk_prompt_context.jsonl`. KG Studio exposes the same document-understanding
+provider choices for material extraction, including deterministic fallback,
+OpenAI document reader, and offline map fixture.
+
+Document maps are planning and review artifacts, not KG facts. They do not
+create DraftKG rows and they do not relax current-chunk evidence grounding.
+Cross-chunk relation proposals may be supplied through
+`cross_chunk_proposals`, but construction validates them conservatively: a
+proposal needs an allowed relation, head and tail text, and at least two
+supporting spans. Valid proposals are written to `cross_chunk_proposals.jsonl`
+and enter the review queue as `cross_chunk_relation_candidate` items; rejected
+proposals remain in the proposal artifact. Build-time proposal handling never
+publishes KG edges. A reviewer may later accept a valid
+`cross_chunk_relation_candidate`, which stages a reviewed edge in `edges.csv`
+under the document/source scenario and refreshes the normal publish snapshot;
+rejected or unreviewed proposals remain outside the KG. Accepted proposal staging defaults to
+`propagation_enabled=false` and `rca_score=0`. A proposal may include an
+explicit `review_acceptance_policy` or `rca_policy` to request propagation/RCA
+fields, but those requests are applied only after review accept, only for
+whitelisted RCA relation/family combinations, and with conservative caps.
+
+Material extraction also supports an independent hypothesis brainstorming axis:
+
+- `hypothesis_mode=none` is the default and writes no brainstorming artifacts.
+- `hypothesis_mode=brainstorm` runs advisory RCA hypothesis discovery after
+  chunk IE has produced DraftKG candidates. It can be combined with any
+  `document_understanding_mode`, including `agentic`.
+- `hypothesis_provider=none` uses a deterministic no-key fallback that records
+  missing-evidence tasks instead of fabricating facts.
+- `hypothesis_provider=offline_fixture` replays a JSON fixture for tests and
+  demos, and `hypothesis_provider=openai` uses the OpenAI-compatible
+  brainstorming client.
+- `hypothesis_influence=review_only` is the implemented safe default. The
+  `prompt_context` and `profile_suggestions` values are request/schema/manifest
+  placeholders for future guarded behavior.
+
+Brainstorming writes `brainstorm_hypotheses.jsonl`,
+`brainstorm_evidence_tasks.jsonl`, `brainstorm_profile_gaps.json`,
+`brainstorm_review_items.json`, `hypothesis_brainstorming_manifest.json`,
+`alignment_suggestions.jsonl`, `semantic_layer_suggestions.jsonl`, and
+`profile_gap_suggestions.json`. Build workflows aggregate these into the build
+directory and merge review items into `review_queue.json`. New review item
+types include `hypothesis_candidate`, `causal_chain_candidate`,
+`missing_evidence_request`, `profile_gap_candidate`,
+`alias_mapping_candidate`, `variable_mapping_candidate`, and
+`semantic_policy_candidate`.
+
+The review queue is the boundary between LLM suggestion and KG mutation.
+Accepting a plain hypothesis records it in `accepted_hypotheses.json` and does
+not write an edge. Accepting an alias or variable mapping records an accepted
+override for a future rerun; it does not rewrite current canonical IDs.
+Accepting a profile gap records the gap and does not mutate the active profile.
+Accepting a causal-chain candidate stages reviewed edges only when every
+proposed edge has existing endpoints, an allowed relation, and source spans.
+Accepting semantic/RCA policy suggestions can update only existing edge policy
+fields, only for whitelisted relation/family combinations, and with the same
+caps used by reviewed cross-chunk RCA staging (`rca_score <= 0.7`,
+`propagation_priority <= 0.75`, `source_trust <= 0.8`).
+
+The product boundary is therefore not "LLM returned triples". The product
+experience is the audited construction workspace: source registration, parser
+and chunk audit, source-grounded candidate generation, DraftKG conversion,
+alignment/projection/review queues, and versioned build artifacts. The LLM is
+one adapter inside that workspace and cannot skip review or publish.
+
+MVTec has a dedicated raw-material smoke path for validating that boundary. The
+source pack builder copies only raw or near-raw materials, such as the official
+MVTec AD page snapshot, Defect Spectrum MVTec notes, local source-bundle README
+files, optional PatchCore paper metadata, and locally available manufacturing
+process/root-cause PDFs. It deliberately excludes derived KG/catalog artifacts
+such as `domain_knowledge.json`, `mvtec_ad_catalog.csv`, and
+`mvtec_ad_kg.ttl`. The resulting pack is then registered as material sources
+and sent through the same document understanding, chunk IE, brainstorming,
+review queue, semantic projection, and publish snapshot stages as any other
+source. Source-pack role metadata is propagated onto chunks so process/root-cause
+PDFs can guide chunk IE toward explicit `CAUSES` or `HAS_PLAUSIBLE_CAUSE`
+candidates without giving the LLM write access to the KG.
+
+When the DS-MVTec dataset card contains a source-level `defects_dict`, material
+extraction adds a deterministic `mvtec_source_taxonomy` DraftKG supplement. This
+supplement parses object/defect labels from the source text, adds object-defect,
+morphology, location, and low-confidence plausible-mechanism candidate edges,
+and records the supplement in `extraction_manifest.json`. The plausible
+mechanism rows are explicitly review-only label-derived hypotheses; they are not
+verified MVTec factory root causes and are not published without review.
+
+Wafer/WM811K uses the same material pipeline with a wafer-specific source pack.
+The high-value default pair is an open wafer-defect source that states pattern
+and process/mechanism context plus WM811K adapter evidence records that expose
+`failure_pattern`, `zone`, and `morphology`. The material pipeline may add a
+deterministic `wafer_evidence_record_extractor` supplement for those JSONL
+records. That supplement creates only explicit pattern, wafer, location,
+morphology, and spatial-signature candidates; it does not invent wafer process
+RCA. Method-heavy wafer papers can still be registered as later source-pack
+materials, but their algorithm terminology is treated as optional context and
+must survive the same profile constraints before it affects the KG.
+
+```bash
+uv run python scripts/build_mvtec_llm_source_pack.py \
+  --output-dir runs/mvtec_llm_source_pack \
+  --overwrite
+
+uv run python scripts/smoke_mvtec_llm_kg_construction.py \
+  --output-dir runs/mvtec_llm_kg_smoke \
+  --provider offline_fixture \
+  --overwrite
+```
+
+For live LLM testing, switch the smoke provider to `openai`; the script loads
+`.env.local` and `.env` before constructing the OpenAI-compatible clients. MVTec
+does not provide verified factory RCA labels, so this smoke treats causal
+mechanisms as reviewable hypotheses and evidence tasks. It must not publish
+plausible-cause/root-cause edges as facts.
+
+Document chunks default to a conservative service value, but RCA-oriented live
+smokes use larger chunks (`--max-chars 12000 --overlap-chars 1200`) so tables,
+figure captions, and nearby mechanism text stay together. Larger chunks reduce
+cross-chunk fragmentation but do not relax strict evidence grounding.
+
+Domain profile policy now controls more of the semantic/RCA shape. Profiles can
+define semantic projection rules that rewrite a source relation and optionally
+swap endpoints before the semantic layer is built. They also define
+relation-family RCA defaults for propagation enablement, direction, priority,
+attenuation, and edge-weight scaling. Source-backed extractor metadata still
+wins when it explicitly supplies those RCA fields; otherwise the profile makes
+the reasoning-view defaults reproducible across domains.
+
+Profiles can additionally declare endpoint label constraints for relations. The
+semantic layer applies those constraints after node keep-list and relation
+whitelist checks, so source IE mistakes such as `Defect HAS_LOCATION Defect` are
+skipped while valid shapes such as `Defect OCCURS_ON Location` or
+`RootCause CAUSES Defect` are retained.
+
+Profiles can now be loaded as JSON Domain Packs with `--profile-path` or the
+workflow/service `profile_path` field. Each build writes
+`profile_manifest.json`, recording the active profile source, ontology,
+projection rules, relation-family policies, root candidate labels, and
+observable labels. Built-in generic/TEP profiles remain the default when no
+profile pack is supplied.
+
+Profiles may also opt into conservative two-hop semantic derived-edge rules.
+For example, a domain pack can derive `A -OBSERVED_BY-> C` from
+`A -HAS_COMPONENT-> B` and `B -OBSERVED_BY-> C`. The derived edge remains
+`review_status=auto`, cites both source-backed edge IDs in its evidence, and is
+counted in `semantic_layer_manifest.json`.
+
+RCA reasoning views now also write deterministic edge scoring components. The
+profile relation-family policy controls the blend of confidence, propagation
+priority, attenuation, and source trust. These values are exported as optional
+RCA edge columns such as `rca_score`, `rca_score_confidence`,
+`rca_score_priority`, `rca_score_attenuation`, and
+`rca_score_source_trust`, while `rca_view_manifest.json` records the active
+scoring policy and score summary.
+
+The review queue consumes those RCA scores as prioritization hints. High-score
+propagation edges and semantic-derived edges are surfaced with explicit graph
+impact text and recommended actions, but they remain candidates until a review
+decision accepts or rejects them.
+
+Runtime path ranking also consumes RCA view score metadata when a candidate KG
+overlay includes it. Path payloads expose `path_strength` and `rca_score`; when
+those fields are absent on legacy seed KG edges, ranking falls back to the
+existing confidence-based behavior. Paths and projected ranked root causes also
+preserve `kg_build_ids` from supporting construction edges so an RCA result can
+be traced back to the KG build snapshot it used.
+
+The reusable orchestration entry point for this material-driven path is
+`kgtracevis.workflows.material_kg_construction.run_material_kg_construction_workflow`.
+It accepts selected material IDs, optionally extracts missing/selected materials
+with an injected IE client, prepares build-ready construction sources, and then
+calls the existing source-to-KG construction workflow. Material-driven builds
+persist a `material_library` section in both `kg_construction_summary.json` and
+`kg_construction_manifest.json`; that section records material IDs, source IDs,
+extraction mode, extracted material IDs, material root, and the claim boundary.
+The RCA-KG acceptance smoke also exercises this path with a pre-extracted
+material fixture, so the no-key material workflow is checked alongside the toy
+generic Source Library path and optional TEP_KG import path.
+
+### Storage Boundary
+
+Use the three storage layers for different jobs:
+
+- Postgres stores workbench state: material metadata, source chunks, extraction
+  runs, extraction artifacts, review/feedback records, and build history.
+- Neo4j stores the published runtime KG used for graph queries and RCA path
+  traversal.
+- CSV/JSON/JSONL stores reproducible build artifacts such as `nodes.csv`,
+  `edges.csv`, `structured_records.jsonl`, and construction manifests.
+
+The material service now uses a runtime material-store provider. Passing an
+explicit `material_root` keeps the file-backed adapter for local workflows and
+tests. Without an explicit root, the default provider uses Postgres when a real
+DSN is configured through `KGTRACE_POSTGRES_DSN`, `POSTGRES_*`, or
+`configs/database.yaml`; otherwise it falls back to
+`runs/source_kg_materials/`.
+
+Even in Postgres-backed mode, uploaded bytes, URL snapshots, and
+`structured_records.jsonl` stay on disk as reproducible artifacts. Postgres
+stores the material records, parsed source chunks, extraction run metadata, and
+artifact references that let the runtime workbench survive process restarts.
+
+For TEP-specific graph construction, the external `TEP_KG` implementation should
+be merged through extractor/import adapters rather than copied directly. See
+[`tep_kg_merge_assessment.md`](tep_kg_merge_assessment.md) for the recommended
+mapping from its `Full KG -> Semantic Lift Layer -> RCA Graph` approach into
+KGTraceVis's source-to-KG pipeline.
+
+## User Control
+
+Review is recommended but not mandatory. Users may publish unreviewed candidate
+knowledge for exploratory analysis, provided the resulting KG rows keep their
+source, evidence, confidence, and review status.
+
+Relation names should express semantics such as `CAUSES`, `AFFECTS`,
+`HAS_MORPHOLOGY`, or `BELONGS_TO`. Trust should be expressed through
+`confidence`, `review_status`, source provenance, and downstream reasoning
+policies rather than by forcing duplicate weak relation names.
