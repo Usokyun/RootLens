@@ -20,6 +20,12 @@ from kgtracevis.adapters.unified_capabilities import (
     spatial_capabilities,
     visual_capabilities,
 )
+from kgtracevis.service.candidate_conditions import (
+    CandidateConditionRequest,
+    condition_options,
+    create_condition,
+    delete_condition,
+)
 from kgtracevis.service.kg_materials import (
     get_kg_material,
     save_kg_material_upload,
@@ -119,6 +125,21 @@ def authoring_capabilities():
             )
         }
     }
+
+
+@router.get("/kg/working-graphs/{graph_id}/candidate-conditions")
+def candidate_conditions(graph_id: str):
+    return call(lambda: condition_options(graph_id))
+
+
+@router.post("/kg/working-graphs/{graph_id}/candidate-conditions")
+def add_candidate_condition(graph_id: str, request: CandidateConditionRequest):
+    return call(lambda: create_condition(graph_id, request))
+
+
+@router.delete("/kg/working-graphs/{graph_id}/candidate-conditions/{condition_id}")
+def delete_candidate_condition(graph_id: str, condition_id: str):
+    return call(lambda: delete_condition(graph_id, condition_id))
 
 
 @router.get("/tasks")

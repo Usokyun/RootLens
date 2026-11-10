@@ -48,7 +48,7 @@ RootKGD 图传播复用 `simulate_propagation`、`trace_path`、完整向量余�
 
 ### 服务与消费方
 
-API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **96453**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
+API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **99986**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
 
 前端owner已收到契约、真实RootKGD Run和媒体字段。demo owner已冻结13样本／3工作图与准备复演脚本，17个“样本×引擎”的中间入口API结果与独立CLI完全一致；实际视觉正负结果都保留。Git按后端、冻结演示、最终前端／验收分阶段本地提交，不push。
 
@@ -144,4 +144,18 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 
 独立模块22项单测加运行时集成覆盖同签名不同成本、方向／std／slope条件、正常门控、缺向量、搜索不足、快照／Frame错配。原始过程→Frame导出→原生重传的结果（含新诊断）仍精确相等，RootKGD实际评分输入数为52。历史run GET保持原JSON，不用当前图补诊断，另有直接回归。
 
-最终候选的默认完整离线pytest为 **512 passed / 4 skipped，10.95s**，四项仍为上述既有外部opt-in验证。日志`/private/tmp/rootlens-two-hour-final-pytest.log`；修改代码及新测试Ruff、diff-check通过。依照当前AGENTS，仅用项目原生pytest/Ruff，跳过skill附带的bootstrap、telemetry、全局安装及flush，不执行或重试外部上报。未使用新增skip/xfail、付费模型或真实数据库测试来获得此结果。
+诊断整合阶段的默认完整离线pytest为 **512 passed / 4 skipped，10.95s**，四项仍为上述既有外部opt-in验证。日志`/private/tmp/rootlens-two-hour-final-pytest.log`；修改代码及新测试Ruff、diff-check通过。依照当前AGENTS，仅用项目原生pytest/Ruff，跳过skill附带的bootstrap、telemetry、全局安装及flush，不执行或重试外部上报。未使用新增skip/xfail、付费模型或真实数据库测试来获得此结果。
+
+## 候选局部条件：从诊断到补条件再撤销
+
+后续同预算内补`service/candidate_conditions.py`及`working_graph_editor.update_working_knowledge`：GET给合法目录／已绑定通道／现有zone；POST在已有锁内创建一个诊断predicate、独立pattern、目标hypothesis直连expectation和明确作者assertion；DELETE只撤销这组独立内容。不是把新条件接到共享机制，使原本同组的所有候选一起得到该期待。
+
+复用已有异常gate与新predicate做ALL，不复制相同测量票数；直接回归证明其余数值为真但显式anomaly=false时仍不能获支持。缺gate、未知变量／来源／单位／范围在写入前具体报错，不改变原分析入口。无来源标记人工`declared_demo_heuristic`；已有实际来源按ID保留。撤销先检查其他规则、模式与作者来源引用，拒绝误删共享内容；独立束完整删除，原gate不删。
+
+19项新测试覆盖三场景、四种signed/std/slope条件、三个现有mode、正常前置、来源和范围错误、依赖保护、完整API保存→同Frame异步推理→拆目标签名→撤销→结果精确恢复，以及历史run快照不变。与既有API/editor集合共 **35 passed / 2既有DB skipped**，不调模型／真实数据库。
+
+RootKGD源码与实算区分两种变动：固定结构只改阈值或mode不改变分数；新增独立pattern路径会改变传播。冻结d04、同一冷却入口温度候选向已有xmeas_9新增路径，结构分数从0.5854474293642781变为0.38634032056418194，即使std阈值1e6为假。新回归同时检查同通道新路径和原先未达通道的真实向量变化，不把逻辑C惩罚混入RootKGD。
+
+前端与reviewer交出无任务窗口后，只读确认80项任务无queued/running，专用作业重载为PID99986、health=ok。实际GET默认TEP目录返回52已绑定通道、中文定义与合法算子；此GET未改默认图。前端／reviewer随后只对副本进行无模型Frame消费。
+
+本operator阶段最终默认全pytest为 **531 passed / 4 skipped，11.00s**；Ruff与diff-check通过，日志`/private/tmp/rootlens-candidate-operator-final-pytest.log`。上述同通道新增路径改变Root评分是保留的表示耦合反例，后续投影归一化作为独立可恢复阶段处理，不把此阶段称为已修复该缺陷。

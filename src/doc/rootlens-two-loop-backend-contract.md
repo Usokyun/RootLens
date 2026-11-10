@@ -36,6 +36,33 @@
 
 LLM Blueprint也可提供`value_bindings[]`：`binding_key/relation=equivalent/feature_id/external_value/canonical_value/procedure_model_id/assertion`；assertion只允许`origin=source_explicit`，由编译器保留实际source ID、unit ID与locator。没有明确等价来源就留空，不把相似、上位词或缺失部位当等价，尤其不将`cracked_or_missing_glass`补成具体`broken_finish/chipped_finish`。代码校验来源身份与可执行类型，等价语义仍需作者据来源判断。
 
+### 候选独立诊断条件
+
+这组操作只补一条候选局部条件，不是通用图编辑器：
+
+- `GET /api/kg/working-graphs/{graph_id}/candidate-conditions` → `{conditions,features,subjects,zones}`。features为当前场景可产出且可比较的目录项，增加`allowed_operators`与`subject_kind=variable/focus`；subjects仅含图内已绑定的实际过程通道`{entity_id,label,external_id}`。
+- `POST`同地址；请求示例如下。返回`{graph:WorkingGraphRecord,conditions:[...]}`，完成时已经保存，沿用既有图锁、自动备份、PG canonical包与Neo4j投影。
+- `DELETE /api/kg/working-graphs/{graph_id}/candidate-conditions/{condition_id}`撤销本向导创建的独立束，返回同一外壳。conditions含`condition_id/predicate_id/pattern_id/expectation_rule_id/anomaly_gate_id/can_delete/delete_blocker`及原输入字段。
+
+```json
+{
+  "candidate_id":"目标候选的实际ID", "label":"冷却水阀变化率条件",
+  "feature_id":"statistics.slope_z", "op":"gte",
+  "operand":{"kind":"number","number":0.01,"unit":"1/sample"},
+  "subject_entity_id":"entity:tep_braatz.channel:xmv_10", "zone":null,
+  "mode":"necessary", "description":"作者检验假设，非已验证工业规则",
+  "source_assertion_ids":[]
+}
+```
+
+`statistics.*`及`residual.contribution`必须选择已绑定通道；全局量／对象／ROI使用null；晶圆必须选择现有zone。未知变量、特征、单位、来源或范围明确报错，不自动制造实体或观测。可产出但图内尚未登记的特征加入目录定义，数据仍来自现有adapter。
+
+新增predicate与独立pattern只从目标hypothesis直接接expectation，不修改共享mechanism。pattern以ALL复用图中已有的显式`anomaly=true`门控，不复制gate增加票数；缺门控只拒绝新操作，不改变原推理入口。`mode`仅有`necessary`（不成立排除）、`expected`（不成立沿现有C计冲突）、`possible`（弱兼容、不计此期待的冲突）；不存在第四种“冲突模式”。
+
+没有选择来源时明确保存人工`declared_demo_heuristic`，不伪造source/unit/locator。删除移除本束predicate、pattern、expectation和作者assertion，保留借用的gate、既有来源和可复用目录定义；出现额外引用就拒绝删除并说明共享依赖。下次任务使用新快照，历史run不变。
+
+RootKGD不执行这些条件的阈值、AND/OR或mode惩罚；但新增pattern/expectation会改变真实传播结构，即使指向已有通道也可能改变路径权重。不能将“固定拓扑只改阈值分数不变”外推为“新增条件结构对RootKGD无效”。
+
 ## 真实异步任务
 
 - `GET /api/tasks?limit=50` → `{tasks:[Task]}`，最近任务优先。

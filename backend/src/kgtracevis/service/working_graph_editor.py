@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +17,7 @@ from kgtracevis.kg.working_graph_package import (
     refresh_visual_profiles,
 )
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
+from kgtracevis.schema.unified_knowledge import KnowledgePackage
 from kgtracevis.schema.visual_reasoning import VisualProfileBundle
 from kgtracevis.service.working_graphs import (
     WorkingGraphRecord,
@@ -101,6 +103,28 @@ def save_working_graph(
             package = package.model_copy(
                 update={"knowledge": package.knowledge.model_copy(update={"graph_id": graph_id})}
             )
+        return _save_locked(record, package, store)
+
+
+def update_working_knowledge(
+    graph_id: str,
+    update: Callable[[KnowledgePackage, str], KnowledgePackage],
+) -> WorkingGraphRecord:
+    """Apply one typed read/modify/save under the existing graph lock and backup path."""
+    store = working_graph_store()
+    with graph_operation_lock(graph_id, store):
+        record = store.get(graph_id)
+        if record.status != "ready" or record.knowledge is None:
+            raise ValueError("候选级条件仅支持已就绪的v2工作图。")
+        detached = KnowledgePackage.model_validate(record.knowledge.model_dump(mode="json"))
+        updated = update(detached, record.dataset)
+        package = UnifiedWorkingGraphPackage(
+            graph_id=graph_id,
+            title=record.title,
+            dataset=record.dataset,
+            build_id=record.build_id,
+            knowledge=KnowledgePackage.model_validate(updated.model_dump(mode="json")),
+        )
         return _save_locked(record, package, store)
 
 
