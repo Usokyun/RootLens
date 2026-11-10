@@ -18,6 +18,7 @@ from kgtracevis.adapters.unified_capabilities import (
     spatial_capabilities,
     visual_capabilities,
 )
+from kgtracevis.schema.feature_catalog import authoring_feature_role
 from kgtracevis.schema.unified_evidence import Identifier, ObservationValue, UnifiedModel
 from kgtracevis.schema.unified_knowledge import (
     AllExpression,
@@ -94,7 +95,7 @@ def condition_options(graph_id):
                 "subject_kind": "variable" if feature.feature_id in VARIABLE_FEATURES else "focus",
             }
             for feature in capability.features
-            if feature.value_kind in OPERATORS
+            if feature.value_kind in OPERATORS and authoring_feature_role(feature) == "diagnostic"
         ],
         "subjects": _subjects(record.knowledge, capability),
         "zones": capability.zones,
@@ -130,6 +131,8 @@ def add_condition(knowledge, dataset, request, identity):
     feature = next((f for f in capability.features if f.feature_id == request.feature_id), None)
     if feature is None or request.op not in OPERATORS.get(feature.value_kind, []):
         raise ValueError("该特征／算子不在当前可产出的诊断条件目录中。")
+    if authoring_feature_role(feature) != "diagnostic":
+        raise ValueError("仅泛检测门控或主体背景不是候选区分条件；请选择具体诊断观测。")
     categorical = (
         [request.operand.category]
         if request.operand.kind == "category"

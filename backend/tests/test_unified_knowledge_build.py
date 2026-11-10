@@ -274,8 +274,9 @@ def test_new_authoring_budgets_cover_source_families_without_silent_truncation()
     from kgtracevis.adapters.unified_capabilities import process_capabilities
 
     for capability in (visual_capabilities(), process_capabilities()):
-        assert capability.max_candidates == 16
-        assert capability.max_hypotheses_per_signature == 16
+        assert capability.recommended_max_candidates == 16
+        assert capability.max_candidates == 32
+        assert capability.max_hypotheses_per_signature == 32
         assert capability.max_signatures >= 8
 
 

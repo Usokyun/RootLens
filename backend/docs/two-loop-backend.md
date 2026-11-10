@@ -48,7 +48,7 @@ RootKGD 图传播复用 `simulate_propagation`、`trace_path`、完整向量余�
 
 ### 服务与消费方
 
-API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **3195**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
+API当前为 `http://127.0.0.1:8012`，由手动加载的会话作业 `com.rootlens.dev.two-loop-api` 管理，最后一次显式重载后的PID为 **7365**（实时值以status为准），不归属 agent exec session。只连接独立PG55433与Neo4j57687。task worker要求单API进程（两个线程），不支持多个Uvicorn worker同时接管同一任务表。
 
 前端owner已收到契约、真实RootKGD Run和媒体字段。demo owner已冻结13样本／3工作图与准备复演脚本，17个“样本×引擎”的中间入口API结果与独立CLI完全一致；实际视觉正负结果都保留。Git按后端、冻结演示、最终前端／验收分阶段本地提交，不push。
 
@@ -176,3 +176,29 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 完整脱敏对照与22条实际连续主／备路径核对记录在`runs/two_loop_demo/rootkgd-representation-v2/projection-checks.json`，各case的v1/v2结果与冗余声明结果同目录；全程无模型调用、数据库写入。旧演示17/17是v1历史证据；受影响的四个TEP×RootKGD组合由演示owner在v2 API恢复后单独更新，不重做13个统一引擎组合或原始模型。
 
 最终投影候选完整默认命令为 **538 passed / 4 skipped，11.01s**；四项外部opt-in skip不变，新代码／测试Ruff与diff-check通过。日志`/private/tmp/rootlens-projection-v2-final-pytest.log`。前端、演示及审核owner均停止提交的窗口内，确认86个已存任务无进行中后，8012手动作业重载为PID3195且health=ok；随后分别交演示／独立审核实际消费，交付与消费证据分开记录。
+
+演示owner随后已完成四Frame的正式API／CLI消费：全部候选、名次、分数、scoring_details与outcome精确一致，保留52评分输入与曲线，默认图没有备选路径时保持0而不强造。d04原始Run `48595ebd-a532-4c98-9464-5cb2730bac29` 下载实际Frame后普通上传为 `43311a86-a894-4bb9-b884-88ae7f8186b4`：3窗口、52曲线、分数／分解和CLI逐项精确一致。消费证据`runs/two_loop_demo/rootkgd-v2-consumption-20261111/verification.json`，未改默认图或输入Frame。
+
+### 正式测试入口与依赖保留
+
+已读实际调用链：`npm run backend:test -- -q -ra` → `scripts/backend.mjs`直接使用`backend/.venv/bin/python` → `scripts/dev.py test`以同一`sys.executable -m pytest -q -ra`在`backend/`运行。test分支在`configure_environment()`之前返回，不注入应用数据库默认值。链上没有uv同步／安装，和本轮`uv run --offline --no-sync pytest`使用同一环境与pytest配置；不为确认这条未变链重复跑完整矩阵或模型。
+
+`backend/AGENTS.md`原日常验证示例可能让uv自动同步而移除未声明extras，现仅把验证示例改为`--offline --no-sync`，与首次显式安装分开。正式npm入口本身无需修改，ML／LLM环境与锁文件不变。
+
+## 最后一次源构图检查：分开预算与语义安全
+
+唯一新合同LLM任务`task_2b5e770ad3114218bba64e58847b9cb5`真实解析公开PDF后调用两次（18899 tokens），返回20候选／修复后17候选，因旧硬16在validation失败。任务、两份原响应和定位SourceUnits完整保留；没有图被伪启用，也没有继续付费调用。
+
+16原本是紧凑作者建议，不是引擎安全边界。现在视觉／过程建议≤16，默认硬32，可由`candidate_limit`明确配置1–64，仍低于推理默认128候选预算；签名／证明分支／组合／状态限制仍执行，不保证任意复杂查询一定完成。wafer的8类是任务语义，不扩成工厂原因。17/20/32以及显式64候选完整编译、33/65越界、canonical绕过和查询预算耗尽均有直接测试，绝不截断或自动合并。报告与真实validation事件分别记录建议、硬限和完整保留警示。演示脚本两处旧TEP hard8同步改为软recommended8，不重跑构图。
+
+进一步检查发现最终响应的两个ANY签名都是“具体broken_finish/chipped_finish OR appearance.defect_present=true”，仅放宽预算会让粗缺陷布尔分支伪装成细部位支持。因此共用目录新增`semantic_role`：仅已知通用检测／缺陷存在为presence_gate，参考量／原始附件等为context，其他具体测量为diagnostic；不是把所有boolean当门控。source lowerer把presence/context lift为ALL前置，只对具体诊断项应用原any/all/at_least，纯gate或canonical退化分支明确报错。ALL为代数等价重组；ANY/at_least收紧明确记录`presence_gates_lifted / semantic_change=true`及原logic、gate特征、剩余诊断项数，计数不可能时拒绝而不猜。事件展示收紧过程；存量蓝图离线编译不再伪报LLM阶段。
+
+窄candidate operator的GET／POST亦排除／拒绝presence或背景作为单独充分条件，保留原编辑器修改已有gate。默认三图由演示owner只读核查：16 pattern／25 proof无generic-only分支；默认图与种子除graph身份外一致，因此没有改冻结图或重复无影响模型验证。
+
+原最终`proposal-1.txt`以新预算与明确门控归一化离线编译，17候选、原文／source／locator完整保留，额外LLM调用为0。包位于`runs/two_loop_demo/rootkgd-v2-consumption-20261111/current-llm-contract/offline-recovery-budget32-gate-aware/working-graph.v2.json`，`build_id`明确标原failed task、proposal-1、budget32与presence-gates-v1；`recovery-manifest.json`保留原失败事实、两次调用和semantic_change。**这不是原样语义恢复，也不是把原task改成功。**原始响应另存`original-proposal-1.txt`。
+
+离线使用未改006 Frame实际得到`insufficient_evidence`、0排名：通用缺陷为真，但fine Finish cue仍未知；没有加coarse→Finish映射或制造部位证据。正式新副本导入／启用／普通上传由演示owner在最后schema加载后消费，原failed task和默认图不改。
+
+最后完整候选（含演示caller的6项新回归）为 **566 passed / 4既有optional skipped，11.37s**；命令仍为`UV_CACHE_DIR=/private/tmp/rootlens-plan-uv-cache uv run --offline --no-sync pytest -q -ra`，日志`/private/tmp/rootlens-final-all-callers-pytest.log`。全部改变的Python／新测试Ruff、diff-check通过；未新增skip/xfail、未删有效断言，未同步／重装环境。
+
+确认94项任务均无queued/running后，仅手动重载专用作业为PID7365，health=ok；实际GET已确认推荐16／硬32／每签名32、两个presence角色及operator过滤。演示owner随后正式导入并启用恢复图`graph_538efc4369b64b46a879dd5a30652bc1`，任务`task_7898d4c1f0464b5287de779a7a47e7d3`→Run `c846c64a-2388-4c3a-9827-25c4cb770496`：`insufficient_evidence`、0排名，fine两项unobserved、presence两真、媒体可用、value_bindings为空。零新增模型／LLM调用，原构图task仍failed；消费证据`current-llm-contract/offline-recovery-api/`。这验证了资料恢复到可编辑／启用和真实否定推理，而不是用泛存在条件凑出Finish支持。

@@ -56,6 +56,7 @@ class FeatureDefinition(UnifiedModel):
     definition: Identifier
     requires_reference: bool = False
     allowed_values: list[Identifier] | None = None
+    semantic_role: Literal["diagnostic", "presence_gate", "context"] | None = None
 
     @model_validator(mode="after")
     def unit_contract(self):

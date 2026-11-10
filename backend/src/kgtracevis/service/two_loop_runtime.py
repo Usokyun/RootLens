@@ -106,7 +106,9 @@ def build_materials(context, request):
     context.manager.store.save_task(context.task)
     package = compile_unified_knowledge(
         units,
-        capability_manifest(request["capability_id"]),
+        capability_manifest(
+            request["capability_id"], candidate_limit=request.get("candidate_limit")
+        ),
         llm_client=OpenAICompatibleSourceKGLLM(),
         output_dir=output,
         title=request["title"],

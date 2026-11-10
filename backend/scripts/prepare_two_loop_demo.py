@@ -839,7 +839,7 @@ def build_knowledge(dataset: str, output: Path) -> dict:
             )
         capability = capability.model_copy(
             update={
-                "max_candidates": 8,
+                "recommended_max_candidates": 8,
                 "max_signatures": 16,
                 "notes": capability.notes + "\nDemo authoring refinement: use circuit-specific "
                 "mechanisms and exact channels from the original equations. Distinguish reactor "
@@ -1043,7 +1043,7 @@ def refine_tep(original: Path, output: Path) -> dict:
             condition.assertion.parameter_origin = "declared_demo_heuristic"
     blueprint.title = "TEP原程序来源 · 分回路知识（LLM蓝图演示适配）"
     capability = process_capabilities().model_copy(
-        update={"max_candidates": 8, "max_signatures": 16}
+        update={"recommended_max_candidates": 8, "max_signatures": 16}
     )
     package = compile_unified_knowledge(
         units,

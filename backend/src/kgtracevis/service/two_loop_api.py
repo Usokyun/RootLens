@@ -16,6 +16,7 @@ from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from kgtracevis.adapters.unified_capabilities import (
+    capability_manifest,
     process_capabilities,
     spatial_capabilities,
     visual_capabilities,
@@ -63,6 +64,7 @@ class BuildRequest(ParseRequest):
     capability_id: str
     enable_when_ready: bool = False
     max_repairs: int = Field(default=1, ge=0, le=1)
+    candidate_limit: int | None = Field(default=None, strict=True, ge=1, le=64)
 
     @model_validator(mode="after")
     def matched_capability(self):
@@ -73,6 +75,7 @@ class BuildRequest(ParseRequest):
         }
         if self.capability_id != expected[self.dataset]:
             raise ValueError("制作能力与所选场景不一致。")
+        capability_manifest(self.capability_id, candidate_limit=self.candidate_limit)
         return self
 
 

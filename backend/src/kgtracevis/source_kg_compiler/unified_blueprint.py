@@ -11,6 +11,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from kgtracevis.schema.feature_catalog import authoring_feature_role
 from kgtracevis.schema.unified_evidence import Identifier, ObservationValue, UnifiedModel
 from kgtracevis.schema.unified_knowledge import KnowledgePackage
 
@@ -211,7 +212,7 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
         gate = predicate(
             {
                 "predicate_id": gate,
-                "label": "Explicit anomaly prerequisite",
+                "label": "显式异常前置条件",
                 "feature_id": "detection.anomaly_present",
                 "op": "bool_eq",
                 "operand": {"kind": "boolean", "boolean": True},
@@ -222,7 +223,7 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
                 "source_assertion_ids": signature_sources,
             }
         )
-        refs = []
+        refs, prerequisite_refs, prerequisite_features = [], [], []
         for ci, condition in enumerate(signature.conditions):
             identity = stem + f":condition:{ci}"
             selector = {"kind": "focus"}
@@ -276,9 +277,35 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
                     ),
                 }
             )
-            if identity not in refs:
+            if authoring_feature_role(feature) != "diagnostic":
+                if identity not in prerequisite_refs:
+                    prerequisite_refs.append(identity)
+                    prerequisite_features.append(condition.feature_id)
+            elif identity not in refs:
                 refs.append(identity)
+        if not refs:
+            raise ValueError(
+                f"signature={signature.signature_key}: generic presence/context gates alone "
+                "cannot support a diagnostic signature; add a specific diagnostic observation"
+            )
+        if prerequisite_refs:
+            normalizations.append(
+                {
+                    "kind": "presence_gates_lifted",
+                    "signature_key": signature.signature_key,
+                    "gate_feature_ids": prerequisite_features,
+                    "diagnostic_condition_count": len(refs),
+                    "authored_logic": signature.logic,
+                    "semantic_change": signature.logic != "all",
+                }
+            )
         if signature.logic == "at_least":
+            if signature.at_least_count is None or signature.at_least_count > len(refs):
+                raise ValueError(
+                    f"signature={signature.signature_key}: at_least_count must be explicit "
+                    f"and <= {len(refs)} diagnostic atoms after prerequisite lifting; "
+                    "the compiler will not guess a replacement count"
+                )
             body = {"at_least": {"count": signature.at_least_count, "of": refs}}
         else:
             body = {signature.logic: refs}
@@ -288,7 +315,7 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
                 "pattern_id": stem,
                 "label": signature.label,
                 "semantics": "iff",
-                "body": {"all": [gate, body]},
+                "body": {"all": [gate, *[p for p in prerequisite_refs if p != gate], body]},
                 "scope_join": "same_subject_parent_scope"
                 if capabilities.zones
                 else "same_event_same_window"

@@ -297,6 +297,40 @@ def test_invalid_authoring_is_rejected_before_saving(condition_api, storage, cha
     assert not list(storage[2].glob("backup_*.json"))
 
 
+@pytest.mark.parametrize(
+    "feature,operand,op",
+    [
+        ("detection.anomaly_present", {"kind": "boolean", "boolean": True}, "bool_eq"),
+        ("appearance.defect_present", {"kind": "boolean", "boolean": True}, "bool_eq"),
+        ("residual.normal_limit", {"kind": "number", "number": 0.1, "unit": "1"}, "gte"),
+    ],
+)
+def test_operator_catalog_and_post_reject_presence_or_background_only_conditions(
+    condition_api, feature, operand, op
+):
+    client, graph_id, _, _ = condition_api
+    if feature == "appearance.defect_present":
+        package = json.loads((DATA / "knowledge/bottle-working-graph.v2.json").read_text())
+        imported = client.post("/api/kg/working-graphs/import", json=package)
+        assert imported.status_code == 200, imported.text
+        graph_id = imported.json()["graph_id"]
+    route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"
+    assert feature not in {f["feature_id"] for f in client.get(route).json()["features"]}
+    before = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
+    request = {
+        "candidate_id": before["knowledge"]["hypotheses"][0]["hypothesis_id"],
+        "label": "拒绝泛门控充分替代",
+        "feature_id": feature,
+        "operand": operand,
+        "op": op,
+        "subject_entity_id": None,
+    }
+    response = client.post(route, json=request)
+    assert response.status_code == 400, response.text
+    assert "不是候选区分条件" in response.json()["detail"]
+    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == before
+
+
 def test_shared_dependency_blocks_delete_and_foreign_rule_is_not_a_bundle(condition_api):
     client, graph_id, frame, _ = condition_api
     route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"

@@ -31,10 +31,16 @@ upstream documents are background, not instructions to restore the old React UI.
 Run from this directory:
 
 ```bash
-uv run --extra dev pytest
-uv run --extra dev ruff check src tests scripts
-uv run python scripts/run_examples.py
+uv run --offline --no-sync pytest
+uv run --offline --no-sync ruff check src tests scripts
+uv run --offline --no-sync python scripts/run_examples.py
 ```
+
+These daily commands use the already installed project environment without
+synchronizing away ML/LLM/parser extras. Install required dependencies explicitly
+when setting up the environment; do not run `uv sync` merely to execute tests.
+The public `npm run backend:test -- -q -ra` entry point likewise uses this
+backend's `.venv` Python directly, before application database defaults are loaded.
 
 For changes to Neo4j behavior, use the import/examples-with-Neo4j checks only
 against an explicitly designated test database. Never reimport seeds merely to

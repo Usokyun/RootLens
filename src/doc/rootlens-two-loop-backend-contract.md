@@ -16,11 +16,12 @@
 ### 制作能力与词汇绑定
 
 `GET /api/authoring/capabilities` → `{capabilities:{mvtec:CapabilityManifest,tep:CapabilityManifest,wafer:CapabilityManifest}}`。
-与实际LLM构图使用同一目录；`features[]` 给出 `feature_id/value_kind/unit/definition/requires_reference/allowed_values`。
+与实际LLM构图使用同一目录；`features[]` 给出 `feature_id/value_kind/unit/definition/requires_reference/allowed_values/semantic_role`。
 
 - `allowed_values=null`：开放词汇或非类别特征，不表示空集合。`appearance.semantic_candidates` 始终开放。
 - 有限值：`geometry.morphology=[linear,spot,scattered,dense]`，原始单ROI只产生前两种，外部聚合几何还可产生后两种；`geometry.location=[edge,surface]`，仅是图像网格位置；`classifier.pattern` 为独立模型的八类图案。
 - 新构图的有限类别operand及绑定canonical目标不在目录中时，validation明确报告feature、unknown值与allowed值，走已有一次有界修复，不静默替换或截断。旧包未声明`allowed_values`仍可读，不回写冻结图。
+- `semantic_role=diagnostic/presence_gate/context`区分具体诊断观测、通用存在门控与参考／背景。已知producer语义以共用目录为准，不能由LLM把generic字段改旗标绕过；旧图未声明时保持未指定，不回写冻结图。
 
 人工绑定继续通过完整包 `knowledge.value_bindings` 新增／删除，再PUT保存。每项为：
 
@@ -57,6 +58,8 @@ LLM Blueprint也可提供`value_bindings[]`：`binding_key/relation=equivalent/f
 
 `statistics.*`及`residual.contribution`必须选择已绑定通道；全局量／对象／ROI使用null；晶圆必须选择现有zone。未知变量、特征、单位、来源或范围明确报错，不自动制造实体或观测。可产出但图内尚未登记的特征加入目录定义，数据仍来自现有adapter。
 
+新建诊断条件的GET仅列`diagnostic`特征，POST同样拒绝仅通用presence或主体背景的充分替代，具体错误为“不是候选区分条件”。这按目录语义分类，不按boolean类型一刀切；已有异常门仍可在原编辑器正常修改。
+
 新增predicate与独立pattern只从目标hypothesis直接接expectation，不修改共享mechanism。pattern以ALL复用图中已有的显式`anomaly=true`门控，不复制gate增加票数；缺门控只拒绝新操作，不改变原推理入口。`mode`仅有`necessary`（不成立排除）、`expected`（不成立沿现有C计冲突）、`possible`（弱兼容、不计此期待的冲突）；不存在第四种“冲突模式”。
 
 没有选择来源时明确保存人工`declared_demo_heuristic`，不伪造source/unit/locator。删除移除本束predicate、pattern、expectation和作者assertion，保留借用的gate、既有来源和可复用目录定义；出现额外引用就拒绝删除并说明共享依赖。下次任务使用新快照，历史run不变。
@@ -69,7 +72,7 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host
 - `GET /api/tasks/{task_id}?after_sequence=0` → `Task`，events 仅含 sequence 大于游标的事件。
 - `POST /api/tasks/{task_id}/retry`：只对 failed/interrupted 创建**新 task**；保留原输入，不自动重试付费步骤。
 - `POST /api/tasks/material-parse`，JSON `{"material_ids":["id"],"force":false}`。
-- `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1}`。默认最多两次模型调用（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。第二次失败就停止，不自动新建任务。
+- `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1,"candidate_limit":null}`。默认最多两次模型调用（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。第二次失败就停止，不自动新建任务。视觉／过程建议紧凑≤16候选，默认硬上限32，`candidate_limit`可明确设1–64；wafer仍只允许声明的8个图案类。超建议只警示并完整保留，超硬限明确失败；不截断／自动合并。
 - `POST /api/tasks/inference`，multipart：`file`、可选 `reference_file`、`graph_id`、`reasoner_id`、`input_mode`、`dataset`、`object_name`、`model_preset`、`semantic_mode`、`windows`、`title`、`top_k`。`windows` 为 JSON `[[1,100],[161,260]]`；一基闭区间。
 - `POST /api/tasks/inference/demo`，JSON `{"sample_id":"...","graph_id":"...","reasoner_id":"unified_abduction","input_variant":"raw","top_k":5}`。`input_variant` 可选 `raw/evidence`，默认 raw。
 
@@ -89,6 +92,8 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host
 `status` 为 `queued/running/completed/failed/interrupted`。`failed` 保留 `error={stage,message,type}`；重启后未完成任务变 `interrupted`，不会永远转圈。LLM 阶段 `progress.indeterminate=true`，不伪造百分比。结果：parse 为 `{material_ids}`，build 为 `{graph_id,build_id}`，inference 为 `{run_id}`。
 
 素材上传／URL 注册／列表／chunks 沿用 `/api/kg/materials` 系列；解析改走异步任务。构图任务自动完成解析（仅缺失时）、LLM、自动校验、确定性编译与隔离工作图装载；无需人工审核门。
+
+Source Blueprint将presence/context条件提到ALL前置，原ANY或at_least仅作用于具体diagnostic atoms；ALL只等价重组。ANY/at_least收紧写入`authoring_normalizations`并在实际validation事件展示`semantic_change=true`；at_least计数不能满足剩余诊断项时明确失败，不猜替代count。纯门控签名与canonical JSON绕过均拒绝，每条支持proof必须包含具体诊断观测。`appearance.defect_present=true`不能单独证明Finish、部位或制造原因。
 
 ## 保存分析
 
@@ -141,7 +146,7 @@ RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution
 
 任务和新分析使用指定 PG 的增量表，不重建既有表；输入／构图产物保留在 `backend/runs/two_loop_tasks`。工作图继续 PG canonical 包＋Neo4j 隔离投影。API 仍运行 8012，仅使用独立 PG 55433／Neo4j 57687，不操作普通库。
 
-本轻量 worker 部署为一个 API 进程、两个线程任务 worker；不使用多进程 Uvicorn workers。新的任务服务第一次访问会把旧进程遗留的 queued/running 标为 interrupted，不自动重算。新知识制作的视觉预算为16候选／8签名／每签名16假设，过程为16／12／16，超过会明确列出 actual/allowed，不截断。
+本轻量 worker 部署为一个 API 进程、两个线程任务 worker；不使用多进程 Uvicorn workers。新的任务服务第一次访问会把旧进程遗留的 queued/running 标为 interrupted，不自动重算。新知识制作的视觉默认硬预算为32候选／8签名／每签名32假设，过程为32／12／32，wafer为8／8／1；视觉／过程可显式调候选／每签名硬限到64。建议规模与结构硬限分开，报告保留二者。推理器原128候选、256分支、2048组合、1024状态搜索预算不改，耗尽仍明确search_incomplete。
 
 本机8012演示服务改由手动加载的launchd会话作业 `com.rootlens.dev.two-loop-api` 管理，不依赖agent exec会话，不配置登录／开机自启。`backend/scripts/development_api.py` 提供 `start/status/stop/health --name two-loop-api`，启动8012时加 `--port 8012`；日志、PID记录与恢复命令见 [后端运行记录](../../backend/docs/two-loop-backend.md#0239-断连恢复进程归-launchd不归临时执行会话)。
 

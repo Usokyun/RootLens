@@ -28,9 +28,10 @@ class CapabilityManifest(UnifiedModel):
     zones: list[Identifier] = Field(default_factory=list)
     features: list[FeatureDefinition] = Field(min_length=1)
     notes: str
-    max_candidates: int = Field(default=6, ge=1, le=32)
+    recommended_max_candidates: int | None = Field(default=None, ge=1, le=64)
+    max_candidates: int = Field(default=32, ge=1, le=64)
     max_signatures: int = Field(default=4, ge=1, le=16)
-    max_hypotheses_per_signature: int = Field(default=6, ge=1, le=32)
+    max_hypotheses_per_signature: int = Field(default=32, ge=1, le=64)
 
 
 def visual_capabilities(objects=("bottle",)) -> CapabilityManifest:
@@ -40,9 +41,10 @@ def visual_capabilities(objects=("bottle",)) -> CapabilityManifest:
         target_role="mechanism",
         context_external_ids=list(objects),
         scopes=["task_scope"],
-        max_candidates=16,
+        recommended_max_candidates=16,
+        max_candidates=32,
         max_signatures=8,
-        max_hypotheses_per_signature=16,
+        max_hypotheses_per_signature=32,
         features=feature_definitions(VISUAL_FEATURE_IDS),
         notes=(
             "One frame per ROI; same_subject_same_scope joins. No anatomical location "
@@ -53,14 +55,28 @@ def visual_capabilities(objects=("bottle",)) -> CapabilityManifest:
     )
 
 
-def capability_manifest(identity: str) -> CapabilityManifest:
-    if identity == "visual-region-v2":
-        return visual_capabilities()
-    if identity == "process-window-v2":
-        return process_capabilities()
-    if identity == "spatial-grid-v2":
-        return spatial_capabilities()
-    raise ValueError(f"unknown adapter capability: {identity}")
+def capability_manifest(identity: str, *, candidate_limit: int | None = None) -> CapabilityManifest:
+    factories = {
+        "visual-region-v2": visual_capabilities,
+        "process-window-v2": process_capabilities,
+        "spatial-grid-v2": spatial_capabilities,
+    }
+    if identity not in factories:
+        raise ValueError(f"unknown adapter capability: {identity}")
+    manifest = factories[identity]()
+    if candidate_limit is None:
+        return manifest
+    if identity == "spatial-grid-v2" and candidate_limit > 8:
+        raise ValueError("晶圆任务只有8个声明图案类别，候选上限不能扩成制造原因。")
+    data = manifest.model_dump(mode="json")
+    data.update(
+        max_candidates=candidate_limit,
+        max_hypotheses_per_signature=candidate_limit if identity != "spatial-grid-v2" else 1,
+        recommended_max_candidates=min(manifest.recommended_max_candidates, candidate_limit)
+        if manifest.recommended_max_candidates is not None
+        else None,
+    )
+    return CapabilityManifest.model_validate(data)
 
 
 def process_capabilities() -> CapabilityManifest:
@@ -73,9 +89,10 @@ def process_capabilities() -> CapabilityManifest:
         variable_external_ids=[f"xmeas_{i}" for i in range(1, 42)]
         + [f"xmv_{i}" for i in range(1, 12)],
         scopes=["task_scope"],
-        max_candidates=16,
+        recommended_max_candidates=16,
+        max_candidates=32,
         max_signatures=12,
-        max_hypotheses_per_signature=16,
+        max_hypotheses_per_signature=32,
         features=feature_definitions(PROCESS_FEATURE_IDS),
         notes=(
             "One equipment/window query, all channels retained. Fit on separate normal data. "
@@ -95,6 +112,7 @@ def spatial_capabilities() -> CapabilityManifest:
         context_external_ids=["wafer"],
         scopes=["spatial_zone"],
         zones=["all_valid", "center", "middle", "edge"],
+        recommended_max_candidates=8,
         max_candidates=8,
         max_signatures=8,
         max_hypotheses_per_signature=1,
