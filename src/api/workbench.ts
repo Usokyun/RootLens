@@ -38,16 +38,21 @@ export interface DemoAsset {
   title?: string; media_type?: string; size_bytes?: number; source_url?: string
   [key: string]: unknown
 }
+export interface DemoGraphReference {
+  graph_id:string|null; title:string; state:'ready'|'disabled'|'missing'|'ambiguous'|'unavailable'
+  ready:boolean; enabled:boolean; available:boolean; note:string; asset_id:string|null; download_url:string|null
+  candidates:Array<{graph_id:string;title:string;ready:boolean;enabled:boolean}>
+}
 export interface DemoSample {
   sample_id?: string; id: string; title: string; dataset: Dataset; input_mode?: InputMode
   description?: string; expectation?: string; available?: boolean; raw_input?: DemoAsset
   evidence?: DemoAsset; normal_reference?: DemoAsset; raw_options?: RecordValue
-  demo_id?: string; source?: string
+  demo_id?: string; source?: string; graph_ref?:DemoGraphReference
   [key: string]: unknown
 }
 export interface DemoGroup {
   id: string; dataset: Dataset; title: string; purpose: string; capability_id: string
-  materials: DemoAsset[]; working_graph: DemoAsset; samples: DemoSample[]
+  materials: DemoAsset[]; working_graph: DemoAsset; samples: DemoSample[]; graph_ref?:DemoGraphReference
   sources?: RecordValue[]; models?: RecordValue[]; [key: string]: unknown
 }
 export interface DemoLibrary { demos: DemoGroup[]; samples: DemoSample[] }

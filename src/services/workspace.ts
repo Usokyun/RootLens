@@ -2,16 +2,17 @@ import { computed, reactive, watch } from 'vue'
 import { DEFAULT_BACKEND, workbenchApi, apiConnection, type GraphSummary, type Reasoner, type DemoLibrary, type WorkTask, type AnalysisSummary } from '@/api/workbench'
 
 const SETTINGS_KEY = 'rootlens-workbench-v2'
-interface Settings { baseUrl: string; graphId: string; analysisId: string }
+export type GraphSelectionOrigin = 'implicit' | 'explicit'
+interface Settings { baseUrl: string; graphId: string; graphSelection:GraphSelectionOrigin; analysisId: string }
 function readSettings(): Settings {
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}')
-    return { baseUrl: saved.baseUrl || DEFAULT_BACKEND, graphId: saved.graphId || '', analysisId: saved.analysisId || '' }
-  } catch { return { baseUrl: DEFAULT_BACKEND, graphId: '', analysisId: '' } }
+    return { baseUrl: saved.baseUrl || DEFAULT_BACKEND, graphId: saved.graphId || '', graphSelection:saved.graphId ? saved.graphSelection === 'implicit' ? 'implicit' : 'explicit' : 'implicit', analysisId: saved.analysisId || '' }
+  } catch { return { baseUrl: DEFAULT_BACKEND, graphId: '', graphSelection:'implicit', analysisId: '' } }
 }
 const saved = readSettings()
 export const workspace = reactive({
-  baseUrl: saved.baseUrl, graphId: saved.graphId, analysisId: saved.analysisId,
+  baseUrl: saved.baseUrl, graphId: saved.graphId, graphSelection:saved.graphSelection, analysisId: saved.analysisId,
   graphs: [] as GraphSummary[], reasoners: [] as Reasoner[], demos: { demos: [], samples: [] } as DemoLibrary,
   tasks: [] as WorkTask[], analyses: [] as AnalysisSummary[], connected: false, loading: false, error: '',
   notice: '',
@@ -24,9 +25,9 @@ watch([() => apiConnection.available, () => apiConnection.error], ([available, e
 export const api = () => workbenchApi(workspace.baseUrl)
 export const currentGraph = computed(() => workspace.graphs.find((g) => g.graph_id === workspace.graphId) ?? null)
 export function persistSettings() {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ baseUrl: workspace.baseUrl, graphId: workspace.graphId, analysisId: workspace.analysisId }))
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ baseUrl: workspace.baseUrl, graphId: workspace.graphId, graphSelection:workspace.graphSelection, analysisId: workspace.analysisId }))
 }
-export function selectGraph(id: string) { workspace.graphId = id; persistSettings() }
+export function selectGraph(id: string, origin:GraphSelectionOrigin = 'explicit') { workspace.graphId = id; workspace.graphSelection = id ? origin : 'implicit'; persistSettings() }
 export function selectAnalysis(id: string) { workspace.analysisId = id; persistSettings() }
 export function setBackend(url: string) { workspace.baseUrl = url.replace(/\/+$/, ''); persistSettings() }
 export async function refreshGraphs() {

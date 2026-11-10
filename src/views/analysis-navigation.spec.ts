@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, nextTick, type App } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
-import type { AnalysisRun, Dataset } from '@/api/workbench'
+import type { AnalysisRun, Dataset, DemoGroup, DemoGraphReference } from '@/api/workbench'
 const calls = vi.hoisted(() => ({ analysis:vi.fn(), graph:vi.fn(), task:vi.fn(), retryTask:vi.fn(), authoringCapabilities:vi.fn(), refreshGraphs:vi.fn(), refreshAnalyses:vi.fn(), refreshWorkspace:vi.fn() }))
 vi.mock('@/services/workspace', async () => {
   const {reactive,computed}=await import('vue')
-  const workspace=reactive({baseUrl:'http://127.0.0.1:8012',graphId:'',analysisId:'',graphs:[] as import('@/api/workbench').GraphSummary[],reasoners:[] as import('@/api/workbench').Reasoner[],demos:{demos:[],samples:[]},tasks:[],analyses:[],connected:true,loading:false,error:'',notice:''})
+  const workspace=reactive({baseUrl:'http://127.0.0.1:8012',graphId:'',graphSelection:'explicit' as 'explicit'|'implicit',analysisId:'',graphs:[] as import('@/api/workbench').GraphSummary[],reasoners:[] as import('@/api/workbench').Reasoner[],demos:{demos:[],samples:[]},tasks:[],analyses:[],connected:true,loading:false,error:'',notice:''})
   return {workspace,currentGraph:computed(()=>workspace.graphs.find(g=>g.graph_id===workspace.graphId)??null),api:()=>calls,
-    selectGraph:(id:string)=>{workspace.graphId=id},selectAnalysis:(id:string)=>{workspace.analysisId=id},
+    selectGraph:(id:string,origin:'explicit'|'implicit'='explicit')=>{workspace.graphId=id;workspace.graphSelection=id?origin:'implicit'},selectAnalysis:(id:string)=>{workspace.analysisId=id},
     refreshWorkspace:calls.refreshWorkspace,refreshGraphs:calls.refreshGraphs,refreshAnalyses:calls.refreshAnalyses,refreshTasks:async()=>{},rememberTask:()=>{},setBackend:()=>{}}
 })
 import AppShell from '@/App.vue'
@@ -35,7 +35,7 @@ async function freshGlass() {
 }
 beforeEach(()=>{
   vi.clearAllMocks();vi.stubGlobal('scrollTo',vi.fn())
-  Object.assign(workspace,{graphId:'wafer-graph',analysisId:'old-wafer',graphs:[graph('wafer-graph','wafer','晶圆知识'),graph('glass-graph','mvtec','玻璃知识')],reasoners:[{reasoner_id:'unified_abduction',title:'统一约束推理',datasets:['mvtec','wafer','tep'],description:''},{reasoner_id:'tep_rootkgd',title:'RootKGD',datasets:['tep'],description:''}],tasks:[],analyses:[oldRun],connected:true,error:''})
+  Object.assign(workspace,{graphId:'wafer-graph',graphSelection:'explicit',analysisId:'old-wafer',graphs:[graph('wafer-graph','wafer','晶圆知识'),graph('glass-graph','mvtec','玻璃知识')],reasoners:[{reasoner_id:'unified_abduction',title:'统一约束推理',datasets:['mvtec','wafer','tep'],description:''},{reasoner_id:'tep_rootkgd',title:'RootKGD',datasets:['tep'],description:''}],tasks:[],analyses:[oldRun],demos:{demos:[],samples:[]},connected:true,error:''})
   calls.authoringCapabilities.mockResolvedValue({capabilities:{}});calls.refreshGraphs.mockResolvedValue(undefined);calls.refreshAnalyses.mockResolvedValue(undefined);calls.refreshWorkspace.mockResolvedValue(undefined)
   calls.analysis.mockResolvedValue(oldRun)
   calls.graph.mockImplementation(async(id:string)=>{const selected=workspace.graphs.find(g=>g.graph_id===id)!;return {schema_version:'rootlens-working-graph.v2',graph_id:id,title:selected.title,dataset:selected.dataset,build_id:'test',knowledge:selected.knowledge}})
@@ -85,5 +85,47 @@ describe('graph-to-analysis context across routes',()=>{
     let resolve!:(value:AnalysisRun)=>void;calls.analysis.mockImplementation(()=>new Promise<AnalysisRun>(r=>{resolve=r}))
     await mount();await vi.waitFor(()=>expect(calls.analysis).toHaveBeenCalledTimes(1));selectGraph('glass-graph');await nextTick();(root.querySelector('.rail-bottom a') as HTMLAnchorElement).click();await freshGlass()
     resolve(oldRun);await nextTick();await nextTick();expect(root.querySelector('.run-results')).toBeNull();expect(workspace.analysisId).toBe('')
+  })
+})
+
+
+function demo(dataset:Dataset,reference?:Partial<DemoGraphReference>):DemoGroup {
+  const graph_ref:DemoGraphReference={graph_id:`${dataset}-paired`,title:'样例配套图',state:'ready',ready:true,enabled:true,available:true,note:'',asset_id:'paired-asset',download_url:'/api/demo-library/assets/paired',candidates:[],...reference}
+  return {id:dataset,dataset,title:`${dataset}样例`,purpose:'真实输入',capability_id:'cap',materials:[],working_graph:{},graph_ref,samples:[{id:`sample-${dataset}`,title:'推荐样例输入',dataset,recommended:true,raw_input:{available:true},evidence:{available:true}}]}
+}
+async function loadRecommended(dataset:Dataset) {
+  const label={mvtec:'视觉缺陷',tep:'过程监测',wafer:'晶圆图案'}[dataset]
+  Array.from(root.querySelectorAll<HTMLButtonElement>('.demo-choice')).find(button=>button.textContent?.includes(label))!.click();await nextTick()
+  Array.from(root.querySelectorAll<HTMLButtonElement>('.sample-entry-button')).find(button=>button.textContent?.includes('Evidence'))!.click();await nextTick();await nextTick()
+}
+function selectedGraphId(){return(root.querySelector('[aria-label="工作图谱"]')as HTMLSelectElement).value}
+function chooseWorkingGraph(id:string){const select=root.querySelector('[aria-label="工作图谱"]')as HTMLSelectElement;select.value=id;select.dispatchEvent(new Event('change',{bubbles:true}))}
+function configureDemoWorkspace(reference?:Partial<DemoGraphReference>){
+  Object.assign(workspace,{graphId:'',graphSelection:'implicit',analysisId:'',graphs:[graph('strict-source','mvtec','严格原资料图'),graph('mvtec-paired','mvtec','玻璃配套图'),graph('tep-paired','tep','过程配套图'),graph('wafer-paired','wafer','晶圆配套图')],demos:{demos:[demo('mvtec',reference),demo('tep'),demo('wafer')],samples:[]}})
+}
+describe('recommended sample graph selection provenance',()=>{
+  it('replaces only an implicit default with the exact paired graph in all three scenes',async()=>{
+    configureDemoWorkspace();await mount();await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());expect(selectedGraphId()).toBe('strict-source');expect(workspace.graphSelection).toBe('implicit')
+    for(const scene of ['mvtec','tep','wafer']as const){await loadRecommended(scene);expect(selectedGraphId()).toBe(`${scene}-paired`);expect(workspace.graphSelection).toBe('implicit');expect(root.querySelector('.demo-graph-context')?.textContent).toContain('已选择样例配套图')}
+  })
+  it('preserves a user dropdown choice and switches only on the explicit paired-graph action without clearing the input',async()=>{
+    configureDemoWorkspace();await mount();await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());chooseWorkingGraph('strict-source');await nextTick();await loadRecommended('mvtec')
+    expect(selectedGraphId()).toBe('strict-source');expect(root.querySelector('.demo-graph-context')?.textContent).toContain('保留你明确选择');expect(workspace.graphSelection).toBe('explicit')
+    root.querySelector<HTMLButtonElement>('.demo-graph-context button')!.click();await nextTick();expect(selectedGraphId()).toBe('mvtec-paired');expect(root.querySelector('.loaded-demo-input')?.textContent).toContain('推荐样例输入');expect(root.querySelector('.input-kind-options button.active')?.textContent).toContain('Evidence')
+  })
+  it('preserves a route-selected strict graph when a recommended sample is loaded',async()=>{
+    configureDemoWorkspace();await mount('/evidence?intent=new-analysis&graph=strict-source');await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());await loadRecommended('mvtec');expect(selectedGraphId()).toBe('strict-source');expect(workspace.graphSelection).toBe('explicit')
+  })
+  it('does not silently fall back to a same-scene graph when the paired graph is missing',async()=>{
+    configureDemoWorkspace({graph_id:null,state:'missing',available:false,note:'请导入配套知识包'});await mount();await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());await loadRecommended('mvtec');expect(selectedGraphId()).toBe('');expect(root.querySelector('.demo-graph-context')?.textContent).toContain('请导入配套知识包');expect(Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent?.trim()==='开始分析')!.disabled).toBe(true)
+  })
+  it('keeps a cross-scene explicit graph until the user accepts the paired-graph action',async()=>{
+    configureDemoWorkspace();await mount('/evidence?intent=new-analysis&graph=strict-source');await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());await loadRecommended('tep');expect(selectedGraphId()).toBe('strict-source');expect(root.querySelector('.demo-graph-context')?.textContent).toContain('保留你明确选择');expect(Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(button=>button.textContent?.trim()==='开始分析')!.disabled).toBe(true)
+  })
+  it('can adopt a newly available exact pairing after metadata refresh without clearing the input',async()=>{
+    configureDemoWorkspace({graph_id:null,state:'missing',available:false});await mount();await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());await loadRecommended('mvtec');expect(selectedGraphId()).toBe('');workspace.demos={demos:[demo('mvtec'),demo('tep'),demo('wafer')],samples:[]};await nextTick();await nextTick();expect(selectedGraphId()).toBe('mvtec-paired');expect(root.querySelector('.loaded-demo-input')?.textContent).toContain('推荐样例输入');expect(root.querySelector('.input-kind-options button.active')?.textContent).toContain('Evidence')
+  })
+  it('does not let a later graph-list refresh replace an explicit choice or clear the loaded sample',async()=>{
+    configureDemoWorkspace();await mount();await vi.waitFor(()=>expect(root.querySelector('.analysis-setup')).not.toBeNull());await loadRecommended('mvtec');chooseWorkingGraph('strict-source');await nextTick();workspace.graphs=[...workspace.graphs].reverse();await nextTick();expect(selectedGraphId()).toBe('strict-source');expect(root.querySelector('.loaded-demo-input')?.textContent).toContain('推荐样例输入')
   })
 })

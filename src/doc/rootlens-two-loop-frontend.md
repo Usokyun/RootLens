@@ -35,6 +35,7 @@ npm run dev -- --host 127.0.0.1 --port 5186 --strictPort
 ### B：样本到可追溯解释
 
 - 明确区分“从原始样本开始”和“从 Evidence 开始”，并选择场景。
+- 加载示例时，隐式默认选择后端明确标识的样例配套就绪图；用户手选或“使用此图分析”的明确图谱意图保留，并提供切换配套图动作。缺配套图时提示导入 / 启用，不用最新同场景图代替。
 - TEP 原生 DAT/CSV 必须提供配套正常参考与一基闭区间窗口；MVTec 显式 ROI 外观模型选项；Wafer 保留原生 0/1/2 编码。
 - 只允许选择当前场景已启用的 v2 图谱。统一约束推理支持三场景；RootKGD 在非 TEP 场景禁用。
 - 结果先展示实际图像/区域、窗口/变量或网格与观测，再比较候选、支持/冲突/缺测和实际路径。分数不作为置信率，也不跨引擎合并。
@@ -179,4 +180,25 @@ const page = await context.newPage()
 - `git diff --check -- src package.json package-lock.json` 通过；新增前端文件另逐一执行 no-index whitespace check，未 stage / commit。
 - 前端运行 URL 仍为 `http://127.0.0.1:5186`，三个页面和 API 地址未变。5186 保持运行；使用独立 browser/context，不占用或清除用户 Chrome。
 - 本轮新增范围仅为分析入口状态、共用目录 / 等价词汇编辑、保存的知识诊断、候选专属条件向导与相应客户端 / 测试。未重跑模型或 LLM，不新增前端推理、知识自动强配或规则 IDE。
-- 已知前端阻塞为零。最后 Root 投影归一化的服务重载 / 新版本结果验收由后端 owner 与独立审核继续；若实际字段需要 UI 调整，再交回前端原 owner。
+- 本阶段前端无已知阻塞。随后 Root v2 的真实 Run `f0cca0c7-f7f7-4f1f-8e12-ec8f13296acf` 已由独立审核验证：14 作者条件 / 52 结构输入、21 条连续主路径及 XMV(10) 曲线 / 贡献联动；见独立增量截图 `10-root-v2-diagnostics.png`、`11-root-v2-path-channel-linked.png`。历史 Run 不回算。
+
+
+## 推荐样例的配套图与明确选择（追加 P1 修复）
+
+新增严格源图启用后，fresh 浏览器的默认图会变成最新同场景图。旧 `loadDemo` 只切场景并保留默认，导致推荐 006 输入与图不配套。这是图选择合同缺失，不通过删除 / 停用合法严格源图解决。
+
+- 工作空间持久区分 `graphSelection=implicit|explicit`：自动默认不变成用户选择；图谱页手选、分析页下拉和携图新分析意图为明确选择。已有只存 graphId 的旧设置保守保留为明确选择，不覆盖历史用户意图。
+- 示例目录的 group / sample `graph_ref` 由后端按配套包实际内容解析；浏览器不按场景、标题、最新顺序或写死 UUID 猜配套图。
+- fresh / 隐式默认加载任一场景样例时，只自动选 `state=ready && available` 且实际列表仍就绪启用的精确图。缺失、歧义、未启用和不可读状态不回退其他图，显示后端说明及下载 / 导入 / 启用入口；用户仍可明确选择其他工作图做对照。
+- 明确指定的严格图加载样例后保持，提示与配套图不同、可能无匹配或证据不足，并提供一次明确切换动作。跨场景不适用时保留该意图但禁运行，直到用户换图。
+- 配套状态重读会刷新实际目录与图列表，不清已载样例、输入类型或文件；迟到元数据不能覆盖后续明确选择。普通历史打开、同路由新分析和初始化准备态继续沿原合同。
+
+### 追加修复的实际验证
+
+- 后端 live `graph_ref` 部署后，独立 browser/context 在 GET-only guard 下实际验证：fresh 默认仍是合法严格源图 `graph_538efc4369b64b46a879dd5a30652bc1`；加载推荐 006 的 Evidence 后改选配套 `graph_7718009df1d94a288f99d1e428487679`。TEP 和 Wafer 亦分别采用目录精确指向的 `graph_c6d2a470450e41369de3fc7bdcaaf459`、`graph_5c3b30cbf4024ab1939c0435a1f676ec`，代码无 live UUID 表。
+- route 和分析页下拉明确选择严格 538 时，加载同一个 006 仍保留 538、给出不同图提示；点击“切换到样例配套图”才切 7718，已载样例与 Evidence 模式不变。普通 Wafer 历史结果仍可恢复，随后新建分析仍保留明确选择，不由历史 run.graph_id 覆盖。
+- 三场景隐式选择、明确选择 / 跨场景保留、缺配套禁运行、迟到目录恢复和输入保留由 24 项针对测试覆盖。本轮只填样例和读历史，不发新分析 / 模型 / LLM 请求，不修改、删除或停用严格源图。
+- 实屏与请求记录：`/Users/hhm/code/RootLens/.playwright-mcp/two-loop-optimization/demo-graph-intent-check.json`、`12-recommended-demo-paired-graph.png`、`13-explicit-source-graph-preserved.png`；7 个检查场景均通过，无 JS 错误、无写请求。复用入口 `/private/tmp/rootlens-demo-graph-intent-check.mjs`，保持 GET-only guard。
+- 最后源码候选完整 `npm test`：**18 文件 / 97 项通过**（04:58）；`npm run build` 类型 / 生产构建通过，tracked diff-check 和两个新增 helper / 测试的 whitespace check 通过。前端源码冻结交独立审核，5186 保持运行。
+
+独立审核亦已在全新 context、GET-only guard 下复核 fresh 配对、真实下拉与图页携图两种明确意图、手动切换不丢输入、普通历史恢复；13 个 sample refs 均对应正确三图，错误与写请求为空。独立证据为 `backend/runs/two_loop_demo/system-assessment/kg/incremental/demo-graph-intent-after-check.json`、同名 `.mjs` 及 13/14/15 截图。当前前端无待修阻塞。

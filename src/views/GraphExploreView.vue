@@ -159,7 +159,10 @@ onMounted(async () => {
     await refreshGraphs()
     const requested = typeof route.query.graph === 'string' ? route.query.graph : workspace.graphId
     const chosen = executableGraphs.value.find((g) => g.graph_id === requested) ?? executableGraphs.value.find((g) => g.enabled) ?? executableGraphs.value[0]
-    if (chosen) { selectGraph(chosen.graph_id); await loadGraph(chosen.graph_id) }
+    if (chosen) {
+      const origin = typeof route.query.graph === 'string' ? 'explicit' : chosen.graph_id === workspace.graphId ? workspace.graphSelection : 'implicit'
+      selectGraph(chosen.graph_id,origin); await loadGraph(chosen.graph_id)
+    }
   } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
 })
 </script>
