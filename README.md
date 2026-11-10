@@ -149,6 +149,7 @@ backend/runs/local_runtime/  预置本机数据库与工具（忽略）
 - [当前集成边界](src/doc/backend-integration-current.md)：当前行为真值，含迁移／U0–U5 历史摘要。
 - [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：任务、图启用与完整分析合同。
 - [演示资产索引](src/doc/rootlens-two-loop-demo-assets.md)与[现场手册](backend/docs/two-loop-demo.md)。
+- [最终独立验收](backend/docs/two-loop-acceptance.md)：实际双闭环、六项修复的消费证据与保留限制。
 - [前端交付](src/doc/rootlens-two-loop-frontend.md)、[来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。
 
 `module-1/2/3`、`frontend_handoff` 与旧 roadmap 是语义来源和历史背景，不覆盖当前边界。
