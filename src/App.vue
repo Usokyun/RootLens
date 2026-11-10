@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from '@arco-design/web-vue/es/locale/lang/zh-cn'
 import { IconBook, IconRelation, IconExperiment, IconArrowRight, IconSettings, IconRefresh, IconCheckCircle, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
 import { workspace, currentGraph, refreshWorkspace, setBackend } from '@/services/workspace'
+import { newAnalysisRoute } from '@/services/analysis-entry'
 import { friendly } from '@/services/presentation'
 const route = useRoute()
 const settingsOpen = ref(false)
@@ -37,7 +38,7 @@ onMounted(refreshWorkspace)
           <RouterLink v-for="item in navigation" :key="item.name" :to="item.path" :class="{ active: route.name === item.name }"><component :is="item.icon" /><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><span class="nav-number">{{ item.number }}</span></RouterLink>
         </nav>
         <section class="rail-guide"><span class="eyebrow">两条路径，一个工作台</span><p>资料 <IconArrowRight /> 可用知识</p><p>样本 <IconArrowRight /> 可追溯解释</p></section>
-        <div class="rail-bottom"><span class="rail-label">当前工作图</span><strong>{{ currentGraph ? friendly(currentGraph.title, '当前知识图谱') : '尚未选择图谱' }}</strong><span v-if="currentGraph" class="status-dot" :class="currentGraph.enabled ? 'status-dot--green' : 'status-dot--amber'">{{ currentGraph.enabled ? '已投入使用' : '待投入使用' }}</span><RouterLink :to="currentGraph?.enabled ? '/evidence' : '/graphs'" class="text-button">{{ currentGraph?.enabled ? '使用此图分析' : '前往知识图谱' }} <IconArrowRight /></RouterLink></div>
+        <div class="rail-bottom"><span class="rail-label">当前工作图</span><strong>{{ currentGraph ? friendly(currentGraph.title, '当前知识图谱') : '尚未选择图谱' }}</strong><span v-if="currentGraph" class="status-dot" :class="currentGraph.enabled ? 'status-dot--green' : 'status-dot--amber'">{{ currentGraph.enabled ? '已投入使用' : '待投入使用' }}</span><RouterLink :to="currentGraph?.enabled ? newAnalysisRoute(currentGraph.graph_id) : '/graphs'" class="text-button">{{ currentGraph?.enabled ? '使用此图分析' : '前往知识图谱' }} <IconArrowRight /></RouterLink></div>
       </aside>
       <div class="app-main">
         <header class="app-topbar"><div class="topbar-context"><span class="context-dot" />工业异常分析<span class="context-divider">/</span><strong>{{ route.meta.label }}</strong></div><div class="topbar-actions"><span v-if="activeTasks" class="running-label"><IconRefresh class="is-spinning" /> {{ activeTasks }} 项任务处理中</span><button class="connection-button" @click="backendUrl = workspace.baseUrl; settingsOpen = true"><IconCheckCircle v-if="workspace.connected" class="success-text" /><IconExclamationCircle v-else class="warning-text" /><span>{{ workspace.connected ? '后端已连接' : workspace.loading ? '正在连接…' : '后端未连接' }}</span><IconSettings /></button></div></header>

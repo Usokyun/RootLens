@@ -31,6 +31,7 @@ export function useTaskObserver(onComplete: (task: WorkTask) => void | Promise<v
     stop(); generation += 1; task.value = next; connectionError.value = ''; rememberTask(next)
     void update(next.task_id, generation)
   }
+  function clear() { stop(); generation += 1; task.value = null; connectionError.value = ''; completedId = '' }
   async function refresh() { if (task.value) { stop(); await update(task.value.task_id, generation) } }
   async function retry() {
     if (!task.value) return
@@ -40,5 +41,5 @@ export function useTaskObserver(onComplete: (task: WorkTask) => void | Promise<v
     finally { retrying.value = false }
   }
   onBeforeUnmount(() => { disposed = true; generation += 1; stop() })
-  return { task, connectionError, retrying, observe, refresh, retry }
+  return { task, connectionError, retrying, observe, refresh, retry, clear }
 }

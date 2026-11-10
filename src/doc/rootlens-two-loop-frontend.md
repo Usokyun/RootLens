@@ -112,3 +112,71 @@ const page = await context.newPage()
 - 实屏与计数：`.playwright-mcp/two-loop/24-wafer-center-aligned.png`、`wafer-zone-alignment-after.json`；独立脚本 `/private/tmp/rootlens-wafer-region-check.mjs`。
 
 同时修正 `src/api/url.ts` 的 EOF 多余空行与 `src/api/workbench.ts` 的尾随空格。Git 由后端 owner 统一重暂存；前端未自行 stage/commit。
+
+## 双闭环优化第一候选（2026-11-11 03:59）
+
+### 跨页新分析意图修复
+
+图谱页和侧栏的“使用此图分析”统一带显式 `intent=new-analysis&graph=…`，分析页优先消费这一意图，清除旧运行、旧任务观察器和输入上下文。处理完成后移除一次性参数；同页再次点击也可重新进入新分析。普通历史入口仍恢复已有结果，迟到的历史请求不会覆盖新的选择。“新建分析”优先当前工作图，不再用旧结果的图覆盖它。
+
+真实隔离浏览器走查：旧 Wafer Run `33196a93-9a78-44e6-a4bd-b3b12023676f` → 图谱页选择玻璃图 `graph_3a24629ac3ce487097424b4983e05398` → 图谱和侧栏两入口均进入玻璃新分析表单，未重取旧结果。普通历史恢复与结果页“新建分析”亦已核对。
+
+### 明确的词汇等价与共用特征目录
+
+- “对象与等价词汇”支持从空列表添加映射，编辑外部词、标准词、模型范围和实际来源断言；删除后通过保存生效。没有相似度自动强配，不把粗玻璃缺损映射成已确认 Finish 部位。
+- 观测条件读取 `/api/authoring/capabilities` 的真实特征类型、单位、定义和 `allowed_values`。有限值使用下拉 / 多选并即时校验；开放外观词汇明确提示语义等价边界。未修改的旧图条件不会仅因新目录而被浏览器静默改写。
+- 真实副本 `graph_ffa07d51580e4cac87d4a1d4f7e17abf` 从空映射新增“裂纹或玻璃缺失 → cracked_or_missing_glass”，保存重开；只把既有 Frame 同义词替换成显式中文表示的合同测试，得到 Run `2a38c1a9-9f3d-427a-bc4a-a0ff4a882c97`，grounded facts 实际记录 `applied_value_binding_ids`。随后 GUI 删除并保存，GET 回读为空；该运行的原快照仍有映射。此项验收词汇适配，不作为新模型测量或准确率证据。
+- 形态目录精确读取 `linear/spot/scattered/dense`，位置 `edge/surface`；散布 / 密集是既有 supplied_geometry 聚合适配能力，不声称单 ROI 算法新增这两类。
+
+### 本次快照知识诊断
+
+新结果读取已持久化的 `authoring_diagnostics`，区分保留观测、条件绑定观测、评分输入及实际条件事实真 / 假 / 未知；不把绑定数写成支持数。相同期待条件组与实际 Root 传播结构组分开呈现，成本先验单列，不当作观测已区分。Root 作者逻辑核对不参与阈值 / AND-OR 评分，完整结构比较输入数量不等于传播覆盖通道数。历史结果无字段时明确“本次未生成”，不借用当前图补算。
+
+当前可修改已有 predicate、联合表达式和已有期待端点 / 模式；候选专属“新增 / 撤销诊断条件”已在最终增量完成，见下节。仍不提供任意节点、共享机制或通道绑定的泛型创建器。
+
+### 验证与可复用入口
+
+- 本候选 `npm test`：**14 文件 / 68 项通过**；`npm run build` 类型与生产构建通过。
+- 第一候选实屏记录在 `/Users/hhm/code/RootLens/.playwright-mcp/two-loop-optimization/`：`01-selected-graph-new-analysis.png`、`02-sidebar-clears-old-analysis.png`、`03-binding-created-reopened.png`、`04-equivalent-word-used-in-analysis.png`、`05-finite-feature-directory.png`、`06-saved-knowledge-diagnostics.png`、`07-diagnostics-result-context.png`。
+- 对应 `cross-route-check.json`、`binding-authoring-check.json`、`diagnostics-screen.json`；全轮无 JS 错误。
+- 复用脚本 `/private/tmp/rootlens-cross-route-check.mjs`、`/private/tmp/rootlens-binding-finish.mjs`、`/private/tmp/rootlens-diagnostics-screen.mjs`；均使用前述已安装 Playwright 和独立 Chrome/context，不占用用户浏览器。绑定删除脚本属于写验收，请不要重复用于已删除状态。
+- 页面仍是 `http://127.0.0.1:5186/{materials,graphs,evidence}`，API 为 `http://127.0.0.1:8012`。没有重复运行 backbone / VLM / LLM。
+
+
+## 最终优化候选：候选专属条件与状态修复（2026-11-11 04:13）
+
+### 给一个候选新增 / 撤销条件
+
+图谱页选择“候选解释”中的目标，点击 **新增诊断条件**。向导从后端窄 operator 读取合法特征、算子、已绑定过程变量和晶圆区域，支持数值 signed/std/slope 等已有生产特征及有限类别；填写 typed 条件值、期待模式、说明和可选资料来源，保存时只连接当前候选。
+
+后端创建独立 predicate / pattern / expectation，小束与本图已有异常门联合，不修改共享机制。没有来源时如实记录人工演示启发式；必要条件不满足 / 缺测按现有语义阻止支持排名，预期 / 可能模式不新增私有“冲突”规则。未知过程变量只能先核对已有绑定，不在向导猜测通道或制造观测。已有共享依赖时，后端返回不可撤销及原因，UI 禁用撤销。
+
+本入口保存直接持久化；普通图谱草稿尚未保存时禁止进入，避免覆盖。向导可撤销本 operator 新建的独立小束，不能借此任意删除图谱。RootKGD 提示为按图传播与贡献结构评分、不执行条件阈值；新增 / 删除真实关系可能改变传播结构，不能把统一条件代价当 Root 分数。
+
+独立审核真实使用未修改的玻璃 Frame 完成：
+
+- 审核副本 `graph_ef7ee725081f4d2e95283ba18eadc729`，基线 Run `49bb6223-41c7-4954-a428-70fbdef9b01e` 的同签名组有 **7** 个候选。
+- 只给“玻璃料温过低”添加人工能力对照“ROI 面积至少 0.2”，新 Run `e61fd3f3-21f3-4b7c-904e-093969567c94` 同组变为 **6**；实际面积 `0.2284393310546875`，新条件为真，并保留本条件、异常门及来源的完整联合路径。该人工阈值仅验证编辑能力，不作为已验证的工业区分规则。
+- GUI 撤销后 Run `793a023f-f3e0-4717-a564-822d5f698f51` 同组回到 **7**；当前 knowledge 逐字段恢复。再次从 GUI 打开新增阶段的历史 Run，仍有原条件、实际值与路径，不使用当前图覆盖。
+
+记录与截图：`/Users/hhm/code/RootLens/backend/runs/two_loop_demo/system-assessment/kg/incremental/operator-ui-check.json`，`06-candidate-condition-form.png`、`07-added-condition-diagnostic.png`、`08-historical-condition-after-delete.png`。续跑入口 `operator-ui-resume.mjs` 属于该已完成写验收的记录，不应无条件重放。前端另用只读向导填写 / 取消核对 52 个真实变量、`statistics.slope_z` 的 `1/sample` 单位及取消不修改图谱，见 `.playwright-mcp/two-loop-optimization/08-candidate-condition-wizard.png`、`candidate-wizard-readonly.json`。
+
+### 初始化不再清除刚选择的输入
+
+独立审核自然重现了“表单先可交互，迟到目录响应后再次消费新分析意图，清除 Evidence/file”的竞态。现在 metadata 与一次性意图未准备完前显示明确准备态，不挂可交互输入且禁用运行；准备完成后只消费一次。历史结果请求开始前解除入口锁，因此同路由新意图仍能中断迟到历史响应，不恢复旧错图。
+
+导航回归共 9 项，覆盖延迟目录、准备期无可交互 setup、完成后 Evidence/file 保留、准备期侧栏意图、普通历史恢复与迟到结果防护。另在隔离浏览器实际延迟后端 GET、释放真实响应后立即选 Evidence/file，模式与文件保持且没有 POST；`09-entry-awaits-metadata.png`、`10-entry-preserves-evidence-input.png`、`entry-initialization-check.json`。独立审核在原副本两次快速选择 / 提交也通过。
+
+### 正常 / 不足分组不是本次排名并列
+
+组卡按保存的 `candidate_checks.eligible_for_ranking` 单独显示具备 / 不具备 / 未评估数量。正常或证据不足组全部无资格时明确“本组本次未获支持；以下为图谱条件的结构检查”，不称当前排名并列；搜索未完成和未评估保持未知状态。条件真 / 假 / 未知和输入计数仍独立展示。
+
+独立审核提供的真实新 Run 已由前端只读实屏消费：正常 `6d354f30-a787-4be6-af92-80ade4b1377c`（14 事实全假、组资格 0/2），不足 `a4ff94e0-69e9-415c-96b0-fbd60e12b940`（组资格 0/7），Root `dde846a7-ad8d-427e-ae34-fcd6fcfc05fb`（14 作者条件事实，2 真 / 12 假；52 个结构评分输入）。截图 `11-{normal,insufficient,root}-knowledge-state.png` 与 `diagnostic-state-readonly.json`。这些记录不作为后端后续投影版本的重新验收；最终 Root 投影归一化由后端 owner 完成、独立审核消费，历史 Run 不回算。
+
+### 当前验证与冻结交付
+
+- 最终完整原生 `npm test`：**17 文件 / 84 项通过**（04:12）；`npm run build` 类型与生产构建通过，无大 chunk 警告。
+- `git diff --check -- src package.json package-lock.json` 通过；新增前端文件另逐一执行 no-index whitespace check，未 stage / commit。
+- 前端运行 URL 仍为 `http://127.0.0.1:5186`，三个页面和 API 地址未变。5186 保持运行；使用独立 browser/context，不占用或清除用户 Chrome。
+- 本轮新增范围仅为分析入口状态、共用目录 / 等价词汇编辑、保存的知识诊断、候选专属条件向导与相应客户端 / 测试。未重跑模型或 LLM，不新增前端推理、知识自动强配或规则 IDE。
+- 已知前端阻塞为零。最后 Root 投影归一化的服务重载 / 新版本结果验收由后端 owner 与独立审核继续；若实际字段需要 UI 调整，再交回前端原 owner。

@@ -6,6 +6,14 @@ export type RecordValue = Record<string, unknown>
 export type Dataset = 'mvtec' | 'tep' | 'wafer'
 export type ReasonerId = 'unified_abduction' | 'tep_rootkgd'
 export type InputMode = 'evidence' | 'records' | 'image' | 'process' | 'wafer'
+export interface AuthoringFeature {
+  feature_id:string; value_kind:'number'|'boolean'|'category'|'candidate_set'|'interval'|'array_ref'
+  unit:string|null; definition:string; requires_reference:boolean; allowed_values?:string[]|null
+}
+export interface AuthoringCapability {
+  capability_id:string; features:AuthoringFeature[]; scopes:string[]; zones:string[]; notes:string
+  [key:string]:unknown
+}
 export interface GraphSummary {
   graph_id: string; title: string; dataset: Dataset; status: string; enabled: boolean
   node_count: number; edge_count: number; build_id: string; knowledge?: RecordValue
@@ -109,6 +117,7 @@ export function workbenchApi(base: string) {
     saveGraph: (id: string, body: WorkingGraphPackage) => request<GraphSummary>(base, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`, json(body, 'PUT')),
     importGraph: (body: WorkingGraphPackage) => post<GraphSummary>('/api/kg/working-graphs/import', body),
     enableGraph: (id: string, enabled: boolean) => post<GraphSummary>(`/api/kg/working-graphs/${encodeURIComponent(id)}/enable`, { enabled }),
+    authoringCapabilities: () => get<{capabilities:Record<Dataset,AuthoringCapability>}>('/api/authoring/capabilities'),
     reasoners: () => get<{ reasoners: Reasoner[] }>('/api/reasoners'),
     demos: () => get<DemoLibrary>('/api/demo-library'),
     importDemoMaterials: (id: string) => post<{ materials: KGMaterialRecord[] }>(`/api/demo-library/${encodeURIComponent(id)}/materials`),

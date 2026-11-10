@@ -67,7 +67,7 @@ const labels: Record<string, string> = {
   'Very high overall failure density': '整体失效率很高',
   'chipped_edge': '玻璃边缘崩缺', 'cracked_or_missing_glass': '裂纹或玻璃缺失', 'broken_glass': '玻璃破损', 'chipped_glass': '玻璃崩缺', 'normal': '正常', 'good': '正常', 'unknown': '未知',
   'center': '中心', 'middle': '中圈', 'edge': '边缘', 'all_valid': '全片有效区', 'upper': '上部', 'lower': '下部',
-  'left': '左侧', 'right': '右侧', 'linear': '线状', 'irregular': '不规则', 'compact': '紧凑',
+  'left': '左侧', 'right': '右侧', 'linear': '线状', 'spot': '斑点状', 'scattered': '散布状', 'dense': '密集状', 'surface': '表面', 'irregular': '不规则', 'compact': '紧凑',
   'center_pattern': '中心型', 'donut': '环状型', 'edge_loc': '边缘局部型', 'edge_ring': '边缘环型',
   'loc': '局部型', 'random': '随机型', 'scratch': '划痕型', 'near_full': '近全失效型', 'nearfull': '近全失效型',
   'expected': '预期表现', 'necessary': '必要条件', 'possible': '可能表现', 'source_explicit': '资料明确记载',

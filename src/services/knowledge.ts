@@ -8,7 +8,7 @@ export const knowledgeSections: Array<{ key: KnowledgeSection; label: string; hi
   { key: 'pattern_definitions', label: '联合现象', hint: '哪些条件需要同时或择一满足' },
   { key: 'observable_definitions', label: '观测条件', hint: '特征、阈值、主体与作用范围' },
   { key: 'rules', label: '关系与规则', hint: '原因到机制、机制到现象的关系' },
-  { key: 'bindings', label: '观测绑定', hint: '外部主体和特征词汇如何进入图谱' },
+  { key: 'bindings', label: '对象与等价词汇', hint: '明确主体身份和有来源的词汇等价关系' },
   { key: 'sources', label: '资料依据', hint: '定位原文、模型提议和阈值来源' },
 ]
 export interface KnowledgeItem { id: string; label: string; subtitle: string; group: string; index: number; raw: RecordValue }
@@ -51,7 +51,7 @@ export function catalog(knowledge: RecordValue, section: KnowledgeSection): Know
     if (group === 'expectation_rules') { label = `${names.get(text(row.from_id)) ?? friendly(row.from_id)} → ${names.get(text(row.pattern_id)) ?? friendly(row.pattern_id)}`; subtitle = friendly(row.mode) }
     if (group === 'relations') { label = `${names.get(text(row.head)) ?? friendly(row.head)} → ${names.get(text(row.tail)) ?? friendly(row.tail)}`; subtitle = friendly(row.relation) }
     if (group === 'subject_bindings') { label = `${friendly(row.external_id)} → ${names.get(text(row.target_id)) ?? friendly(row.target_id)}`; subtitle = '外部主体绑定' }
-    if (group === 'value_bindings') { label = `${friendly(row.external_value)} → ${friendly(row.canonical_value)}`; subtitle = '特征值映射' }
+    if (group === 'value_bindings') { label = `${friendly(row.external_value)} → ${friendly(row.canonical_value)}`; subtitle = '等价词汇 · 明确同义' }
     if (group === 'source_assertions') { label = friendly(row.origin); subtitle = text(row.text) }
     return { id, label, subtitle, group, index, raw: row }
   }))

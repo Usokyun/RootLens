@@ -8,6 +8,10 @@ function successfulFetch() {
   return fetch
 }
 describe('double-loop API client', () => {
+  it('reads the shared authoring capability catalog without inventing an enum list', async () => {
+    const fetch=successfulFetch();await workbenchApi('https://backend.example').authoringCapabilities()
+    expect(fetch.mock.calls[0]![0]).toBe('https://backend.example/api/authoring/capabilities')
+  })
   it('submits actual parse/build jobs with the one-repair policy, then reads and retries the original task', async () => {
     const fetch = successfulFetch(), api = workbenchApi('https://backend.example')
     await api.parseMaterials(['source-a'])

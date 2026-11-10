@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { IconArrowRight, IconUpload, IconFile, IconImage, IconApps, IconBarChart, IconHistory, IconPlus, IconCheck, IconDownload, IconRefresh, IconExperiment, IconRelation, IconInfoCircle, IconClose, IconFolder } from '@arco-design/web-vue/es/icon'
 import type { Dataset, InputMode, ReasonerId, DemoSample, DemoGroup, AnalysisRun, WorkTask } from '@/api/workbench'
 import { apiUrl } from '@/api/workbench'
 import { api, workspace, currentGraph, refreshWorkspace, refreshGraphs, refreshAnalyses, selectGraph, selectAnalysis } from '@/services/workspace'
 import { datasetShort, text, record, friendly, fileSize, dateTime, parseWindows } from '@/services/presentation'
 import { useTaskObserver } from '@/services/task-observer'
+import { newAnalysisIntent } from '@/services/analysis-entry'
 import { revealTask } from '@/services/reveal-task'
 import TaskProgress from '@/components/ui/TaskProgress.vue'
 import RunResults from '@/components/analysis/RunResults.vue'
 
-const router = useRouter()
+const router = useRouter(), route = useRoute()
+let contextVersion = 0
 const inputKind = ref<'raw' | 'evidence'>('raw'), rawFormat = ref<'native' | 'records'>('native')
 const dataset = ref<Dataset>(currentGraph.value?.dataset ?? 'mvtec')
 const file = ref<File | null>(null), reference = ref<File | null>(null)
@@ -20,7 +22,7 @@ const previewUrl = ref(''), dragging = ref(false)
 const graphId = ref(workspace.graphId), reasonerId = ref<ReasonerId>('unified_abduction')
 const inputTitle = ref('')
 const form = reactive({ objectName: 'bottle', modelPreset: 'auto', semantics: true, windows: '1–100，161–260', topK: 8 })
-const busy = ref(false), error = ref(''), loadingRun = ref(false)
+const busy = ref(false), error = ref(''), loadingRun = ref(false), initializing = ref(true)
 const run = ref<AnalysisRun | null>(null), setupOpen = ref(true), historyOpen = ref(false)
 const demoOpen = ref(false), demoGroup = ref<DemoGroup | null>(null), selectedSampleId = ref('')
 const loadedSample = ref<DemoSample | null>(null)
@@ -34,7 +36,7 @@ const selectedSample = computed(() => demoGroup.value?.samples.find((s) => (s.sa
 const mainSample = computed(() => demoGroup.value?.samples.find((s) => s.recommended === true || s.demo_role === 'recommended' || s.role === 'primary') ?? demoGroup.value?.samples.find((s) => /主演示|推荐/.test(s.title)) ?? demoGroup.value?.samples[0])
 const otherSamples = computed(() => demoGroup.value?.samples.filter((s) => s !== mainSample.value) ?? [])
 const running = computed(() => task.value && ['queued','running'].includes(task.value.status))
-const canRun = computed(() => (file.value || loadedSample.value) && graphId.value && compatibleReasoners.value.some((r) => r.reasoner_id === reasonerId.value) && !busy.value && !running.value)
+const canRun = computed(() => (file.value || loadedSample.value) && graphId.value && compatibleReasoners.value.some((r) => r.reasoner_id === reasonerId.value) && !busy.value && !running.value && !initializing.value)
 const taskObserver = useTaskObserver(async (next) => {
   if (next.result?.run_id) { await loadRun(text(next.result.run_id)); await refreshAnalyses() }
 })
@@ -89,33 +91,69 @@ async function start() {
   finally { busy.value = false }
 }
 async function loadRun(id: string) {
+  const version = ++contextVersion
   loadingRun.value = true; error.value = ''
-  try { run.value = await api().analysis(id); selectAnalysis(id); setupOpen.value = false; historyOpen.value = false }
-  catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-  finally { loadingRun.value = false }
+  try {
+    const saved = await api().analysis(id)
+    if (version !== contextVersion) return
+    run.value = saved; selectAnalysis(id); setupOpen.value = false; historyOpen.value = false
+  } catch (e) { if (version === contextVersion) error.value = e instanceof Error ? e.message : String(e) }
+  finally { if (version === contextVersion) loadingRun.value = false }
+}
+function enterNewAnalysis(selectedGraphId: string) {
+  contextVersion += 1; taskObserver.clear(); run.value = null; loadingRun.value = false
+  setupOpen.value = true; historyOpen.value = false; demoOpen.value = false; error.value = ''
+  selectAnalysis(''); file.value = null; reference.value = null; loadedSample.value = null
+  inputTitle.value = ''; inputKind.value = 'raw'; rawFormat.value = 'native'; setPreview(null)
+  if (fileInput.value) fileInput.value.value = ''
+  if (referenceInput.value) referenceInput.value.value = ''
+  const chosen = workspace.graphs.find((graph) => graph.graph_id === selectedGraphId)
+  if (!chosen || !chosen.enabled || chosen.status !== 'ready') {
+    graphId.value = ''; error.value = '选定的图谱尚未投入使用或已不可用，请重新选择工作图谱。'; return
+  }
+  dataset.value = chosen.dataset; graphId.value = chosen.graph_id; selectGraph(chosen.graph_id); syncGraph()
+}
+async function consumeNewAnalysisIntent() {
+  const intent = newAnalysisIntent(route.query)
+  if (!intent) return false
+  enterNewAnalysis(intent.graphId)
+  await router.replace({ name: 'evidence' })
+  return true
 }
 function newAnalysis() {
-  if (run.value) { form.topK = Number(record(run.value.input_snapshot).top_k) || 8; dataset.value = run.value.dataset; reasonerId.value = run.value.reasoner_id; graphId.value = run.value.graph_id; syncGraph() }
-  setupOpen.value = true; window.scrollTo({ top: 0, behavior: 'smooth' })
+  enterNewAnalysis(workspace.graphId || run.value?.graph_id || '')
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 watch(() => workspace.connected, (connected) => { if (connected && error.value.startsWith('无法连接后端服务')) error.value = '' })
 watch([() => workspace.graphs, () => workspace.reasoners, dataset], syncGraph)
 watch(graphId, (id) => { if (id) selectGraph(id) })
-onMounted(async () => {
-  if (!workspace.connected) await refreshWorkspace()
-  else await Promise.all([refreshGraphs(), refreshAnalyses()])
-  syncGraph()
-  const activeTask = workspace.tasks.find((t) => t.kind === 'inference' && ['running','queued'].includes(t.status))
-  if (activeTask) taskObserver.observe(activeTask)
-  if (workspace.analysisId && !activeTask) await loadRun(workspace.analysisId)
+watch(() => [route.query.intent, route.query.graph], () => {
+  if (!newAnalysisIntent(route.query)) return
+  selectAnalysis('')
+  if (!initializing.value) void consumeNewAnalysisIntent()
 })
-onBeforeUnmount(() => { if (previewUrl.value) URL.revokeObjectURL(previewUrl.value) })
+onMounted(async () => {
+  if (newAnalysisIntent(route.query)) selectAnalysis('')
+  const entryVersion = contextVersion
+  try {
+    if (!workspace.connected) await refreshWorkspace()
+    else await Promise.all([refreshGraphs(), refreshAnalyses()])
+    if (entryVersion !== contextVersion || await consumeNewAnalysisIntent()) return
+    syncGraph(); initializing.value = false
+    const activeTask = workspace.tasks.find((t) => t.kind === 'inference' && ['running','queued'].includes(t.status))
+    if (activeTask) taskObserver.observe(activeTask)
+    if (workspace.analysisId && !activeTask) { setupOpen.value = false; await loadRun(workspace.analysisId) }
+  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
+  finally { initializing.value = false }
+})
+onBeforeUnmount(() => { contextVersion += 1; if (previewUrl.value) URL.revokeObjectURL(previewUrl.value) })
 </script>
 <template>
-  <div class="analysis-page"><div class="page-heading"><div><span class="eyebrow">03 / TRACEABLE REASONING</span><h1>从样本走到解释</h1><p>原始样本先测量，Evidence 直接进入推理。把观测、知识条件与候选逐一对应起来。</p></div><div class="page-heading__actions"><button class="button button--secondary" @click="historyOpen = true; refreshAnalyses()"><IconHistory /> 已保存分析</button><button v-if="run && !setupOpen" class="button button--primary" @click="newAnalysis"><IconPlus /> 新建分析</button></div></div>
+  <div class="analysis-page"><div class="page-heading"><div><span class="eyebrow">03 / TRACEABLE REASONING</span><h1>从样本走到解释</h1><p>原始样本先测量，Evidence 直接进入推理。把观测、知识条件与候选逐一对应起来。</p></div><div class="page-heading__actions"><button class="button button--secondary" :disabled="initializing" @click="historyOpen = true; refreshAnalyses()"><IconHistory /> 已保存分析</button><button v-if="run && !setupOpen" class="button button--primary" @click="newAnalysis"><IconPlus /> 新建分析</button></div></div>
     <div v-if="error" class="alert alert--error" role="alert"><span class="grow">{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
     <TaskProgress v-if="task && (setupOpen || running || task.result?.run_id === run?.run_id)" :task="task" :connection-error="connectionError" :retrying="retrying" @retry="retryCurrentTask" @refresh="taskObserver.refresh" />
-    <template v-if="setupOpen"><section v-if="workspace.demos.demos.length" class="demo-starter"><div class="demo-starter__intro"><strong>加载公开演示样本</strong><small>选择输入，再真实运行</small></div><div class="demo-starter__options"><button v-for="demo in workspace.demos.demos" :key="demo.id" class="demo-choice" @click="openDemo(demo)"><IconImage v-if="demo.dataset === 'mvtec'" /><IconBarChart v-else-if="demo.dataset === 'tep'" /><IconApps v-else /><span><strong>{{ datasetShort[demo.dataset] }}</strong><small>原始样本 / 中间 Evidence</small></span><IconArrowRight /></button></div></section>
+    <div v-if="initializing" class="loading-inline analysis-initializing" role="status"><IconRefresh class="is-spinning" />正在准备本次图谱与分析入口…</div>
+    <template v-else-if="setupOpen"><section v-if="workspace.demos.demos.length" class="demo-starter"><div class="demo-starter__intro"><strong>加载公开演示样本</strong><small>选择输入，再真实运行</small></div><div class="demo-starter__options"><button v-for="demo in workspace.demos.demos" :key="demo.id" class="demo-choice" @click="openDemo(demo)"><IconImage v-if="demo.dataset === 'mvtec'" /><IconBarChart v-else-if="demo.dataset === 'tep'" /><IconApps v-else /><span><strong>{{ datasetShort[demo.dataset] }}</strong><small>原始样本 / 中间 Evidence</small></span><IconArrowRight /></button></div></section>
       <div class="analysis-setup"><section class="panel input-panel"><header class="panel-header"><div class="step-title"><span class="step-number">1</span><div><h2>待分析样本</h2><p>这里上传样本，不是用于构图的知识资料</p></div></div><button v-if="run" class="text-button" @click="setupOpen = false">返回结果</button></header><div class="panel-body"><div class="input-kind-options"><button :class="{ active: inputKind === 'raw' }" @click="setInputKind('raw')"><IconFolder /><span><strong>从原始样本开始</strong><small>模型测量 → Evidence → 推理</small></span><i /></button><button :class="{ active: inputKind === 'evidence' }" @click="setInputKind('evidence')"><IconFile /><span><strong>从 Evidence 开始</strong><small>保留已有观测，直接复算</small></span><i /></button></div><label class="field input-scene-label">数据场景</label><div class="scene-options"><button v-for="(name,key) in datasetShort" v-show="key !== 'shared'" :key="key" :class="{ active: dataset === key }" @click="chooseDataset(key as Dataset)"><IconImage v-if="key === 'mvtec'" /><IconBarChart v-else-if="key === 'tep'" /><IconApps v-else />{{ name }}</button></div>
           <section v-if="loadedSample" class="loaded-demo-input"><div class="loaded-demo-heading"><span class="tag tag--blue">公开演示输入</span><span class="tag">{{ loadedVariant === 'raw' ? '原始样本' : '冻结测量 Evidence' }}</span><button aria-label="清除演示输入" class="text-button" @click="loadedSample = null"><IconClose /></button></div><img v-if="dataset === 'mvtec' && loadedSample.raw_input?.download_url" :src="apiUrl(workspace.baseUrl, loadedSample.raw_input.download_url)" alt="待运行的公开原始图像" /><div class="loaded-demo-input__body"><strong>{{ loadedSample.title }}</strong><p>{{ loadedVariant === 'raw' ? '将真实执行测量与推理。' : '将使用已冻结的实际观测，按当前图谱重新推理。' }}</p><span class="status-dot status-dot--amber">输入已载入，等待开始分析</span></div></section>
           <template v-else><div class="file-drop inference-drop" :class="{ 'is-dragging': dragging }" role="button" tabindex="0" @click="fileInput?.click()" @keydown.enter.prevent="fileInput?.click()" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop="drop"><template v-if="previewUrl"><img :src="previewUrl" alt="待分析的原始图片" /></template><IconUpload v-else /><strong>{{ file?.name || '选择样本，或拖放到这里' }}</strong><p>{{ file ? `${fileSize(file.size)} · 点击更换文件` : inputHint }}</p><input ref="fileInput" class="native-file" type="file" :accept="inputAccept" @change="chooseFile(($event.target as HTMLInputElement).files?.[0] ?? null)" /></div><div v-if="inputMode === 'process'" class="reference-upload"><span><strong>配套正常参考</strong><small>与样本相同的 52 通道顺序</small></span><button class="button button--secondary button--small" @click="referenceInput?.click()"><IconUpload />{{ reference?.name || '选择正常参考' }}</button><input ref="referenceInput" class="native-file" type="file" accept=".dat,.csv,.txt" @change="reference = ($event.target as HTMLInputElement).files?.[0] ?? null" /></div></template>
