@@ -1,0 +1,168 @@
+{
+  "schema_version": "rootlens-demo-verification.v1",
+  "verified_at": "2026-11-10T18:47:02.445370+00:00",
+  "sample_count": 13,
+  "engine_input_pairs": 17,
+  "cli_api_exact_matches": 17,
+  "all_media_available": true,
+  "all_paths_have_sources_and_locations": true,
+  "top_k": 8,
+  "checks": [
+    {
+      "sample_id": "bottle-rim-break",
+      "reasoner_id": "unified_abduction",
+      "run_id": "9fa8781d-f0b8-456d-8fd4-6a58bd69d60a",
+      "outcome": "ambiguous",
+      "path_count": 24,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "bottle-chipped",
+      "reasoner_id": "unified_abduction",
+      "run_id": "4c44c688-71aa-4dec-9228-e001ba753919",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "bottle-chipped-second",
+      "reasoner_id": "unified_abduction",
+      "run_id": "6ed6e5e5-042d-4c18-8c05-12288888e1e1",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "bottle-normal",
+      "reasoner_id": "unified_abduction",
+      "run_id": "95de5897-732b-4f02-8f87-7923e088ff01",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "bottle-semantic-miss",
+      "reasoner_id": "unified_abduction",
+      "run_id": "eec46554-e01d-4ae2-a53a-32af4ed90b61",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "bottle-geometry-only",
+      "reasoner_id": "unified_abduction",
+      "run_id": "36505559-42e2-4667-86c0-63494c653628",
+      "outcome": "insufficient_evidence",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "tep-sequence-04",
+      "reasoner_id": "unified_abduction",
+      "run_id": "8c23fe56-2f10-4e42-8b70-741593874084",
+      "outcome": "ambiguous",
+      "path_count": 4,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-sequence-04",
+      "reasoner_id": "tep_rootkgd",
+      "run_id": "b63ad40a-d8b6-41c7-98da-03f20795cf6a",
+      "outcome": "ambiguous",
+      "path_count": 21,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-sequence-01",
+      "reasoner_id": "unified_abduction",
+      "run_id": "98dc8000-0335-45a7-a78c-55cf90e8f2a3",
+      "outcome": "ambiguous",
+      "path_count": 8,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-sequence-01",
+      "reasoner_id": "tep_rootkgd",
+      "run_id": "e9da2c9d-211c-41b2-a823-b70e93aadb2f",
+      "outcome": "supported",
+      "path_count": 21,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-sequence-05",
+      "reasoner_id": "unified_abduction",
+      "run_id": "bed06572-1248-43bf-a12f-a649ca2065b3",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-sequence-05",
+      "reasoner_id": "tep_rootkgd",
+      "run_id": "cd678562-92ed-4984-96fd-54519c5da34b",
+      "outcome": "supported",
+      "path_count": 21,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-normal-window",
+      "reasoner_id": "unified_abduction",
+      "run_id": "b184b3bd-e703-4173-95ed-3961131c54cc",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "tep-normal-window",
+      "reasoner_id": "tep_rootkgd",
+      "run_id": "ec1c835e-4204-4a5e-84d1-d612eae10c93",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 52
+    },
+    {
+      "sample_id": "wafer-nearfull",
+      "reasoner_id": "unified_abduction",
+      "run_id": "b6140fc2-6cc6-4c1d-aad2-b74c65440a4d",
+      "outcome": "supported",
+      "path_count": 3,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "wafer-normal",
+      "reasoner_id": "unified_abduction",
+      "run_id": "9351cdab-e607-4b5b-9a2d-7a7f339d64fa",
+      "outcome": "no_match",
+      "path_count": 0,
+      "process_trend_count": 0
+    },
+    {
+      "sample_id": "wafer-pattern-disagreement",
+      "reasoner_id": "unified_abduction",
+      "run_id": "095ca837-9df3-4a7c-ad50-57386da5d5ed",
+      "outcome": "supported",
+      "path_count": 4,
+      "process_trend_count": 0
+    }
+  ],
+  "recommended_raw_runs": {
+    "bottle-rim-break": [
+      "bde29798-db9a-4eb6-aa6a-439125ac88d1",
+      "1d116c71-d461-4d9a-852f-eb7f243534c0"
+    ],
+    "tep-sequence-04": {
+      "rootkgd": "6fc02e0e-9455-4412-b4c3-1f6d4605db17"
+    },
+    "wafer-nearfull": "aed5bf55-2ef1-4e0b-88f5-4c9686d63c5a"
+  },
+  "interpretation": "Same measured values and current knowledge reproduce calculation; demonstration sample selection is exploratory, not accuracy estimation.",
+  "full_records": "runs/two_loop_demo/final-evidence-verification.json",
+  "downloaded_frame_roundtrip": {
+    "raw_run_id": "1d116c71-d461-4d9a-852f-eb7f243534c0",
+    "downloaded_frame_run_id": "44122301-2a3d-4421-9c04-d6ee090a04c6",
+    "same_rankings_and_scores": true,
+    "same_outcome": true,
+    "media_status": "available",
+    "model_calls_for_roundtrip": 0
+  }
+}

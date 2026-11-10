@@ -1,0 +1,5813 @@
+{
+  "task": {
+    "scope_id": "scope:window",
+    "target_role": "mechanism",
+    "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+    "focus_subject_ids": [
+      "equipment"
+    ],
+    "context_subject_id": "equipment"
+  },
+  "assets": [
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100,
+        52
+      ],
+      "columns": [
+        "xmeas_1",
+        "xmeas_2",
+        "xmeas_3",
+        "xmeas_4",
+        "xmeas_5",
+        "xmeas_6",
+        "xmeas_7",
+        "xmeas_8",
+        "xmeas_9",
+        "xmeas_10",
+        "xmeas_11",
+        "xmeas_12",
+        "xmeas_13",
+        "xmeas_14",
+        "xmeas_15",
+        "xmeas_16",
+        "xmeas_17",
+        "xmeas_18",
+        "xmeas_19",
+        "xmeas_20",
+        "xmeas_21",
+        "xmeas_22",
+        "xmeas_23",
+        "xmeas_24",
+        "xmeas_25",
+        "xmeas_26",
+        "xmeas_27",
+        "xmeas_28",
+        "xmeas_29",
+        "xmeas_30",
+        "xmeas_31",
+        "xmeas_32",
+        "xmeas_33",
+        "xmeas_34",
+        "xmeas_35",
+        "xmeas_36",
+        "xmeas_37",
+        "xmeas_38",
+        "xmeas_39",
+        "xmeas_40",
+        "xmeas_41",
+        "xmv_1",
+        "xmv_2",
+        "xmv_3",
+        "xmv_4",
+        "xmv_5",
+        "xmv_6",
+        "xmv_7",
+        "xmv_8",
+        "xmv_9",
+        "xmv_10",
+        "xmv_11"
+      ],
+      "asset_id": "window"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/normal.csv",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        500,
+        52
+      ],
+      "columns": [
+        "xmeas_1",
+        "xmeas_2",
+        "xmeas_3",
+        "xmeas_4",
+        "xmeas_5",
+        "xmeas_6",
+        "xmeas_7",
+        "xmeas_8",
+        "xmeas_9",
+        "xmeas_10",
+        "xmeas_11",
+        "xmeas_12",
+        "xmeas_13",
+        "xmeas_14",
+        "xmeas_15",
+        "xmeas_16",
+        "xmeas_17",
+        "xmeas_18",
+        "xmeas_19",
+        "xmeas_20",
+        "xmeas_21",
+        "xmeas_22",
+        "xmeas_23",
+        "xmeas_24",
+        "xmeas_25",
+        "xmeas_26",
+        "xmeas_27",
+        "xmeas_28",
+        "xmeas_29",
+        "xmeas_30",
+        "xmeas_31",
+        "xmeas_32",
+        "xmeas_33",
+        "xmeas_34",
+        "xmeas_35",
+        "xmeas_36",
+        "xmeas_37",
+        "xmeas_38",
+        "xmeas_39",
+        "xmeas_40",
+        "xmeas_41",
+        "xmv_1",
+        "xmv_2",
+        "xmv_3",
+        "xmv_4",
+        "xmv_5",
+        "xmv_6",
+        "xmv_7",
+        "xmv_8",
+        "xmv_9",
+        "xmv_10",
+        "xmv_11"
+      ],
+      "asset_id": "normal"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/scaler.json",
+      "kind": "numeric_model",
+      "asset_id": "scaler"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_1",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_1"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_2",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_2"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_3",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_3"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_4",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_4"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_5",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_5"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_6",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_6"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_7",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_7"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_8",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_8"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_9",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_9"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_10",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_10"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_11",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_11"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_12",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_12"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_13",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_13"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_14",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_14"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_15",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_15"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_16",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_16"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_17",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_17"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_18",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_18"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_19",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_19"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_20",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_20"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_21",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_21"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_22",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_22"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_23",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_23"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_24",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_24"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_25",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_25"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_26",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_26"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_27",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_27"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_28",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_28"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_29",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_29"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_30",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_30"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_31",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_31"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_32",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_32"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_33",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_33"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_34",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_34"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_35",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_35"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_36",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_36"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_37",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_37"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_38",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_38"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_39",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_39"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_40",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_40"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmeas_41",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmeas_41"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_1",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_1"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_2",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_2"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_3",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_3"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_4",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_4"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_5",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_5"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_6",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_6"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_7",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_7"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_8",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_8"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_9",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_9"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_10",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_10"
+    },
+    {
+      "uri": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy#column=xmv_11",
+      "kind": "typed_array",
+      "dtype": "float64",
+      "shape": [
+        100
+      ],
+      "columns": null,
+      "asset_id": "series:xmv_11"
+    }
+  ],
+  "scopes": [
+    {
+      "kind": "time_window",
+      "scope_id": "scope:window",
+      "index_base": 1,
+      "sample_end": 260,
+      "sample_start": 161,
+      "end_inclusive": true,
+      "sampling_seconds": 180.0,
+      "context_subject_id": "equipment"
+    }
+  ],
+  "case_id": "process_window_161_260/query/window",
+  "subjects": [
+    {
+      "kind": "equipment",
+      "parent_id": null,
+      "subject_id": "equipment",
+      "external_id": "Tennessee Eastman Process",
+      "context_subject_id": null,
+      "external_namespace": "industrial.object"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_1",
+      "external_id": "xmeas_1",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_2",
+      "external_id": "xmeas_2",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_3",
+      "external_id": "xmeas_3",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_4",
+      "external_id": "xmeas_4",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_5",
+      "external_id": "xmeas_5",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_6",
+      "external_id": "xmeas_6",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_7",
+      "external_id": "xmeas_7",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_8",
+      "external_id": "xmeas_8",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_9",
+      "external_id": "xmeas_9",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_10",
+      "external_id": "xmeas_10",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_11",
+      "external_id": "xmeas_11",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_12",
+      "external_id": "xmeas_12",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_13",
+      "external_id": "xmeas_13",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_14",
+      "external_id": "xmeas_14",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_15",
+      "external_id": "xmeas_15",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_16",
+      "external_id": "xmeas_16",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_17",
+      "external_id": "xmeas_17",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_18",
+      "external_id": "xmeas_18",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_19",
+      "external_id": "xmeas_19",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_20",
+      "external_id": "xmeas_20",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_21",
+      "external_id": "xmeas_21",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_22",
+      "external_id": "xmeas_22",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_23",
+      "external_id": "xmeas_23",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_24",
+      "external_id": "xmeas_24",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_25",
+      "external_id": "xmeas_25",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_26",
+      "external_id": "xmeas_26",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_27",
+      "external_id": "xmeas_27",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_28",
+      "external_id": "xmeas_28",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_29",
+      "external_id": "xmeas_29",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_30",
+      "external_id": "xmeas_30",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_31",
+      "external_id": "xmeas_31",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_32",
+      "external_id": "xmeas_32",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_33",
+      "external_id": "xmeas_33",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_34",
+      "external_id": "xmeas_34",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_35",
+      "external_id": "xmeas_35",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_36",
+      "external_id": "xmeas_36",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_37",
+      "external_id": "xmeas_37",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_38",
+      "external_id": "xmeas_38",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_39",
+      "external_id": "xmeas_39",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_40",
+      "external_id": "xmeas_40",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmeas_41",
+      "external_id": "xmeas_41",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_1",
+      "external_id": "xmv_1",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_2",
+      "external_id": "xmv_2",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_3",
+      "external_id": "xmv_3",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_4",
+      "external_id": "xmv_4",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_5",
+      "external_id": "xmv_5",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_6",
+      "external_id": "xmv_6",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_7",
+      "external_id": "xmv_7",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_8",
+      "external_id": "xmv_8",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_9",
+      "external_id": "xmv_9",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_10",
+      "external_id": "xmv_10",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    },
+    {
+      "kind": "variable",
+      "parent_id": null,
+      "subject_id": "variable:xmv_11",
+      "external_id": "xmv_11",
+      "context_subject_id": "equipment",
+      "external_namespace": "tep_braatz.channel"
+    }
+  ],
+  "procedures": [
+    {
+      "kind": "measurement",
+      "version": null,
+      "model_id": null,
+      "definition": "z=(x-normal_mean)/normal_scale; mean_z=mean(z); std_z=std(z,ddof=0); slope_z=OLS slope of z against zero-based sample index, unit 1/sample. Contribution is normalized squared PCA residual energy, not a root-cause probability.",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "input_asset_ids": [
+        "window",
+        "scaler"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "kind": "normal_standardization",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "normal_asset_id": "normal",
+      "scaler_asset_id": "scaler"
+    }
+  ],
+  "example_kind": null,
+  "observations": [
+    {
+      "value": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:equipment:detection.anomaly_present",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "detection.anomaly_present",
+      "subject_id": "equipment",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 553.5662615927367
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:equipment:residual.energy",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.energy",
+      "subject_id": "equipment",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 26.668024534032828
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:equipment:residual.normal_limit",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.normal_limit",
+      "subject_id": "equipment",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 18.24194436132164
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_1:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 7.9424139274931465
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_1:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.18191799437814554
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_1:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00433582
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_1:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_1"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_1:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.7805982452168384
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_2:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.3382410846981527
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_2:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.011817730517229395
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_2:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00110864
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_2:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_2"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_2:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -1.7962173929823972
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_3:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.1165997171314097
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_3:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.0815052144035193
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_3:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.03354761
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_3:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_3"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_3:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -7.260525604425511
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_4:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 5.688655755596983
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_4:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.0422873244489013
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_4:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.03275513
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_4:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_4"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_4:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.04698464295696359
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_5:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.0031979683886136
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_5:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.0015680464169518632
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_5:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00885473
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_5:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_5"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_5:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.1405408300878839
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_6:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.2773858068418487
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_6:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.01183542196757042
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_6:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.04632813
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_6:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_6"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_6:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 5.306965194000246
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_7:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 10.674977660359298
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_7:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.24089251238187664
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_7:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.02390836
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_7:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_7"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_7:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.8949835230437215
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_8:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.7339651620873875
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_8:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.0790287443233289
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_8:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00395197
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_8:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_8"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_8:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.23372645482531326
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.0848761197632342
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.00623404362651316
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00691853
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_9"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -1.7726451079536059
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_10:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.550738952270453
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_10:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.07676904168049244
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_10:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00086719
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_10:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_10"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_10:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -3.5192474274847045
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 6.138687157710883
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.09608127568288104
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.02545885
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_11"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.006562259583103052
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_12:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_12",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9375880921675099
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_12:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_12",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.004859470730290798
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_12:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_12",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00082082
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_12:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_12",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_12"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_12:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_12",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 4.7449772106908155
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_13:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_13",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 10.16441536631654
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_13:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_13",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.2255866123564451
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_13:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_13",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.019373
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_13:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_13",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_13"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_13:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_13",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.20969532475536648
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_14:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_14",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9366884940612855
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_14:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_14",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.011168964879250788
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_14:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_14",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.03433574
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_14:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_14",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_14"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_14:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_14",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.07352875750457237
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_15:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_15",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.98509472019031
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_15:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_15",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.0035702744121614573
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_15:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_15",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 6.588e-05
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_15:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_15",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_15"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_15:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_15",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 7.970760574765292
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_16:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_16",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 12.889308630097506
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_16:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_16",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.3122767609385441
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_16:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_16",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0561916
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_16:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_16",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_16"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_16:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_16",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.1719831669905132
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_17:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_17",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9415073200818809
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_17:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_17",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.0007684204152232553
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_17:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_17",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00045314
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_17:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_17",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_17"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_17:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_17",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 8.240537504139946
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_18:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_18",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 9.726113739419322
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_18:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_18",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.30626335939823107
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_18:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_18",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.02732373
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_18:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_18",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_18"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_18:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_18",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 9.970052051215168
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_19:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_19",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 8.310955048594575
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_19:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_19",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.27628925990833453
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_19:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_19",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.04618047
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_19:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_19",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_19"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_19:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_19",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -6.083312966202677
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_20:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_20",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 6.270028099227913
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_20:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_20",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.10876764889635507
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_20:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_20",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.07814771
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_20:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_20",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_20"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_20:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_20",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.8813613872315817
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_21",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.760888361804675
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_21",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.029081687641584406
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_21",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0529439
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_21",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_21"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_21",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -2.333678151923117
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_22",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.4424526793355046
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_22",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.037669881381392045
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_22",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00326751
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_22",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_22"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_22",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -4.460019045861649
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_23:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_23",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 4.835500677277894
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_23:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_23",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.11120737528316826
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_23:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_23",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00821544
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_23:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_23",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_23"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_23:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_23",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.1612894865117761
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_24:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_24",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.23715470848859
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_24:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_24",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.04913659206232939
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_24:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_24",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00489895
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_24:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_24",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_24"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_24:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_24",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.9352547431561846
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_25:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_25",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 7.224742239445911
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_25:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_25",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.17832487404821046
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_25:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_25",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00662147
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_25:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_25",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_25"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_25:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_25",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.04869927848984838
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_26:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_26",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.3848379989987356
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_26:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_26",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.003426760347344675
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_26:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_26",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0132999
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_26:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_26",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_26"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_26:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_26",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.2160234558584824
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_27:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_27",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.716570557478057
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_27:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_27",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.030513987327291936
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_27:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_27",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.01627389
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_27:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_27",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_27"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_27:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_27",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.2391861060744339
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_28:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_28",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.352395358032595
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_28:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_28",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.045218358342584496
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_28:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_28",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00425475
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_28:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_28",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_28"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_28:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_28",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -6.092280863597979
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_29:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_29",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 6.205674270366819
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_29:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_29",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.13243300891175339
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_29:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_29",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00656668
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_29:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_29",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_29"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_29:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_29",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.30462035934702875
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_30:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_30",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.20766789683968
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_30:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_30",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.08259198924018946
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_30:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_30",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.01141765
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_30:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_30",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_30"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_30:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_30",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 5.464474350904101
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_31:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_31",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 9.319090404686298
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_31:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_31",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.21972351980401392
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_31:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_31",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.08303751
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_31:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_31",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_31"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_31:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_31",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.43077105947787536
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_32:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_32",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.1173669890189963
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_32:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_32",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.008504496874583881
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_32:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_32",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00360759
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_32:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_32",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_32"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_32:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_32",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.2627518494750551
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_33:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_33",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.9795285507437117
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_33:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_33",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.04158763203537595
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_33:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_33",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0030904
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_33:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_33",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_33"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_33:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_33",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.6337888133128942
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_34:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_34",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.262818513812825
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_34:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_34",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.06767700173062094
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_34:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_34",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00861367
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_34:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_34",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_34"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_34:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_34",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -2.8280203038201637
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_35:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_35",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 4.548479541616046
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_35:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_35",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.0724198123625327
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_35:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_35",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00175178
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_35:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_35",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_35"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_35:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_35",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -1.3143870095738408
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_36:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_36",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.7138349345369503
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_36:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_36",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.048639540193784685
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_36:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_36",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.01596557
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_36:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_36",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_36"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_36:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_36",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.5020521085267565
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_37:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_37",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.648200279188829
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_37:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_37",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.012084433061519703
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_37:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_37",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.02923086
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_37:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_37",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_37"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_37:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_37",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 4.2016697889076555
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_38:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_38",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 5.621728079584811
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_38:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_38",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.01187962405104717
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_38:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_38",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.03775981
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_38:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_38",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_38"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_38:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_38",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.16451330113226248
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_39:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_39",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.5257371680400391
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_39:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_39",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.015074172527390855
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_39:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_39",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.01198721
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_39:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_39",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_39"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_39:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_39",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.07969054920838016
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_40:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_40",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9054841963582219
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_40:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_40",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.0003620877903892617
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_40:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_40",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.01567165
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_40:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_40",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_40"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_40:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_40",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.07507492418982961
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_41:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmeas_41",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.062511502360953
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_41:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmeas_41",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.008344639457575118
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_41:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmeas_41",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00608846
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_41:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmeas_41",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmeas_41"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_41:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmeas_41",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.6786035561763525
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_1:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.2186256932257198
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_1:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.01096060422720067
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_1:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00210586
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_1:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_1"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_1:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_1",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -1.6391061638231184
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_2:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.5676856540259627
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_2:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.07098007134736027
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_2:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00658899
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_2:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_2"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_2:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_2",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 18.130272436805818
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_3:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 7.903049435721723
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_3:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.18088511059672693
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_3:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0039421
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_3:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_3"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_3:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_3",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -3.281157663561124
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_4:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 2.5169952206276527
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_4:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": -0.010847640048779089
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_4:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.08709869
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_4:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_4"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_4:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_4",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -3.0830804950859654
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_5:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 4.054205651317664
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_5:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.02235614406139044
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_5:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.0149113
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_5:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_5"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_5:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_5",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -1.385946257604052
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_6:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 3.3548492919430237
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_6:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.07012267758580505
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_6:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00216303
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_6:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_6"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_6:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_6",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.006563589563591273
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_7:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9375939606484518
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_7:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.004858766542151506
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_7:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00082188
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_7:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_7"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_7:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_7",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.07353080253899599
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_8:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9850670987977215
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_8:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.003569588126538904
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_8:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 6.601e-05
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_8:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_8"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_8:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_8",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 11.905523975192477
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_9:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 10.881339085329305
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_9:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.3565625701507837
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_9:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.08463171
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_9:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_9"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_9:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_9",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": -0.9544150197381867
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 1.6367719557620715
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.013265743136133908
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00126378
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_10"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_10",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.21103247818078152
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:statistics.mean_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.mean_z",
+      "subject_id": "variable:xmv_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.9701292564266958
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:statistics.std_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.std_z",
+      "subject_id": "variable:xmv_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1/sample",
+        "number": 0.002499903042120554
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:statistics.slope_z",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "statistics.slope_z",
+      "subject_id": "variable:xmv_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "number",
+        "unit": "1",
+        "number": 0.00091495
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:residual.contribution",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "residual.contribution",
+      "subject_id": "variable:xmv_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    },
+    {
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "series:xmv_11"
+      },
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:series.raw_values",
+      "status": "observed",
+      "raw_refs": [
+        "window"
+      ],
+      "scope_id": "scope:window",
+      "feature_id": "series.raw_values",
+      "subject_id": "variable:xmv_11",
+      "procedure_id": "normal-statistics",
+      "reference_id": "normal-fit:f96394194c4d467d91245dd44fd6530d",
+      "dependency_group": "window"
+    }
+  ],
+  "schema_version": "rootlens-evidence.v2",
+  "source_dataset": "tep"
+}

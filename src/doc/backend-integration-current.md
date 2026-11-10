@@ -1,15 +1,15 @@
-# RootLens 当前集成边界（2026-11-10）
+# RootLens 当前集成边界（2026-11-11）
 
 ## 1. 当前定位与同仓后端
 
 RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后端在同一仓库维护：
 
-- 前端 `src/`：上传、浏览、筛选、联动展示、反馈提交、素材与构图工作台 UI。
-- 后端 `backend/src/kgtracevis/`：真实的图谱构建、Evidence 处理、RCA 推理、运行记录持久化、反馈与构图相关接口。
+- 前端 `src/`：素材管理、知识语义编辑与启用、样本／Evidence 上传、任务和解释联动。
+- 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、统一推理和 TEP RootKGD、任务及完整分析持久化。
 - 前后端通过 API 协作；**后端代码放在同仓，不等于浏览器执行后端算法**。
 - RootLens **不再**在浏览器端执行图谱构建、Evidence 临时组装或 RCA 本地推理。
 
-### 1.1 本次内置迁移范围
+### 1.1 同仓结构与迁移来源
 
 2026-11-10 的迁移以 `/Users/macintosh/TrivalWork/KGTraceVis` 的 Python 后端**当前工作树**为来源，复制至 `/Users/macintosh/TrivalWork/RootLens/backend/`：
 
@@ -21,15 +21,17 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 源码内置不代表大型数据、模型权重、外部依赖或每种模型能力已迁移可用。本次已确认的本机迁移事实见下节；不能将有限验证范围扩写为全部测试或模型能力通过。
 
-### 1.2 本次迁移验证摘要（2026-11-10）
+### 1.2 历史：迁移验证摘要（2026-11-10）
 
-本节仅保留集成边界所需摘要；过程与证据见[完整核验记录](../../backend/docs/rootlens-monorepo-migration.md)及[本机机器报告](../../.rootlens-cache/backend-migration-verification.json)（后者 Git 忽略、不随 clone 提供）。以下结果限定于本次迁移，不代表未来每次启动状态：
+§1.2–1.5 保留各阶段当时的结果与入口背景；当前产品入口以 §1.6、§2–3 为准。
+
+本节仅保留集成边界所需摘要；过程与证据见[完整核验记录](../../backend/docs/rootlens-monorepo-migration.md)及当时的机器报告路径 `.rootlens-cache/backend-migration-verification.json`（Git 忽略，当前工作树未提供）。以下结果限定于本次迁移，不代表未来每次启动状态：
 
 | 核对项 | 已确认事实 |
 | --- | --- |
 | 数据库与历史资产 | 既有库已离线复制到 `backend/runs/local_runtime/` 并从新路径启动，数据库 stop/start 与 API 重启后的数据保留核验通过。原有 4 个 run ID、4 条 feedback ID、3 个 material ID 一致，4 份历史输入附件完整保留。 |
 | 图谱保留 | 210 个节点、602 条边；迁移未重建图谱、未重导入种子。 |
-| 新写入隔离 | 当前迁移后库为 **5 个 Run / 5 条反馈 / 3 份素材**；第 5 组 run 与 `needs_review` 反馈为明确标注的迁移验收测试，应排除出实验统计。该 run 的输入文件仅写入新的 `backend/`，原 KGTraceVis 来源备份未收到新增 run。 |
+| 新写入隔离 | 迁移核验时库为 **5 个 Run / 5 条反馈 / 3 份素材**；第 5 组 run 与 `needs_review` 反馈为明确标注的迁移验收测试，应排除出实验统计。该 run 的输入文件仅写入新的 `backend/`，原 KGTraceVis 来源备份未收到新增 run。 |
 | 后端与代理链路 | 已用 `RootLens/backend/.venv/` 中的 Python、以 `RootLens/backend/` 为工作目录启动 8000 服务；前端 5174 经代理访问的 8 类接口均返回 HTTP 200。`dev:all` 另在临时前端 5180 / API 8010 端口端到端试启成功，HTML、代理 health / runs 均为 200，停止后两端口均释放；日常默认端口仍为 5174 / 8000。 |
 | 安装与初始化保护 | editable 安装及普通 wheel 离线构建成功，不代表从零联网安装或全部模型依赖已具备。`backend:init` 会拒绝已有 PG 应用数据、非空 KG 及未知参数，核验确认既有数据未被覆盖。 |
 | 前端构建与测试 | `npm run build` 通过；`npm test`：**17 个文件 / 71 项测试通过**。根 `src/` 的现有 UI 改动保持。 |
@@ -37,7 +39,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 **核验边界：**Docker Compose 仅做静态配置检查，本机未安装 Docker、未实际运行容器栈；上述结果不是所有模型能力、完整构图发布或工业根因准确率验收。原目录继续保留为备份，不因本次验证而自动授权清理。
 
-### 1.3 后续 MVTec M1 增量（2026-11-10）
+### 1.3 历史：MVTec M1 增量（2026-11-10）
 
 本轮在当前 checkout 另用 `backend/compose.test.yaml` 实跑独立 Neo4j/Postgres，不把先前迁移的机器状态、资产或测试数作为本轮结果。
 
@@ -50,7 +52,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 以上为 M1 历史验收；后续完成情况见下节。新增工作图表使用增量迁移，不重初始化旧库。
 
-### 1.4 M2–M6 渐进重构完成（2026-11-10）
+### 1.4 历史：M2–M6 渐进重构（2026-11-10）
 
 - 素材现在实际解析 TXT/Markdown、CSV、JSON/JSONL、HTML 与文本层 PDF（Docling Parse）；URL 实际获取，失败重试、片段定位、重解析历史可查看。扫描件/OCR/Office 未启用。
 - 三场景工作图支持持久节点/边/别名、绑定/画像 JSON 编辑和完整 `rootlens-working-graph.v1` 交换。默认导入新图，显式保存前备份；每次新 run 固定图/画像快照，历史结果不随改图重算。
@@ -63,7 +65,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 使用、实际 JSON/路径、模型来源、负结果、回放文件和恢复入口见 [三场景使用与验收](../../backend/docs/progressive-demo-2026-11-10.md)。[执行计划](rootlens-refactor-execution-plan-2026-11-10.md) 的 T01–T22 已完成；审核、正式版本、置信校准、训练与完整 benchmark 后置。
 
-### 1.5 U0–U5：统一推理 v2 完成（2026-11-11）
+### 1.5 历史：U0–U5 统一推理 v2（2026-11-11）
 
 - 新闭合 `EvidenceFrame` 和公共知识 IR 把主体、注册特征、类型／单位、scope、procedure、正常参考及来源绑定起来。MVTec／TEP／Wafer 通过不同测量 adapter 接入**同一 grounding、候选展开、联合条件、代价与证明内核**；不按 dataset 更换最终评分。
 - 原始公开 PDF／过程程序／论文与模型卡 → LLM 领域蓝图 → 确定性编译的可执行知识。素材页显式选 `unified-v2` 能力契约，沿用原解析／构图／装载服务，无人工审核前提。
@@ -75,54 +77,50 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 使用／实际 JSON／图谱制作／API／回放见 [统一推理 v2](/Users/hhm/code/RootLens/backend/docs/unified-reasoning.md)，比较与负结果见 [U5 验收](/Users/hhm/code/RootLens/backend/docs/unified-reasoning-u5.md)，提交与分期证据见 [执行记录](rootlens-unified-reasoning-execution.md)。本机仍使用 5186／8012 与独立 55433／57687 测试库；日常默认地址未变，原数据未重建。
 
-## 2. 当前保留的三种数据来源
+### 1.6 当前：资料与分析的两个完整闭环
 
-### 2.1 Backend 模式
+当前界面只连接后端，保留“素材管理 → 知识图谱 → 推理分析”三页；旧 Mock／Replay／runtime 入口从产品界面移除。公开演示按钮提供原始资料、样本或真实 Frame，并实际提交任务，不打开预制根因答案。
 
-- 真实数据与逻辑均来自后端 API。
-- 这是当前默认的产品形态。
-- 内置后端默认地址仍为 `http://127.0.0.1:8000`；前端配置的 API 地址应与实际服务一致。
+- **闭环 A**：资料上传／URL → 真实解析与定位 → LLM 领域蓝图 → 自动校验与一次有界修复 → 确定性编译 → 持久语义编辑 → “投入使用”。ready 与 enabled 分开；新分析只使用已启用的 v2 工作图。
+- **闭环 B**：原始图像／52通道过程时序／0-1-2晶圆网格 → 实际模型和 adapter → EvidenceFrame；或直接从中间 Frame 开始 → 明确选图和引擎 → 保存候选、条件、来源与原始媒体／曲线对应。
+- **统一约束推理 `unified_abduction`**：保留公共合同、联合条件、冲突／缺失与 U/C/A/J 代价。
+- **TEP RootKGD `tep_rootkgd`**：在当前 canonical 图上复用原 `simulate_propagation`、全52维贡献余弦／覆盖／传播熵评分和 `trace_path`。不使用固定旧图、fault标签、按故障族调参或 anchor-memory。全部贡献参与计算，不把展示路径截断误写为未使用。
+- **任务与分析**：Postgres 增量表保存真实事件、输入及完整结果；重启把未完成任务标成 interrupted，失败／中断手动重试创建新任务，不悄悄重复付费步骤。历史分析固定图快照，不随改图重算。
+- **资产**：`backend/data/demo/two_loop/manifest.json` 是唯一受管演示清单，小包／真实 Frame 入库，大型／受版权约束资料与权重留在忽略目录；准备脚本不改数据库。原模型、原程序、原始 LLM 蓝图、演示适配与真实失败分开保留。
 
-### 2.2 Mock / Demo 模式
+玻璃原图的拍摄部位未确认，当前用“玻璃边缘缺损”，不宣称已定位瓶口。厂家 Finish 资料是演示迁移知识，候选仍需工艺证据区分。Wafer 输出图案家族，不直接命名制造原因。数值评分均不是概率；正常、无匹配、证据不足与并列是有效结果。
 
-- 保留为仓库内置的演示快照。
-- 仅用于无后端时的 UI 展示与论文演示。
-- 不代表前端仍然具备本地图谱构建或本地推理能力。
+已实际执行公开 PDF→LLM→别名保存回读→启用，以及三场景原始模型／测量与中间入口。视觉语义存在同图不同判断、TEP 另两序列仍有错误／无匹配；有效结果、选样过程和限制见 [双闭环演示手册](../../backend/docs/two-loop-demo.md)。API 和界面分别见 [后端契约](rootlens-two-loop-backend-contract.md)、[前端交付](rootlens-two-loop-frontend.md)。
 
-### 2.3 成品回放（Replay）
+## 2. 当前输入与分析入口
 
-当前仅支持两类回放输入：
+### 2.1 原始样本入口
 
-1. `rootlens-runtime.json` + `unified-graphs.json`
-2. `rootlens-session-export.v1`
+上传真实图片、过程序列＋正常参考、原生晶圆网格。后端运行已配置模型／测量算子和 adapter；缺模型或参考时明确失败，不用演示结果替代。TEP 窗口采用一基闭区间，保留全52通道；Wafer 原生标签不传分类器。
 
-说明：
+### 2.2 中间 Evidence 入口
 
-- `workspace export` 仍可单独恢复 analyst workspace。
-- 不再支持从 `nodes/edges/evidence` 在浏览器端临时组装 runtime。
-- 回放消费已生成结果，不触发浏览器端 RCA 或 what-if 重算；本次迁移不扩大 Demo / Replay 边界。
+上传原生 EvidenceFrame（单个、数组或 frames 外壳）或结构化 Evidence，经后端验证和绑定后重新推理。模型 records 由显式 records 适配入口消费。Frame 原值和范围保留；没有媒体附件时仍可计算标量依据，界面显示附件缺失。“下载本次 Evidence”用于这一入口，不是旧 Session 回放。
 
-## 3. 当前页面职责
+### 2.3 历史快照的边界
 
-### `/evidence`
+旧 Mock、Demo 快照、`rootlens-runtime`／`rootlens-session-export` Replay、workspace 恢复与浏览器 runtime 构造不再是当前界面入口。历史文件和后端模块可保留，不据此承诺新界面继续兼容。演示清单加载输入并提交真实后端任务，不恢复本地建图或推理。
 
-- 上传运行文件（backend 模式）
-- 查看 run / case / observation
-- 导入完整回放资产或 session bundle
-- 三场景可在原有推理配置中选择工作图；图像模式可显式启用 ROI 语义。详情显示区域几何、wafer die 统计或 TEP 全通道趋势；可导出本次运行的原图/结果回放。
+## 3. 当前三页职责
 
-### `/graphs`
+### `/materials` · 素材管理
 
-- 查看总图谱、局部子图、path graph、候选根因、反馈 ledger
-- 图谱与 case 选择联动
-- backend 模式消费后端返回结果，已有编辑表单及“管理工作图”接持久 API；demo/replay 模式消费快照结果，不保存到后端。
+知识资料库、文件／URL 导入、真实解析与原文定位、多选 LLM 制作和任务阶段。原始待分析图片／时序／网格到推理页上传，不混作知识资料。
 
-### `/materials`
+### `/graphs` · 知识图谱
 
-- 查看 material library / construction / build / review queue
-- 相关构图能力以 **后端接口** 为准
-- mock 模式仅保留最小演示数据
-- 构图完成后选择 mvtec/wafer/tep 并装载工作图，不要求人工审核；完整工作图包导入/导出位于 Graphs 页。
+查看候选、机制、联合现象和条件的语义图及来源；持久编辑实体／别名、关系、绑定、条件和规则。完整 v2 包导入默认创建新副本，保存后“投入使用”；启用后可携图前往分析。图的派生投影不是第二份可独立改写的真值。
+
+### `/evidence` · 推理分析
+
+选择原始样本或 Evidence JSON、场景、已启用图及两个明确引擎；跟踪真实任务，查看媒体／变量／网格、候选条件和路径联动；下载本次 Evidence，重新打开服务端“已保存分析”。浏览器只显示后端结果。
+
+右上角连接按钮设置完整 Backend URL。浏览器仅保存服务地址与选择状态，不把 localStorage 草稿当作持久图谱或分析真值。
 
 ## 4. 运行、数据库与数据保留边界
 
@@ -149,7 +147,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 ### 4.2 数据库职责与新库初始化
 
 - Neo4j：运行时知识图谱与遍历。
-- Postgres：Evidence case、分析运行记录、反馈、草稿与 review 状态，以及工作图登记/可执行画像。新 run 保存完整输入与绑定快照，重载不依赖临时 Evidence 文件；未带快照的旧 run 保持原文件恢复方式。反馈与运行元数据不依赖旧 session JSON 作为真值。
+- Postgres：保留历史 Evidence／run／反馈等数据；当前双闭环增量保存任务、完整分析与工作图登记／canonical knowledge。新 run 保存完整输入与绑定快照，重载不依赖临时 Evidence 文件；未带快照的旧 run 保持原文件恢复方式。反馈与运行元数据不依赖旧 session JSON 作为真值。
 - CSV / JSON：种子、导入与导出资产，不是运行时数据库的替代品。
 
 fresh clone 不含被 Git 忽略的本机数据库与工具，应从 RootLens 根目录走 Compose 分支：
@@ -182,22 +180,23 @@ npm run backend:check
 
 ## 5. 已下线的前端能力
 
-以下能力仍从 RootLens **前端**移除，不因同仓后端而恢复：
+当前界面不再提供：
 
-- 浏览器端从 `nodes.jsonl / edges.jsonl` 或 `nodes.csv / edges.csv` 建图
-- 浏览器端从 `evidence*.json / case*.json` 组装 runtime case
-- 浏览器端本地 RCA 推理 / what-if 重算
-- 前端侧的 graph/evidence/runtime 生成脚本
+- Mock／Backend 模式切换与旧演示快照读取；
+- Session／runtime Replay 和 workspace JSON 恢复；
+- 浏览器从 nodes／edges／Evidence 组装 runtime；
+- 浏览器本地构图、RCA／what-if 重算；
+- 以旧 v1 图包或默认 generic 策略代替明确的 v2 图和所选推理器。
 
-`backend/scripts/` 是 Python 后端命令入口，不属于上述已下线的前端生成脚本。
+历史 public 快照、旧后端记录与源码资产不因入口移除而删除。原始 records 的后端适配仍可显式使用；`backend/scripts/` 是后端客户端，不属于已移除的浏览器生成路径。
 
 ## 6. 文档真值
 
 当前优先阅读顺序：
 
 1. 本文档 `backend-integration-current.md`
-2. 根 `README.md`（安装、启动和数据说明）与 `source-projects.md`（当前路径及来源索引）
-3. `backend/docs/` 中相关后端设计、schema 与接口资料；复制文档中的旧仓路径按当前目录重定位，旧 Web / 论文说明仅作来源背景
+2. 根 `README.md`（当前用法）、`rootlens-two-loop-backend-contract.md`（API）与 `rootlens-two-loop-demo-assets.md`（资产）
+3. `backend/docs/two-loop-demo.md`（当前演示／恢复）、前后端交付与 `source-projects.md`；其他后端设计／schema 依其版本解读，旧 Web／论文路径只作背景
 4. 需要理解历史设计背景时，再看：
    - `module-1-graph-construction.md`
    - `module-2-unified-evidence.md`

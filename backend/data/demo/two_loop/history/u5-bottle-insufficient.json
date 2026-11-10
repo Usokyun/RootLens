@@ -1,0 +1,259 @@
+{
+  "schema_version": "rootlens-evidence.v2",
+  "example_kind": null,
+  "case_id": "mvtec_bottle_test_unknown_public/query/1",
+  "source_dataset": "mvtec",
+  "task": {
+    "target_role": "mechanism",
+    "context_subject_id": "object",
+    "focus_subject_ids": [
+      "roi:1"
+    ],
+    "scope_id": "scope:1",
+    "reference_id": null
+  },
+  "subjects": [
+    {
+      "subject_id": "object",
+      "kind": "object",
+      "external_namespace": "industrial.object",
+      "external_id": "bottle",
+      "parent_id": null,
+      "context_subject_id": null
+    },
+    {
+      "subject_id": "roi:1",
+      "kind": "image_region",
+      "external_namespace": null,
+      "external_id": null,
+      "parent_id": "object",
+      "context_subject_id": null
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "scope:1",
+      "kind": "image_region",
+      "subject_id": "roi:1",
+      "asset_id": "image",
+      "image_shape_hw": [
+        900,
+        900
+      ],
+      "coordinate_space": "original_image_pixels",
+      "bbox_xyxy": [
+        295.3125,
+        246.09375,
+        808.59375,
+        840.234375
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "image",
+      "kind": "image",
+      "uri": "runs/two_loop_demo/frozen/bottle-insufficient/image-public.png"
+    },
+    {
+      "asset_id": "raw",
+      "kind": "json",
+      "uri": "evidence://mvtec_bottle_test_unknown_public"
+    },
+    {
+      "asset_id": "mask",
+      "kind": "json",
+      "uri": "runs/two_loop_demo/frozen/bottle-insufficient/mask-mvtec_bottle_test_unknown_public_mask.json"
+    }
+  ],
+  "procedures": [
+    {
+      "procedure_id": "detector",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "image"
+      ],
+      "reference_id": null,
+      "definition": "Explicit detector boolean, not semantic class or probability.",
+      "model_id": "mvtec_anomaly_predictor",
+      "version": null
+    },
+    {
+      "procedure_id": "geometry",
+      "kind": "measurement",
+      "input_asset_ids": [
+        "raw"
+      ],
+      "reference_id": null,
+      "definition": "Connected-component geometry in the declared mask plane.",
+      "model_id": null,
+      "version": null
+    },
+    {
+      "procedure_id": "semantics",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "image",
+        "raw"
+      ],
+      "reference_id": null,
+      "definition": "Open appearance candidates; absent labels are not negative.",
+      "model_id": "vlm:deepseek-flash",
+      "version": null
+    }
+  ],
+  "references": [],
+  "observations": [
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:detection.anomaly_present",
+      "subject_id": "roi:1",
+      "feature_id": "detection.anomaly_present",
+      "value": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "detector",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.area_ratio",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.area_ratio",
+      "value": {
+        "kind": "number",
+        "number": 0.1909332275390625,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.aspect_ratio",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.aspect_ratio",
+      "value": {
+        "kind": "number",
+        "number": 1.1575342465753424,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.eccentricity",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.eccentricity",
+      "value": {
+        "kind": "number",
+        "number": 0.834324853157026,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.component_count",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.component_count",
+      "value": {
+        "kind": "number",
+        "number": 1.0,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.morphology",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.morphology",
+      "value": {
+        "kind": "category",
+        "category": "spot"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:geometry.location",
+      "subject_id": "roi:1",
+      "feature_id": "geometry.location",
+      "value": {
+        "kind": "category",
+        "category": "surface"
+      },
+      "status": "observed",
+      "scope_id": "scope:1",
+      "procedure_id": "geometry",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:appearance.semantic_candidates",
+      "subject_id": "roi:1",
+      "feature_id": "appearance.semantic_candidates",
+      "value": null,
+      "status": "missing",
+      "scope_id": "scope:1",
+      "procedure_id": "semantics",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    },
+    {
+      "obs_id": "obs:mvtec_bottle_test_unknown_public:region_1:appearance.defect_present",
+      "subject_id": "roi:1",
+      "feature_id": "appearance.defect_present",
+      "value": null,
+      "status": "missing",
+      "scope_id": "scope:1",
+      "procedure_id": "semantics",
+      "reference_id": null,
+      "dependency_group": "image/roi:1",
+      "raw_refs": [
+        "raw"
+      ]
+    }
+  ]
+}

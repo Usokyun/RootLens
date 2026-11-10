@@ -1,0 +1,344 @@
+{
+  "schema_version": "rootlens-evidence.v2",
+  "example_kind": null,
+  "case_id": "wm811k_31707/query/grid",
+  "source_dataset": "wafer",
+  "task": {
+    "target_role": "pattern_family",
+    "context_subject_id": "wafer",
+    "focus_subject_ids": [
+      "wafer"
+    ],
+    "scope_id": "scope:grid",
+    "reference_id": null
+  },
+  "subjects": [
+    {
+      "subject_id": "wafer",
+      "kind": "spatial_grid",
+      "external_namespace": "industrial.object",
+      "external_id": "wafer",
+      "parent_id": null,
+      "context_subject_id": null
+    }
+  ],
+  "scopes": [
+    {
+      "scope_id": "scope:grid",
+      "kind": "spatial_grid",
+      "subject_id": "wafer",
+      "asset_id": "grid",
+      "encoding": {
+        "background": 0,
+        "normal": 1,
+        "failed": 2
+      }
+    },
+    {
+      "scope_id": "scope:all_valid",
+      "kind": "spatial_zone",
+      "subject_id": "wafer",
+      "parent_scope_id": "scope:grid",
+      "zone": "all_valid",
+      "normalized_radius_interval": [
+        0.0,
+        1.0
+      ],
+      "valid_die_only": true
+    },
+    {
+      "scope_id": "scope:center",
+      "kind": "spatial_zone",
+      "subject_id": "wafer",
+      "parent_scope_id": "scope:grid",
+      "zone": "center",
+      "normalized_radius_interval": [
+        0.0,
+        0.4
+      ],
+      "valid_die_only": true
+    },
+    {
+      "scope_id": "scope:middle",
+      "kind": "spatial_zone",
+      "subject_id": "wafer",
+      "parent_scope_id": "scope:grid",
+      "zone": "middle",
+      "normalized_radius_interval": [
+        0.4,
+        0.8
+      ],
+      "valid_die_only": true
+    },
+    {
+      "scope_id": "scope:edge",
+      "kind": "spatial_zone",
+      "subject_id": "wafer",
+      "parent_scope_id": "scope:grid",
+      "zone": "edge",
+      "normalized_radius_interval": [
+        0.8,
+        1.0
+      ],
+      "valid_die_only": true
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "grid",
+      "kind": "typed_array",
+      "uri": "evidence://wm811k_31707/raw_evidence.extra.wm811k.wafer_map",
+      "dtype": "uint8",
+      "shape": [
+        63,
+        62
+      ],
+      "columns": null
+    },
+    {
+      "asset_id": "prediction",
+      "kind": "json",
+      "uri": "evidence://wm811k_31707/classifier"
+    }
+  ],
+  "procedures": [
+    {
+      "procedure_id": "spatial-statistics",
+      "kind": "measurement",
+      "input_asset_ids": [
+        "grid"
+      ],
+      "reference_id": null,
+      "definition": "0=background,1=good,2=failed. Radius about valid bounding-box center, scaled by its axis half-spans, clipped at 1; center r<=.4, middle .4<r<.8, edge r>=.8. Eight-neighbor components. Density denominators use valid dies only.",
+      "model_id": null,
+      "version": null
+    },
+    {
+      "procedure_id": "classifier",
+      "kind": "model_estimate",
+      "input_asset_ids": [
+        "grid"
+      ],
+      "reference_id": null,
+      "definition": "Independent producer classification, no native labels supplied.",
+      "model_id": "classifier_output",
+      "version": null
+    }
+  ],
+  "references": [],
+  "observations": [
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:detection.anomaly_present",
+      "subject_id": "wafer",
+      "feature_id": "detection.anomaly_present",
+      "value": {
+        "kind": "boolean",
+        "boolean": true
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.valid_die_count",
+      "subject_id": "wafer",
+      "feature_id": "spatial.valid_die_count",
+      "value": {
+        "kind": "number",
+        "number": 3036.0,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.failed_die_count",
+      "subject_id": "wafer",
+      "feature_id": "spatial.failed_die_count",
+      "value": {
+        "kind": "number",
+        "number": 912.0,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.component_count",
+      "subject_id": "wafer",
+      "feature_id": "spatial.component_count",
+      "value": {
+        "kind": "number",
+        "number": 53.0,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.linearity",
+      "subject_id": "wafer",
+      "feature_id": "spatial.linearity",
+      "value": {
+        "kind": "number",
+        "number": 0.14898552204555437,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.largest_component_ratio",
+      "subject_id": "wafer",
+      "feature_id": "spatial.largest_component_ratio",
+      "value": {
+        "kind": "number",
+        "number": 0.5328947368421053,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.failure_density",
+      "subject_id": "wafer",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.30039525691699603,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:center:spatial.failure_density",
+      "subject_id": "wafer",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.4852941176470588,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:center",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:middle:spatial.failure_density",
+      "subject_id": "wafer",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.23587570621468926,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:middle",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:edge:spatial.failure_density",
+      "subject_id": "wafer",
+      "feature_id": "spatial.failure_density",
+      "value": {
+        "kind": "number",
+        "number": 0.30332167832167833,
+        "unit": "1"
+      },
+      "status": "observed",
+      "scope_id": "scope:edge",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:spatial.grid",
+      "subject_id": "wafer",
+      "feature_id": "spatial.grid",
+      "value": {
+        "kind": "array_ref",
+        "asset_id": "grid"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "spatial-statistics",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "grid"
+      ]
+    },
+    {
+      "obs_id": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:all_valid:classifier.pattern",
+      "subject_id": "wafer",
+      "feature_id": "classifier.pattern",
+      "value": {
+        "kind": "category",
+        "category": "edge_ring"
+      },
+      "status": "observed",
+      "scope_id": "scope:all_valid",
+      "procedure_id": "classifier",
+      "reference_id": null,
+      "dependency_group": "grid",
+      "raw_refs": [
+        "prediction"
+      ]
+    }
+  ]
+}
