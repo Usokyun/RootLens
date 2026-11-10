@@ -1728,7 +1728,12 @@ async function saveCurrentCaseDraft() {
     try {
       const service = getRootLensService();
       const body = await service.getWorkingGraphPackage(editableGraphId.value);
-      const edgeId = (edge: WorkingGraphPackage["edges"][number]) => [edge.head, edge.relation, edge.tail, edge.scenario].join("|");
+      if (body.schema_version === "rootlens-working-graph.v2") {
+        packageText.value = JSON.stringify(body, null, 2);
+        packageDrawerOpen.value = true;
+        throw new Error("此图由可执行知识生成。请在已打开的完整 JSON 中修改概念、绑定与规则；投影边不能单独改写。");
+      }
+      const edgeId = (edge: typeof body.edges[number]) => [edge.head, edge.relation, edge.tail, edge.scenario].join("|");
       const upsert_nodes = currentDraft.node_drafts.flatMap((draft) => {
         const node = body.nodes.find((n) => n.id === draft.node_id);
         return node ? [{ ...node, name: draft.display_name ?? node.name,
@@ -1741,7 +1746,7 @@ async function saveCurrentCaseDraft() {
         }
         const edge = body.edges.find((e) => edgeId(e) === draft.edge_id);
         if (!edge) throw new Error(`当前工作图不存在 ${draft.edge_id}；请刷新并选择源边。`);
-        const next: WorkingGraphPackage["edges"][number] = { ...edge, relation: draft.relation ?? edge.relation,
+        const next: typeof body.edges[number] = { ...edge, relation: draft.relation ?? edge.relation,
           confidence: draft.confidence ?? edge.confidence,
           review_status: draft.review_decision === "reject" ? "rejected" : edge.review_status };
         if (next.relation !== edge.relation) { delete_edge_ids.push(edgeId(edge)); next.external_edge_id = ""; }
@@ -2284,7 +2289,7 @@ onMounted(() => {
           <a-button type="primary" :loading="packageBusy" :disabled="!editableGraphId" @click="savePackage(false)">保存当前图</a-button>
           <a-button :disabled="!packageText" @click="downloadPackage">导出完整包</a-button>
           <a-button :loading="packageBusy" :disabled="!packageText" @click="savePackage(true)">导入为新图</a-button>
-          <a-button v-if="workingGraphs.find(g => g.graph_id === editableGraphId)?.dataset === 'mvtec'" :disabled="!editableGraphId" @click="rebuildGraphProfiles">按关系重建画像</a-button>
+          <a-button v-if="workingGraphs.find(g => g.graph_id === editableGraphId)?.dataset === 'mvtec' && !workingGraphs.find(g => g.graph_id === editableGraphId)?.knowledge" :disabled="!editableGraphId" @click="rebuildGraphProfiles">按关系重建画像</a-button>
           <label>导入 JSON <input type="file" accept=".json" @change="importPackageFile" /></label>
         </a-space>
         <a-alert v-if="errorMessage" type="error">{{ errorMessage }}</a-alert>

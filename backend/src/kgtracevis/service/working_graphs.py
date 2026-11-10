@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from kgtracevis.kg.graph import KnowledgeGraph
 from kgtracevis.kg.working_graph_package import (
@@ -19,6 +19,7 @@ from kgtracevis.kg.working_graph_package import (
     validate_profiles,
 )
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
+from kgtracevis.schema.unified_knowledge import KnowledgePackage
 from kgtracevis.schema.visual_reasoning import VisualProfileBundle
 from kgtracevis.service.kg_construction import get_kg_construction_build_artifact_path
 from kgtracevis.service.postgres import PostgresConfig, resolve_postgres_config
@@ -30,14 +31,21 @@ class WorkingGraphRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
     graph_id: str
     title: str
-    dataset: Literal["mvtec", "wafer", "tep"] = "mvtec"
+    dataset: str = "mvtec"
     build_id: str
     status: Literal["loading", "ready", "failed"]
     node_count: int
     edge_count: int
-    profiles: ExecutableProfiles
+    profiles: ExecutableProfiles | None
+    knowledge: KnowledgePackage | None = None
     error: str = ""
     last_backup_path: str | None = None
+
+    @model_validator(mode="after")
+    def one_executable_contract(self):
+        if (self.profiles is None) == (self.knowledge is None):
+            raise ValueError("working graph requires exactly one executable contract")
+        return self
 
 
 class ActivateWorkingGraphRequest(BaseModel):
@@ -225,5 +233,10 @@ def load_working_graph(graph_id: str) -> tuple[WorkingGraphRecord, KnowledgeGrap
             graph = repository.to_knowledge_graph(scenario=record.dataset)
         finally:
             repository.close()
-        validate_profiles(record.profiles, graph, record.dataset)
+        if record.knowledge is not None:
+            from kgtracevis.kg.unified_projection import validate_runtime_projection
+
+            validate_runtime_projection(record.knowledge, graph, scenario=record.dataset)
+        else:
+            validate_profiles(record.profiles, graph, record.dataset)
         return record, graph

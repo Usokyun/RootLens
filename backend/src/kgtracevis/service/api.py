@@ -15,10 +15,12 @@ from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict
 
 from kgtracevis.kg.import_neo4j import Neo4jImportError
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.kg.working_graph_package import WorkingGraphPackage
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
 from kgtracevis.producers.model_assets import MODEL_ASSET_CHOICES, ModelAsset
 from kgtracevis.producers.visual_semantics import ROISemanticServiceError
+from kgtracevis.schema.unified_evidence import EvidenceFrame
 from kgtracevis.service.dashboard import dashboard_bootstrap
 from kgtracevis.service.handlers import (
     AnalyzeRequest,
@@ -287,16 +289,35 @@ def create_app() -> FastAPI:
         return graph_action(lambda: export_working_graph(graph_id))
 
     @app.post("/api/kg/working-graphs/import")
-    def import_graph_package(package: WorkingGraphPackage):
+    def import_graph_package(package: WorkingGraphPackage | UnifiedWorkingGraphPackage):
         return graph_action(lambda: import_working_graph(package))
 
     @app.put("/api/kg/working-graphs/{graph_id}/package")
-    def save_graph_package(graph_id: str, package: WorkingGraphPackage):
+    def save_graph_package(
+        graph_id: str, package: WorkingGraphPackage | UnifiedWorkingGraphPackage
+    ):
         return graph_action(lambda: save_working_graph(graph_id, package))
 
     @app.patch("/api/kg/working-graphs/{graph_id}")
     def mutate_graph(graph_id: str, request: WorkingGraphMutation):
         return graph_action(lambda: mutate_working_graph(graph_id, request))
+
+    @app.post("/api/reasoning/{graph_id}/analyze")
+    def analyze_typed_evidence(
+        graph_id: str, frame: EvidenceFrame, top_k: Annotated[int, Query(ge=1)] = 5
+    ):
+        from kgtracevis.core.unified_reasoner import UnifiedReasoner
+        from kgtracevis.service.working_graphs import load_working_graph
+
+        try:
+            record, _ = load_working_graph(graph_id)
+            if record.knowledge is None:
+                raise ValueError("typed evidence requires a v2 working knowledge package")
+            return UnifiedReasoner(record.knowledge).analyze(frame, top_k=top_k)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except (WorkingGraphStorageError, DriverError, Neo4jError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     @app.get("/api/kg/drafts")
     def kg_draft_history(

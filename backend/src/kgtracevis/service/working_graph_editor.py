@@ -7,12 +7,12 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage, record_package
 from kgtracevis.kg.working_graph_package import (
     ExecutableProfiles,
     WorkingEdge,
     WorkingGraphPackage,
     WorkingNode,
-    graph_package,
     refresh_visual_profiles,
 )
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
@@ -40,35 +40,37 @@ class WorkingGraphMutation(BaseModel):
     rebuild_profiles: bool = False
 
 
-def export_working_graph(graph_id: str) -> WorkingGraphPackage:
+def export_working_graph(graph_id: str) -> WorkingGraphPackage | UnifiedWorkingGraphPackage:
     record, graph = load_working_graph(graph_id)
-    return graph_package(
-        graph,
-        graph_id=graph_id,
-        title=record.title,
-        build_id=record.build_id,
-        profiles=record.profiles,
-        dataset=record.dataset,
-    )
+    return record_package(record, graph)
 
 
-def import_working_graph(package: WorkingGraphPackage) -> WorkingGraphRecord:
+def import_working_graph(
+    package: WorkingGraphPackage | UnifiedWorkingGraphPackage,
+) -> WorkingGraphRecord:
     """Import always creates a new isolated identity; existing graphs are never overwritten."""
     store = working_graph_store()
+    graph_id = "graph_" + uuid.uuid4().hex
+    knowledge = (
+        package.knowledge.model_copy(update={"graph_id": graph_id})
+        if isinstance(package, UnifiedWorkingGraphPackage)
+        else None
+    )
     record = WorkingGraphRecord(
-        graph_id="graph_" + uuid.uuid4().hex,
+        graph_id=graph_id,
         title=package.title,
         build_id=package.build_id,
         dataset=package.dataset,
         status="loading",
         node_count=len(package.nodes),
         edge_count=len(package.edges),
-        profiles=package.profiles,
+        profiles=package.profiles if isinstance(package, WorkingGraphPackage) else None,
+        knowledge=knowledge,
     )
     store.create(record)
     repository = WorkingGraphRepository.connect(record.graph_id)
     try:
-        repository.write_new(package.to_graph())
+        repository.write_new(record_package(record).to_graph() if knowledge else package.to_graph())
         record = record.model_copy(update={"status": "ready"})
         store.update(record)
         return record
@@ -79,12 +81,18 @@ def import_working_graph(package: WorkingGraphPackage) -> WorkingGraphRecord:
         repository.close()
 
 
-def save_working_graph(graph_id: str, package: WorkingGraphPackage) -> WorkingGraphRecord:
+def save_working_graph(
+    graph_id: str, package: WorkingGraphPackage | UnifiedWorkingGraphPackage
+) -> WorkingGraphRecord:
     if package.graph_id not in {None, graph_id}:
         raise ValueError("package belongs to another graph; import it as a new graph instead")
     store = working_graph_store()
     with graph_operation_lock(graph_id, store):
         record = store.get(graph_id)
+        if isinstance(package, UnifiedWorkingGraphPackage):
+            package = package.model_copy(
+                update={"knowledge": package.knowledge.model_copy(update={"graph_id": graph_id})}
+            )
         return _save_locked(record, package, store)
 
 
@@ -92,6 +100,8 @@ def mutate_working_graph(graph_id: str, request: WorkingGraphMutation) -> Workin
     store = working_graph_store()
     with graph_operation_lock(graph_id, store):
         record = store.get(graph_id)
+        if record.knowledge is not None:
+            return _mutate_unified(record, request, store)
         if request.rebuild_profiles and record.dataset != "mvtec":
             raise ValueError(
                 "数值/空间画像包含阈值和通道绑定，不能仅凭关系重建；请编辑 profiles 或重新构图。"
@@ -157,6 +167,8 @@ def _save_locked(record, package, store):
         raise ValueError(f"working graph is not ready: {record.status}")
     if package.dataset != record.dataset:
         raise ValueError("cannot change a working graph's dataset; import a new graph")
+    if (record.knowledge is not None) != isinstance(package, UnifiedWorkingGraphPackage):
+        raise ValueError("cannot change a working graph's executable contract; import a new graph")
     repository = WorkingGraphRepository.connect(record.graph_id)
     try:
         return _replace_with_backup(repository, record, package, store)
@@ -166,14 +178,7 @@ def _save_locked(record, package, store):
 
 def _replace_with_backup(repository, record, package, store):
     before = repository.to_knowledge_graph(scenario=record.dataset)
-    old_package = graph_package(
-        before,
-        graph_id=record.graph_id,
-        title=record.title,
-        build_id=record.build_id,
-        profiles=record.profiles,
-        dataset=record.dataset,
-    )
+    old_package = record_package(record, before)
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     backup = BACKUP_ROOT / f"backup_{uuid.uuid4().hex}.json"
     backup.write_text(old_package.model_dump_json(indent=2), encoding="utf-8")
@@ -181,7 +186,10 @@ def _replace_with_backup(repository, record, package, store):
         update={
             "status": "ready",
             "title": package.title,
-            "profiles": package.profiles,
+            "profiles": package.profiles if isinstance(package, WorkingGraphPackage) else None,
+            "knowledge": package.knowledge
+            if isinstance(package, UnifiedWorkingGraphPackage)
+            else None,
             "node_count": len(package.nodes),
             "edge_count": len(package.edges),
             "last_backup_path": str(backup),
@@ -202,3 +210,56 @@ def _replace_with_backup(repository, record, package, store):
                 f"工作图保存失败，恢复未完成；请从 {backup} 恢复：{recovery_error}"
             ) from exc
         raise
+
+
+def _mutate_unified(record, request, store):
+    """Simple entity edits and removal of whole rules; conditions use canonical JSON."""
+    from kgtracevis.schema.unified_knowledge import KnowledgePackage
+
+    if request.profiles is not None or request.rebuild_profiles or request.upsert_edges:
+        raise ValueError(
+            "v2 rules/bindings/conditions must be edited in the complete knowledge JSON"
+        )
+    data = record.knowledge.model_dump(mode="json")
+    entities = {row["entity_id"]: row for row in data["entities"]}
+    for node in request.upsert_nodes:
+        if node.id not in entities:
+            raise ValueError("use knowledge JSON to add or change a non-entity node")
+        entities[node.id].update(label=node.name, aliases=node.aliases)
+    # Projected edges have canonical Neo4j IDs. Removing either side of an
+    # effect/expectation deletes that executable rule, never just its picture.
+    graph = record_package(record).to_graph()
+    edge_ids = {edge.edge_id: edge.external_edge_id for edge in graph.edges}
+    removed_rules = set(request.delete_node_ids)
+    removed_relations = set()
+    rule_ids = {r["rule_id"] for r in [*data["effect_rules"], *data["expectation_rules"]]}
+    relation_ids = {r["relation_id"] for r in data["relations"]}
+    for identity in request.delete_edge_ids:
+        if identity not in edge_ids:
+            raise ValueError(f"unknown edge: {identity}")
+        origin = edge_ids[identity]
+        if origin in relation_ids:
+            removed_relations.add(origin)
+        elif origin.rsplit("::", 1)[0] in rule_ids:
+            removed_rules.add(origin.rsplit("::", 1)[0])
+        else:
+            raise ValueError(
+                "edit the canonical condition JSON to remove definition/binding/source dependencies"
+            )
+    if removed_rules - rule_ids:
+        raise ValueError(
+            "only whole effect/expectation nodes can be deleted here; edit JSON for other nodes"
+        )
+    data["entities"] = list(entities.values())
+    for key in ("effect_rules", "expectation_rules"):
+        data[key] = [row for row in data[key] if row["rule_id"] not in removed_rules]
+    data["relations"] = [
+        row for row in data["relations"] if row["relation_id"] not in removed_relations
+    ]
+    package = record_package(record).model_copy(
+        update={
+            "title": request.title or record.title,
+            "knowledge": KnowledgePackage.model_validate(data),
+        }
+    )
+    return _save_locked(record, package, store)

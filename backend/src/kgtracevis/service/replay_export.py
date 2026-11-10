@@ -8,6 +8,7 @@ import mimetypes
 from collections import Counter
 from datetime import UTC, datetime
 
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.kg.working_graph_package import WorkingGraphPackage
 from kgtracevis.service.runs import get_run_artifact_path, get_run_detail
 
@@ -19,7 +20,11 @@ def export_run_replay(run_id: str) -> dict:
         raise ValueError(
             "此历史运行未保存原始工作图快照；不能用当前图冒充其推理依据。请选择新工作图运行。"
         )
-    package = WorkingGraphPackage.model_validate(package_payload)
+    package = (
+        UnifiedWorkingGraphPackage.model_validate(package_payload)
+        if package_payload.get("schema_version") == "rootlens-working-graph.v2"
+        else WorkingGraphPackage.model_validate(package_payload)
+    )
     graph = package.to_graph()
     now = datetime.now(UTC).isoformat()
     gid = package.graph_id

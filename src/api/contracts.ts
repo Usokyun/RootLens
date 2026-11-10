@@ -133,9 +133,10 @@ export interface WorkingGraphSummary {
   status: "loading" | "ready" | "failed";
   node_count: number;
   edge_count: number;
+  knowledge?: Record<string, unknown> | null;
 }
 
-export interface WorkingGraphPackage {
+export interface LegacyWorkingGraphPackage {
   schema_version: "rootlens-working-graph.v1";
   graph_id?: string | null;
   title: string;
@@ -145,6 +146,17 @@ export interface WorkingGraphPackage {
   edges: Array<Record<string, unknown> & { head: string; relation: string; tail: string; scenario: string }>;
   profiles: Record<string, unknown>;
 }
+
+export interface UnifiedWorkingGraphPackage {
+  schema_version: "rootlens-working-graph.v2";
+  graph_id?: string | null;
+  title: string;
+  dataset: string;
+  build_id: string;
+  knowledge: Record<string, unknown>;
+}
+
+export type WorkingGraphPackage = LegacyWorkingGraphPackage | UnifiedWorkingGraphPackage;
 
 export interface RunReasoningMetadata {
   graph_id?: string | null;

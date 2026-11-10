@@ -107,12 +107,20 @@ def build_pipeline(
             raise ValueError("pass graph_id or a graph repository, not both")
         if reasoning_profile_id not in {None, "mvtec_feature_graph_v1"}:
             raise ValueError("working graphs require the visual profile reasoner")
-        from kgtracevis.kg.working_graph_package import graph_package
+        from kgtracevis.kg.unified_working_package import record_package
         from kgtracevis.service.working_graphs import load_working_graph
         from kgtracevis.workflows.measured_profile_reasoner import MeasuredProfileReasoner
         from kgtracevis.workflows.profile_match_reasoner import VisualProfileReasoner
 
         record, snapshot = load_working_graph(graph_id)
+        if record.knowledge is not None:
+            from kgtracevis.workflows.unified_reasoning import UnifiedWorkingGraphReasoner
+
+            return KGTracePipeline(
+                graph=snapshot,
+                root_cause_reasoner=UnifiedWorkingGraphReasoner(record.knowledge),
+                graph_snapshot=record_package(record, snapshot).model_dump(mode="json"),
+            )
         reasoner = (
             VisualProfileReasoner(record.profiles, graph_id=graph_id)
             if record.dataset == "mvtec"
@@ -121,14 +129,7 @@ def build_pipeline(
         return KGTracePipeline(
             graph=snapshot,
             root_cause_reasoner=reasoner,
-            graph_snapshot=graph_package(
-                snapshot,
-                graph_id=graph_id,
-                title=record.title,
-                build_id=record.build_id,
-                profiles=record.profiles,
-                dataset=record.dataset,
-            ).model_dump(mode="json"),
+            graph_snapshot=record_package(record, snapshot).model_dump(mode="json"),
         )
     return KGTracePipeline(
         graph=graph,

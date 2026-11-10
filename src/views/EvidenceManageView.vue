@@ -755,7 +755,7 @@ async function refreshWorkspace() {
       const result = await getRootLensService().listWorkingGraphs()
       workingGraphOptions.value = result.graphs.map((graph) => ({
         profile_id: `working:${graph.graph_id}`, label: graph.title,
-        reasoner_adapter: graph.dataset === 'mvtec' ? 'visual_profile_match' : graph.dataset === 'tep' ? 'process_graph_rbc' : 'wafer_spatial_profile', default: false,
+        reasoner_adapter: graph.knowledge ? 'unified_working_graph' : graph.dataset === 'mvtec' ? 'visual_profile_match' : graph.dataset === 'tep' ? 'process_graph_rbc' : 'wafer_spatial_profile', default: false,
       }))
     } catch (error) {
       workingGraphOptions.value = []
