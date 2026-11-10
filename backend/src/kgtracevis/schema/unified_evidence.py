@@ -136,6 +136,13 @@ class DieEncoding(UnifiedModel):
     normal: Literal[1] = 1
     failed: Literal[2] = 2
 
+    @model_validator(mode="before")
+    @classmethod
+    def integer_codes(cls, value):
+        if isinstance(value, dict) and any(type(v) is not int for v in value.values()):
+            raise ValueError("die codes must be literal integers, not boolean/float aliases")
+        return value
+
 
 class SpatialGridScope(UnifiedModel):
     scope_id: Identifier

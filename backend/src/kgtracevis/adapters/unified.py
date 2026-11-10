@@ -182,6 +182,10 @@ def evidence_frames(evidence: Evidence) -> list[EvidenceFrame]:
         from kgtracevis.adapters.unified_process import process_frames
 
         return process_frames(evidence)
+    if "wafer-measurements.v1" in contracts:
+        from kgtracevis.adapters.unified_spatial import spatial_frames
+
+        return spatial_frames(evidence)
     if (
         "visual_region.v1" in contracts
         or evidence.source == "image"

@@ -17,8 +17,8 @@
 | U0 契约 | 完成 | Evidence v2、公共知识 IR、类型／单位／引用／区域／正常参考校验；三个设计样例可实际解析、往返及生成 JSON Schema；初始 37 项合同测试通过 | `09322ec` |
 | U1 公共内核＋MVTec | 后端和真实模型闭环完成；实际页面验收随 U5 | 公开原图→PatchCore→ROI→公共内核→PG 运行快照，正例保留歧义、正常例无候选；视觉失败如实保留 | U1a `2081464`；U1b `950386a`；真实验收随 U2 |
 | U2 LLM 构图与工作图 | 视觉能力目标完成；过程／空间能力随 U3、U4 | 原始厂家 PDF→LLM 领域蓝图→确定性编译→可加载知识；有界修复；持久编辑、完整交换、改图影响新推理；素材页仅加契约选择 | `591604b` |
-| U3 TEP 同核 | 完成接入与真实反证；故障识别仍有明确负结果 | 实际正常参考、完整窗口／52 通道接入同一公共算法；3 个公开序列共 9 窗口，正常无候选；已知故障族进入候选但 top-1 不正确，保留首轮失败和修订 | U3 提交 |
-| U4 Wafer 同核 | 待开始 | 空间统计和区域定义接入冻结内核，验证输入编码、scope、正常及冲突 | 待完成 |
+| U3 TEP 同核 | 完成接入与真实反证；故障识别仍有明确负结果 | 实际正常参考、完整窗口／52 通道接入同一公共算法；3 个公开序列共 9 窗口，正常无候选；已知故障族进入候选但 top-1 不正确，保留首轮失败和修订 | `587c04d` |
+| U4 Wafer 同核 | 完成适配与真实运行，内核未变 | 0/1/2 网格与独立 ResNet，8 个图案假设，18 个原网格实际同核运行；匹配、未匹配和原生类别分歧保留 | U4 提交 |
 | U5 评价与交付 | 待开始 | 相同输入／知识的对照、消融、缺失／重复／删边／重命名检验；完整测试、实际界面、回放和复现说明 | 待完成 |
 
 ## 已知基线与验证路径
@@ -73,3 +73,14 @@ Bits 测试工具的 bootstrap 会向第三方发送本机身份元数据并尝�
 - API／PG／Neo4j 持久实跑：d04 run `0e04af33-6025-4095-8179-57b969638523`，d01 `54a7916a-c038-40c3-a7dd-6c4a63a08636`，d05 `535ce3b9-4ede-43a0-8aa5-d73f88877c5d`；全部选择同一 v2 图，不调用 process_graph_rbc／Root-KGD 排名。API 重启后 MVTec 原正例仍读取 4 个候选。
 - 产物：`backend/runs/unified_reasoning/u3_tep_validation/` 保存 9 份 Frame、结果、真实数组、正常参考和完整 RunDetail；`u3_tep_actual/` 保留原图失败结果；小型公共知识包为 `backend/data/kg/unified/tep-working-graph.v2.json`。
 - 统一合同／内核／适配及旧 measured 检查 **78 passed / 1 skipped**；修改的 Python 文件 Ruff 通过。U3 没有修改 `core/unified_reasoner.py`、`core/unified_grounding.py` 或候选编译算法。随后 Wafer 在该内核上增加空间观测与知识，最终界面及对照由 U5 验收。
+
+## U4：冻结内核接入空间图案
+
+- 新 adapter 只消费闭合的 `wafer-measurements.v1`，保留实际网格资产、shape、编码和同一 parent grid 下的 all_valid／center／middle／edge 作用域。内联网格会复算并核对测量；路径资产不由 adapter 任意加载。空网格／空区域的密度是 missing，不伪装成正常 0；0/1 正常 die 不当失效，bool/float 编码别名拒绝。
+- density、八连通簇和线性程度来自数值计算；classifier.pattern 来自独立模型，不读 native_failure_pattern／annotation_state。分类任务声明 `pattern_family`，不把 nearfull 解释成颗粒污染等未观测制造原因。
+- 资料为原始论文可取得的 PDF 第 3–4 页正文／caption 和模型作者卡，3 个片段、14348 字符。NIAR 的本地 PDF 下载经 curl／标准 Python TLS 均失败；已用 web PDF 提取结果保留原页码和获取方式，不声称本地 PDF／图表完整解析成功。
+- 首个蓝图把相邻类别当作同一签名的替代原因，形成对称复制的候选，已保留为负例。现有 capability 可分别声明总候选／签名上限及每签名假设上限：分类签名单目标，竞争通过其他类别签名发生；机制诊断仍允许多原因。没有数据集专用评分或分类 rank 插件。
+- 作者蓝图中的 scalar category membership 可由编译器明确降为 equality，并写入 normalization report；canonical IR 的错误类型仍拒绝，未放宽运行比较器。本次最终单目标源图没有该 normalization，也无需修复，生成 **8 签名／8 假设／20 原子，113 节点／143 边**。
+- 同一 ResNet34 权重／作者预处理实际重跑 18 张公开原网格，随后冻结预测，只重分析知识。最终 7 张匹配：6 张与原生图案一致、1 张 Donut 被模型及规则解释为 Edge-Ring；11 张未匹配（含 2 张原生 none）。未按标签挑选成功样本，也未强配其余图案。
+- 实际 run `5800defc-f490-48bd-9e9a-fd9d6fa33cae`，完整数据在 `backend/runs/unified_reasoning/u4_wafer_actual/` 与 `u4_wafer_validation/`；先前对称图的结果在前者保留，最终结果在后者。公共种子为 `backend/data/kg/unified/wafer-working-graph.v2.json`。
+- 合同／三类 adapter／公共内核及旧 measured 检查 **82 passed / 1 skipped**；Ruff 通过。U4 没有修改公共 candidate compiler、grounding 或 reasoner；输入 schema 仅收紧固定 die 编码的 bool/float 别名。第三场景是架构迁移证据，不自动成为统计跨域泛化结论。

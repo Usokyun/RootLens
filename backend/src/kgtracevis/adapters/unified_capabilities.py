@@ -22,6 +22,9 @@ class CapabilityManifest(UnifiedModel):
     zones: list[Identifier] = Field(default_factory=list)
     features: list[FeatureDefinition] = Field(min_length=1)
     notes: str
+    max_candidates: int = Field(default=6, ge=1, le=32)
+    max_signatures: int = Field(default=4, ge=1, le=16)
+    max_hypotheses_per_signature: int = Field(default=6, ge=1, le=32)
 
 
 def _feature(identity, kind, definition, unit=None, reference=False):
@@ -95,6 +98,8 @@ def capability_manifest(identity: str) -> CapabilityManifest:
         return visual_capabilities()
     if identity == "process-window-v2":
         return process_capabilities()
+    if identity == "spatial-grid-v2":
+        return spatial_capabilities()
     raise ValueError(f"unknown adapter capability: {identity}")
 
 
@@ -169,5 +174,74 @@ def process_capabilities() -> CapabilityManifest:
             "Closed-loop control may maintain temperature while an actuator changes; do not demand "
             "every connected mean must shift. Compare source-supported mechanism families, "
             "not fault IDs. No case fault label or test values are provided to construction."
+        ),
+    )
+
+
+def spatial_capabilities() -> CapabilityManifest:
+    return CapabilityManifest(
+        capability_id="spatial-grid-v2",
+        observation_contract="wafer-measurements.v1",
+        target_role="pattern_family",
+        context_external_ids=["wafer"],
+        scopes=["spatial_zone"],
+        zones=["all_valid", "center", "middle", "edge"],
+        max_candidates=8,
+        max_signatures=8,
+        max_hypotheses_per_signature=1,
+        features=[
+            _feature(
+                "detection.anomaly_present",
+                "boolean",
+                "At least one failed die in a nonempty valid grid.",
+            ),
+            _feature(
+                "spatial.failure_density",
+                "number",
+                "Failed die / valid die in the declared zone; empty zones are missing.",
+                "1",
+            ),
+            _feature("spatial.valid_die_count", "number", "Number of code-1 or code-2 cells.", "1"),
+            _feature("spatial.failed_die_count", "number", "Number of code-2 cells.", "1"),
+            _feature(
+                "spatial.component_count",
+                "number",
+                "Eight-neighbor failed-die component count.",
+                "1",
+            ),
+            _feature(
+                "spatial.largest_component_ratio",
+                "number",
+                "Largest eight-neighbor component / failed dies; missing without failures.",
+                "1",
+            ),
+            _feature(
+                "spatial.linearity",
+                "number",
+                "1 - min/max coordinate covariance eigenvalue; missing with <3 failed dies.",
+                "1",
+            ),
+            _feature(
+                "classifier.pattern",
+                "category",
+                "Independent ResNet output, not native labels: center, donut, edge_loc, "
+                "edge_ring, loc, random, scratch, nearfull.",
+            ),
+            _feature(
+                "spatial.grid", "array_ref", "Actual grid asset: 0 background, 1 good, 2 failed."
+            ),
+        ],
+        notes=(
+            "Task is PATTERN FAMILY comparison, not manufacturing-cause identification. "
+            "Candidates are the eight named patterns in classifier.pattern, not factory causes. "
+            "Each signature belongs to ONE target pattern; competing classes belong to other "
+            "signatures, not neighboring causes of this signature. "
+            "Mechanisms are intermediate spatial states. Every feature is scoped to a zone; "
+            "use all_valid for classifier and global statistics. Radius is the clipped "
+            "elliptical distance about valid-die bounding-box center: center r<=.4, "
+            "middle .4<r<.8, edge r>=.8. Only valid dies contribute to density. "
+            "The numeric cutoffs are declared heuristics unless supplied by sources. "
+            "Use spatial measurements to test the model label, not label-only signatures; "
+            "a wrong classifier may conflict with spatial data. No process-cause observations."
         ),
     )

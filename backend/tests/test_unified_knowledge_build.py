@@ -196,3 +196,51 @@ def test_blueprint_deterministic_shared_mechanism_and_atomic_dedup(inputs, tmp_p
         json.loads((tmp_path / "stored/unified_build_report.json").read_text())["generation_mode"]
         == "stored_blueprint"
     )
+
+
+def test_authoring_scalar_membership_is_typed_lowering_not_an_ir_fallback(inputs):
+    units, cap, _ = inputs
+    assertion = dict(
+        text="Declared morphological test",
+        origin="declared_demo_heuristic",
+        parameter_origin="declared_demo_heuristic",
+        source_unit_id=units[0].unit_id,
+    )
+    blueprint = KnowledgeBlueprint.model_validate(
+        dict(
+            title="Test",
+            signatures=[
+                dict(
+                    signature_key="linear",
+                    label="Linear",
+                    context_external_id="metal_nut",
+                    conditions=[
+                        dict(
+                            label="Linear shape",
+                            feature_id="geometry.morphology",
+                            op="candidate_contains",
+                            operand=dict(kind="category", category="linear"),
+                            assertion=assertion,
+                        )
+                    ],
+                    causes=[
+                        dict(
+                            candidate_key="contact",
+                            label="Contact",
+                            mechanism_key="mark",
+                            mechanism_label="Mark",
+                            assertion=assertion,
+                        )
+                    ],
+                    assertion=assertion,
+                )
+            ],
+        )
+    )
+    proposal = lower_blueprint(blueprint, cap, units)
+    condition = proposal["knowledge"]["observable_definitions"][1]
+    assert condition["op"] == "eq"
+    assert proposal["normalizations"][0]["kind"] == "scalar_membership_to_equality"
+    condition["op"] = "candidate_contains"
+    with pytest.raises(ValueError, match="candidate_set"):
+        KnowledgePackage.model_validate(proposal["knowledge"])

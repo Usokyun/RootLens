@@ -62,7 +62,7 @@ class UnsupportedDraft(UnifiedModel):
 
 class KnowledgeBlueprint(UnifiedModel):
     title: Identifier
-    signatures: list[SignatureDraft] = Field(min_length=1, max_length=4)
+    signatures: list[SignatureDraft] = Field(min_length=1, max_length=16)
     unsupported_claims: list[UnsupportedDraft] = Field(default_factory=list)
 
 
@@ -78,14 +78,24 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
         {},
     )
     effects, expectations = {}, {}
+    normalizations = []
     identity_map = {}
     candidate_keys = {
         (s.context_external_id, c.candidate_key) for s in blueprint.signatures for c in s.causes
     }
-    if len(candidate_keys) > 6:
-        raise ValueError("at most 6 distinct candidates; group indistinguishable detailed causes")
+    if (
+        len(candidate_keys) > capabilities.max_candidates
+        or len(blueprint.signatures) > capabilities.max_signatures
+    ):
+        raise ValueError(
+            "exceeds capability authoring limits; group indistinguishable detailed candidates"
+        )
     conflicts = []
     for signature in blueprint.signatures:
+        if len(signature.causes) > capabilities.max_hypotheses_per_signature:
+            raise ValueError(
+                "too many hypotheses per signature; compare classes via separate signatures"
+            )
         modes = {}
         for cause in signature.causes:
             modes.setdefault(cause.mechanism_key, set()).add(cause.mode)
@@ -187,16 +197,37 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
             )
             if not feature:
                 raise ValueError(f"unsupported feature: {condition.feature_id}")
+            op = condition.op
+            # Authoring shorthand: membership of a single categorical model
+            # output is equality, not membership of an open candidate set.
+            # The canonical IR remains strictly typed and records the lowering.
+            if (
+                feature.value_kind == "category"
+                and op == "candidate_contains"
+                and condition.operand.kind == "category"
+            ):
+                op = "eq"
+                normalizations.append(
+                    {
+                        "kind": "scalar_membership_to_equality",
+                        "signature_key": signature.signature_key,
+                        "condition_index": ci,
+                        "feature_id": condition.feature_id,
+                    }
+                )
             identity = predicate(
                 {
                     "predicate_id": identity,
                     "label": condition.label,
                     "feature_id": condition.feature_id,
-                    "op": condition.op,
+                    "op": op,
                     "operand": condition.operand.model_dump(),
                     "subject_selector": selector,
-                    "scope_selector": {"kind": "spatial_zone", "zone": condition.zone}
-                    if condition.zone
+                    "scope_selector": {
+                        "kind": "spatial_zone",
+                        "zone": condition.zone or "all_valid",
+                    }
+                    if capabilities.zones
                     else {"kind": "task_scope"},
                     "reference_requirement": "same_as_task" if feature.requires_reference else None,
                     "source_assertion_ids": assertion(
@@ -284,4 +315,5 @@ def lower_blueprint(blueprint: KnowledgeBlueprint, capabilities, units):
             }
         ).model_dump(mode="json"),
         "unsupported_claims": [c.model_dump() for c in blueprint.unsupported_claims],
+        "normalizations": normalizations,
     }

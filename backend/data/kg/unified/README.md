@@ -42,3 +42,22 @@ all three pre-fault windows returned no match, and the known fault families
 appeared among candidates for the tested post-fault windows. **Top-ranked families
 were not the known injected faults**. This seed demonstrates executable, traceable
 comparison, not fault-identification accuracy. The negative runs are retained.
+
+## Spatial-grid seed
+
+`wafer-working-graph.v2.json` compares **pattern families**, not manufacturing
+causes. It uses the original WM-811K paper's available PDF text (pages 3–4,
+[publisher record](https://ieeexplore.ieee.org/document/6932449/)) and the model
+author's card. The local PDF download failed TLS; the located text came from the
+web PDF extractor, not a claimed successful Docling parse of that file.
+
+The compiler's spatial capability declares the actual 0/1/2 encoding, measured
+zones, connected components, linearity and independent classifier vocabulary.
+Numeric cutoffs are declared heuristics, not reproduced SVM parameters from the
+original paper. One class signature has one target hypothesis; alternative
+classes compete through their own signatures. The common reasoner is unchanged.
+
+On the 18 public grids used for functional checks, seven matched, six agreed with
+the native class and one donut was classified/explained as edge-ring. Eleven
+returned no match. These failures and the earlier symmetric/overbroad graph are
+retained; the seed is not an accuracy benchmark or a process-cause oracle.

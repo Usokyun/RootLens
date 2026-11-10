@@ -1,0 +1,1308 @@
+{
+  "schema_version": "rootlens-working-graph.v2",
+  "graph_id": null,
+  "title": "WM811K spatially constrained pattern hypotheses",
+  "dataset": "wafer",
+  "build_id": "unified-import",
+  "knowledge": {
+    "schema_version": "rootlens-knowledge-package.v2",
+    "example_kind": null,
+    "graph_id": "source-compiled",
+    "semantics_version": "conjunctive-explanation-v0",
+    "title": "Wafer Map Pattern Family Blueprint (WM-811K eight-class spatial signatures)",
+    "entities": [
+      {
+        "entity_id": "entity:industrial.object:wafer",
+        "label": "wafer",
+        "kind": "Object",
+        "aliases": []
+      }
+    ],
+    "relations": [],
+    "subject_bindings": [
+      {
+        "namespace": "industrial.object",
+        "external_id": "wafer",
+        "target_id": "entity:industrial.object:wafer"
+      }
+    ],
+    "value_bindings": [],
+    "feature_registry": [
+      {
+        "feature_id": "detection.anomaly_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "At least one failed die in a nonempty valid grid.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.failure_density",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Failed die / valid die in the declared zone; empty zones are missing.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.valid_die_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Number of code-1 or code-2 cells.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.failed_die_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Number of code-2 cells.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.component_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Eight-neighbor failed-die component count.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.largest_component_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "Largest eight-neighbor component / failed dies; missing without failures.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.linearity",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "1 - min/max coordinate covariance eigenvalue; missing with <3 failed dies.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "classifier.pattern",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "Independent ResNet output, not native labels: center, donut, edge_loc, edge_ring, loc, random, scratch, nearfull.",
+        "requires_reference": false
+      },
+      {
+        "feature_id": "spatial.grid",
+        "value_kind": "array_ref",
+        "unit": null,
+        "definition": "Actual grid asset: 0 background, 1 good, 2 failed.",
+        "requires_reference": false
+      }
+    ],
+    "observable_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3",
+          "source:signature:4",
+          "source:signature:5",
+          "source:signature:6",
+          "source:signature:7"
+        ],
+        "predicate_id": "signature:sig_center:anomaly",
+        "label": "Explicit anomaly prerequisite",
+        "feature_id": "detection.anomaly_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:0"
+        ],
+        "predicate_id": "signature:sig_center:condition:0",
+        "label": "Classifier label is Center",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "center"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:1"
+        ],
+        "predicate_id": "signature:sig_center:condition:1",
+        "label": "Elevated failure density in the center zone",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.5,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "center",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:0"
+        ],
+        "predicate_id": "signature:sig_donut:condition:0",
+        "label": "Classifier label is Donut",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "donut"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:1"
+        ],
+        "predicate_id": "signature:sig_donut:condition:1",
+        "label": "Elevated failure density in the middle zone",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.5,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "middle",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:0"
+        ],
+        "predicate_id": "signature:sig_edge_loc:condition:0",
+        "label": "Classifier label is Edge-Loc",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "edge_loc"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:1",
+          "source:condition:3:1"
+        ],
+        "predicate_id": "signature:sig_edge_loc:condition:1",
+        "label": "Elevated failure density in the edge zone",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.3,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:2"
+        ],
+        "predicate_id": "signature:sig_edge_loc:condition:2",
+        "label": "Failures form a compact localized cluster",
+        "feature_id": "spatial.largest_component_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.5,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:0"
+        ],
+        "predicate_id": "signature:sig_edge_ring:condition:0",
+        "label": "Classifier label is Edge-Ring",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "edge_ring"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:2"
+        ],
+        "predicate_id": "signature:sig_edge_ring:condition:2",
+        "label": "Failures spread over many components rather than one cluster",
+        "feature_id": "spatial.component_count",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 3.0,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:4:0"
+        ],
+        "predicate_id": "signature:sig_loc:condition:0",
+        "label": "Classifier label is Loc",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "loc"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:4:1"
+        ],
+        "predicate_id": "signature:sig_loc:condition:1",
+        "label": "Failures dominated by a single salient region",
+        "feature_id": "spatial.largest_component_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.6,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:4:2"
+        ],
+        "predicate_id": "signature:sig_loc:condition:2",
+        "label": "Low overall failure density",
+        "feature_id": "spatial.failure_density",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:5:0"
+        ],
+        "predicate_id": "signature:sig_random:condition:0",
+        "label": "Classifier label is Random",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "random"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:5:1"
+        ],
+        "predicate_id": "signature:sig_random:condition:1",
+        "label": "Failures fragmented into many components",
+        "feature_id": "spatial.component_count",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 5.0,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:5:2"
+        ],
+        "predicate_id": "signature:sig_random:condition:2",
+        "label": "No dominant component",
+        "feature_id": "spatial.largest_component_ratio",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.4,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:6:0"
+        ],
+        "predicate_id": "signature:sig_scratch:condition:0",
+        "label": "Classifier label is Scratch",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "scratch"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:6:1"
+        ],
+        "predicate_id": "signature:sig_scratch:condition:1",
+        "label": "Failures are highly collinear",
+        "feature_id": "spatial.linearity",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.8,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:7:0"
+        ],
+        "predicate_id": "signature:sig_near_full:condition:0",
+        "label": "Classifier label is Near-full",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "nearfull"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:7:1"
+        ],
+        "predicate_id": "signature:sig_near_full:condition:1",
+        "label": "Very high overall failure density",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.7,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      }
+    ],
+    "pattern_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3",
+          "source:signature:4",
+          "source:signature:5",
+          "source:signature:6",
+          "source:signature:7"
+        ],
+        "definition_id": "signature:sig_center:definition",
+        "pattern_id": "signature:sig_center",
+        "label": "Center pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_center:condition:0",
+                "signature:sig_center:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:1"
+        ],
+        "definition_id": "signature:sig_donut:definition",
+        "pattern_id": "signature:sig_donut",
+        "label": "Donut pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_donut:condition:0",
+                "signature:sig_donut:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:2"
+        ],
+        "definition_id": "signature:sig_edge_loc:definition",
+        "pattern_id": "signature:sig_edge_loc",
+        "label": "Edge-Loc pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_edge_loc:condition:0",
+                "signature:sig_edge_loc:condition:1",
+                "signature:sig_edge_loc:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:3"
+        ],
+        "definition_id": "signature:sig_edge_ring:definition",
+        "pattern_id": "signature:sig_edge_ring",
+        "label": "Edge-Ring pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_edge_ring:condition:0",
+                "signature:sig_edge_loc:condition:1",
+                "signature:sig_edge_ring:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:4"
+        ],
+        "definition_id": "signature:sig_loc:definition",
+        "pattern_id": "signature:sig_loc",
+        "label": "Loc pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_loc:condition:0",
+                "signature:sig_loc:condition:1",
+                "signature:sig_loc:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:5"
+        ],
+        "definition_id": "signature:sig_random:definition",
+        "pattern_id": "signature:sig_random",
+        "label": "Random pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_random:condition:0",
+                "signature:sig_random:condition:1",
+                "signature:sig_random:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:6"
+        ],
+        "definition_id": "signature:sig_scratch:definition",
+        "pattern_id": "signature:sig_scratch",
+        "label": "Scratch pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_scratch:condition:0",
+                "signature:sig_scratch:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:7"
+        ],
+        "definition_id": "signature:sig_near_full:definition",
+        "pattern_id": "signature:sig_near_full",
+        "label": "Near-full pattern family",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:sig_center:anomaly",
+            {
+              "all": [
+                "signature:sig_near_full:condition:0",
+                "signature:sig_near_full:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      }
+    ],
+    "mechanisms": [
+      {
+        "mechanism_id": "mechanism:wafer:spatial_central_cluster",
+        "label": "Central failure cluster"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_annular_ring",
+        "label": "Annular failure ring"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_localized_edge_cluster",
+        "label": "Localized edge cluster"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_peripheral_ring",
+        "label": "Peripheral ring of failures"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_single_localized_region",
+        "label": "Single localized region"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_scattered_failures",
+        "label": "Scattered failures"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_linear_streak",
+        "label": "Linear streak of failures"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_global_failure",
+        "label": "Global wafer-wide failure"
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_center",
+        "label": "Center",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_donut",
+        "label": "Donut",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_edge_loc",
+        "label": "Edge-Loc",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_edge_ring",
+        "label": "Edge-Ring",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_loc",
+        "label": "Loc",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_random",
+        "label": "Random",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_scratch",
+        "label": "Scratch",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_near_full",
+        "label": "Near-full",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1.0
+      }
+    ],
+    "effect_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_center:mechanism:wafer:spatial_central_cluster",
+        "from_id": "hypothesis:wafer:pattern_center",
+        "to_id": "mechanism:wafer:spatial_central_cluster"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_donut:mechanism:wafer:spatial_annular_ring",
+        "from_id": "hypothesis:wafer:pattern_donut",
+        "to_id": "mechanism:wafer:spatial_annular_ring"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:2:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_edge_loc:mechanism:wafer:spatial_localized_edge_cluster",
+        "from_id": "hypothesis:wafer:pattern_edge_loc",
+        "to_id": "mechanism:wafer:spatial_localized_edge_cluster"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:3:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_edge_ring:mechanism:wafer:spatial_peripheral_ring",
+        "from_id": "hypothesis:wafer:pattern_edge_ring",
+        "to_id": "mechanism:wafer:spatial_peripheral_ring"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:4:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_loc:mechanism:wafer:spatial_single_localized_region",
+        "from_id": "hypothesis:wafer:pattern_loc",
+        "to_id": "mechanism:wafer:spatial_single_localized_region"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:5:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_random:mechanism:wafer:spatial_scattered_failures",
+        "from_id": "hypothesis:wafer:pattern_random",
+        "to_id": "mechanism:wafer:spatial_scattered_failures"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:6:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_scratch:mechanism:wafer:spatial_linear_streak",
+        "from_id": "hypothesis:wafer:pattern_scratch",
+        "to_id": "mechanism:wafer:spatial_linear_streak"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:7:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_near_full:mechanism:wafer:spatial_global_failure",
+        "from_id": "hypothesis:wafer:pattern_near_full",
+        "to_id": "mechanism:wafer:spatial_global_failure"
+      }
+    ],
+    "expectation_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_central_cluster:signature:sig_center",
+        "from_id": "mechanism:wafer:spatial_central_cluster",
+        "pattern_id": "signature:sig_center",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_annular_ring:signature:sig_donut",
+        "from_id": "mechanism:wafer:spatial_annular_ring",
+        "pattern_id": "signature:sig_donut",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:2:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_localized_edge_cluster:signature:sig_edge_loc",
+        "from_id": "mechanism:wafer:spatial_localized_edge_cluster",
+        "pattern_id": "signature:sig_edge_loc",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:3:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_peripheral_ring:signature:sig_edge_ring",
+        "from_id": "mechanism:wafer:spatial_peripheral_ring",
+        "pattern_id": "signature:sig_edge_ring",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:4:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_single_localized_region:signature:sig_loc",
+        "from_id": "mechanism:wafer:spatial_single_localized_region",
+        "pattern_id": "signature:sig_loc",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:5:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_scattered_failures:signature:sig_random",
+        "from_id": "mechanism:wafer:spatial_scattered_failures",
+        "pattern_id": "signature:sig_random",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:6:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_linear_streak:signature:sig_scratch",
+        "from_id": "mechanism:wafer:spatial_linear_streak",
+        "pattern_id": "signature:sig_scratch",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:7:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_global_failure:signature:sig_near_full",
+        "from_id": "mechanism:wafer:spatial_global_failure",
+        "pattern_id": "signature:sig_near_full",
+        "mode": "expected"
+      }
+    ],
+    "execution_policy": {
+      "conflict_weight": 2.0,
+      "assumption_weight": 0.25,
+      "score_mapping": "negative_explanation_cost",
+      "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+      "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+      "positive_coverage": "complete_joint_pattern_only",
+      "group_aggregation": "equal_budget_normalized_mean",
+      "primitive_comparison": "discrete_boolean_v0",
+      "missing": "unknown_not_negative",
+      "tie_epsilon": 1e-9
+    },
+    "source_assertions": [
+      {
+        "assertion_id": "source:signature:0",
+        "origin": "llm_proposed",
+        "text": "Center pattern family: classifier label Center together with a central concentration of failed dies.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Center class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:1",
+        "origin": "source_explicit",
+        "text": "Center-type maps show a narrow but strong response concentrated in the central area, i.e. failures cluster at the wafer center.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:0",
+        "origin": "source_explicit",
+        "text": "Center is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:1",
+        "origin": "llm_proposed",
+        "text": "Donut pattern family: classifier label Donut together with a widened annular failure band.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Donut class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:1",
+        "origin": "source_explicit",
+        "text": "Donut resembles Center but its response band is wider, consistent with a ring of failures around the middle radius.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:0",
+        "origin": "source_explicit",
+        "text": "Donut is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:2",
+        "origin": "llm_proposed",
+        "text": "Edge-Loc pattern family: classifier label Edge-Loc with a compact localized cluster at the wafer edge.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Edge-Loc class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:1",
+        "origin": "llm_proposed",
+        "text": "Edge-Loc is a localized edge failure type, so failures concentrate in the edge zone.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:2",
+        "origin": "source_explicit",
+        "text": "Connected defective dice form regions that indicate specific failure patterns; a localized edge defect is dominated by one salient region.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:2:0",
+        "origin": "source_explicit",
+        "text": "Edge-Loc is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:3",
+        "origin": "llm_proposed",
+        "text": "Edge-Ring pattern family: classifier label Edge-Ring with failures distributed along the wafer border.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Edge-Ring class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:1",
+        "origin": "source_explicit",
+        "text": "Edge-Ring exhibits a strong response along the border of the response band, i.e. failures along the wafer edge.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:2",
+        "origin": "llm_proposed",
+        "text": "A ring-shaped border failure is not a single compact region but a distributed set of connected regions.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:3:0",
+        "origin": "source_explicit",
+        "text": "Edge-Ring is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:4",
+        "origin": "llm_proposed",
+        "text": "Loc pattern family: classifier label Loc with one dominant localized failure region.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:4:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Loc class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:4:1",
+        "origin": "source_explicit",
+        "text": "The most salient region (maximal area or perimeter) characterizes localized failure patterns.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:4:2",
+        "origin": "llm_proposed",
+        "text": "Loc is a small localized defect, so the overall failed-die fraction stays low.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:4:0",
+        "origin": "source_explicit",
+        "text": "Loc is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:5",
+        "origin": "llm_proposed",
+        "text": "Random pattern family: classifier label Random with scattered, non-dominant failure components.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:5:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Random class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:5:1",
+        "origin": "llm_proposed",
+        "text": "Random failures are scattered rather than forming one salient region, yielding many disconnected components.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:5:2",
+        "origin": "llm_proposed",
+        "text": "Scattered failures lack a single maximal-area region dominating the map.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:5:0",
+        "origin": "source_explicit",
+        "text": "Random is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:6",
+        "origin": "llm_proposed",
+        "text": "Scratch pattern family: classifier label Scratch with a strongly linear arrangement of failed dies.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:6:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Scratch class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:6:1",
+        "origin": "source_explicit",
+        "text": "Eccentricity of the estimated ellipse is 1 for a line, so a scratch-like defect is strongly linear.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:6:0",
+        "origin": "source_explicit",
+        "text": "Scratch is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:7",
+        "origin": "llm_proposed",
+        "text": "Near-full pattern family: classifier label Near-full with failures covering nearly the entire valid wafer area.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:7:0",
+        "origin": "source_explicit",
+        "text": "The ResNet classifier output for the wafer map is the Near-full class.",
+        "parameter_origin": "source_explicit",
+        "source_id": "radai-model-author-card",
+        "source_unit_id": "su_52f84aee3614ddfb",
+        "locator": "{\"char_end\": 5413, \"char_start\": 0, \"end_line\": 211, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:7:1",
+        "origin": "llm_proposed",
+        "text": "Near-full indicates that nearly the whole wafer map is defective, so the failed-die fraction is very high.",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:7:0",
+        "origin": "source_explicit",
+        "text": "Near-full is one of the eight typical wafer map failure types illustrated in the source.",
+        "parameter_origin": "source_explicit",
+        "source_id": "wm811k-original-paper",
+        "source_unit_id": "su_472e616c5ae83401",
+        "locator": "{\"char_end\": 7972, \"char_start\": 0, \"end_line\": 164, \"original_pdf_pages\": [3, 4], \"start_line\": 1, \"type\": \"text\"}"
+      }
+    ]
+  }
+}
