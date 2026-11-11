@@ -152,8 +152,16 @@ export function useAppPreferences(): AppPreferencesApi {
     preferences.value = readStoredAppPreferences()
   }
 
+  function syncStoragePreferences(event: StorageEvent) {
+    // Workbench selections also use localStorage, but must not reload preferences.
+    if ((event.key === APP_PREFERENCES_STORAGE_KEY || event.key === null)
+      && event.storageArea === window.localStorage) {
+      syncPreferences()
+    }
+  }
+
   onMounted(() => {
-    window.addEventListener('storage', syncPreferences)
+    window.addEventListener('storage', syncStoragePreferences)
     window.addEventListener(APP_PREFERENCES_UPDATED_EVENT, syncPreferences as EventListener)
   })
 
@@ -162,7 +170,7 @@ export function useAppPreferences(): AppPreferencesApi {
       return
     }
 
-    window.removeEventListener('storage', syncPreferences)
+    window.removeEventListener('storage', syncStoragePreferences)
     window.removeEventListener(APP_PREFERENCES_UPDATED_EVENT, syncPreferences as EventListener)
   })
 

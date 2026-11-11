@@ -2289,7 +2289,7 @@ async function handleFeedbackSubmit() {
 }
 
 watch(
-  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
+  [() => preferences.value.dataSourceMode, () => preferences.value.apiBaseUrl],
   () => {
     packageRevision += 1;
     packageBusy.value = false;
