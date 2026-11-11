@@ -72,7 +72,7 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host
 - `GET /api/tasks/{task_id}?after_sequence=0` → `Task`，events 仅含 sequence 大于游标的事件。
 - `POST /api/tasks/{task_id}/retry`：只对 failed/interrupted 创建**新 task**；保留原输入，不自动重试付费步骤。
 - `POST /api/tasks/material-parse`，JSON `{"material_ids":["id"],"force":false}`。
-- `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1,"candidate_limit":null}`。默认最多两次模型调用（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。第二次失败就停止，不自动新建任务。视觉／过程建议紧凑≤16候选，默认硬上限32，`candidate_limit`可明确设1–64；wafer仍只允许声明的8个图案类。超建议只警示并完整保留，超硬限明确失败；不截断／自动合并。
+- `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1,"candidate_limit":null}`。每任务最多两次客户端模型请求（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。source客户端关闭SDK自动传输重发；连接失败按原阶段终止，不进入知识修复，也不自动新建任务。视觉／过程建议紧凑≤16候选，默认硬上限32，`candidate_limit`可明确设1–64；wafer仍只允许声明的8个图案类。超建议只警示并完整保留，超硬限明确失败；不截断／自动合并。
 - `POST /api/tasks/inference`，multipart：`file`、可选 `reference_file`、`graph_id`、`reasoner_id`、`input_mode`、`dataset`、`object_name`、`model_preset`、`semantic_mode`、`windows`、`title`、`top_k`。`windows` 为 JSON `[[1,100],[161,260]]`；一基闭区间。
 - `POST /api/tasks/inference/demo`，JSON `{"sample_id":"...","graph_id":"...","reasoner_id":"unified_abduction","input_variant":"raw","top_k":5}`。`input_variant` 可选 `raw/evidence`，默认 raw。
 

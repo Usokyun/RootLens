@@ -82,6 +82,35 @@ class FakeLLM:
         return next(self.responses)
 
 
+def test_provider_transport_failure_does_not_trigger_repair(inputs, tmp_path):
+    units, cap, _ = inputs
+    stages = []
+
+    class FailedProvider:
+        calls = 0
+
+        def complete_json(self, **_kwargs):
+            self.calls += 1
+            raise TimeoutError("controlled provider timeout")
+
+    provider = FailedProvider()
+    output = tmp_path / "provider-failure"
+    with pytest.raises(TimeoutError, match="controlled provider timeout"):
+        compile_unified_knowledge(
+            units,
+            cap,
+            llm_client=provider,
+            output_dir=output,
+            title="Test",
+            dataset="mvtec",
+            max_repairs=1,
+            progress=lambda stage, _label, **_details: stages.append(stage),
+        )
+    assert provider.calls == 1
+    assert stages == ["llm"]
+    assert not list(output.glob("proposal-*.txt"))
+
+
 def test_compile_repair_exports_canonical_and_capabilities(inputs, tmp_path):
     units, cap, valid = inputs
     llm = FakeLLM(['{"wrong":1}', json.dumps(valid)])

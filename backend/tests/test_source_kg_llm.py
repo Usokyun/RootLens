@@ -1,5 +1,6 @@
 """API-contract tests for the source compiler's optional LLM client."""
 
+import sys
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -71,3 +72,27 @@ def test_chat_default_preserves_deepseek_contract():
 def test_invalid_wire_api_fails_early():
     with pytest.raises(ValueError, match="SOURCE_KG_LLM_API"):
         OpenAICompatibleSourceKGLLM(api_key="test-only", wire_api="invalid")
+
+
+@pytest.mark.parametrize("wire_api", ["chat_completions", "responses"])
+def test_source_sdk_disables_transport_retries_and_propagates_failure(monkeypatch, wire_api):
+    create = Mock(side_effect=TimeoutError("controlled provider timeout"))
+    sdk = Mock(
+        return_value=SimpleNamespace(
+            chat=SimpleNamespace(completions=SimpleNamespace(create=create)),
+            responses=SimpleNamespace(create=create),
+        )
+    )
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=sdk))
+    llm = OpenAICompatibleSourceKGLLM(
+        api_key="test-only", base_url="https://fixture.invalid/v1", wire_api=wire_api
+    )
+
+    with pytest.raises(TimeoutError, match="controlled provider timeout"):
+        llm.complete_json(system_prompt="JSON", user_prompt="public fixture")
+
+    sdk.assert_called_once_with(
+        api_key="test-only", base_url="https://fixture.invalid/v1", max_retries=0
+    )
+    create.assert_called_once()
+    assert llm.calls == 0  # No completed provider response was received.

@@ -143,7 +143,8 @@ class OpenAICompatibleSourceKGLLM:
                 from openai import OpenAI
             except ImportError as exc:  # pragma: no cover - optional dependency guard.
                 raise ImportError("Install the llm extra with: uv sync --extra llm") from exc
-            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            # The compiler owns the request budget; a transport failure must stop the task.
+            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url, max_retries=0)
             return self._client
 
 
