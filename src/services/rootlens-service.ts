@@ -6,7 +6,7 @@ import { canSubmitReviewTarget, mockBackend } from "@/services/mock-backend";
 type GraphService = Pick<ApiClient,
   "kgStudio" | "listWorkingGraphs" | "getWorkingGraphPackage" | "saveWorkingGraphPackage"
   | "importWorkingGraphPackage" | "mutateWorkingGraph" | "enableWorkingGraph"
-  | "listRuns" | "getRun" | "submitReview" | "listReviewLedger"
+  | "listRuns" | "listArchivedRuns" | "getRun" | "submitReview" | "listReviewLedger"
 >;
 
 async function requiresBackendGraph(): Promise<never> {
@@ -15,6 +15,7 @@ async function requiresBackendGraph(): Promise<never> {
 
 const offlineGraphService: GraphService = {
   listRuns: mockBackend.listRuns,
+  listArchivedRuns: requiresBackendGraph,
   getRun: (id, source) => source === "analysis-v2"
     ? Promise.reject(new Error("已保存分析属于 Backend；请退出回放并连接保存本次分析的服务。"))
     : mockBackend.getRun(id),

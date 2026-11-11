@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { graphRunRedirect } from '@/services/working-graph-workspace'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -22,12 +23,17 @@ export const router = createRouter({
     {
       path: '/graphs',
       name: 'graphs',
-      component: () => import('@/views/GraphExploreView.vue'),
+      component: () => import('@/views/GraphHomeView.vue'),
       meta: {
         label: '根因与图谱',
-        description: '围绕根因候选浏览总图、子图、路径与反馈链路。',
-        tags: ['Root Cause', 'Graph Explore', 'Feedback Review'],
+        description: '选择、检查和编辑当前工作图。',
       },
+    },
+    {
+      path: '/graphs/archive',
+      name: 'graph-archive',
+      component: () => import('@/views/GraphArchiveView.vue'),
+      meta: { label: '旧运行档案', description: '只读查看既有运行及其路径。' },
     },
     {
       path: '/materials',
@@ -46,3 +52,5 @@ export const router = createRouter({
     }
   },
 })
+
+router.beforeEach(to => to.name === 'graphs' ? graphRunRedirect(to.query) ?? undefined : undefined)

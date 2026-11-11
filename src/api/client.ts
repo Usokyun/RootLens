@@ -153,6 +153,7 @@ export interface ApiClient {
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
   enableWorkingGraph: (graphId: string, enabled: boolean) => Promise<WorkingGraphSummary>;
   listRuns: () => Promise<RunSummary[]>;
+  listArchivedRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string, source: RunSourceContract) => Promise<RunDetail>;
   submitReview: (
     request: ReviewRequest,
@@ -187,6 +188,8 @@ export interface ApiClient {
 }
 
 export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
+  const listArchivedRuns = async (): Promise<RunSummary[]> =>
+    (await requestJson<RunSummary[]>(baseUrl, "/api/runs")).map(run => ({ ...run, source_contract: "legacy-run" }));
   return {
     kgStudio: (graphId) => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio", undefined,
       graphId ? new URLSearchParams({ graph_id: graphId }) : undefined),
@@ -196,12 +199,13 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
     importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
     mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
     enableWorkingGraph: (id, enabled) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/enable`, jsonInit("POST", { enabled })),
+    listArchivedRuns,
     listRuns: async () => {
       const [legacy, current] = await Promise.all([
-        requestJson<RunSummary[]>(baseUrl, "/api/runs"),
+        listArchivedRuns(),
         requestJson<{ runs: Record<string, unknown>[] }>(baseUrl, "/api/analyses"),
       ]);
-      const merged = new Map<string, RunSummary>(legacy.map(run => [run.run_id, { ...run, source_contract: "legacy-run" }]));
+      const merged = new Map<string, RunSummary>(legacy.map(run => [run.run_id, run]));
       current.runs.forEach(run => merged.set(String(run.run_id), analysisRunSummary(run)));
       return [...merged.values()].sort((left, right) => right.created_at.localeCompare(left.created_at));
     },

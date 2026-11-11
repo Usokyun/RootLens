@@ -3,6 +3,7 @@ import { IconSync } from '@arco-design/web-vue/es/icon'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
 import { loadD3 } from '@/services/d3-loader'
+import type { GraphNodeAppearance } from '@/services/working-graph-view'
 import type {
   UnifiedGraphDataset,
   UnifiedGraphEdge,
@@ -50,6 +51,7 @@ interface RenderEdge extends Omit<UnifiedGraphEdge, 'source' | 'target'> {
 interface GraphScene {
   d3: any
   svg: any
+  zoom: any
   viewport: any
   links: any
   linkHitAreas: any
@@ -61,6 +63,7 @@ interface GraphScene {
   edgeItems: RenderEdge[]
   width: number
   height: number
+  labelWidths?: ReadonlyMap<string, number>
 }
 
 type GraphRenderPhase = 'bootstrapping' | 'layout' | 'stable' | 'error'
@@ -76,6 +79,9 @@ const props = defineProps<{
   focusedEdgeIds?: string[]
   selectedNodeId?: string | null
   selectedEdgeId?: string | null
+  semanticAppearance?: Readonly<Record<string, GraphNodeAppearance>>
+  searchMatches?: readonly string[]
+  ariaLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -148,6 +154,7 @@ const categoryIndexByName = computed(
 )
 
 const highlightedNodeIds = computed(() => {
+  if (props.searchMatches) return new Set(props.searchMatches)
   const keyword = props.searchTerm.trim().toLowerCase()
   if (!keyword) {
     return new Set<string>()
@@ -197,7 +204,7 @@ function resolveLineEndpoint(edge: RenderEdge) {
   const unitX = dx / distance
   const unitY = dy / distance
   const sourceOffset = sourceNode.radius + 2
-  const targetOffset = targetNode.radius + 12
+  const targetOffset = targetNode.radius + (props.semanticAppearance ? 4 : 12)
 
   return {
     x1: sourceNode.x + unitX * sourceOffset,
@@ -261,7 +268,8 @@ function applySceneForces() {
   }
 
   const simulation = scene.value.simulation
-  const defaultCharge = props.dataset.nodes.length > 300 ? -58 : -146
+  const semantic = !!props.semanticAppearance
+  const defaultCharge = semantic ? -70 : props.dataset.nodes.length > 300 ? -58 : -146
 
   simulation
     .force('cluster-x', null)
@@ -269,7 +277,7 @@ function applySceneForces() {
     .force('charge', scene.value.d3.forceManyBody().strength(defaultCharge))
     .force(
       'collide',
-      scene.value.d3.forceCollide().radius((node: RenderNode) => node.radius + 10).strength(0.82),
+      scene.value.d3.forceCollide().radius((node: RenderNode) => node.radius + (semantic ? 7 : 10)).strength(0.82),
     )
 }
 
@@ -336,6 +344,11 @@ function applyDecorations() {
   const selectedEdgesSet = selectedEdgeIds.value
   const hasSearch = keywordMatches.size > 0
   const hasFocus = focusedNodes.size > 0 || focusedEdgesSet.size > 0 || selectedNodes.size > 0 || selectedEdgesSet.size > 0
+
+  if (props.semanticAppearance) {
+    applySemanticDecorations(scene.value, props.semanticAppearance, keywordMatches, focusedNodes, focusedEdgesSet, selectedNodes, selectedEdgesSet)
+    return
+  }
 
   scene.value.circles
     .attr('r', (node: RenderNode) => {
@@ -524,6 +537,175 @@ function applyDecorations() {
     })
 }
 
+function nodeGlyph(shape: GraphNodeAppearance['shape'], r: number) {
+  switch (shape) {
+    case 'diamond': return `M0,${-r} L${r},0 0,${r} ${-r},0 Z`
+    case 'square': return `M${-r},${-r} H${r} V${r} H${-r} Z`
+    case 'ellipse': return `M${-r * 1.2},0 a${r * 1.2},${r * .76} 0 1,0 ${r * 2.4},0 a${r * 1.2},${r * .76} 0 1,0 ${-r * 2.4},0`
+    case 'circle': return `M${-r},0 a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 ${-r * 2},0`
+  }
+}
+
+function applySemanticDecorations(
+  current: GraphScene,
+  appearance: Readonly<Record<string, GraphNodeAppearance>>,
+  search: Set<string>, focus: Set<string>, edges: Set<string>, selectedNodes: Set<string>, selectedEdges: Set<string>,
+) {
+  const hasFocus = focus.size > 0 || edges.size > 0 || selectedNodes.size > 0 || selectedEdges.size > 0
+  const active = hasFocus || search.size > 0
+  current.circles
+    .attr('d', (node: RenderNode) => nodeGlyph(appearance[node.category]?.shape ?? 'circle', node.radius + (selectedNodes.has(node.id) ? 2 : 0)))
+    .attr('fill', (node: RenderNode) => appearance[node.category]?.color ?? '#98a3b1')
+    .attr('opacity', (node: RenderNode) => !active || selectedNodes.has(node.id) || search.has(node.id) || focus.has(node.id) ? 1 : .27)
+    .attr('stroke', (node: RenderNode) => selectedNodes.has(node.id) ? '#193d86' : search.has(node.id) ? '#2361c9' : '#fff')
+    .attr('stroke-width', (node: RenderNode) => selectedNodes.has(node.id) ? 2.5 : search.has(node.id) ? 2 : .8)
+
+  const isRelated = (edge: RenderEdge) => search.has(resolveEndpointId(edge.source)) || search.has(resolveEndpointId(edge.target))
+    || (focus.has(resolveEndpointId(edge.source)) && focus.has(resolveEndpointId(edge.target)))
+  current.links
+    .attr('opacity', (edge: RenderEdge) => selectedEdges.has(edge.id) ? 1 : edges.has(edge.id) ? .85
+      : !active ? .62 : isRelated(edge) ? .48 : .15)
+    .attr('stroke', (edge: RenderEdge) => selectedEdges.has(edge.id) ? '#1d4ed8' : edges.has(edge.id) ? '#4780ee' : '#91a4bc')
+    .attr('stroke-width', (edge: RenderEdge) => selectedEdges.has(edge.id) ? 2.2 : edges.has(edge.id) ? 1.5 : 1)
+  current.linkHitAreas.attr('tabindex', (edge: RenderEdge) => selectedEdges.has(edge.id) ? 0 : -1)
+  revealSemanticSelection(current)
+  placeSemanticLabels(current)
+}
+
+function revealSemanticSelection(current: GraphScene) {
+  const node = current.nodeItems.find(item => item.id === props.selectedNodeId)
+  const edge = current.edgeItems.find(item => item.id === props.selectedEdgeId)
+  const source = edge?.source as RenderNode | undefined, target = edge?.target as RenderNode | undefined
+  const point = node ?? (source && target ? { x: (source.x + target.x) / 2, y: (source.y + target.y) / 2 } : null)
+  if (!point) return
+  const transform = current.d3.zoomTransform(current.svg.node())
+  const [x, y] = transform.apply([point.x, point.y])
+  if (x >= 14 && x <= current.width - 14 && y >= 14 && y <= current.height - 30) return
+  current.svg.call(current.zoom.transform, current.d3.zoomIdentity
+    .translate(current.width / 2 - point.x * transform.k, current.height / 2 - point.y * transform.k).scale(transform.k))
+}
+
+type LabelBox = { left: number; right: number; top: number; bottom: number }
+type LabelPlacement = { dx: number; dy: number; anchor: 'start' | 'end' | 'middle' }
+const labelFontSize = 10.5
+
+function semanticCaption(node: RenderNode) {
+  // The full saved name remains available in the inspector and native tooltip.
+  const stem = /[\u3400-\u9fff]/.test(node.name) ? node.name.split(/[（(]/, 1)[0]?.trim() || node.name : node.name
+  return stem.length > 19 ? `${stem.slice(0, 18)}…` : stem
+}
+
+function placeSemanticLabels(current: GraphScene) {
+  const appearance = props.semanticAppearance
+  if (!appearance || !current.labelWidths) return
+  const transform = current.d3.zoomTransform(current.svg.node())
+  const scale = transform.k
+  const fontSize = clamp(labelFontSize * scale, 11, 13)
+  const selected = props.selectedNodeId, focus = focusRelatedNodeIds.value, search = highlightedNodeIds.value
+  const active = !!selected || !!props.selectedEdgeId || focus.size > 0 || search.size > 0
+  const score = (node: RenderNode) => (node.id === selected ? 1000 : search.has(node.id) ? 800 : focus.has(node.id) ? 500 : 0)
+    + (appearance[node.category]?.labelPriority ?? 0)
+  const ordered = current.nodeItems.filter(node => score(node) > (active ? 100 : 0))
+    .sort((a, b) => score(b) - score(a) || b.degree - a.degree)
+  const boxes: LabelBox[] = []
+  const placements = new Map<string, LabelPlacement>()
+  const budget = current.width >= 620 ? 10 : current.width >= 430 ? 8 : 5
+  const positions = current.nodeItems.map(node => ({ node, x: transform.applyX(node.x), y: transform.applyY(node.y) }))
+  const intersects = (a: LabelBox, b: LabelBox) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+
+  for (const node of ordered) {
+    if (placements.size >= budget) break
+    const x = transform.applyX(node.x), y = transform.applyY(node.y)
+    const offset = (node.radius + (node.id === selected ? 6 : 4)) * scale
+    const width = (current.labelWidths.get(node.id) ?? 0) * fontSize / labelFontSize * (node.id === selected ? 1.1 : 1)
+    const placementsNearNode: LabelPlacement[] = [
+      { dx: offset, dy: 4, anchor: 'start' }, { dx: -offset, dy: 4, anchor: 'end' },
+      { dx: 0, dy: -offset, anchor: 'middle' }, { dx: 0, dy: offset + fontSize, anchor: 'middle' },
+    ]
+    if ((appearance[node.category]?.labelPriority ?? 0) >= 40) placementsNearNode.push(
+      { dx: 0, dy: -offset - 10, anchor: 'middle' }, { dx: 0, dy: offset + fontSize + 10, anchor: 'middle' },
+    )
+    for (const placement of placementsNearNode) {
+      const left = x + placement.dx - (placement.anchor === 'start' ? 0 : placement.anchor === 'middle' ? width / 2 : width)
+      const box = { left: left - 2, right: left + width + 2, top: y + placement.dy - fontSize, bottom: y + placement.dy + 4 }
+      if (box.left < 6 || box.right > current.width - 6 || box.top < 5 || box.bottom > current.height - 28 || boxes.some(other => intersects(box, other))) continue
+      if (node.id !== selected && positions.some(other => {
+        if (other.node.id === node.id) return false
+        const r = (other.node.radius + 1.5) * scale
+        return intersects(box, { left: other.x - r, right: other.x + r, top: other.y - r, bottom: other.y + r })
+      })) continue
+      placements.set(node.id, placement)
+      boxes.push(box)
+      break
+    }
+  }
+  current.nodes.attr('tabindex', (node: RenderNode) => placements.has(node.id) || node.id === selected ? 0 : -1)
+  current.labels
+    .attr('display', (node: RenderNode) => props.showLabels && placements.has(node.id) ? null : 'none')
+    .attr('dx', (node: RenderNode) => (placements.get(node.id)?.dx ?? 0) / scale)
+    .attr('dy', (node: RenderNode) => (placements.get(node.id)?.dy ?? 0) / scale)
+    .attr('text-anchor', (node: RenderNode) => placements.get(node.id)?.anchor ?? 'start')
+    .attr('font-size', fontSize / scale)
+    .attr('font-weight', (node: RenderNode) => node.id === selected ? 650 : 450)
+}
+
+function sceneSize(host: HTMLDivElement) {
+  return {
+    width: Math.max(host.clientWidth, props.semanticAppearance ? 220 : 680),
+    height: Math.max(host.clientHeight, props.semanticAppearance ? 330 : 520),
+  }
+}
+
+function orientation(width: number, height: number) {
+  return width / height > 1.2 ? 'wide' : width / height < .84 ? 'tall' : 'natural'
+}
+
+/** Orient the force layout to the viewport without moving nodes relative to one another. */
+function orientSemanticLayout(current: GraphScene) {
+  const target = orientation(current.width, current.height)
+  if (target === 'natural' || current.nodeItems.length < 3) return
+  const items = current.nodeItems
+  const cx = items.reduce((sum, node) => sum + node.x, 0) / items.length
+  const cy = items.reduce((sum, node) => sum + node.y, 0) / items.length
+  let xx = 0, yy = 0, xy = 0
+  for (const node of items) {
+    const x = node.x - cx, y = node.y - cy
+    xx += x * x; yy += y * y; xy += x * y
+  }
+  if (Math.hypot(xx - yy, 2 * xy) < .1 * (xx + yy)) return
+  const principal = Math.atan2(2 * xy, xx - yy) / 2
+  const angle = (target === 'wide' ? 0 : Math.sign(principal || 1) * Math.PI / 2) - principal
+  if (Math.abs(angle) < .12) return
+  const cos = Math.cos(angle), sin = Math.sin(angle)
+  for (const node of items) {
+    const x = node.x - cx, y = node.y - cy
+    node.x = cx + x * cos - y * sin
+    node.y = cy + x * sin + y * cos
+  }
+}
+
+function zoomBy(factor: number) {
+  const current = scene.value
+  if (current) current.svg.call(current.zoom.scaleBy, factor)
+}
+
+function fitViewport() {
+  const current = scene.value
+  if (!current?.nodeItems.length) return
+  const { d3, svg, zoom, width, height, nodeItems } = current
+  const left = Math.min(...nodeItems.map(node => node.x - node.radius))
+  const right = Math.max(...nodeItems.map(node => node.x + node.radius))
+  const top = Math.min(...nodeItems.map(node => node.y - node.radius))
+  const bottom = Math.max(...nodeItems.map(node => node.y + node.radius))
+  // Leave room beside the outer nodes for the labels, not only for the glyphs.
+  const labelRoom = Math.min(74, width * .16)
+  const scale = clamp(Math.min((width - labelRoom - 36) / Math.max(right - left, 1), (height - 62) / Math.max(bottom - top, 1)), .36, width > 620 ? 1.38 : 1.2)
+  svg.call(zoom.transform, d3.zoomIdentity.translate((width - labelRoom + 18) / 2 - (left + right) * scale / 2,
+    (height - 14) / 2 - (top + bottom) * scale / 2).scale(scale))
+}
+
+defineExpose({ zoomBy, fitViewport })
+
 function scheduleTickRender() {
   if (!scene.value || tickFrame) {
     return
@@ -549,6 +731,7 @@ function scheduleTickRender() {
       .attr('y2', (edge: RenderEdge) => resolveLineEndpoint(edge).y2)
 
     scene.value.nodes.attr('transform', (node: RenderNode) => `translate(${node.x}, ${node.y})`)
+    if (props.semanticAppearance) placeSemanticLabels(scene.value)
 
     if (bootstrapping.value) {
       bootstrapping.value = false
@@ -569,12 +752,20 @@ function bindResizeObserver() {
       return
     }
 
-    const nextWidth = Math.max(chartRef.value.clientWidth, 680)
-    const nextHeight = Math.max(chartRef.value.clientHeight, 520)
+    const { width: nextWidth, height: nextHeight } = sceneSize(chartRef.value)
+    if (props.semanticAppearance && scene.value.width === nextWidth && scene.value.height === nextHeight) return
+    const orientationChanged = orientation(scene.value.width, scene.value.height) !== orientation(nextWidth, nextHeight)
 
     scene.value.width = nextWidth
     scene.value.height = nextHeight
     scene.value.svg.attr('viewBox', `0 0 ${nextWidth} ${nextHeight}`)
+    if (props.semanticAppearance) {
+      if (orientationChanged) orientSemanticLayout(scene.value)
+      fitViewport()
+      applyDecorations()
+      scheduleTickRender()
+      return
+    }
     scene.value.simulation.force('center', scene.value.d3.forceCenter(nextWidth / 2, nextHeight / 2))
     applySceneForces()
     scene.value.simulation.alpha(0.18).restart()
@@ -609,7 +800,7 @@ async function buildRenderNodes(
     nodeItems[index] = {
       ...node,
       categoryIndex: categoryIdx,
-      radius: Math.max(9, Math.min(30, 10 + Math.sqrt(node.degree || 1) * 2.6)),
+      radius: props.semanticAppearance?.[node.category]?.radius ?? Math.max(9, Math.min(30, 10 + Math.sqrt(node.degree || 1) * 2.6)),
       x: cached?.x ?? width / 2 + Math.cos(fallbackAngle) * fallbackRadius,
       y: cached?.y ?? height / 2 + Math.sin(fallbackAngle) * fallbackRadius,
       vx: cached?.vx ?? 0,
@@ -657,6 +848,8 @@ async function renderGraph() {
   layoutRunning.value = false
   statusMessage.value = '加载 D3 渲染器...'
   emitRenderState('bootstrapping', statusMessage.value)
+  const semantic = !!props.semanticAppearance
+  const previousTransform = semantic && scene.value ? scene.value.d3.zoomTransform(scene.value.svg.node()) : null
   stopScene()
 
   try {
@@ -666,8 +859,7 @@ async function renderGraph() {
       return
     }
 
-    const width = Math.max(chartRef.value.clientWidth, 680)
-    const height = Math.max(chartRef.value.clientHeight, 520)
+    const { width, height } = sceneSize(chartRef.value)
     const cachedLayout = layoutCache.get(props.dataset.id)
     const categoryIndex = categoryIndexByName.value
 
@@ -696,32 +888,32 @@ async function renderGraph() {
       .attr('width', '100%')
       .attr('height', '100%')
       .attr('viewBox', `0 0 ${width} ${height}`)
+    if (semantic) svg.attr('role', 'group').attr('aria-label', props.ariaLabel || '有向知识网络')
+    const arrowId = `graph-arrow-${props.dataset.id}`
 
     svg
       .append('defs')
       .append('marker')
-      .attr('id', `graph-arrow-${props.dataset.id}`)
+      .attr('id', arrowId)
       .attr('viewBox', '0 0 10 10')
-      .attr('refX', 11)
+      .attr('refX', semantic ? 10 : 11)
       .attr('refY', 5)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
+      .attr('markerWidth', semantic ? 5.5 : 8)
+      .attr('markerHeight', semantic ? 5.5 : 8)
+      .attr('markerUnits', semantic ? 'userSpaceOnUse' : null)
       .attr('orient', 'auto-start-reverse')
       .append('path')
       .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-      .attr('fill', '#8aa1bc')
+      .attr('fill', semantic ? 'context-stroke' : '#8aa1bc')
 
     const viewport = svg.append('g').attr('class', 'knowledge-graph-chart__viewport')
 
+    const zoom = d3.zoom().scaleExtent([0.36, 3.2]).on('zoom', (event: any) => {
+      viewport.attr('transform', event.transform)
+      if (semantic && scene.value) placeSemanticLabels(scene.value)
+    })
     svg
-      .call(
-        d3
-          .zoom()
-          .scaleExtent([0.36, 3.2])
-          .on('zoom', (event: any) => {
-            viewport.attr('transform', event.transform)
-          }),
-      )
+      .call(zoom)
       .on('dblclick.zoom', null)
       .on('click', () => {
         emit('select', null)
@@ -739,7 +931,7 @@ async function renderGraph() {
       .join('line')
       .attr('stroke-linecap', 'round')
       .attr('marker-end', (edge: RenderEdge) =>
-        edge.directed ? `url(#graph-arrow-${props.dataset.id})` : null,
+        edge.directed ? `url(#${arrowId})` : null,
       )
       .style('pointer-events', 'none')
 
@@ -815,21 +1007,37 @@ async function renderGraph() {
         emit('hover', null)
       })
 
+    if (semantic) {
+      const nodeLabel = (node: RenderNode) => `${readStringAttribute(node.attributes, 'kind_label') || node.kind}：${node.name}`
+      const edgeLabel = (edge: RenderEdge) => `${nodeById.value.get(resolveEndpointId(edge.source))?.name ?? resolveEndpointId(edge.source)} → ${nodeById.value.get(resolveEndpointId(edge.target))?.name ?? resolveEndpointId(edge.target)}：${edge.label || edge.relation}`
+      const keyboardClick = (event: KeyboardEvent) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        event.currentTarget?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      }
+      nodes.attr('data-node-id', (node: RenderNode) => node.id).attr('role', 'button').attr('aria-label', nodeLabel)
+        .on('keydown', keyboardClick).append('title').text(nodeLabel)
+      linkHitAreas.attr('data-edge-id', (edge: RenderEdge) => edge.id).attr('role', 'button').attr('aria-label', edgeLabel)
+        .on('keydown', keyboardClick).append('title').text(edgeLabel)
+      links.attr('data-edge-id', (edge: RenderEdge) => edge.id)
+    }
+
     const circles = nodes
-      .append('circle')
+      .append(semantic ? 'path' : 'circle')
+      .attr('class', semantic ? 'knowledge-graph-chart__semantic-node' : null)
       .attr('stroke-linejoin', 'round')
 
     const labels = nodes
       .append('text')
-      .attr('dx', 10)
+      .attr('dx', semantic ? 11 : 10)
       .attr('dy', 3)
-      .attr('font-size', 10.5)
-      .attr('fill', '#10253b')
+      .attr('font-size', labelFontSize)
+      .attr('fill', semantic ? 'var(--color-text-1, #10253b)' : '#10253b')
       .style('paint-order', 'stroke')
-      .style('stroke', 'rgba(255, 255, 255, 0.88)')
+      .style('stroke', semantic ? 'var(--color-fill-1, #f4f7fb)' : 'rgba(255, 255, 255, 0.88)')
       .style('stroke-width', 3)
       .style('pointer-events', 'none')
-      .text((node: RenderNode) => node.name)
+      .text((node: RenderNode) => semantic ? semanticCaption(node) : node.name)
 
     await waitForRenderTurn()
 
@@ -845,7 +1053,7 @@ async function renderGraph() {
           .forceLink(edgeItems)
           .id((node: RenderNode) => node.id)
           .distance((edge: RenderEdge) =>
-            props.dataset.nodes.length > 300
+            semantic ? 54 : props.dataset.nodes.length > 300
               ? 34
               : clamp(((edge.weight ?? edge.confidence ?? 0.42) + 0.18) * 112, 56, 136),
           )
@@ -857,6 +1065,8 @@ async function renderGraph() {
       .alpha(cachedLayout ? 0.42 : 0.95)
       .alphaDecay(props.dataset.nodes.length > 250 ? 0.08 : 0.055)
       .velocityDecay(0.34)
+    if (semantic) simulation.force('keep-near-x', d3.forceX(width / 2).strength(.035))
+      .force('keep-near-y', d3.forceY(height / 2).strength(.035))
 
     nodes.call(
       d3
@@ -885,6 +1095,7 @@ async function renderGraph() {
     scene.value = {
       d3,
       svg,
+      zoom,
       viewport,
       links,
       linkHitAreas,
@@ -896,15 +1107,18 @@ async function renderGraph() {
       edgeItems,
       width,
       height,
+      labelWidths: semantic ? new Map((labels.nodes() as SVGTextElement[]).map(label => [
+        (label as SVGTextElement & { __data__: RenderNode }).__data__.id, label.getComputedTextLength(),
+      ])) : undefined,
     }
 
     applySceneForces()
     applyDecorations()
-    window.requestAnimationFrame(() => {
-      if (version === renderVersion && scene.value) {
-        pulseGraphMotion()
-      }
-    })
+    if (!semantic) {
+      window.requestAnimationFrame(() => {
+        if (version === renderVersion && scene.value) pulseGraphMotion()
+      })
+    }
 
     layoutRunning.value = true
     simulation.on('tick', scheduleTickRender)
@@ -917,6 +1131,19 @@ async function renderGraph() {
         emitRenderState('stable', statusMessage.value)
       }
     })
+
+    if (semantic) {
+      simulation.stop().tick(86)
+      orientSemanticLayout(scene.value)
+      if (previousTransform) svg.call(zoom.transform, previousTransform)
+      else fitViewport()
+      scheduleTickRender()
+      cacheLayout()
+      bootstrapping.value = false
+      layoutRunning.value = false
+      statusMessage.value = '布局已稳定'
+      emitRenderState('stable', statusMessage.value)
+    }
 
     bindResizeObserver()
   } catch (error) {
@@ -939,6 +1166,7 @@ watch(
   [
     () => props.showLabels,
     () => props.searchTerm,
+    () => props.searchMatches,
     () => (props.focusedNodeIds ?? []).join('|'),
     () => (props.focusedEdgeIds ?? []).join('|'),
     () => props.selectedNodeId ?? '',
@@ -963,7 +1191,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="chartRef" class="knowledge-graph-chart">
+  <div ref="chartRef" class="knowledge-graph-chart" :class="{ 'knowledge-graph-chart--semantic': semanticAppearance }">
     <div ref="surfaceRef" class="knowledge-graph-chart__surface" />
 
     <transition name="graph-fade">
@@ -1002,6 +1230,19 @@ onBeforeUnmount(() => {
 .knowledge-graph-chart__surface {
   position: absolute;
   inset: 0;
+}
+
+.knowledge-graph-chart--semantic {
+  min-height: 330px;
+  border-radius: 0;
+  background: radial-gradient(circle, var(--color-border-2, #dbe2eb) .65px, transparent .8px) 0 0 / 15px 15px,
+    var(--color-fill-1, #f5f7fa);
+}
+
+.knowledge-graph-chart--semantic :deep(g[role='button']:focus-visible) { outline: none; }
+.knowledge-graph-chart--semantic :deep(g[role='button']:focus-visible path) {
+  stroke: var(--color-primary-6, #165dff);
+  stroke-width: 2.5px;
 }
 
 .knowledge-graph-chart__overlay {

@@ -47,6 +47,7 @@ import {
 } from "@/services/graph-curation";
 import { useAppPreferences } from "@/services/app-preferences";
 import { newAnalysisRoute, savedAnalysisIntent, savedAnalysisRoute } from "@/services/analysis-entry";
+import { graphArchiveRoute } from "@/services/working-graph-workspace";
 import {
   buildCandidateSelectionPatch,
   buildLocalGraphSelectionPatch,
@@ -126,6 +127,7 @@ interface CurationSuggestion {
 
 const route = useRoute();
 const router = useRouter();
+const props = defineProps<{ archiveOnly?: boolean }>();
 const { preferences } = useAppPreferences();
 const { state: workbenchState, updateState } = useWorkbenchState();
 
@@ -141,7 +143,7 @@ const packageBaseline = ref("");
 const packageGraphId = ref<string | null>(null);
 const packageBusy = ref(false);
 const workingGraphs = ref<WorkingGraphSummary[]>([]);
-const editableGraphId = computed(() => preferences.value.dataSourceMode === "backend"
+const editableGraphId = computed(() => !props.archiveOnly && preferences.value.dataSourceMode === "backend"
   && getLocalSessionMeta()?.source !== "import" ? kgStudio.value?.graph_id : undefined);
 const currentWorkingGraph = computed(() => workingGraphs.value.find(item => item.graph_id === editableGraphId.value));
 const packageGraph = computed(() => workingGraphs.value.find(item => item.graph_id === packageGraphId.value));
@@ -262,7 +264,7 @@ const reviewMessage = ref("");
 const totalGraphRenderMessage = ref("正在准备总图谱...");
 const localGraphRenderMessage = ref("正在准备局部子图...");
 const actionMessage = ref("");
-const feedbackCardTab = ref<"rca" | "curation" | "trace" | "ledger">("rca");
+const feedbackCardTab = ref<"rca" | "curation" | "trace" | "ledger">(props.archiveOnly ? "trace" : "rca");
 const crossCaseCompareOpen = ref(false);
 const selectedTraceStepId = ref<string | null>(null);
 const provenanceInspectorVisible = ref(false);
@@ -645,7 +647,7 @@ const pathSubgraphDataset = computed<UnifiedGraphDataset | null>(() => {
   }
 
   const dataset = buildPathSubgraphDataset(activePathGraph.value);
-  return isSavedAnalysis.value ? dataset : applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
+  return props.archiveOnly || isSavedAnalysis.value ? dataset : applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
 });
 
 const neighborhoodGraphDataset = computed<UnifiedGraphDataset | null>(() => {
@@ -1730,6 +1732,12 @@ function jumpToRecurringCase(hit: RecurrenceCaseHit) {
 }
 
 function syncRouteQuery(runId: string | null, caseId: string | null) {
+  if (props.archiveOnly) {
+    if (queryText(route.query.run_id) !== runId || queryText(route.query.case_id) !== caseId) {
+      void router.replace(graphArchiveRoute(runId ?? undefined, caseId));
+    }
+    return;
+  }
   const backend = preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import";
   const source = backend ? runDetail.value?.run.source_contract ?? null : null;
   const nextQuery = {
@@ -1840,6 +1848,7 @@ function updateSelectedNodeDraft(patch: Partial<MockGraphNodeDraft>) {
 }
 
 async function saveCurrentCaseDraft() {
+  if (props.archiveOnly) return;
   if (inspectingSavedPath.value) return;
   const caseId = activeCase.value?.case_id;
   const currentDraft = activeWorkingCaseDraft.value;
@@ -2093,7 +2102,7 @@ function handleLocalGraphSelect(payload: LocalGraphSelectPayload) {
   updateState(patch);
 
   if (
-    shouldAutoOpenCurationTabOnLocalGraphSelect({
+    !props.archiveOnly && shouldAutoOpenCurationTabOnLocalGraphSelect({
       hasActiveCandidate: Boolean(activeCandidate.value),
       payload,
     })
@@ -2111,6 +2120,7 @@ function handleRunChange(value: unknown) {
   pendingCaseSelectionPatch.value = null;
   selectedTraceStepId.value = null;
   crossCaseCompareOpen.value = false;
+  if (props.archiveOnly) { void router.replace(graphArchiveRoute(runId)); return; }
   const summary = runs.value.find(item => item.run_id === runId);
   const backend = preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import";
   const source = backend ? summary?.source_contract : undefined;
@@ -2153,12 +2163,12 @@ async function refreshWorkspace() {
     const replayActive = getLocalSessionMeta()?.source === "import";
     const useLocalGraphs =
       replayActive || preferences.value.dataSourceMode !== "backend";
-    const savedIntent = savedAnalysisIntent(route.query);
-    const requestedGraph = queryText(route.query.graph);
+    const savedIntent = props.archiveOnly ? null : savedAnalysisIntent(route.query);
+    const requestedGraph = props.archiveOnly ? null : queryText(route.query.graph);
     const requestedRun = savedIntent?.runId ?? queryText(route.query.run_id);
     const requestedFrame = savedIntent?.frameId ?? queryText(route.query.case_id);
-    const runSource = savedIntent ? "analysis-v2" : route.query.source === "legacy-run" ? "legacy-run" : null;
-    if (useLocalGraphs && (runSource || requestedGraph)) {
+    const runSource = savedIntent ? "analysis-v2" : props.archiveOnly || route.query.source === "legacy-run" ? "legacy-run" : null;
+    if (useLocalGraphs && (props.archiveOnly || runSource || requestedGraph)) {
       runs.value = [];
       throw new Error("此链接指向后端保存结果或工作图，请切换 Backend 后查看。");
     }
@@ -2167,9 +2177,9 @@ async function refreshWorkspace() {
       ? loadUnifiedGraphs()
       : requestedGraph ? service.kgStudio(requestedGraph) : Promise.resolve(null);
     const [runsResult, graphResult, registryResult, explicitRunResult] = await Promise.allSettled([
-      service.listRuns(),
+      props.archiveOnly ? service.listArchivedRuns() : service.listRuns(),
       graphTask,
-      useLocalGraphs ? Promise.resolve({ graphs: [] }) : service.listWorkingGraphs(),
+      useLocalGraphs || props.archiveOnly ? Promise.resolve({ graphs: [] }) : service.listWorkingGraphs(),
       requestedRun && (runSource || useLocalGraphs) ? service.getRun(requestedRun, runSource ?? "legacy-run") : Promise.resolve(null),
     ] as const);
 
@@ -2226,7 +2236,7 @@ async function refreshWorkspace() {
       syncRouteQuery(detail.run.run_id, nextSelection.selectedCaseId);
     }
 
-    if (!useLocalGraphs && !requestedGraph) {
+    if (!useLocalGraphs && !requestedGraph && !props.archiveOnly) {
       const graphId = detail?.reasoning_metadata?.graph_id ?? detail?.cases[0]?.reasoning_metadata?.graph_id;
       if (detail?.run.source_contract === "analysis-v2" && !graphId) {
         totalGraphRenderMessage.value = "保存结果未记录登记图；本次路径仍可独立查看。";
@@ -2250,6 +2260,7 @@ async function refreshWorkspace() {
 }
 
 async function handleFeedbackSubmit() {
+  if (props.archiveOnly) return;
   if (!activeCase.value || !activeSubmitTarget.value) {
     reviewMessage.value = "当前没有可提交的反馈目标。";
     return;
@@ -2293,7 +2304,7 @@ watch(
 watch(
   () => [queryText(route.query.run_id), queryText(route.query.case_id), queryText(route.query.source), queryText(route.query.graph)] as const,
   ([runId, caseId, source, graphId], [, , , previousGraphId]) => {
-    if (route.name !== "graphs") return;
+    if (route.name !== (props.archiveOnly ? "graph-archive" : "graphs")) return;
     if (!runId && graphId && kgStudio.value?.graph_id === graphId && !runDetail.value) return;
     if (runId && runId === runDetail.value?.run.run_id && graphId === previousGraphId
         && (source === "analysis-v2") === isSavedAnalysis.value) {
@@ -2353,7 +2364,7 @@ watch(
       return;
     }
 
-    ensureCaseDraftLoaded(caseId);
+    if (!props.archiveOnly) ensureCaseDraftLoaded(caseId);
     actionMessage.value = "";
 
     if (caseId !== previousCaseId) {
@@ -2475,7 +2486,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
   >
     <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
 
-    <a-drawer v-model:visible="packageDrawerOpen" title="工作图与可执行画像" :width="760" :footer="false">
+    <a-drawer v-if="!archiveOnly" v-model:visible="packageDrawerOpen" title="工作图与可执行画像" :width="760" :footer="false">
       <a-space direction="vertical" fill>
         <a-select placeholder="选择工作图" :model-value="packageGraphId ?? undefined" :disabled="packageBusy" @change="(id: string) => selectPackageGraph(id)">
           <a-option v-for="graph in workingGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }} · {{ graph.dataset }}</a-option>
@@ -2499,7 +2510,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
     </a-drawer>
     <section class="workspace-shell">
       <div class="workspace-shell__main workspace-stack">
-        <article class="rl-section-card">
+        <article v-if="!archiveOnly" class="rl-section-card">
           <header class="rl-section-card__header">
             <div>
               <h3 class="rl-section-card__title">
@@ -2549,7 +2560,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title">
-                  <SectionCardTitle :title="localGraphTitle" :help="localGraphHelp">
+                  <SectionCardTitle :title="archiveOnly ? '本次保存路径' : localGraphTitle" :help="localGraphHelp">
                     <icon-relation />
                   </SectionCardTitle>
                 </h3>
@@ -2585,7 +2596,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
           <article class="rl-section-card workspace-feedback-card workspace-graph-bottom-card">
             <header class="rl-section-card__header workspace-feedback-card__header">
               <h3 class="rl-section-card__title">
-                <SectionCardTitle title="审阅与策展卡" :help="feedbackCardHelp">
+                <SectionCardTitle :title="archiveOnly ? '档案解释' : '审阅与策展卡'" :help="feedbackCardHelp">
                   <icon-info-circle />
                 </SectionCardTitle>
               </h3>
@@ -2653,7 +2664,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
                       </div>
                     </div>
 
-                    <div class="workspace-feedback-compact__decision-bar">
+                    <div v-if="!archiveOnly" class="workspace-feedback-compact__decision-bar">
                       <a-button
                         size="small"
                         :type="feedbackForm.action === 'accept' ? 'primary' : 'outline'"
@@ -2674,6 +2685,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
                     </div>
 
                     <a-form-item
+                      v-if="!archiveOnly"
                       field="note"
                       label="备注"
                       :label-attrs="{ for: 'graph-feedbackForm-note-input' }"
@@ -2692,7 +2704,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
                       />
                     </a-form-item>
 
-                    <div class="workspace-feedback-compact__footer">
+                    <div v-if="!archiveOnly" class="workspace-feedback-compact__footer">
                       <a-button type="primary" @click="handleFeedbackSubmit">
                         <template #icon>
                           <icon-send />
@@ -2710,7 +2722,7 @@ onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
                     />
                   </a-form>
                 </a-tab-pane>
-                <a-tab-pane key="curation" title="策展">
+                <a-tab-pane v-if="!archiveOnly" key="curation" title="策展">
                   <section v-if="inspectingSavedPath" class="workspace-feedback-pane workspace-feedback-pane--curation">
                     <div class="workspace-claim-note workspace-claim-note--compact">
                       <strong>本次保存路径 · 只读</strong>

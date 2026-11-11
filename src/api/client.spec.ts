@@ -83,6 +83,13 @@ describe('explicit graph history reads', () => {
   const archive = { run_id: 'old-run', created_at: '2026-11-10' }
   const base = 'https://history.example'
 
+  it('lists only the saved old runs in the read-only archive', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => [archive] })
+    vi.stubGlobal('fetch', fetch)
+    await expect(createApiClient(base).listArchivedRuns()).resolves.toEqual([{ ...archive, source_contract: 'legacy-run' }])
+    expect(fetch.mock.calls.map(call => call[0])).toEqual([`${base}/api/runs`])
+  })
+
   it('opens an explicit saved analysis before any catalog read', async () => {
     const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => native })
     vi.stubGlobal('fetch', fetch)

@@ -11,11 +11,12 @@ import {
   IconStorage,
 } from '@arco-design/web-vue/es/icon'
 import type { Component } from 'vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, provide, reactive, ref, shallowRef } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAppPreferences } from '@/services/app-preferences'
 import { useWorkbenchState } from '@/services/workbench-state'
+import { useGraphReplay, workingGraphLeaveGuardKey } from '@/services/working-graph-workspace'
 
 interface NavItem {
   name: 'materials' | 'evidence' | 'graphs'
@@ -45,7 +46,8 @@ const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
 const isSavedAnalysis = computed(() => route.name === 'saved-analysis')
-const siderCollapsed = computed(() => isSavedAnalysis.value || collapsed.value)
+const graphLeaveGuard = shallowRef<(() => Promise<boolean>) | null>(null)
+provide(workingGraphLeaveGuardKey, graphLeaveGuard)
 const backendConfigModalVisible = ref(false)
 const backendConfigForm = reactive({
   host: '127.0.0.1',
@@ -53,6 +55,10 @@ const backendConfigForm = reactive({
 })
 const { preferences, updatePreferences } = useAppPreferences()
 const { state: workbenchState } = useWorkbenchState()
+const graphReplay = useGraphReplay()
+const isWorkingGraph = computed(() => route.name === 'graphs' && (!!graphLeaveGuard.value
+  || (preferences.value.dataSourceMode === 'backend' && !graphReplay.value)))
+const siderCollapsed = computed(() => isSavedAnalysis.value || isWorkingGraph.value || collapsed.value)
 
 const sourceModeOptions = [
   { value: 'mock', label: 'Demo', icon: IconStorage },
@@ -61,6 +67,7 @@ const sourceModeOptions = [
 
 const activeMenuKey = computed(() => {
   if (isSavedAnalysis.value) return 'evidence'
+  if (route.name === 'graph-archive') return 'graphs'
   const matched = navItems.find((item) => item.name === route.name)
   return matched?.name ?? 'evidence'
 })
@@ -71,6 +78,7 @@ const currentPageLabel = computed(() => {
 
 const currentContextLabel = computed(() => {
   if (isSavedAnalysis.value) return '保存运行'
+  if (isWorkingGraph.value) return '当前工作图'
   return [workbenchState.value.selectedRunId, workbenchState.value.selectedCaseId].filter(Boolean).join(' / ') || '未选择上下文'
 })
 
@@ -110,7 +118,9 @@ function handleNavigate(key: string | number) {
   })
 }
 
-function handleSourceModeChange(mode: 'mock' | 'backend') {
+async function handleSourceModeChange(mode: 'mock' | 'backend') {
+  if (mode === preferences.value.dataSourceMode) return
+  if (graphLeaveGuard.value && !await graphLeaveGuard.value()) return
   updatePreferences({
     dataSourceMode: mode,
   })
@@ -128,15 +138,17 @@ function handleBackendConfigReset() {
   backendConfigForm.port = '8000'
 }
 
-function handleBackendConfigSave() {
+async function handleBackendConfigSave() {
   const host = backendConfigForm.host.trim() || '127.0.0.1'
   const parsedPort = Number.parseInt(backendConfigForm.port.trim(), 10)
   const port = Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : '8000'
 
-  updatePreferences({
-    apiBaseUrl: `http://${host}:${port}`,
-  })
-  backendConfigModalVisible.value = false
+  const apiBaseUrl = `http://${host}:${port}`
+  if (apiBaseUrl !== preferences.value.apiBaseUrl) {
+    if (graphLeaveGuard.value && !await graphLeaveGuard.value()) return false
+    updatePreferences({ apiBaseUrl })
+  }
+  return true
 }
 </script>
 
@@ -212,7 +224,7 @@ function handleBackendConfigSave() {
           </a-menu>
 
           <a-button
-            v-if="!isSavedAnalysis"
+            v-if="!isSavedAnalysis && !isWorkingGraph"
             type="text"
             shape="square"
             class="app-sider-menu__collapse-btn"
@@ -224,7 +236,7 @@ function handleBackendConfigSave() {
           </a-button>
         </a-layout-sider>
 
-        <a-layout-content class="ads-brain-workbench-layout__content" :class="{ 'workbench-content--saved-analysis': isSavedAnalysis }">
+        <a-layout-content class="ads-brain-workbench-layout__content" :class="{ 'workbench-content--saved-analysis': isSavedAnalysis, 'workbench-content--working-graph': isWorkingGraph }">
           <RouterView />
         </a-layout-content>
       </a-layout>
@@ -233,7 +245,7 @@ function handleBackendConfigSave() {
         v-model:visible="backendConfigModalVisible"
         title="修改后端地址"
         width="420px"
-        @ok="handleBackendConfigSave"
+        :on-before-ok="handleBackendConfigSave"
       >
         <a-form
           id="app-form-1"
@@ -291,7 +303,8 @@ function handleBackendConfigSave() {
 </template>
 
 <style scoped>
-.workbench-content--saved-analysis {
+.workbench-content--saved-analysis,
+.workbench-content--working-graph {
   display: flex;
   min-height: 0;
   min-width: 0;
