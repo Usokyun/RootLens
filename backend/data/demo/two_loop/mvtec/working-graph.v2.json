@@ -1,23 +1,23 @@
 {
   "schema_version": "rootlens-working-graph.v2",
-  "graph_id": "graph_bc3893b9ae3d4a65bc3c75835ccc57a4",
-  "title": "MVTec Bottle · 玻璃容器局部几何",
+  "graph_id": "graph_94f38a08cc644cfabe075ebbabfff0f9",
+  "title": "MVTec Bottle · 局部掩膜几何与偏心",
   "dataset": "mvtec",
-  "build_id": "task_5773d5820a55463eb4f9be35d5766c35",
+  "build_id": "task_f2d0fc99637943558fd1826d538c3b4e",
   "knowledge": {
     "schema_version": "rootlens-knowledge-package.v2",
     "example_kind": null,
-    "graph_id": "graph_bc3893b9ae3d4a65bc3c75835ccc57a4",
+    "graph_id": "graph_94f38a08cc644cfabe075ebbabfff0f9",
     "semantics_version": "conjunctive-explanation-v0",
-    "title": "玻璃瓶局部异常几何证据演示知识蓝图",
+    "title": "玻璃瓶局部异常区域形态与待排查成因（演示）",
     "entities": [
       {
         "entity_id": "entity:industrial.object:bottle",
-        "label": "玻璃瓶 · Bottle",
+        "label": "玻璃瓶 · Bottle（单区域）",
         "kind": "Object",
         "aliases": [
           "玻璃容器",
-          "MVTec Bottle"
+          "MVTec Bottle（检测对象）"
         ]
       }
     ],
@@ -147,7 +147,7 @@
           "source:condition:0:0"
         ],
         "predicate_id": "signature:large_nonslender_local_anomaly:condition:0",
-        "label": "异常区域像素数占检测网格总像素数至少10%",
+        "label": "区域面积占检测网格至少10%",
         "feature_id": "geometry.area_ratio",
         "op": "gte",
         "operand": {
@@ -168,12 +168,33 @@
           "source:condition:0:1"
         ],
         "predicate_id": "signature:large_nonslender_local_anomaly:condition:1",
-        "label": "异常区域包围框长边不超过短边的2倍",
+        "label": "包围框长边不超过短边2倍",
         "feature_id": "geometry.aspect_ratio",
         "op": "lte",
         "operand": {
           "kind": "number",
           "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:2"
+        ],
+        "predicate_id": "signature:large_nonslender_local_anomaly:condition:2",
+        "label": "主轴离心率不超过0.90",
+        "feature_id": "geometry.eccentricity",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.9,
           "unit": "1"
         },
         "subject_selector": {
@@ -192,7 +213,7 @@
         ],
         "definition_id": "signature:large_nonslender_local_anomaly:definition",
         "pattern_id": "signature:large_nonslender_local_anomaly",
-        "label": "较大且不细长的局部异常响应",
+        "label": "较大且不显著单轴拉伸的局部异常响应",
         "semantics": "iff",
         "body": {
           "all": [
@@ -200,7 +221,8 @@
             {
               "all": [
                 "signature:large_nonslender_local_anomaly:condition:0",
-                "signature:large_nonslender_local_anomaly:condition:1"
+                "signature:large_nonslender_local_anomaly:condition:1",
+                "signature:large_nonslender_local_anomaly:condition:2"
               ]
             }
           ]
@@ -276,47 +298,56 @@
       {
         "assertion_id": "source:signature:0",
         "origin": "source_explicit",
-        "text": "较大且不细长的局部异常响应：面积占比≥10%且长宽比≤2，两种工艺解释并列且掩膜几何不区分它们。",
+        "text": "同一主体同一区域上面积、长短比与离心率三项同时成立，构成较大且不显著单轴拉伸的局部异常响应；该组观测不区分两个待排查解释。",
         "parameter_origin": "source_explicit",
-        "source_id": "demo_mvtec_bottle_006_public_source_20261111",
-        "source_unit_id": "su_ad521dbfdd4da79e",
-        "locator": "{\"char_end\": 785, \"char_start\": 0, \"end_line\": 21, \"start_line\": 1, \"type\": \"text\"}"
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
       },
       {
         "assertion_id": "source:condition:0:0",
         "origin": "declared_demo_heuristic",
         "text": "连通区域像素数占检测网格总像素数至少10%（演示启发式阈值）。",
         "parameter_origin": "declared_demo_heuristic",
-        "source_id": "demo_mvtec_bottle_006_public_source_20261111",
-        "source_unit_id": "su_ad521dbfdd4da79e",
-        "locator": "{\"char_end\": 785, \"char_start\": 0, \"end_line\": 21, \"start_line\": 1, \"type\": \"text\"}"
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
       },
       {
         "assertion_id": "source:condition:0:1",
         "origin": "declared_demo_heuristic",
-        "text": "该区域轴对齐包围框长边不超过短边的2倍（演示启发式阈值）。",
+        "text": "区域轴对齐包围框长边不超过短边2倍（演示启发式阈值）。",
         "parameter_origin": "declared_demo_heuristic",
-        "source_id": "demo_mvtec_bottle_006_public_source_20261111",
-        "source_unit_id": "su_ad521dbfdd4da79e",
-        "locator": "{\"char_end\": 785, \"char_start\": 0, \"end_line\": 21, \"start_line\": 1, \"type\": \"text\"}"
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:2",
+        "origin": "declared_demo_heuristic",
+        "text": "区域像素坐标主轴离心率不超过0.90，用于补充包围框长短比（演示启发式阈值）。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
       },
       {
         "assertion_id": "source:cause:0:0",
         "origin": "source_explicit",
-        "text": "本工位接触可能引入局部表面扰动，经局部表面反差改变解释该响应。",
+        "text": "本工位取放接触扰动是待排查假设，可经局部表面反差改变呈现该形态。",
         "parameter_origin": "source_explicit",
-        "source_id": "demo_mvtec_bottle_006_public_source_20261111",
-        "source_unit_id": "su_ad521dbfdd4da79e",
-        "locator": "{\"char_end\": 785, \"char_start\": 0, \"end_line\": 21, \"start_line\": 1, \"type\": \"text\"}"
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
       },
       {
         "assertion_id": "source:cause:0:1",
         "origin": "source_explicit",
-        "text": "进入工位前已有的表面损伤可能在检查时呈现相似响应。",
+        "text": "进入工位前已有局部表面损伤是待排查假设，可经同一局部表面反差改变机理呈现该形态。",
         "parameter_origin": "source_explicit",
-        "source_id": "demo_mvtec_bottle_006_public_source_20261111",
-        "source_unit_id": "su_ad521dbfdd4da79e",
-        "locator": "{\"char_end\": 785, \"char_start\": 0, \"end_line\": 21, \"start_line\": 1, \"type\": \"text\"}"
+        "source_id": "demo_mvtec_bottle_006_eccentricity_20261111",
+        "source_unit_id": "su_c1df540751c17bbc",
+        "locator": "{\"char_end\": 868, \"char_start\": 0, \"end_line\": 17, \"start_line\": 1, \"type\": \"text\"}"
       }
     ]
   }

@@ -1,7 +1,7 @@
 """Check the shipped demo catalog and prepare optional local assets.
 
 From backend/: uv run --no-sync python scripts/prepare_two_loop_demo.py --dataset mvtec
-Add --download to fetch the pinned Bottle PatchCore checkpoint for raw input.
+Add --download for the chosen scene’s pinned optional raw assets.
 This command never regenerates the catalog, graph packages, or exported Evidence.
 """
 
@@ -19,20 +19,8 @@ from tempfile import NamedTemporaryFile
 ROOT = Path(__file__).resolve().parents[1]
 SMALL = ROOT / "data/demo/two_loop"
 RUNTIME = ROOT / "runs/two_loop_demo"
-EARLIER = ROOT / "runs/unified_reasoning"
 PUBLIC = ROOT / "runs/refactor_m2_m6/public"
-
-TEP_BASE = "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/"
-PREPARATION_ERRORS: list[dict] = []
 MVTEC_MODEL_MANIFEST = "runs/two_loop_demo/mvtec-demo-models.json"
-WAFER_INPUT_URL = (
-    "https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/main/test.pkl"
-)
-WAFER_SAMPLE_IDS = {
-    "wafer-nearfull": "248536",
-    "wafer-normal": "5",
-    "wafer-pattern-disagreement": "31707",
-}
 
 
 def write_json(path: Path, value: object) -> None:
@@ -42,108 +30,108 @@ def write_json(path: Path, value: object) -> None:
     temporary.replace(path)
 
 
-def stage(source: Path, destination: Path, *, url: str | None, download: bool) -> Path:
-    """Never replace an existing raw asset or retrieve private/user material."""
-    if destination.exists():
-        return destination
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if source.exists():
-        shutil.copy2(source, destination)
-    elif download and url:
-        temporary = destination.with_suffix(destination.suffix + ".part")
-        try:
-            with urllib.request.urlopen(url, timeout=120) as response, temporary.open("wb") as out:
-                shutil.copyfileobj(response, out)
-            temporary.rename(destination)
-        except OSError as exc:
-            PREPARATION_ERRORS.append(
-                {"asset": str(destination.relative_to(ROOT)), "url": url, "error": str(exc)}
-            )
-        finally:
-            temporary.unlink(missing_ok=True)
-    return destination
-
-
-def hydrate_process_support(frame: dict, sample: dict) -> None:
-    """Restore omitted numerical assets from the same public input and matched reference."""
-    assets = {a["asset_id"]: a for a in frame["assets"]}
-    if sample["dataset"] != "tep" or all(
-        (ROOT / assets[name]["uri"]).is_file() for name in ("window", "normal", "scaler")
-    ):
-        return
-    normal, sequence = ROOT / sample["normal_reference"]["path"], ROOT / sample["raw_input"]["path"]
-    if not normal.is_file() or not sequence.is_file():
-        return
+def hydrate_process_support(frames: list, sample: dict) -> None:
+    """Rebuild optional arrays into manifest destinations, never saved Frame URIs."""
     from kgtracevis.adapters.batch import evidence_from_records
     from kgtracevis.adapters.unified import evidence_frames
     from kgtracevis.producers.tep_records import build_tep_dat_records
 
-    scope = next(s for s in frame["scopes"] if s["scope_id"] == frame["task"]["scope_id"])
-    output = RUNTIME / f"prepared_process/{sample['sample_id']}"
+    def window(frame):
+        scope = next(s for s in frame.scopes if s.scope_id == frame.task.scope_id)
+        return scope.sample_start, scope.sample_end, scope.sampling_seconds
+
+    targets = {
+        (asset.get("frame_case_id"), asset.get("case_asset_id") or asset["frame_asset_id"]): ROOT
+        / asset["path"]
+        for asset in sample["supporting_assets"]
+    }
+    cases = {frame.case_id for frame in frames}
+    expected = {(case_id, "window") for case_id in cases} | {(None, "normal"), (None, "scaler")}
+    if (
+        set(targets) != expected
+        or len(set(targets.values())) != len(expected)
+        or any(not path.resolve().is_relative_to(RUNTIME.resolve()) for path in targets.values())
+    ):
+        raise ValueError("TEP 配套文件须按 Frame ID 绑定各窗口和一组受管正常参考。")
+    normal, sequence = ROOT / sample["normal_reference"]["path"], ROOT / sample["raw_input"]["path"]
+    if all(path.is_file() for path in targets.values()) or not all(
+        path.is_file() for path in (normal, sequence)
+    ):
+        return
+
+    windows = [window(frame) for frame in frames]
+    ranges = [(start, end) for start, end, _ in windows]
+    intervals = {interval for _, _, interval in windows}
+    reference_ids = {frame.task.reference_id for frame in frames}
+    if len(intervals) != 1 or len(reference_ids) != 1 or None in intervals | reference_ids:
+        raise ValueError("同一 TEP 样例须保存统一采样间隔和正常参考。")
+    if len(set(ranges)) != len(frames):
+        raise ValueError("同一 TEP 样例的时间窗口不能重复。")
+    output = targets[(frames[0].case_id, "window")].parent / "reconstructed"
     records = build_tep_dat_records(
         normal,
         sequence,
         output_dir=output,
-        windows=[(scope["sample_start"], scope["sample_end"])],
-        sampling_interval_seconds=180,
+        windows=ranges,
+        sampling_interval_seconds=intervals.pop(),
     )
-    measured = evidence_frames(evidence_from_records(records, dataset="tep")[0])[0]
-    actual = {
-        (o.subject_id, o.feature_id): o.value
-        for o in measured.observations
-        if o.status == "observed" and o.value is not None and o.value.kind in {"number", "boolean"}
+    measured = {
+        window(frame): frame
+        for evidence in evidence_from_records(records, dataset="tep")
+        for frame in evidence_frames(evidence)
     }
-    for observation in frame["observations"]:
-        value = observation.get("value")
-        if (
-            observation["status"] != "observed"
-            or not value
-            or value["kind"] not in {"number", "boolean"}
-        ):
-            continue
-        current = actual[(observation["subject_id"], observation["feature_id"])].model_dump(
-            mode="json"
-        )
-        equal = (
-            (
-                math.isclose(current["number"], value["number"], rel_tol=1e-8, abs_tol=1e-8)
-                and current["unit"] == value["unit"]
+    numeric_observations = 0
+    sources = {}
+    for frame in frames:
+        start, end, _ = window(frame)
+        actual = {
+            (o.subject_id, o.feature_id): o.value.model_dump(mode="json")
+            for o in measured[window(frame)].observations
+            if o.status == "observed" and o.value is not None
+        }
+        for o in frame.observations:
+            if (
+                o.status != "observed"
+                or o.value is None
+                or o.value.kind not in {"number", "boolean"}
+            ):
+                continue
+            saved = o.value.model_dump(mode="json")
+            value = actual.get((o.subject_id, o.feature_id))
+            equal = value is not None and (
+                (
+                    value["kind"] == "number"
+                    and value["unit"] == saved["unit"]
+                    and math.isclose(value["number"], saved["number"], rel_tol=1e-8, abs_tol=1e-8)
+                )
+                if o.value.kind == "number"
+                else value == saved
             )
-            if value["kind"] == "number"
-            else current == value
-        )
-        if not equal:
-            raise ValueError(
-                f"reconstructed normal model differs from saved Evidence: {sample['sample_id']}"
-            )
+            if not equal:
+                raise ValueError(f"重建的 TEP 观测与保存值不同：{frame.case_id} / {o.obs_id}")
+            numeric_observations += 1
+        sources[(frame.case_id, "window")] = output / f"window_{start}_{end}.npy"
     profile_path = output / "normal_reference_profile.json"
     profile = json.loads(profile_path.read_text())
-    profile["reference_id"] = frame["task"]["reference_id"]
+    profile["reference_id"] = reference_ids.pop()
     write_json(profile_path, profile)
-    sources = {
-        "window": output / f"window_{scope['sample_start']}_{scope['sample_end']}.npy",
-        "normal": output / "normal_reference.csv",
-        "scaler": profile_path,
-    }
-    for name, source in sources.items():
-        destination = ROOT / assets[name]["uri"]
-        if not destination.resolve().is_relative_to(RUNTIME):
-            raise ValueError("demo numerical support must stay in the managed runtime directory")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
+    sources[(None, "normal")] = output / "normal_reference.csv"
+    sources[(None, "scaler")] = profile_path
+    for key, source in sources.items():
+        target = targets[key]
+        if not target.is_file():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
     write_json(
         output / "reconstruction.json",
         {
             "sample_id": sample["sample_id"],
-            "reference_id": frame["task"]["reference_id"],
+            "frame_cases": [frame.case_id for frame in frames],
+            "reference_id": profile["reference_id"],
             "source": sample["raw_input"]["path"],
             "normal": sample["normal_reference"]["path"],
-            "numeric_observations_matched": len(actual),
+            "numeric_observations_matched": numeric_observations,
             "tolerance": 1e-8,
-            "note": (
-                "Original scalar Evidence unchanged; "
-                "missing arrays/scaler rebuilt from the same public data."
-            ),
         },
     )
 
@@ -165,22 +153,45 @@ def frames_from_asset(asset: dict) -> list:
     return [EvidenceFrame.model_validate(frame) for frame in frames]
 
 
-def verified_checkpoint(path: Path, model: dict) -> None:
-    # A third-party binary is executable model input: verify the published LFS digest,
-    # not only the filename, before making it selectable by the backend.
-    if path.stat().st_size == model["size_bytes"]:
+def verify_transfer(path: Path, asset: dict) -> None:
+    """Check explicit integrity pins for downloaded model and data files."""
+    if path.stat().st_size == asset["size_bytes"]:
         digest = hashlib.sha256()
         with path.open("rb") as stream:
             for block in iter(lambda: stream.read(1024 * 1024), b""):
                 digest.update(block)
-        if digest.hexdigest() == model["sha256"]:
+        if digest.hexdigest() == asset["sha256"]:
             return
-    raise ValueError(f"PatchCore 权重不符合固定发布版本：{path}；未覆盖现有文件。")
+    raise ValueError(f"文件不符合固定发布版本：{path}；未覆盖现有文件。")
+
+
+def prepare_transfer(asset: dict, *, cached: Path | None = None) -> Path:
+    destination = ROOT / (asset.get("local_path") or asset["path"])
+    if not destination.resolve().is_relative_to(RUNTIME.resolve()):
+        raise ValueError(f"不能在受管运行目录之外写入演示文件：{destination}")
+    if destination.is_file():
+        verify_transfer(destination, asset)
+        return destination
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    # Partial or mismatched downloads are never published, even for a cached local source.
+    with NamedTemporaryFile(dir=destination.parent, suffix=".part", delete=False) as stream:
+        temporary = Path(stream.name)
+    try:
+        if cached is not None and cached.is_file():
+            shutil.copyfile(cached, temporary)
+        else:
+            with urllib.request.urlopen(asset["source_url"], timeout=120) as response:
+                with temporary.open("wb") as out:
+                    shutil.copyfileobj(response, out)
+        verify_transfer(temporary, asset)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
 
 
 def prepare_bottle_checkpoint(demo: dict) -> None:
     (model,) = demo["models"]
-    checkpoint = ROOT / model["local_path"]
     registry = ROOT / MVTEC_MODEL_MANIFEST
     config = {
         "schema_version": "rootlens-mvtec-models.v1",
@@ -188,132 +199,56 @@ def prepare_bottle_checkpoint(demo: dict) -> None:
     }
     if registry.exists() and json.loads(registry.read_text()) != config:
         raise ValueError(f"演示模型登记已存在且内容不同：{registry}；未覆盖现有登记。")
-    if checkpoint.is_file():
-        verified_checkpoint(checkpoint, model)
-    else:
-        checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        # Publish atomically only after integrity validation; partial downloads are never usable.
-        with NamedTemporaryFile(dir=checkpoint.parent, suffix=".part", delete=False) as stream:
-            temporary = Path(stream.name)
-        try:
-            with urllib.request.urlopen(model["source_url"], timeout=120) as response:
-                with temporary.open("wb") as out:
-                    shutil.copyfileobj(response, out)
-            verified_checkpoint(temporary, model)
-            temporary.replace(checkpoint)
-        finally:
-            temporary.unlink(missing_ok=True)
+    prepare_transfer(model, cached=PUBLIC / "bottle_patchcore.ckpt")
     if not registry.exists():
         write_json(registry, config)
 
 
 def prepare_tep(demo: dict, *, download: bool) -> None:
-    for material in demo["materials"]:
-        original = material["source_url"].rsplit("/", 1)[-1]
-        stage(
-            EARLIER / "public" / original,
-            ROOT / material["path"],
-            url=material["source_url"],
-            download=download,
-        )
-    for sample in demo["samples"]:
-        for asset in (sample["raw_input"], sample["normal_reference"]):
-            original = asset["source_url"].rsplit("/", 1)[-1]
-            source = PUBLIC / f"tep_{original}"
-            if not source.is_file():
-                source = EARLIER / "public" / f"tep_{original}"
-            stage(source, ROOT / asset["path"], url=asset["source_url"], download=download)
-        for frame in frames_from_asset(sample["evidence"]):
-            hydrate_process_support(frame.model_dump(mode="json"), sample)
+    (sample,) = demo["samples"]
+    if download:
+        prepare_transfer(sample["raw_input"], cached=PUBLIC / "tep_d04_te.dat")
+        prepare_transfer(sample["normal_reference"], cached=PUBLIC / "tep_d00.dat")
+    hydrate_process_support(frames_from_asset(sample["evidence"]), sample)
 
 
 def prepare_wafer(demo: dict, *, download: bool) -> None:
-    for model in demo["models"]:
-        destination = ROOT / model["path"]
-        stage(
-            PUBLIC / destination.name,
-            destination,
-            url=model["source_url"],
-            download=download,
-        )
-    excerpt, model_card = demo["materials"]
-    stage(
-        PUBLIC / "wafer_model_card.md",
-        ROOT / model_card["path"],
-        url=model_card["source_url"] + "/raw/main/README.md",
-        download=download,
-    )
-    excerpt_path = stage(
-        EARLIER / "public/wm811k-paper-p3-p4.txt",
-        ROOT / excerpt["path"],
-        url=None,
-        download=False,
-    )
-    if download and not excerpt_path.is_file():
-        from kgtracevis.source_kg_compiler.material_parser import parse_material
+    if not download:
+        return
+    import numpy as np
+    import pandas as pd
 
-        paper = stage(
-            EARLIER / "public/wm811k-original.pdf",
-            RUNTIME / "materials/wm811k-original.pdf",
-            url=excerpt["source_url"],
-            download=True,
-        )
-        if paper.is_file():
-            parsed = parse_material(paper, source_id="wm811k-original-paper", scenario="wafer")
-            selected = [u.content_text for u in parsed.units if u.source_span.get("page") in (3, 4)]
-            if selected:
-                excerpt_path.write_text("\n\n".join(selected))
+    from scripts.prepare_public_wafer_demo import DataOnlyUnpickler
 
-    needs_raw = [s for s in demo["samples"] if not (ROOT / s["raw_input"]["path"]).is_file()]
-    source = PUBLIC / "wafer_samples.jsonl"
-    rows = {}
-    if needs_raw and source.is_file():
-        with source.open() as stream:
-            rows = {str(row["wafer_id"]): row["waferMap"] for row in map(json.loads, stream)}
-    wanted = {WAFER_SAMPLE_IDS[s["sample_id"]] for s in needs_raw}
-    if wanted - rows.keys() and download:
-        from scripts.prepare_public_wafer_demo import DataOnlyUnpickler
-
-        table = stage(
-            PUBLIC / "wm811k_test.pkl",
-            RUNTIME / "sources/wm811k_test.pkl",
-            url=WAFER_INPUT_URL,
-            download=True,
-        )
-        if table.is_file():
-            with table.open("rb") as handle:
-                dataframe = DataOnlyUnpickler(handle).load()
-            for index, row in dataframe.iterrows():
-                if str(index) in wanted:
-                    rows[str(index)] = row["waferMap"].tolist()
-    for sample in demo["samples"]:
-        sample_id = sample["sample_id"]
-        wafer_id = WAFER_SAMPLE_IDS[sample_id]
-        raw = ROOT / sample["raw_input"]["path"]
-        if not raw.is_file() and wafer_id in rows:
-            raw.parent.mkdir(parents=True, exist_ok=True)
-            # Original labels stay in the source table, never in model input.
-            raw.write_text(
-                json.dumps(
-                    {
-                        "wafer_id": wafer_id,
-                        "case_id": f"wm811k_{wafer_id}",
-                        "waferMap": rows[wafer_id],
-                    }
-                )
-                + "\n"
-            )
-        (support,) = sample["supporting_assets"]
-        grid_path = ROOT / support["path"]
-        if not grid_path.is_file() and raw.is_file():
-            payload = json.loads(raw.read_text())
-            grid = payload.get("waferMap", payload.get("wafer_map"))
-            if grid is not None:
-                write_json(grid_path, grid)
+    (sample,) = demo["samples"]
+    (model,) = demo["models"]
+    source = sample["raw_source"]
+    row_id = source["row_id"]
+    table_path = prepare_transfer(source, cached=PUBLIC / "wm811k_test.pkl")
+    with table_path.open("rb") as handle:
+        table = DataOnlyUnpickler(handle).load()
+    if not isinstance(table, pd.DataFrame) or not table.index.is_unique:
+        raise ValueError("WM811K 公共表须有唯一原始行索引。")
+    row = np.asarray(table.at[int(row_id), "waferMap"])
+    if row.shape != tuple(source["shape"]) or not np.isin(row, [0, 1, 2]).all():
+        raise ValueError(f"WM811K 行 {row_id} 不是预期的原始 0/1/2 网格。")
+    clean = {"wafer_id": row_id, "case_id": f"wm811k_{row_id}", "waferMap": row.tolist()}
+    raw = ROOT / sample["raw_input"]["path"]
+    if not raw.resolve().is_relative_to(RUNTIME.resolve()):
+        raise ValueError("WM811K 原始样本须位于受管本地运行目录。")
+    if raw.exists():
+        if json.loads(raw.read_text()) != clean:
+            raise ValueError(f"已有原始样本与固定上游行不同：{raw}；未覆盖。")
+    else:
+        # Only identity and original cells reach the classifier; never copy native labels.
+        raw.parent.mkdir(parents=True, exist_ok=True)
+        temporary = raw.with_suffix(".jsonl.tmp")
+        temporary.write_text(json.dumps(clean) + "\n")
+        temporary.replace(raw)
+    prepare_transfer(model, cached=PUBLIC / "wm811k_resnet.pt")
 
 
 def prepare(download: bool = False, dataset: str | None = None) -> dict:
-    PREPARATION_ERRORS.clear()
     manifest = read_manifest(dataset)
     for demo in manifest["demos"]:
         if demo["dataset"] == "mvtec" and download:
@@ -328,14 +263,17 @@ def prepare(download: bool = False, dataset: str | None = None) -> dict:
 def check(manifest: dict) -> dict:
     from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 
-    checked, missing, raw_models = [], [], []
+    checked, missing, raw_models, raw_inputs, media = [], [], [], [], []
+
+    def status(asset):
+        path = asset.get("local_path") or asset["path"]
+        return {"path": path, "available": (ROOT / path).is_file()}
+
     for demo in manifest["demos"]:
-        for item in demo["materials"]:
+        for item in demo["materials"] + demo.get("authoring_notes", []):
             if not (ROOT / item["path"]).is_file():
                 missing.append(item["path"])
-        for model in demo["models"]:
-            path = model.get("local_path") or model["path"]
-            raw_models.append({"path": path, "available": (ROOT / path).is_file()})
+        raw_models.extend(status(model) for model in demo["models"])
         graph = ROOT / demo["working_graph"]["path"]
         package = UnifiedWorkingGraphPackage.model_validate_json(graph.read_text())
         for sample in demo["samples"]:
@@ -354,14 +292,18 @@ def check(manifest: dict) -> dict:
             else:
                 missing.append(frame_asset["path"])
             inputs = [sample[k] for k in ("raw_input", "normal_reference") if k in sample]
-            for item in inputs + sample.get("supporting_assets", []):
-                if not (ROOT / item["path"]).is_file():
-                    missing.append(item["path"])
+            for asset in inputs:
+                availability = status(asset)
+                raw_inputs.append(availability)
+                if asset.get("storage_scope") == "repository" and not availability["available"]:
+                    missing.append(asset["path"])
+            media.extend(status(asset) for asset in sample.get("supporting_assets", []))
     return {
         "validated": checked,
         "missing_assets": sorted(set(missing)),
+        "raw_inputs": raw_inputs,
         "optional_raw_models": raw_models,
-        "preparation_errors": list(PREPARATION_ERRORS),
+        "optional_media": media,
     }
 
 
@@ -372,62 +314,19 @@ def build_knowledge(dataset: str, output: Path) -> dict:
     from kgtracevis.source_kg_compiler.material_parser import parse_material
     from kgtracevis.source_kg_compiler.unified import compile_unified_knowledge
 
-    capability_id = {
-        "bottle": "visual-region-v2",
-        "tep": "process-window-v2",
-        "wafer": "spatial-grid-v2",
-    }[dataset]
-    capability = capability_manifest(capability_id)
     scenario = "mvtec" if dataset == "bottle" else dataset
-    if dataset == "bottle":
-        (source,) = read_manifest("mvtec")["demos"][0]["materials"]
-        units = parse_material(
+    (demo,) = read_manifest(scenario)["demos"]
+    capability = capability_manifest(demo["capability_id"])
+    units = [
+        unit
+        for source in demo["materials"]
+        for unit in parse_material(
             ROOT / source["path"],
             source_id=source["asset_id"],
             scenario=scenario,
-            original_uri=source["source_url"],
+            original_uri=source.get("source_url"),
         ).units
-    elif dataset == "tep":
-        units = []
-        for file in ("teprob.f", "temain_mod.f"):
-            units.extend(
-                parse_material(
-                    RUNTIME / f"materials/{file}.txt",
-                    source_id=f"braatz:{file}",
-                    scenario=scenario,
-                    original_uri=TEP_BASE + file,
-                ).units
-            )
-        capability = capability.model_copy(
-            update={
-                "recommended_max_candidates": 8,
-                "max_signatures": 16,
-                "notes": capability.notes + "\nDemo authoring refinement: use circuit-specific "
-                "mechanisms and exact channels from the original equations. Distinguish reactor "
-                "and condenser heat-removal circuits rather than merging unrelated circuits. "
-                "Retain feed composition, feed thermal boundary, reaction kinetics and valve "
-                "actuation alternatives supported by source. Explain paths to multiple source-"
-                "connected measured or manipulated channels, including composition analyzers "
-                "where the equations support them. Do not require all connected variables to "
-                "shift at once: closed-loop compensation may move valves while holding "
-                "temperature. "
-                "Do not force full 52-channel coverage. Use mean_z abs>=2 as one uniform declared "
-                "demo heuristic if no source numeric diagnostic cutoff exists. Never infer a "
-                "channel-specific direction or diagnostic threshold from disturbance numbers. "
-                "Conditions' numeric-cutoff assertions must be declared_demo_heuristic; the "
-                "mechanism/channel association may be llm_proposed when inferred from equations. "
-                "Use short Chinese labels with original channel codes retained. The source "
-                "controller comments contain copy/paste mislabels: prefer actual assignments, "
-                "e.g. CONTRL10 reads XMEAS(21), CONTRL18 reads XMEAS(9) and adjusts SETPT(10).",
-            }
-        )
-    else:
-        units = parse_material(
-            RUNTIME / "materials/wafer-model-card.md",
-            source_id="radai-wm811k-model-card",
-            scenario=scenario,
-            original_uri="https://huggingface.co/radai-agent/radai-wm811k-defect-detection",
-        ).units
+    ]
     llm = OpenAICompatibleSourceKGLLM(max_tokens=16000)
     package = compile_unified_knowledge(
         units,
@@ -436,6 +335,7 @@ def build_knowledge(dataset: str, output: Path) -> dict:
         output_dir=output,
         title=f"双闭环演示 · {dataset} · 原始资料LLM构图",
         dataset=scenario,
+        max_repairs=1,
         progress=lambda stage, message, **details: print(
             json.dumps({"stage": stage, "message": message, **details}, ensure_ascii=False),
             flush=True,

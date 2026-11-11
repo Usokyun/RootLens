@@ -7,9 +7,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
+import numpy as np
+import pandas as pd
 import pytest
 
 from kgtracevis.source_kg_compiler import llm, material_parser, unified
+from scripts import prepare_public_wafer_demo as wafer_demo
 from scripts import prepare_two_loop_demo as prepare
 from scripts import prepare_two_loop_demo_api as api_demo
 from scripts.prepare_two_loop_demo_api import DemoClient
@@ -55,6 +58,8 @@ def test_shipped_mvtec_catalog_is_independent_of_runtime_archives(tmp_path, monk
 @pytest.mark.parametrize("payload,valid", [(b"exact-checkpoint", True), (b"partial", False)])
 def test_bottle_checkpoint_publish_is_atomic(tmp_path, monkeypatch, payload, valid):
     monkeypatch.setattr(prepare, "ROOT", tmp_path)
+    monkeypatch.setattr(prepare, "RUNTIME", tmp_path / "runs/two_loop_demo")
+    monkeypatch.setattr(prepare, "PUBLIC", tmp_path / "unused-cache")
     monkeypatch.setattr(prepare.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(payload))
     expected = b"exact-checkpoint"
     model = {
@@ -74,6 +79,95 @@ def test_bottle_checkpoint_publish_is_atomic(tmp_path, monkeypatch, payload, val
         assert not (tmp_path / prepare.MVTEC_MODEL_MANIFEST).exists()
         assert not (tmp_path / model["local_path"]).exists()
     assert not list((tmp_path / Path(model["local_path"]).parent).glob("*.part"))
+
+
+def test_release_has_only_the_three_paired_examples_and_exact_tep_windows():
+    manifest = prepare.read_manifest()
+    expected = {
+        "mvtec": ("bottle-rim-break", 1),
+        "tep": ("tep-sequence-04", 3),
+        "wafer": ("wafer-nearfull", 1),
+    }
+    assert len(manifest["demos"]) == len(expected)
+    for demo in manifest["demos"]:
+        scene = demo["dataset"]
+        sample_id, frame_count = expected[scene]
+        (sample,) = demo["samples"]
+        assert sample["sample_id"] == sample_id and sample["recommended"]
+        assert all((prepare.ROOT / a["path"]).is_file() for a in demo["materials"])
+        assert all(a["path"].startswith(f"data/demo/two_loop/{scene}/") for a in demo["materials"])
+        frames = prepare.frames_from_asset(sample["evidence"])
+        assert len(frames) == frame_count and all(frame.source_dataset == scene for frame in frames)
+        if scene == "tep":
+            support = sample["supporting_assets"]
+            assert {a["frame_case_id"] for a in support if a.get("case_asset_id") == "window"} == {
+                f.case_id for f in frames
+            }
+            assert [
+                [scope.sample_start, scope.sample_end]
+                for f in frames
+                for scope in f.scopes
+                if scope.scope_id == f.task.scope_id
+            ] == sample["raw_options"]["windows"]
+        if scene == "wafer":
+            assert sample["raw_input"]["storage_scope"] == "local_runtime"
+            assert sample["raw_source"]["row_id"] == "248536"
+            assert sample["raw_input"]["path"].startswith("runs/two_loop_demo/")
+            assert '"waferMap"' not in (prepare.ROOT / sample["evidence"]["path"]).read_text()
+    report = prepare.check(manifest)
+    assert not report["missing_assets"]
+    assert {item["sample_id"]: item["frames"] for item in report["validated"]} == {
+        sample_id: frame_count for sample_id, frame_count in expected.values()
+    }
+
+
+def test_wafer_preparation_emits_only_the_pinned_row_identity_and_cells(tmp_path, monkeypatch):
+    monkeypatch.setattr(prepare, "ROOT", tmp_path)
+    monkeypatch.setattr(prepare, "RUNTIME", tmp_path / "runs/two_loop_demo")
+    monkeypatch.setattr(prepare, "PUBLIC", tmp_path / "unused-cache")
+    table = pd.DataFrame(
+        {
+            "waferMap": [np.array([[0, 1], [2, 1]]), np.array([[1, 2], [2, 1]])],
+            "failureType": ["must not copy", "another row"],
+        },
+        index=[248536, 2],
+    )
+    payloads = {"table": b"example-pinned-table", "model": b"example-pinned-weight"}
+
+    def read_verified_table(handle):
+        assert handle.read() == payloads["table"]
+        return SimpleNamespace(load=lambda: table)
+
+    monkeypatch.setattr(wafer_demo, "DataOnlyUnpickler", read_verified_table)
+
+    def asset(label):
+        raw = payloads[label]
+        return {
+            "source_url": label,
+            "local_path": f"runs/two_loop_demo/{label}",
+            "size_bytes": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        }
+
+    monkeypatch.setattr(
+        prepare.urllib.request, "urlopen", lambda url, **_: io.BytesIO(payloads[url])
+    )
+    raw = "runs/two_loop_demo/wafer.jsonl"
+    demo = {
+        "models": [asset("model")],
+        "samples": [
+            {
+                "raw_input": {"path": raw},
+                "raw_source": {**asset("table"), "row_id": "248536", "shape": [2, 2]},
+            }
+        ],
+    }
+    prepare.prepare_wafer(demo, download=True)
+    assert json.loads((tmp_path / raw).read_text()) == {
+        "wafer_id": "248536",
+        "case_id": "wm811k_248536",
+        "waferMap": [[0, 1], [2, 1]],
+    }
 
 
 def test_api_demo_graph_reuses_exact_enabled_pair_or_only_installs_missing(tmp_path, monkeypatch):
@@ -146,7 +240,7 @@ def test_api_demo_retries_status_read_without_resubmitting_task(tmp_path, monkey
     "dataset,capability_id,recommended,hard_limit",
     [
         ("bottle", "visual-region-v2", 16, 32),
-        ("tep", "process-window-v2", 8, 32),
+        ("tep", "process-window-v2", 16, 32),
         ("wafer", "spatial-grid-v2", 8, 8),
     ],
 )

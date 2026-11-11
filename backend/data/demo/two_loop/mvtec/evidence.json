@@ -55,7 +55,7 @@
         {
           "asset_id": "image",
           "kind": "image",
-          "uri": "runs/two_loop_tasks/task_7a7b338eddd74dab82fd0deb61331723/analysis/images/bottle/test/unknown/sample_006.png"
+          "uri": "runs/two_loop_tasks/task_69c71cdcd41e40f6ad2623e173d7f5ee/analysis/images/bottle/test/unknown/sample_006.png"
         },
         {
           "asset_id": "raw",
@@ -65,7 +65,7 @@
         {
           "asset_id": "mask",
           "kind": "json",
-          "uri": "runs/two_loop_tasks/task_7a7b338eddd74dab82fd0deb61331723/analysis/image-model/mvtec_bottle_test_unknown_sample_006_mask.json"
+          "uri": "runs/two_loop_tasks/task_69c71cdcd41e40f6ad2623e173d7f5ee/analysis/image-model/mvtec_bottle_test_unknown_sample_006_mask.json"
         }
       ],
       "procedures": [

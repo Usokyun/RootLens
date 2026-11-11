@@ -1,13 +1,13 @@
 {
   "schema_version": "rootlens-demo-manifest.v1",
-  "title": "RootLens · 资料到知识、样本到解释的双闭环",
+  "title": "RootLens · 三个公开示例的知识与证据闭环",
   "path_base": "backend",
   "demos": [
     {
       "id": "bottle",
       "dataset": "mvtec",
       "title": "玻璃瓶局部异常 · 几何证据",
-      "purpose": "Markdown 演示规则 → 可编辑工作图 → Bottle PatchCore / 几何 Evidence → 两个待排查解释",
+      "purpose": "自著几何规则 → 实际制作／编辑 → Bottle PatchCore 与同一 ROI 的面积、长短比、离心率 → 两个待区分解释",
       "capability_id": "visual-region-v2",
       "working_graph": {
         "asset_id": "bottle-geometry-working-graph",
@@ -17,7 +17,7 @@
         "source_url": null,
         "redistribution": "RootLens 演示图；来源与阈值边界见包内断言",
         "storage_scope": "repository",
-        "size_bytes": 12149
+        "size_bytes": 13431
       },
       "materials": [
         {
@@ -28,7 +28,7 @@
           "source_url": null,
           "redistribution": "RootLens 自著非商业演示资料",
           "storage_scope": "repository",
-          "size_bytes": 1800
+          "size_bytes": 1981
         }
       ],
       "samples": [
@@ -37,7 +37,7 @@
           "title": "玻璃瓶局部异常 · 原图 006",
           "dataset": "mvtec",
           "input_mode": "image",
-          "expectation": "实测同一区域面积占比约 0.2284、长短边比约 1.1173，满足演示条件；两种待排查解释并列。",
+          "expectation": "同一 ROI 的面积占比约 0.2284、长短边比约 1.1173、离心率约 0.7970；三条件满足，两个候选并列。",
           "raw_input": {
             "asset_id": "bottle-006-original-png",
             "title": "MVTec AD bottle 原图 006",
@@ -67,7 +67,7 @@
             "unified_abduction"
           ],
           "recommended": true,
-          "origin_run_id": "e3092c7e-f2e4-43d8-9a72-40a402afb19e"
+          "origin_run_id": "f5cc2e9a-22eb-431a-9981-8502e176892d"
         }
       ],
       "models": [
@@ -94,398 +94,82 @@
     {
       "id": "tep",
       "dataset": "tep",
-      "title": "TEP过程 · 全通道与双引擎",
-      "purpose": "原过程/控制程序→可编辑通道知识→正常参考/PCA→统一约束与RootKGD图传播",
+      "title": "TEP 冷却回路 · 联合条件与结构传播",
+      "purpose": "公开控制资料 → 制作和审阅工作图 → 同一正常参考、三个实际窗口 → 两引擎解释",
       "capability_id": "process-window-v2",
       "working_graph": {
-        "asset_id": "tep-working-graph",
-        "title": "可编辑演示工作图",
-        "path": "data/demo/two_loop/knowledge/tep-working-graph.v2.json",
+        "asset_id": "tep-cooling-joint-working-graph",
+        "title": "TEP 冷却回路 · 配套工作图",
+        "path": "data/demo/two_loop/tep/working-graph.v2.json",
         "media_type": "application/json",
-        "size_bytes": 57817,
-        "available": true,
-        "source_url": null,
-        "redistribution": "derived_public_measurements",
-        "storage_scope": "repository"
+        "storage_scope": "repository",
+        "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+        "size_bytes": 38200
       },
       "materials": [
         {
-          "asset_id": "tep-material-teprob.f",
-          "title": "TEP原始过程方程与通道定义",
-          "path": "runs/two_loop_demo/materials/teprob.f.txt",
-          "media_type": "text/plain",
-          "size_bytes": 39057,
-          "available": true,
-          "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/teprob.f",
-          "redistribution": "Illinois_NCSA_style_license",
-          "storage_scope": "local_runtime"
-        },
-        {
-          "asset_id": "tep-material-temain_mod.f",
-          "title": "TEP闭环控制示例",
-          "path": "runs/two_loop_demo/materials/temain_mod.f.txt",
-          "media_type": "text/plain",
-          "size_bytes": 35506,
-          "available": true,
-          "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/temain_mod.f",
-          "redistribution": "Illinois_NCSA_style_license",
-          "storage_scope": "local_runtime"
+          "asset_id": "tep-cooling-joint-source",
+          "title": "TEP 冷却回路演示资料",
+          "path": "data/demo/two_loop/tep/material.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+          "size_bytes": 2683
         }
       ],
       "samples": [
         {
           "sample_id": "tep-sequence-04",
-          "title": "过程序列A · 冷却扰动对照",
+          "title": "TEP 冷却回路 · 公开 d04 三窗口",
           "dataset": "tep",
           "input_mode": "process",
-          "expectation": "原始52通道经正常scaler/PCA；比较正常与异常窗口、两引擎及图中可达通道。原图统一内核首位曾错误。",
-          "raw_input": {
-            "asset_id": "tep-sequence-04-raw",
-            "title": "公开52通道过程序列",
-            "path": "runs/two_loop_demo/raw/tep/sequence_04.dat",
-            "media_type": "text/plain",
-            "size_bytes": 799680,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d04_te.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "normal_reference": {
-            "asset_id": "tep-normal-reference",
-            "title": "正常参考 · 500行/52通道",
-            "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
-            "media_type": "text/plain",
-            "size_bytes": 416049,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d00.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "tep-sequence-04-evidence",
-            "title": "实际窗口161–260的完整EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/tep-sequence-04.json",
-            "media_type": "application/json",
-            "size_bytes": 184418,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "windows": [
-              [
-                1,
-                100
-              ],
-              [
-                161,
-                260
-              ],
-              [
-                261,
-                360
-              ]
-            ],
-            "sampling_seconds": 180
-          },
-          "reasoner_ids": [
-            "unified_abduction",
-            "tep_rootkgd"
-          ],
           "recommended": true,
-          "supporting_assets": [
-            {
-              "asset_id": "tep-sequence-04-support-window",
-              "title": "完整52通道原始窗口",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-04/window.npy",
-              "media_type": "text/plain",
-              "size_bytes": 41728,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "window",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-04-support-normal",
-              "title": "匹配正常参考矩阵",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-04/normal.csv",
-              "media_type": "text/csv",
-              "size_bytes": 650448,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "normal",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-04-support-scaler",
-              "title": "正常scaler/PCA参数",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-04/scaler.json",
-              "media_type": "application/json",
-              "size_bytes": 29964,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "scaler",
-              "kind": "numeric_model"
-            }
-          ]
-        },
-        {
-          "sample_id": "tep-sequence-01",
-          "title": "过程序列B · 进料扰动对照",
-          "dataset": "tep",
-          "input_mode": "process",
-          "expectation": "原始52通道经正常scaler/PCA；比较正常与异常窗口、两引擎及图中可达通道。原图统一内核首位曾错误。",
-          "raw_input": {
-            "asset_id": "tep-sequence-01-raw",
-            "title": "公开52通道过程序列",
-            "path": "runs/two_loop_demo/raw/tep/sequence_01.dat",
-            "media_type": "text/plain",
-            "size_bytes": 799680,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d01_te.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "normal_reference": {
-            "asset_id": "tep-normal-reference",
-            "title": "正常参考 · 500行/52通道",
-            "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
-            "media_type": "text/plain",
-            "size_bytes": 416049,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d00.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "tep-sequence-01-evidence",
-            "title": "实际窗口161–260的完整EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/tep-sequence-01.json",
-            "media_type": "application/json",
-            "size_bytes": 184301,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "windows": [
-              [
-                1,
-                100
-              ],
-              [
-                161,
-                260
-              ],
-              [
-                261,
-                360
-              ]
-            ],
-            "sampling_seconds": 180
-          },
-          "reasoner_ids": [
-            "unified_abduction",
-            "tep_rootkgd"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "tep-sequence-01-support-window",
-              "title": "完整52通道原始窗口",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-01/window.npy",
-              "media_type": "text/plain",
-              "size_bytes": 41728,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "window",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-01-support-normal",
-              "title": "匹配正常参考矩阵",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-01/normal.csv",
-              "media_type": "text/csv",
-              "size_bytes": 650448,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "normal",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-01-support-scaler",
-              "title": "正常scaler/PCA参数",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-01/scaler.json",
-              "media_type": "application/json",
-              "size_bytes": 29964,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "scaler",
-              "kind": "numeric_model"
-            }
-          ]
-        },
-        {
-          "sample_id": "tep-sequence-05",
-          "title": "过程序列C · 另一冷却边界对照",
-          "dataset": "tep",
-          "input_mode": "process",
-          "expectation": "原始52通道经正常scaler/PCA；比较正常与异常窗口、两引擎及图中可达通道。原图统一内核首位曾错误。",
-          "raw_input": {
-            "asset_id": "tep-sequence-05-raw",
-            "title": "公开52通道过程序列",
-            "path": "runs/two_loop_demo/raw/tep/sequence_05.dat",
-            "media_type": "text/plain",
-            "size_bytes": 799680,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d05_te.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "normal_reference": {
-            "asset_id": "tep-normal-reference",
-            "title": "正常参考 · 500行/52通道",
-            "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
-            "media_type": "text/plain",
-            "size_bytes": 416049,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d00.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "tep-sequence-05-evidence",
-            "title": "实际窗口161–260的完整EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/tep-sequence-05.json",
-            "media_type": "application/json",
-            "size_bytes": 184337,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "windows": [
-              [
-                1,
-                100
-              ],
-              [
-                161,
-                260
-              ],
-              [
-                261,
-                360
-              ]
-            ],
-            "sampling_seconds": 180
-          },
-          "reasoner_ids": [
-            "unified_abduction",
-            "tep_rootkgd"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "tep-sequence-05-support-window",
-              "title": "完整52通道原始窗口",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-05/window.npy",
-              "media_type": "text/plain",
-              "size_bytes": 41728,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "window",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-05-support-normal",
-              "title": "匹配正常参考矩阵",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-05/normal.csv",
-              "media_type": "text/csv",
-              "size_bytes": 650448,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "normal",
-              "kind": "typed_array"
-            },
-            {
-              "asset_id": "tep-sequence-05-support-scaler",
-              "title": "正常scaler/PCA参数",
-              "path": "runs/two_loop_demo/frozen/tep-sequence-05/scaler.json",
-              "media_type": "application/json",
-              "size_bytes": 29964,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "scaler",
-              "kind": "numeric_model"
-            }
-          ]
-        },
-        {
-          "sample_id": "tep-normal-window",
-          "title": "过程正常窗口 · 阴性对照",
-          "dataset": "tep",
-          "input_mode": "process",
-          "expectation": "同一序列1–100窗口正常门控不成立。",
           "raw_input": {
             "asset_id": "tep-sequence-04-raw",
-            "title": "公开52通道过程序列",
+            "title": "公开 52 通道 d04 过程序列",
             "path": "runs/two_loop_demo/raw/tep/sequence_04.dat",
-            "media_type": "text/plain",
             "size_bytes": 799680,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d04_te.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d04_te.dat",
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "1ccb488dd5feac11aad54623451168abef066229e685872597897800363916f9",
+            "redistribution": "Illinois/Braatz，按需本机准备"
           },
           "normal_reference": {
             "asset_id": "tep-normal-reference",
-            "title": "正常参考 · 500行/52通道",
+            "title": "独立正常参考 d00",
             "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
-            "media_type": "text/plain",
             "size_bytes": 416049,
-            "available": true,
-            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/d00.dat",
-            "redistribution": "Illinois_NCSA_style_license",
-            "storage_scope": "local_runtime"
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d00.dat",
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "4c3c0b11eefacf93e5d2529e2866d7a625e37aa9153d0f95fae17a6c9e560deb",
+            "redistribution": "Illinois/Braatz，按需本机准备"
           },
           "evidence": {
-            "asset_id": "tep-normal-evidence",
-            "title": "实际正常窗口EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/tep-normal-window.json",
+            "asset_id": "tep-cooling-joint-evidence",
+            "title": "三窗口原生 Evidence",
+            "path": "data/demo/two_loop/tep/evidence.json",
             "media_type": "application/json",
-            "size_bytes": 184024,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
+            "storage_scope": "repository",
+            "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+            "size_bytes": 629226
           },
           "raw_options": {
             "windows": [
               [
                 1,
                 100
+              ],
+              [
+                161,
+                260
+              ],
+              [
+                261,
+                360
               ]
             ],
             "sampling_seconds": 180
@@ -494,274 +178,177 @@
             "unified_abduction",
             "tep_rootkgd"
           ],
-          "recommended": false,
           "supporting_assets": [
             {
-              "asset_id": "tep-normal-window-support-window",
-              "title": "完整52通道原始窗口",
-              "path": "runs/two_loop_demo/frozen/tep-normal-window/window.npy",
-              "media_type": "text/plain",
+              "asset_id": "tep-cooling-window-1-100",
+              "title": "样本 1–100 完整 52 通道窗口",
+              "path": "runs/two_loop_demo/frozen/tep-cooling-joint/window-1-100.npy",
               "size_bytes": 41728,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
+              "media_type": "application/octet-stream",
               "storage_scope": "local_runtime",
-              "frame_asset_id": "window",
-              "kind": "typed_array"
+              "frame_case_id": "process_window_1_100/query/window",
+              "case_asset_id": "window"
             },
             {
-              "asset_id": "tep-normal-window-support-normal",
+              "asset_id": "tep-cooling-window-161-260",
+              "title": "样本 161–260 完整 52 通道窗口",
+              "path": "runs/two_loop_demo/frozen/tep-cooling-joint/window-161-260.npy",
+              "size_bytes": 41728,
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_161_260/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-cooling-window-261-360",
+              "title": "样本 261–360 完整 52 通道窗口",
+              "path": "runs/two_loop_demo/frozen/tep-cooling-joint/window-261-360.npy",
+              "size_bytes": 41728,
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_261_360/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-cooling-normal-array",
               "title": "匹配正常参考矩阵",
-              "path": "runs/two_loop_demo/frozen/tep-normal-window/normal.csv",
-              "media_type": "text/csv",
+              "path": "runs/two_loop_demo/frozen/tep-cooling-joint/normal.csv",
               "size_bytes": 650448,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
+              "media_type": "text/csv",
               "storage_scope": "local_runtime",
-              "frame_asset_id": "normal",
-              "kind": "typed_array"
+              "frame_asset_id": "normal"
             },
             {
-              "asset_id": "tep-normal-window-support-scaler",
-              "title": "正常scaler/PCA参数",
-              "path": "runs/two_loop_demo/frozen/tep-normal-window/scaler.json",
-              "media_type": "application/json",
+              "asset_id": "tep-cooling-scaler",
+              "title": "正常 scaler/PCA 参数",
+              "path": "runs/two_loop_demo/frozen/tep-cooling-joint/scaler.json",
               "size_bytes": 29964,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
+              "media_type": "application/json",
               "storage_scope": "local_runtime",
-              "frame_asset_id": "scaler",
-              "kind": "numeric_model"
+              "frame_asset_id": "scaler"
             }
-          ]
+          ],
+          "expectation": "正常窗无匹配，两个扰动窗支持串级补偿现象；供冷侧与放热负荷仍无法区分。RootKGD按贡献结构评分。",
+          "origin_run_id": "755be821-e370-4d07-a4b9-890a26287a13"
         }
       ],
       "models": [],
       "sources": [
         {
-          "title": "Braatz TEP原程序与参考数据",
-          "url": "https://github.com/camaramm/tennessee-eastman-profBraatz",
-          "license": "Illinois/Braatz permissive notice；保留版权和免责声明。"
+          "title": "Braatz 原程序与参考数据",
+          "url": "https://github.com/camaramm/tennessee-eastman-profBraatz/tree/0643318858ce7c87292bd59820b459e12a13d009",
+          "license": "Illinois/Braatz 通知；见 licenses/TEP-LICENSE.txt"
+        }
+      ],
+      "authoring_notes": [
+        {
+          "asset_id": "tep-cooling-expert-refinement",
+          "title": "人工补充：串级冷却回路下的补偿证据",
+          "path": "data/demo/two_loop/tep/expert-refinement.md",
+          "size_bytes": 1916,
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著，独立于最初 LLM 输出"
         }
       ]
     },
     {
       "id": "wafer",
       "dataset": "wafer",
-      "title": "晶圆网格 · 空间图案解释",
-      "purpose": "原始网格→独立ResNet+空间统计→图案联合条件与原始die对应",
+      "title": "WM811K 晶圆 · 空间联合条件",
+      "purpose": "自著规则 → 可编辑工作图 → 独立 ResNet 分类和实际空间统计 → 图案证据校验",
       "capability_id": "spatial-grid-v2",
       "working_graph": {
-        "asset_id": "wafer-working-graph",
-        "title": "可编辑演示工作图",
-        "path": "data/demo/two_loop/knowledge/wafer-working-graph.v2.json",
+        "asset_id": "wafer-spatial-joint-working-graph",
+        "title": "WM811K 晶圆 · 近全片与边缘环对照",
+        "path": "data/demo/two_loop/wafer/working-graph.v2.json",
         "media_type": "application/json",
-        "size_bytes": 47677,
-        "available": true,
-        "source_url": null,
-        "redistribution": "derived_public_measurements",
-        "storage_scope": "repository"
+        "storage_scope": "repository",
+        "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+        "size_bytes": 20145
       },
       "materials": [
         {
-          "asset_id": "wafer-original-paper-excerpt",
-          "title": "WM-811K原论文 · 第3–4页定位正文（非完整PDF）",
-          "path": "runs/two_loop_demo/materials/wm811k-paper-p3-p4.txt",
-          "media_type": "text/plain",
-          "size_bytes": 8148,
-          "available": true,
-          "source_url": "https://outlook.stpi.niar.org.tw/pdfview/tdop/1601",
-          "redistribution": "copyrighted_paper_excerpt_local_only",
-          "storage_scope": "local_runtime"
-        },
-        {
-          "asset_id": "wafer-model-card",
-          "title": "RadAI模型作者原始模型卡",
-          "path": "runs/two_loop_demo/materials/wafer-model-card.md",
-          "media_type": "text/plain",
-          "size_bytes": 5414,
-          "available": true,
-          "source_url": "https://huggingface.co/radai-agent/radai-wm811k-defect-detection",
-          "redistribution": "MIT_model_card",
-          "storage_scope": "local_runtime"
+          "asset_id": "wafer-spatial-joint-source",
+          "title": "WM811K 晶圆图案：空间证据校验",
+          "path": "data/demo/two_loop/wafer/material.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+          "size_bytes": 1998
         }
       ],
       "samples": [
         {
           "sample_id": "wafer-nearfull",
-          "title": "近全片失效 · 空间联合条件",
+          "title": "WM811K 248536 · 全片与分区失效",
           "dataset": "wafer",
           "input_mode": "wafer",
-          "expectation": "独立ResNet分类与实际高失效率共同支持近全片图案；不把图案当成制造原因。",
+          "recommended": true,
           "raw_input": {
             "asset_id": "wafer-nearfull-raw",
-            "title": "无原生标签的公开晶圆网格",
+            "title": "原始 0/1/2 网格 · 无原生标签",
             "path": "runs/two_loop_demo/raw/wafer/wafer-nearfull-248536.jsonl",
-            "media_type": "application/x-ndjson",
             "size_bytes": 4473,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-            "redistribution": "upstream_dataset_license_unspecified_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "wafer-nearfull-evidence",
-            "title": "实际独立分类与空间测量EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/wafer-nearfull.json",
-            "media_type": "application/json",
-            "size_bytes": 9275,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {},
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": true,
-          "supporting_assets": [
-            {
-              "asset_id": "wafer-nearfull-support-grid",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/wafer-nearfull/grid.json",
-              "media_type": "application/json",
-              "size_bytes": 10415,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "grid",
-              "kind": "typed_array"
-            }
-          ]
-        },
-        {
-          "sample_id": "wafer-normal",
-          "title": "正常晶圆 · 阴性对照",
-          "dataset": "wafer",
-          "input_mode": "wafer",
-          "expectation": "原生None仍可能有少量失败die；八类分类器没有正常类，须结合实际空间统计，不把分类输出直接当诊断。",
-          "raw_input": {
-            "asset_id": "wafer-normal-raw",
-            "title": "无原生标签的公开晶圆网格",
-            "path": "runs/two_loop_demo/raw/wafer/wafer-normal-5.jsonl",
             "media_type": "application/x-ndjson",
-            "size_bytes": 6625,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-            "redistribution": "upstream_dataset_license_unspecified_local_only",
-            "storage_scope": "local_runtime"
+            "storage_scope": "local_runtime",
+            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/903fe28851d02a976db7a3a4bc12b6cfa2f5443c/test.pkl",
+            "redistribution": "镜像未声明原网格分发许可；本机按需裁取"
+          },
+          "raw_source": {
+            "row_id": "248536",
+            "shape": [
+              38,
+              38
+            ],
+            "local_path": "runs/two_loop_demo/sources/wm811k_test_903fe28.pkl",
+            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/903fe28851d02a976db7a3a4bc12b6cfa2f5443c/test.pkl",
+            "revision": "903fe28851d02a976db7a3a4bc12b6cfa2f5443c",
+            "size_bytes": 18931136,
+            "sha256": "8ff6e0066602419d794c822aa61ec1e8d2bc3f0e000b53a46c91c6ecbe60e071"
           },
           "evidence": {
-            "asset_id": "wafer-normal-evidence",
-            "title": "实际独立分类与空间测量EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/wafer-normal.json",
+            "asset_id": "wafer-spatial-joint-evidence",
+            "title": "实际原始网格运行导出的原生 Evidence",
+            "path": "data/demo/two_loop/wafer/evidence.json",
             "media_type": "application/json",
-            "size_bytes": 9203,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
+            "storage_scope": "repository",
+            "redistribution": "RootLens 自著资料／实际派生图或观测，不含未授权原始数据",
+            "size_bytes": 10682
           },
           "raw_options": {},
           "reasoner_ids": [
             "unified_abduction"
           ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "wafer-normal-support-grid",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/wafer-normal/grid.json",
-              "media_type": "application/json",
-              "size_bytes": 15483,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "grid",
-              "kind": "typed_array"
-            }
-          ]
-        },
-        {
-          "sample_id": "wafer-pattern-disagreement",
-          "title": "图案分歧 · 真实失败",
-          "dataset": "wafer",
-          "input_mode": "wafer",
-          "expectation": "原生Donut和模型Edge-Ring分歧；原生标签不进入分类器。",
-          "raw_input": {
-            "asset_id": "wafer-pattern-disagreement-raw",
-            "title": "无原生标签的公开晶圆网格",
-            "path": "runs/two_loop_demo/raw/wafer/wafer-pattern-disagreement-31707.jsonl",
-            "media_type": "application/x-ndjson",
-            "size_bytes": 11907,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-            "redistribution": "upstream_dataset_license_unspecified_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "wafer-pattern-disagreement-evidence",
-            "title": "实际独立分类与空间测量EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/wafer-pattern-disagreement.json",
-            "media_type": "application/json",
-            "size_bytes": 9278,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {},
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "wafer-pattern-disagreement-support-grid",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/wafer-pattern-disagreement/grid.json",
-              "media_type": "application/json",
-              "size_bytes": 27849,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "grid",
-              "kind": "typed_array"
-            }
-          ]
+          "origin_run_id": "19146311-26d2-45c7-bf14-0dfad059fc85",
+          "expectation": "近全片分类、各区实际密度与最大失效连通占比共同支持近全片；边缘环的中心密度条件与分类均不成立。"
         }
       ],
       "models": [
         {
-          "asset_id": "wafer-resnet",
-          "title": "WM811K ResNet34",
-          "path": "runs/refactor_m2_m6/public/wm811k_resnet.pt",
-          "media_type": "text/plain",
+          "title": "RadAI ResNet34 · 可选晶圆原图分类权重",
+          "required_for": "raw",
+          "repository": "radai-agent/radai-wm811k-defect-detection",
+          "local_path": "runs/two_loop_demo/models/wm811k_resnet_61747ca.pt",
+          "source_url": "https://huggingface.co/radai-agent/radai-wm811k-defect-detection/resolve/61747cac7cba3eee3714fee86ab99f8250dd2e08/best_radai_resnet.pt",
+          "revision": "61747cac7cba3eee3714fee86ab99f8250dd2e08",
           "size_bytes": 85271146,
-          "available": true,
-          "source_url": "https://huggingface.co/radai-agent/radai-wm811k-defect-detection/resolve/main/best_radai_resnet.pt",
-          "redistribution": "MIT_model",
-          "storage_scope": "local_runtime"
+          "sha256": "0c0c407babe0eb86b1466c0d7142527bb33c5a21ee3f58927c8fc739070f33fe",
+          "redistribution": "模型仓库声明 MIT；按需本机取，不覆盖网格许可"
         }
       ],
       "sources": [
         {
-          "title": "WM-811K数据镜像",
-          "url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-          "license": "数据镜像未明示许可；原网格仅本机使用、不随仓库分发。模型MIT不自动覆盖数据。"
+          "title": "WM811K 原始数据论文",
+          "url": "https://doi.org/10.1109/TSM.2014.2364237"
         },
         {
-          "title": "WM-811K原论文",
-          "url": "https://ieeexplore.ieee.org/document/6932449/"
+          "title": "WM811K 测试表镜像",
+          "url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection/tree/903fe28851d02a976db7a3a4bc12b6cfa2f5443c",
+          "license": "未声明可再分发原网格；仓库仅提供派生标量 Frame"
         }
       ]
     }
   ],
-  "interpretation": "expectation 只供解释，不输入模型、adapter 或推理。MVTec 默认仅当前几何版；历史研究对照不经当前清单分发。"
+  "interpretation": "每场景仅一条当前完整链。expectation 只供解释，不输入模型或推理；真实历史对照不经当前清单分发。"
 }

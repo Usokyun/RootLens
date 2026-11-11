@@ -1,0 +1,1135 @@
+{
+  "schema_version": "rootlens-working-graph.v2",
+  "graph_id": "graph_59353d02949d453db100a0aedf52b827",
+  "title": "TEP · 两条冷却回路的联合观测",
+  "dataset": "tep",
+  "build_id": "task_5b1f4e1cccba4832b66a71534a84a73a",
+  "knowledge": {
+    "schema_version": "rootlens-knowledge-package.v2",
+    "example_kind": null,
+    "graph_id": "graph_59353d02949d453db100a0aedf52b827",
+    "semantics_version": "conjunctive-explanation-v0",
+    "title": "田纳西伊士曼过程冷却回路联合观测机制蓝图",
+    "entities": [
+      {
+        "entity_id": "entity:industrial.object:Tennessee Eastman Process",
+        "label": "Tennessee Eastman Process",
+        "kind": "Object",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_1",
+        "label": "xmeas_1",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_2",
+        "label": "xmeas_2",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_3",
+        "label": "xmeas_3",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_4",
+        "label": "xmeas_4",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_5",
+        "label": "xmeas_5",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_6",
+        "label": "xmeas_6",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_7",
+        "label": "xmeas_7",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_8",
+        "label": "xmeas_8",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_9",
+        "label": "xmeas_9",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_10",
+        "label": "xmeas_10",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_11",
+        "label": "xmeas_11",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_12",
+        "label": "xmeas_12",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_13",
+        "label": "xmeas_13",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_14",
+        "label": "xmeas_14",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_15",
+        "label": "xmeas_15",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_16",
+        "label": "xmeas_16",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_17",
+        "label": "xmeas_17",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_18",
+        "label": "xmeas_18",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_19",
+        "label": "xmeas_19",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_20",
+        "label": "xmeas_20",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_21",
+        "label": "xmeas_21",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_22",
+        "label": "xmeas_22",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_23",
+        "label": "xmeas_23",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_24",
+        "label": "xmeas_24",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_25",
+        "label": "xmeas_25",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_26",
+        "label": "xmeas_26",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_27",
+        "label": "xmeas_27",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_28",
+        "label": "xmeas_28",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_29",
+        "label": "xmeas_29",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_30",
+        "label": "xmeas_30",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_31",
+        "label": "xmeas_31",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_32",
+        "label": "xmeas_32",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_33",
+        "label": "xmeas_33",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_34",
+        "label": "xmeas_34",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_35",
+        "label": "xmeas_35",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_36",
+        "label": "xmeas_36",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_37",
+        "label": "xmeas_37",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_38",
+        "label": "xmeas_38",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_39",
+        "label": "xmeas_39",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_40",
+        "label": "xmeas_40",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmeas_41",
+        "label": "xmeas_41",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_1",
+        "label": "xmv_1",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_2",
+        "label": "xmv_2",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_3",
+        "label": "xmv_3",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_4",
+        "label": "xmv_4",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_5",
+        "label": "xmv_5",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_6",
+        "label": "xmv_6",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_7",
+        "label": "xmv_7",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_8",
+        "label": "xmv_8",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_9",
+        "label": "xmv_9",
+        "kind": "Variable",
+        "aliases": []
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_10",
+        "label": "反应器冷却水调节量 · XMV10",
+        "kind": "Variable",
+        "aliases": [
+          "xmv_10",
+          "反应器冷却水回路调节量"
+        ]
+      },
+      {
+        "entity_id": "entity:tep_braatz.channel:xmv_11",
+        "label": "xmv_11",
+        "kind": "Variable",
+        "aliases": []
+      }
+    ],
+    "relations": [],
+    "subject_bindings": [
+      {
+        "namespace": "industrial.object",
+        "external_id": "Tennessee Eastman Process",
+        "target_id": "entity:industrial.object:Tennessee Eastman Process"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_1",
+        "target_id": "entity:tep_braatz.channel:xmeas_1"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_2",
+        "target_id": "entity:tep_braatz.channel:xmeas_2"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_3",
+        "target_id": "entity:tep_braatz.channel:xmeas_3"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_4",
+        "target_id": "entity:tep_braatz.channel:xmeas_4"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_5",
+        "target_id": "entity:tep_braatz.channel:xmeas_5"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_6",
+        "target_id": "entity:tep_braatz.channel:xmeas_6"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_7",
+        "target_id": "entity:tep_braatz.channel:xmeas_7"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_8",
+        "target_id": "entity:tep_braatz.channel:xmeas_8"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_9",
+        "target_id": "entity:tep_braatz.channel:xmeas_9"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_10",
+        "target_id": "entity:tep_braatz.channel:xmeas_10"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_11",
+        "target_id": "entity:tep_braatz.channel:xmeas_11"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_12",
+        "target_id": "entity:tep_braatz.channel:xmeas_12"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_13",
+        "target_id": "entity:tep_braatz.channel:xmeas_13"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_14",
+        "target_id": "entity:tep_braatz.channel:xmeas_14"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_15",
+        "target_id": "entity:tep_braatz.channel:xmeas_15"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_16",
+        "target_id": "entity:tep_braatz.channel:xmeas_16"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_17",
+        "target_id": "entity:tep_braatz.channel:xmeas_17"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_18",
+        "target_id": "entity:tep_braatz.channel:xmeas_18"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_19",
+        "target_id": "entity:tep_braatz.channel:xmeas_19"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_20",
+        "target_id": "entity:tep_braatz.channel:xmeas_20"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_21",
+        "target_id": "entity:tep_braatz.channel:xmeas_21"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_22",
+        "target_id": "entity:tep_braatz.channel:xmeas_22"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_23",
+        "target_id": "entity:tep_braatz.channel:xmeas_23"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_24",
+        "target_id": "entity:tep_braatz.channel:xmeas_24"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_25",
+        "target_id": "entity:tep_braatz.channel:xmeas_25"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_26",
+        "target_id": "entity:tep_braatz.channel:xmeas_26"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_27",
+        "target_id": "entity:tep_braatz.channel:xmeas_27"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_28",
+        "target_id": "entity:tep_braatz.channel:xmeas_28"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_29",
+        "target_id": "entity:tep_braatz.channel:xmeas_29"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_30",
+        "target_id": "entity:tep_braatz.channel:xmeas_30"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_31",
+        "target_id": "entity:tep_braatz.channel:xmeas_31"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_32",
+        "target_id": "entity:tep_braatz.channel:xmeas_32"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_33",
+        "target_id": "entity:tep_braatz.channel:xmeas_33"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_34",
+        "target_id": "entity:tep_braatz.channel:xmeas_34"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_35",
+        "target_id": "entity:tep_braatz.channel:xmeas_35"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_36",
+        "target_id": "entity:tep_braatz.channel:xmeas_36"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_37",
+        "target_id": "entity:tep_braatz.channel:xmeas_37"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_38",
+        "target_id": "entity:tep_braatz.channel:xmeas_38"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_39",
+        "target_id": "entity:tep_braatz.channel:xmeas_39"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_40",
+        "target_id": "entity:tep_braatz.channel:xmeas_40"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmeas_41",
+        "target_id": "entity:tep_braatz.channel:xmeas_41"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_1",
+        "target_id": "entity:tep_braatz.channel:xmv_1"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_2",
+        "target_id": "entity:tep_braatz.channel:xmv_2"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_3",
+        "target_id": "entity:tep_braatz.channel:xmv_3"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_4",
+        "target_id": "entity:tep_braatz.channel:xmv_4"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_5",
+        "target_id": "entity:tep_braatz.channel:xmv_5"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_6",
+        "target_id": "entity:tep_braatz.channel:xmv_6"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_7",
+        "target_id": "entity:tep_braatz.channel:xmv_7"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_8",
+        "target_id": "entity:tep_braatz.channel:xmv_8"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_9",
+        "target_id": "entity:tep_braatz.channel:xmv_9"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_10",
+        "target_id": "entity:tep_braatz.channel:xmv_10"
+      },
+      {
+        "namespace": "tep_braatz.channel",
+        "external_id": "xmv_11",
+        "target_id": "entity:tep_braatz.channel:xmv_11"
+      }
+    ],
+    "value_bindings": [],
+    "feature_registry": [
+      {
+        "feature_id": "detection.anomaly_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "当前范围的显式异常布尔量，不含原因信息。图像为检测器实际输出；过程为匹配正常参考的PCA残差能量门控；晶圆为非空有效网格中存在失效die。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "presence_gate"
+      },
+      {
+        "feature_id": "statistics.mean_z",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "窗口内(x-正常均值)/正常尺度的均值，保留正负方向。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "statistics.std_z",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "窗口标准化样本的总体标准差（ddof=0）。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "statistics.slope_z",
+        "value_kind": "number",
+        "unit": "1/sample",
+        "definition": "标准化样本对样本序号的最小二乘斜率，保留正负方向。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "residual.contribution",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "归一化PCA残差平方贡献占比；保留完整向量，不是原因概率。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "residual.energy",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "本窗口PCA重建残差平方的平均能量。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "residual.normal_limit",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "匹配正常参考数据的残差能量99分位门限。",
+        "requires_reference": true,
+        "allowed_values": null,
+        "semantic_role": "context"
+      },
+      {
+        "feature_id": "series.raw_values",
+        "value_kind": "array_ref",
+        "unit": null,
+        "definition": "通道原始物理量采样数组；用于定位与曲线，不是最终排名特征。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "context"
+      }
+    ],
+    "observable_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1"
+        ],
+        "predicate_id": "signature:reactor_cooling_load_shift:anomaly",
+        "label": "显式异常前置条件",
+        "feature_id": "detection.anomaly_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:0"
+        ],
+        "predicate_id": "signature:reactor_cooling_load_shift:condition:0",
+        "label": "反应器冷却水回路调节量相对正常参考显著上移",
+        "feature_id": "statistics.mean_z",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmv_10"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:1"
+        ],
+        "predicate_id": "signature:reactor_cooling_load_shift:condition:1",
+        "label": "反应器冷却水出口温度相对正常参考显著偏暖",
+        "feature_id": "statistics.mean_z",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmeas_21"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:0"
+        ],
+        "predicate_id": "signature:condenser_cooling_load_shift:condition:0",
+        "label": "冷凝器冷却水回路调节量相对正常参考显著上移",
+        "feature_id": "statistics.mean_z",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmv_11"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:1"
+        ],
+        "predicate_id": "signature:condenser_cooling_load_shift:condition:1",
+        "label": "冷凝器冷却水出口温度相对正常参考显著偏暖",
+        "feature_id": "statistics.mean_z",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmeas_22"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      },
+      {
+        "source_assertion_ids": [
+          "source:tep_cascade:architecture",
+          "source:tep_cascade:band"
+        ],
+        "predicate_id": "signature:reactor_cascade_compensation:temperature_lower",
+        "label": "反应器温度未低于正常参考两标准差",
+        "feature_id": "statistics.mean_z",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": -2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmeas_9"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      },
+      {
+        "source_assertion_ids": [
+          "source:tep_cascade:architecture",
+          "source:tep_cascade:band"
+        ],
+        "predicate_id": "signature:reactor_cascade_compensation:temperature_upper",
+        "label": "反应器温度未高于正常参考两标准差",
+        "feature_id": "statistics.mean_z",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "bound_entity",
+          "entity_id": "entity:tep_braatz.channel:xmeas_9"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": "same_as_task"
+      }
+    ],
+    "pattern_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1"
+        ],
+        "definition_id": "signature:reactor_cooling_load_shift:definition",
+        "pattern_id": "signature:reactor_cooling_load_shift",
+        "label": "反应器冷却调节上移且冷却水出口变暖",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:reactor_cooling_load_shift:anomaly",
+            {
+              "all": [
+                "signature:reactor_cooling_load_shift:condition:0",
+                "signature:reactor_cooling_load_shift:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_event_same_window"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:1"
+        ],
+        "definition_id": "signature:condenser_cooling_load_shift:definition",
+        "pattern_id": "signature:condenser_cooling_load_shift",
+        "label": "冷凝器冷却调节上移且冷却水出口变暖",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:reactor_cooling_load_shift:anomaly",
+            {
+              "all": [
+                "signature:condenser_cooling_load_shift:condition:0",
+                "signature:condenser_cooling_load_shift:condition:1"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_event_same_window"
+      },
+      {
+        "source_assertion_ids": [
+          "source:tep_cascade:architecture",
+          "source:tep_cascade:band"
+        ],
+        "definition_id": "signature:reactor_cascade_compensation:definition",
+        "pattern_id": "signature:reactor_cascade_compensation",
+        "label": "高调节需求且反应器温度仍近参考",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:reactor_cooling_load_shift:anomaly",
+            "signature:reactor_cooling_load_shift:condition:0",
+            "signature:reactor_cascade_compensation:temperature_lower",
+            "signature:reactor_cascade_compensation:temperature_upper"
+          ]
+        },
+        "scope_join": "same_event_same_window"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:tep_cascade:architecture",
+          "source:tep_cascade:band",
+          "source:tep_cascade:alternatives"
+        ],
+        "definition_id": "signature:reactor_alternative_responses:definition",
+        "pattern_id": "signature:reactor_alternative_responses",
+        "label": "反应器冷却额外负担的替代观测响应",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:reactor_cooling_load_shift:anomaly",
+            "signature:reactor_cooling_load_shift:condition:0",
+            {
+              "any": [
+                "signature:reactor_cooling_load_shift:condition:1",
+                {
+                  "all": [
+                    "signature:reactor_cascade_compensation:temperature_lower",
+                    "signature:reactor_cascade_compensation:temperature_upper"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_event_same_window"
+      }
+    ],
+    "mechanisms": [
+      {
+        "mechanism_id": "mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load",
+        "label": "反应器冷却热平衡受到额外负担"
+      },
+      {
+        "mechanism_id": "mechanism:Tennessee Eastman Process:condenser_cooling_heat_balance_extra_load",
+        "label": "冷凝器冷却热平衡受到额外负担"
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hypothesis:Tennessee Eastman Process:reactor_coolant_inlet_warm",
+        "label": "反应器供冷侧入口冷却水偏暖",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:Tennessee Eastman Process",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:Tennessee Eastman Process:reactor_process_heat_load_increase",
+        "label": "反应器过程侧放热负荷增加",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:Tennessee Eastman Process",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:Tennessee Eastman Process:condenser_heat_load_increase",
+        "label": "冷凝器侧热负荷增加",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:Tennessee Eastman Process",
+        "assumption_cost": 1
+      }
+    ],
+    "effect_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "effect:hypothesis:Tennessee Eastman Process:reactor_coolant_inlet_warm:mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load",
+        "from_id": "hypothesis:Tennessee Eastman Process:reactor_coolant_inlet_warm",
+        "to_id": "mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:1"
+        ],
+        "rule_id": "effect:hypothesis:Tennessee Eastman Process:reactor_process_heat_load_increase:mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load",
+        "from_id": "hypothesis:Tennessee Eastman Process:reactor_process_heat_load_increase",
+        "to_id": "mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "effect:hypothesis:Tennessee Eastman Process:condenser_heat_load_increase:mechanism:Tennessee Eastman Process:condenser_cooling_heat_balance_extra_load",
+        "from_id": "hypothesis:Tennessee Eastman Process:condenser_heat_load_increase",
+        "to_id": "mechanism:Tennessee Eastman Process:condenser_cooling_heat_balance_extra_load"
+      }
+    ],
+    "expectation_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0",
+          "source:cause:0:1",
+          "source:tep_cascade:alternatives"
+        ],
+        "rule_id": "expectation:mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load:signature:reactor_alternative_responses",
+        "from_id": "mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance_extra_load",
+        "pattern_id": "signature:reactor_alternative_responses",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "expectation:mechanism:Tennessee Eastman Process:condenser_cooling_heat_balance_extra_load:signature:condenser_cooling_load_shift",
+        "from_id": "mechanism:Tennessee Eastman Process:condenser_cooling_heat_balance_extra_load",
+        "pattern_id": "signature:condenser_cooling_load_shift",
+        "mode": "expected"
+      }
+    ],
+    "execution_policy": {
+      "conflict_weight": 2,
+      "assumption_weight": 0.25,
+      "score_mapping": "negative_explanation_cost",
+      "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+      "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+      "positive_coverage": "complete_joint_pattern_only",
+      "group_aggregation": "equal_budget_normalized_mean",
+      "primitive_comparison": "discrete_boolean_v0",
+      "missing": "unknown_not_negative",
+      "tie_epsilon": 1e-9
+    },
+    "source_assertions": [
+      {
+        "assertion_id": "source:signature:0",
+        "origin": "source_explicit",
+        "text": "反应器冷却调节上移且出口变暖，两个条件为 ALL，共享反应器冷却热平衡额外负担机制。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:0",
+        "origin": "source_explicit",
+        "text": "对同一窗口，xmv_10 的 statistics.mean_z >= 2。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:1",
+        "origin": "source_explicit",
+        "text": "对同一窗口，xmeas_21 的 statistics.mean_z >= 2。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:0",
+        "origin": "source_explicit",
+        "text": "反应器供冷侧入口水偏暖是反应器冷却热平衡额外负担的并列解释之一，该对通道无法区分。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:1",
+        "origin": "source_explicit",
+        "text": "反应器过程侧放热负荷增加是反应器冷却热平衡额外负担的并列解释之一，该对通道无法区分。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:1",
+        "origin": "source_explicit",
+        "text": "冷凝器冷却调节上移且出口变暖，两个条件为 ALL，对应冷凝器冷却热平衡额外负担机制。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:0",
+        "origin": "source_explicit",
+        "text": "对同一窗口，xmv_11 的 statistics.mean_z >= 2。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:1",
+        "origin": "source_explicit",
+        "text": "对同一窗口，xmeas_22 的 statistics.mean_z >= 2。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:0",
+        "origin": "source_explicit",
+        "text": "冷凝器侧热负荷增加是冷凝器冷却热平衡额外负担的替代假设。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cooling_joint_public_source_20261111",
+        "source_unit_id": "su_bbdadde1501f4068",
+        "locator": "{\"char_end\": 1358, \"char_start\": 0, \"end_line\": 15, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:tep_cascade:architecture",
+        "origin": "source_explicit",
+        "text": "闭环程序 CONTRL18 读 XMEAS(9) 修正 SETPT(10)，CONTRL10 读 XMEAS(21) 与给定之差调整 XMV(10)；控制努力可增大而反应器温度保持近参考。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cascade_review_source_20261111",
+        "source_unit_id": "su_1681d52aa5544355",
+        "locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 980, \"start_line\": 1, \"end_line\": 14}"
+      },
+      {
+        "assertion_id": "source:tep_cascade:band",
+        "origin": "source_explicit",
+        "text": "反应器温度的有符号标准化均值在同一正常参考下处于闭区间 −2 至 +2，为作者演示界限。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_tep_cascade_review_source_20261111",
+        "source_unit_id": "su_1681d52aa5544355",
+        "locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 980, \"start_line\": 1, \"end_line\": 14}"
+      },
+      {
+        "assertion_id": "source:tep_cascade:alternatives",
+        "origin": "source_explicit",
+        "text": "将高调节需求下的暖出口或近参考反应器温度作为替代响应：共享异常门与调节量上移，仅执行一个预期期望。不能据此区分供冷侧与过程侧。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_tep_cascade_review_source_20261111",
+        "source_unit_id": "su_1681d52aa5544355",
+        "locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 980, \"start_line\": 1, \"end_line\": 14}"
+      }
+    ]
+  }
+}

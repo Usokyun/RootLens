@@ -8,6 +8,7 @@ import SavedRunPanel from './SavedRunPanel.vue'
 import SavedRunMedia from './SavedRunMedia.vue'
 import SavedRunTrend from './SavedRunTrend.vue'
 import SavedRunWafer from './SavedRunWafer.vue'
+import { savedWaferZone } from './wafer-zone'
 
 const props = defineProps<{ analysis: SavedAnalysis; frame: SavedAnalysisFrame; candidate: TraceRecord | null; observationId: string }>()
 const emit = defineEmits<{ observation: [id: string]; graph: [id: string]; reasoning: [] }>()
@@ -17,6 +18,12 @@ const usedFilter = ref('all')
 const table = ref<HTMLElement | null>(null)
 const obs = computed(() => props.frame.observationsById.get(props.observationId))
 const scope = computed(() => obs.value ? observationScope(props.frame, obs.value) : null)
+const waferZone = computed(() => {
+  const zone = savedWaferZone(scope.value)
+  return zone && traceRows(props.frame.frame.scopes).some(parent => parent.kind === 'spatial_grid'
+    && parent.scope_id === zone.parentId && parent.scope_id === props.frame.scope?.scope_id
+    && parent.subject_id === obs.value?.subject_id) ? zone : null
+})
 const subject = computed(() => props.frame.frame.subjects?.find(item => item.subject_id === obs.value?.subject_id))
 const selectedChannel = computed(() => obs.value ? observationChannel(props.frame, obs.value) : '')
 const chosenTrend = computed(() => props.frame.processTrends.find(item => item.channel === selectedChannel.value))
@@ -50,11 +57,13 @@ function useLabel(id: string) {
 }
 function subjectLabel(observation: TraceRecord) {
   const external = observationChannel(props.frame, observation)
+  if (external === 'wafer' && props.analysis.run.dataset === 'wafer') return '晶圆'
   return external ? channelLabel(external) : observation.scope_id === props.frame.scope?.scope_id && props.frame.scope?.kind === 'image_region'
     ? props.frame.label : text(observation.subject_id) || '主体未保存'
 }
 const observations = computed(() => [...props.frame.observationsById].map(([id, observation]) => ({ id, observation,
   label: featureLabel(observation.feature_id), usage: useLabel(id), channel: observationChannel(props.frame, observation), subject: subjectLabel(observation),
+  zone: props.analysis.run.dataset === 'wafer' ? savedWaferZone(observationScope(props.frame, observation))?.label : undefined,
 })))
 const shown = computed(() => {
   const needle = query.value.trim().toLowerCase()
@@ -86,7 +95,7 @@ watch(() => props.observationId, async (id) => {
             <thead><tr><th scope="col">观测</th><th scope="col">实测值</th><th scope="col">主体 / 范围</th><th scope="col">本次使用</th></tr></thead>
             <tbody><tr v-for="row in shown" :key="row.id" :data-observation-id="row.id" :class="{ 'is-selected': row.id === observationId }" @click="emit('observation', row.id)">
               <td><button class="saved-run-table-button" type="button" :aria-pressed="row.id === observationId" @click.stop="emit('observation', row.id)">{{ row.label }}</button><small>{{ observationStatus(row.observation.status) }}</small></td>
-              <td>{{ valueLabel(row.observation.value) }}</td><td>{{ row.subject }}<small v-if="row.observation.scope_id && row.observation.scope_id !== frame.scope?.scope_id">{{ row.observation.scope_id }}</small></td>
+              <td>{{ valueLabel(row.observation.value) }}</td><td>{{ row.subject }}<small v-if="row.observation.scope_id && row.observation.scope_id !== frame.scope?.scope_id">{{ row.zone ?? row.observation.scope_id }}</small></td>
               <td><a-tag size="small" :color="row.usage.color">{{ row.usage.label }}</a-tag></td>
             </tr></tbody>
           </table>
@@ -113,8 +122,8 @@ watch(() => props.observationId, async (id) => {
               <p v-if="Array.isArray(scope?.bbox_xyxy)" class="saved-run-note">{{ scope?.coordinate_space === 'original_image_pixels' ? '原图像素' : scope?.coordinate_space }} ROI [{{ scope?.bbox_xyxy.map(traceValue).join(', ') }}]</p>
             </div>
             <SavedRunTrend v-else-if="chosenTrend" :trend="chosenTrend" :scope="scope" :inherited="analysis.backbone.state === 'skipped'" compact />
-            <SavedRunWafer v-else-if="scope?.kind === 'spatial_grid' && frame.waferGrid" :grid="frame.waferGrid" :inherited="analysis.backbone.state === 'skipped'" />
-            <p v-else-if="scope?.kind === 'image_region' || selectedChannel && scope?.kind === 'time_window'" class="saved-run-muted">此观测没有关联可预览的附件。</p>
+            <SavedRunWafer v-else-if="(scope?.kind === 'spatial_grid' || waferZone) && frame.waferGrid" :grid="frame.waferGrid" :zone="waferZone" :inherited="analysis.backbone.state === 'skipped'" />
+            <p v-else-if="scope?.kind === 'image_region' || selectedChannel && scope?.kind === 'time_window' || scope?.kind === 'spatial_grid' || waferZone" class="saved-run-muted">此观测没有关联可预览的附件。</p>
             <details v-if="appliedFacts.length" class="saved-run-disclosure">
               <summary>{{ isRoot ? '作者条件（非结构评分输入）' : '关联的保存条件' }}（{{ appliedFacts.length }}）</summary>
               <ul class="saved-run-detail-list"><li v-for="fact in appliedFacts" :key="text(fact.fact_id)"><strong>{{ predicateLabel(fact.predicate_check, text(fact.display_name)) }}</strong><a-tag size="small" :color="truthColor(fact.value)">{{ truthLabel(fact.value) }}</a-tag></li></ul>

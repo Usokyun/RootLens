@@ -148,11 +148,11 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 提交范围的前端快照通过原生 Vitest **36 文件／196 项**、类型与生产构建；保留已有的主包大小提示。后端源码未更改。
 
-### 1.11 当前：从新公开资料到同图原图／Frame 复算
+### 1.11 当前：三个公开样本各自完成两条闭环
 
-当前可完整演示的主线是 MVTec Bottle 006。一次真实上传并提取 RootLens 自著公开 Markdown，1 次文本 LLM（0 次修复）编译新图；在任务结果打开的确切图上编辑对象名称／别名、保存并确认启用。相同图随后分析实际公开原图：本机 CPU Bottle PatchCore、外部 ROI 语义关闭。再下载该 Run 的实际原生 Evidence 并普通上传，同图、同解释器、同 `top_k` 的图快照、完整 Frame 和结果逐字段一致。两个假设并列，不从几何推出工艺归因；可以从面积观测追到真条件和保存源边，再定位原图 ROI。
+MVTec 006、TEP d04 三窗口和 WM811K 248536 都从自著短资料实际提取并制作，再保存编辑并启用对应新图；同一已启用图接收真实原始输入，下载本次 Evidence 后普通上传复算。MVTec 使用同一 ROI 的三项几何、不调用 VLM；TEP 保留正常参考、带符号统计和完整 52 通道贡献；Wafer 用真实分类和分区／连通性共同检验图案，不把原生标签或图案当制造根因。
 
-实跑的图、任务、Run、几何值与可复算证据见 [MVTec 公开主链验收](../../backend/docs/mvtec-public-demo-acceptance.md)，可发布文件和新部署准备以 [演示手册](../../backend/docs/two-loop-demo.md) 为准。TEP／Wafer 研究与历史保存能力不因当前主演示选择而被删除。
+每场景只在 `/api/demo-library` 推荐这一条完整链。Git 包内的图和原生 Frame 可在新库无密钥复演；缺本机原始数据／附件时不阻止 Evidence，展示明确的附件状态。TEP 窗口附件按精确 Frame ID 绑定；Wafer 只高亮已保存网格对应区，计算仍在后端。初始 TEP 严格条件的未匹配结果保留，人工串级控制补充与实际 LLM 原图分开记录。操作与实际 Run、固定原始准备和许可边界见[现场手册](../../backend/docs/two-loop-demo.md)及[资产索引](rootlens-two-loop-demo-assets.md)。
 
 ## 2. 当前输入与分析入口
 

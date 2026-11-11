@@ -9,17 +9,20 @@ RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。�
 
 页面顶部可切换 **Demo / Backend**；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。当前操作见下文，前一阶段验收见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)。
 
-## 演示：用 MVTec 原图 006 贯通三页
+## 演示：三个公开样本走完两条闭环
 
-[公开演示包](backend/data/demo/two_loop/mvtec/README.md)随仓库提供短 Markdown、MVTec AD `bottle` 原图 006、已编辑 v2 图包和该次原图运行导出的原生 Evidence。此例只用掩膜几何，不调用外部视觉模型。两种候选解释同一几何现象；没有工位证据，不能确定实际工艺原因。
+| 公开包 | 样本 | 解释重点 |
+| --- | --- | --- |
+| [MVTec](backend/data/demo/two_loop/mvtec/README.md) | `bottle-rim-break` · 原图 006 | 同一 ROI 的面积、长短比、离心率共同支持两个待区分解释；不调用 VLM。 |
+| [TEP](backend/data/demo/two_loop/tep/README.md) | `tep-sequence-04` · d04 三窗口 | 独立正常参考、串级控制的联合条件；比较统一约束与 RootKGD 的 52 通道结构贡献。 |
+| [WM811K](backend/data/demo/two_loop/wafer/README.md) | `wafer-nearfull` · 行 248536 | 分类之外再核全片／分区密度和最大连通占比；结论是图案，不是制造根因。 |
 
-完成下文的安装和新库初始化后，运行 `npm run dev:all`，在 `http://localhost:5174` 选 **Backend**：
+完成下文的安装和新库初始化后，运行 `npm run dev:all`，在 `http://localhost:5174` 选 **Backend**。每个包均有短资料、已编辑的 v2 图包和同图实际原始运行导出的 Evidence。
 
-1. **根因与图谱** → **导入 / 导出 → 导入工作图包**，打开 `backend/data/demo/two_loop/mvtec/working-graph.v2.json`，然后启用。
-2. 点 **用这张图分析**，选 **中间 Evidence**，上传同目录 `evidence.json`，使用 **统一条件溯因**。此路线无需服务密钥或模型权重；后端从真实观测重新推理。
-3. 要看完整来源和真实原图模型，先在 **素材与构图** 上传 `material.md`，提取并制作新图；在图谱页修改、启用后，用同一张图跑 `sample_006.png`，最后在 **运行与证据** 下载并重传本次 Evidence。文本制作需要已配置的付费文本服务；原图测量只需要本地固定的 Bottle PatchCore。
+1. **不用密钥和权重**：在「根因与图谱」导入并启用该包的 `working-graph.v2.json`。点「用这张图分析」，选择 **中间 Evidence**，上传同目录 `evidence.json`。后端重新推理，不重跑测量。也可从「公开演示样本」选择同一场景的现成 Evidence。
+2. **走完整来源和原始链路**：在「素材与构图」上传 `material.md`、提取并实际制作；在「根因与图谱」检查、编辑、启用。随后用同一图分析原始样本，再在「运行与证据」下载并普通上传本次 Evidence。构图需要已配置的文本模型；MVTec 和晶圆原始输入需本机权重，TEP 原始输入需正常参考。
 
-[现场手册](backend/docs/two-loop-demo.md)给出三个入口的精确步骤、固定权重准备、API 复跑及许可。`backend/data/demo/two_loop/manifest.json` 是 `/api/demo-library` 的唯一受管清单；MVTec 只列 `bottle-rim-break`，TEP 和晶圆仍可独立复演。Demo 和成品 Replay 继续显示已有快照，不在浏览器推理。
+[现场手册](backend/docs/two-loop-demo.md)列出固定下载、UI／API 复跑及实际验收。`backend/data/demo/two_loop/manifest.json` 是 `/api/demo-library` 的唯一清单，每场景一条当前完整链；保留历史对照、Demo 和成品 Replay。原始文件或媒体未准备时，已有 Frame 仍可复算。
 
 ## 首次安装
 

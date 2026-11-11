@@ -1,6 +1,7 @@
 import type { PathGraphPath } from '@/api/contracts'
 import type { SavedAnalysisFrame } from '@/services/saved-analysis-reader'
 import { traceRecord, traceRows, traceValue, type TraceRecord } from '@/services/unified-reasoning-display'
+import { savedWaferZone } from './wafer-zone'
 
 export const detailTabs = [
   { id: 'overview', label: '总览' }, { id: 'input', label: '输入' }, { id: 'backbone', label: 'Backbone' },
@@ -20,6 +21,9 @@ export function inputLabel(mode: unknown) { return mode === 'evidence' ? '中间
 export function scopeLabel(scope: unknown, fallback = '未保存范围') {
   const row = traceRecord(scope)
   if (row.kind === 'time_window' && number(row.sample_start) !== null && number(row.sample_end) !== null) return `样本 ${row.sample_start}–${row.sample_end}`
+  if (row.kind === 'spatial_grid') return '晶圆网格'
+  const waferZone = savedWaferZone(row)
+  if (waferZone) return waferZone.label
   return text(row.scope_id) || fallback
 }
 
@@ -30,10 +34,15 @@ const featureNames: Record<string, string> = {
   'statistics.mean_z': '标准化均值偏移', 'statistics.std_z': '标准化波动', 'statistics.slope_z': '标准化趋势斜率',
   'residual.contribution': '残差贡献', 'residual.energy': '残差能量', 'residual.normal_limit': '正常参考限值',
   'series.raw_values': '保存的通道曲线',
+  'spatial.failure_density': '失效 die 密度', 'spatial.valid_die_count': '有效 die 数', 'spatial.failed_die_count': '失效 die 数',
+  'spatial.component_count': '失效连通分量数', 'spatial.largest_component_ratio': '最大失效连通占比', 'spatial.linearity': '失效分布线性度',
+  'classifier.pattern': 'ResNet 图案类别', 'spatial.grid': '保存的晶圆网格',
 }
 const categoryNames: Record<string, string> = {
   cracked_or_missing_glass: '开裂或玻璃缺失', broken_finish: '瓶口破损', chipped_finish: '瓶口崩缺',
   chipped: '崩缺', chipped_edge: '边缘崩缺', small_chipped_section: '小块崩缺', spot: '斑点', linear: '线状', surface: '表面', edge: '边缘',
+  nearfull: '近全片失效', edge_ring: '边缘环状失效', edge_loc: '边缘局部失效', center: '中心失效',
+  donut: '环形失效', loc: '局部失效', random: '随机失效', scratch: '划痕',
 }
 const ops: Record<string, string> = { bool_eq: '=', eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', abs_gte: '绝对值 ≥', in: '属于', candidate_contains: '包含' }
 export function featureLabel(value: unknown) { return featureNames[text(value)] ?? (text(value) || '未命名观测') }
@@ -68,7 +77,7 @@ export function factReason(value: unknown) {
 }
 export function procedureLabel(procedure: unknown) {
   const row = traceRecord(procedure), id = text(row.procedure_id)
-  return ({ detector: '检测记录', geometry: '几何测量', semantics: 'ROI 外观语义', 'normal-statistics': '正常参考窗口统计' } as Record<string, string>)[id] ?? (id || '未保存')
+  return ({ detector: '检测记录', geometry: '几何测量', semantics: 'ROI 外观语义', 'normal-statistics': '正常参考窗口统计', 'spatial-statistics': '原网格空间统计', classifier: 'ResNet 图案分类' } as Record<string, string>)[id] ?? (id || '未保存')
 }
 export function channelLabel(value: unknown) {
   const id = text(value), match = /^(xmeas|xmv)_(\d+)$/.exec(id)
