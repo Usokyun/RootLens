@@ -1,7 +1,4 @@
 import type {
-  KGConstructionBuildDetail,
-  KGConstructionBuildValidationResponse,
-  KGConstructionReviewQueueEdge,
   RunCaseDetail,
   VisualEvidenceItem,
 } from "@/api/contracts";
@@ -17,9 +14,7 @@ export type ProvenanceTargetKind =
   | "path"
   | "edge"
   | "entity_link"
-  | "correction"
-  | "build"
-  | "build_edge";
+  | "correction";
 export type ProvenanceSourceType =
   | "raw_evidence_ref"
   | "visual_evidence"
@@ -27,10 +22,6 @@ export type ProvenanceSourceType =
   | "entity_link"
   | "correction"
   | "edge_metadata"
-  | "manifest"
-  | "summary"
-  | "qa_report"
-  | "review_queue"
   | "source_material";
 
 export interface ProvenanceRecord {
@@ -68,14 +59,6 @@ export interface GraphProvenanceEdgeRef {
   attributes?: Record<string, JsonValue>;
 }
 
-export interface ProvenanceSourceMaterial {
-  sourceId: string;
-  title: string;
-  path: string | null;
-  sourceType: string | null;
-  note?: string | null;
-}
-
 const OBSERVATION_FIELD_ORDER = [
   "anomaly_type",
   "morphology",
@@ -88,9 +71,6 @@ const TEP_PROJECTION_NOTE =
   "当前为解释性投影视图 / FaultAnchor 视图，不等于原始工艺层级，也不代表已验证的因果方向。";
 const AMBIGUOUS_LINK_NOTE =
   "当前实体链接仍属弱匹配/歧义匹配，只能作为候选映射线索。";
-const GENERATED_BUILD_NOTE =
-  "当前溯源主要来自构图生成产物（清单 / 摘要 / QA / 审阅队列）及其关联来源元数据。";
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -133,18 +113,6 @@ function uniqueStable<T>(items: T[], getKey: (item: T) => string): T[] {
   }
 
   return result;
-}
-
-function truncateMultiline(text: string, maxLength = 1200) {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return `${text.slice(0, maxLength)}\n…`;
-}
-
-function formatJsonSnippet(value: unknown) {
-  return truncateMultiline(JSON.stringify(value ?? {}, null, 2));
 }
 
 function readStringArray(value: unknown): string[] {
@@ -746,32 +714,6 @@ export function buildGraphEdgeProvenance(input: {
   };
 }
 
-function buildSourceMaterialRecords(input: {
-  sourceIds: string[];
-  materials: ProvenanceSourceMaterial[];
-  claimBoundary: string;
-}): ProvenanceRecord[] {
-  const catalog = new Map(input.materials.map((item) => [item.sourceId, item]));
-
-  return input.sourceIds.map((sourceId) => {
-    const material = catalog.get(sourceId);
-    return {
-      recordId: `source-material:${sourceId}`,
-      sourceType: "source_material",
-      sourceLabel: material?.title ?? sourceId,
-      sourcePathOrId: material?.path ?? sourceId,
-      snippetOrPreview:
-        material?.note ?? material?.sourceType ?? "关联来源素材",
-      previewUrl: null,
-      confidence: null,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: null,
-      tags: ["source-grounded"],
-      multiline: false,
-    };
-  });
-}
-
 export function buildGraphCorrectionProvenance(input: {
   caseDetail: RunCaseDetail | null | undefined;
   correctionId: string | null | undefined;
@@ -878,142 +820,6 @@ export function buildGraphCorrectionProvenance(input: {
     summary: normalizeText(correction.suggested_value, input.correctionId),
     contextLabel: input.caseDetail.case_label ?? input.caseDetail.case_id,
     linkedReviewTarget: reviewTargetKey,
-    claimBoundary: input.claimBoundary,
-    records: uniqueStable(records, (item) => item.recordId),
-    semanticNotes: [],
-  };
-}
-
-export function buildMaterialsBuildProvenance(input: {
-  buildDetail: KGConstructionBuildDetail | null | undefined;
-  buildValidation: KGConstructionBuildValidationResponse | null | undefined;
-  materials: ProvenanceSourceMaterial[];
-  claimBoundary: string;
-}): ProvenanceInspectorState | null {
-  if (!input.buildDetail) {
-    return null;
-  }
-
-  const build = input.buildDetail.build;
-  const records: ProvenanceRecord[] = [
-    {
-      recordId: `build-manifest:${build.run_id}`,
-      sourceType: "manifest",
-      sourceLabel: "构图清单",
-      sourcePathOrId: build.manifest_path,
-      snippetOrPreview: formatJsonSnippet(input.buildDetail.manifest),
-      previewUrl: null,
-      confidence: null,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: null,
-      tags: ["generated"],
-      multiline: true,
-    },
-    {
-      recordId: `build-summary:${build.run_id}`,
-      sourceType: "summary",
-      sourceLabel: "构图摘要",
-      sourcePathOrId: build.summary_path,
-      snippetOrPreview: formatJsonSnippet(input.buildDetail.summary),
-      previewUrl: null,
-      confidence: null,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: null,
-      tags: ["generated"],
-      multiline: true,
-    },
-  ];
-
-  if (input.buildValidation) {
-    records.push({
-      recordId: `build-qa:${build.run_id}`,
-      sourceType: "qa_report",
-      sourceLabel: "质检报告",
-      sourcePathOrId: `${build.run_id}:qa_report`,
-      snippetOrPreview: formatJsonSnippet(input.buildValidation.qa_report),
-      previewUrl: null,
-      confidence: null,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: null,
-      tags: ["generated"],
-      multiline: true,
-    });
-  }
-
-  records.push(
-    ...buildSourceMaterialRecords({
-      sourceIds: build.source_ids,
-      materials: input.materials,
-      claimBoundary: input.claimBoundary,
-    }),
-  );
-
-  return {
-    targetKind: "build",
-    targetId: build.run_id,
-    summary: build.run_id,
-    contextLabel: `${build.source_count} 份来源素材 · ${build.node_count} 个节点 / ${build.edge_count} 条边`,
-    linkedReviewTarget: null,
-    claimBoundary: input.claimBoundary,
-    records: uniqueStable(records, (item) => item.recordId),
-    semanticNotes: [GENERATED_BUILD_NOTE],
-  };
-}
-
-export function buildMaterialsBuildEdgeProvenance(input: {
-  buildDetail: KGConstructionBuildDetail | null | undefined;
-  edge: KGConstructionReviewQueueEdge | null | undefined;
-  materials: ProvenanceSourceMaterial[];
-  claimBoundary: string;
-}): ProvenanceInspectorState | null {
-  if (!input.buildDetail || !input.edge) {
-    return null;
-  }
-
-  const material =
-    input.materials.find((item) => item.sourceId === input.edge?.source) ??
-    null;
-  const records: ProvenanceRecord[] = [
-    {
-      recordId: `build-edge:${input.edge.target_key}`,
-      sourceType: "review_queue",
-      sourceLabel: `${input.edge.head} —${input.edge.relation}→ ${input.edge.tail}`,
-      sourcePathOrId: input.edge.source || input.edge.target_key,
-      snippetOrPreview:
-        input.edge.evidence ||
-        "当前 review queue edge 未附带 evidence snippet。",
-      previewUrl: null,
-      confidence: input.edge.confidence,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: input.edge.target_key,
-      tags: input.edge.source ? ["source-grounded"] : ["generated"],
-      multiline: false,
-    },
-  ];
-
-  if (material) {
-    records.push({
-      recordId: `build-edge-source:${input.edge.target_key}`,
-      sourceType: "source_material",
-      sourceLabel: material.title,
-      sourcePathOrId: material.path ?? material.sourceId,
-      snippetOrPreview:
-        material.note ?? material.sourceType ?? "关联来源素材",
-      previewUrl: null,
-      confidence: null,
-      claimBoundary: input.claimBoundary,
-      reviewTargetKey: input.edge.target_key,
-      tags: ["source-grounded"],
-      multiline: false,
-    });
-  }
-
-  return {
-    targetKind: "build_edge",
-    targetId: input.edge.target_key,
-    summary: `${input.edge.head} —${input.edge.relation}→ ${input.edge.tail}`,
-    contextLabel: input.buildDetail.build.run_id,
-    linkedReviewTarget: input.edge.target_key,
     claimBoundary: input.claimBoundary,
     records: uniqueStable(records, (item) => item.recordId),
     semanticNotes: [],

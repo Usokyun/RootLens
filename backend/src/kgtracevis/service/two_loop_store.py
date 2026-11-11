@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,29 @@ class TwoLoopStore:
             ).fetchall()
         return [r["payload"] for r in rows]
 
+    def material_has_active_task(self, material_id: str) -> bool:
+        """Check the full task ledger, including work outside the recent-list limit."""
+        with self.connection() as connection:
+            if (
+                connection.execute("SELECT to_regclass('rootlens_tasks') AS task_table").fetchone()[
+                    "task_table"
+                ]
+                is None
+            ):
+                return False
+            row = connection.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM rootlens_tasks
+                    WHERE payload->>'kind' IN ('material_parse', 'material_build')
+                      AND payload->>'status' IN ('queued', 'running')
+                      AND (payload->'request'->'material_ids') ? %s
+                ) AS in_use
+                """,
+                (material_id,),
+            ).fetchone()
+        return bool(row["in_use"])
+
     def save_analysis(self, run):
         from psycopg.types.json import Jsonb
 
@@ -107,12 +131,37 @@ class TwoLoopStore:
     def list_analyses(self, *, limit=50):
         with self.connection() as connection:
             rows = connection.execute(
-                "SELECT payload - 'cases' - 'working_graph_snapshot' - 'artifacts' "
-                "- 'media_assets' - 'input_snapshot' AS payload "
-                "FROM rootlens_analyses ORDER BY created_at DESC LIMIT %s",
+                """
+                SELECT payload - 'cases' - 'working_graph_snapshot' - 'artifacts'
+                               - 'media_assets' - 'input_snapshot' AS payload,
+                       ARRAY(
+                           SELECT ARRAY[result->>'outcome', result->>'reason']
+                           FROM jsonb_path_query(payload, '$.cases[*].results[*]') AS saved(result)
+                           WHERE jsonb_typeof(result->'outcome') = 'string'
+                             AND result->>'outcome' <> ''
+                       ) AS saved_outcomes
+                FROM rootlens_analyses ORDER BY created_at DESC LIMIT %s
+                """,
                 (limit,),
             ).fetchall()
-        return [r["payload"] for r in rows]
+        summaries = []
+        for row in rows:
+            counts: Counter[str] = Counter()
+            normal_gates = 0
+            for outcome, reason in row["saved_outcomes"]:
+                if outcome == "no_match" and reason == "normal_reference_gate_is_false":
+                    normal_gates += 1
+                else:
+                    counts[outcome] += 1
+            summary = row["payload"]
+            if counts or normal_gates:
+                summary = {
+                    **summary,
+                    "outcome_counts": dict(counts),
+                    "normal_gate_count": normal_gates,
+                }
+            summaries.append(summary)
+        return summaries
 
     def media_registry(self):
         """Only paths actually registered by a raw run can resolve native Frame URIs."""

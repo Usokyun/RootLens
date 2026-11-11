@@ -259,6 +259,7 @@ Backend 总图采用当前登记图，历史局部路径和解释采用保存快
 ## 在原三页接回真实双闭环（2026-11-11）
 
 保留还原后的导航、Arco 卡片、总图／局部图和 Demo／成品 Replay。新操作接在原页面内，不另建工作台。
+以下为原单层页面的接线验收；运行与证据的新入口见下一节。
 
 ### 运行与证据：新建、看进度、打开保存结果
 
@@ -295,3 +296,23 @@ VITE_API_BASE_URL=http://127.0.0.1:8012 VITE_BACKEND_PROXY_TARGET=http://127.0.0
 最终三线源码的原生 `npm test` **28 文件／147 项通过**；`npm run build` 类型与生产构建通过，原全量 Arco 主 chunk 约 771KB 仍有体积警告。Tracked 及新增前端文件 whitespace 检查通过。实际日志为 `.playwright-mcp/original-two-loop/final-vitest.log`、`final-build.log`。未安装新工具或修改 D3、主题、根依赖。
 
 同一候选的实际构图 → 编辑／启用 → 原始样本 → 下载 Evidence → 普通上传复算，及三场景的实屏边界，见 [原界面真实闭环验收](../../backend/docs/original-ui-loop-acceptance.md)。
+
+## 运行与证据：列表与保存详情（2026-11-11）
+
+在 [运行与证据](http://127.0.0.1:5186/evidence) 切到 **Backend**。列表用原 Arco 弹窗新建分析，上传走 `/api/tasks/inference`；选受管样例走同一任务族的 `/demo`。弹窗外显示实际阶段和计数，失败只在点击 **按原输入重试** 后重提。后端 `adapter` / `measurement` 归在同一测量与 Evidence 阶段，不估算百分比。
+
+- **历史**分列显示执行状态和保存结论。结论只用 `/api/analyses` 的范围计数，正常门控单列，不从候选数推断；后端未返回结论时可打开查看。任务失败且未生成结果时只回到该任务，不打开其他历史结果。
+- **详情**的正式地址是 `/evidence/runs/:runId`，用 `case_id`、`tab` 定位保存的 Frame 与视图。任务完成只用该任务返回的 `result.run_id`。详情左侧是四段执行索引，右侧有总览、输入、Backbone、Evidence、推理、图谱；图谱仍是本次保存源边的有向网络。Evidence 直入标注跳过提取；下载的是该次原生 Evidence。返回列表恢复同一后端地址下的搜索、场景、状态与滚动位置。
+- **工作图**可携精确图 ID 新建，示例 `graph_ref` 不覆盖已明确选择的图。图谱页继续读取已有旧 Run 及其附件；新分析返回运行页时打开同一 Run／Frame。已存旧 Run 的回放下载 API 保留；旧上传工作台和 `/evidence?run_id…` 转发已删除，客户端不再按缓存猜运行来源。
+- **回放**从当前列表的 **导入回放** 进入，可选完整 Session 或配套 runtime／graphs。回放和 Demo 都只读取成品；退出回放回到当前选择的数据源，不以成品替代失败的 Backend 请求。
+
+### 同一工作树的真实合验
+
+既有 [5186 前端](http://127.0.0.1:5186/evidence) 保持运行，应用默认 Backend 地址和代理目标均为 `http://127.0.0.1:8012`，同源 `/api/health` 实测 `ok`。已保存的自定义地址仍由顶部连接设置控制。
+
+- 素材线实际上传并提取公开短摘，移出、恢复后原文件、提取片段与历史引用均不变。读取已完成的公开构图任务，从其精确登记图进入新建分析；该图本已启用。没有重跑构图。
+- 唯一新增分析上传已有的 006 Evidence，完成为 [保存运行 2570f81d](http://127.0.0.1:5186/evidence/runs/2570f81d-7fee-406a-9eab-5132c2b2c223?case_id=mvtec_bottle_test_unknown_sample_006%2Fquery%2F1)。实际结果 8 个并列候选、24 条路径；页面展示 35 条去重源边，源边和观测联动，同一 Frame 下载精确，返回保留搜索。此次不重跑 Backbone 或 LLM。
+- [实际请求、响应与截图索引](../../backend/runs/live_materials_inference_acceptance/verification.json)及同目录 `06-carried-graph-evidence-input.png`、`07-live-l2-same-source-edge.png`、`08-live-l2-same-observation.png`、`09-live-run-list-return.png`。
+- 当前合并树原生 `npm test` **33 文件／180 项通过**，`npm run build` 类型与生产构建通过。既有 Arco 主 chunk 体积警告保留（约 797 KB）；前端差异检查通过。日志为 `.playwright-mcp/two-level-evidence/integration-final-vitest.log`、`integration-final-build.log`。
+
+此前的归档实屏用于补足三场景和故障验证：[详情归档验收](../../backend/runs/two_level_evidence_detail_review/verification.json)记录 D3 缩放拖拽、d04 的 52 条已有曲线与正常窗口隔离，以及 38×38 晶圆网格。`.playwright-mcp/two-level-evidence/verification.json` 中的进行中、失败和重试为受控回执，不是实发任务；该目录旧脚本的过渡 URL 已退役。

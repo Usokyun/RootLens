@@ -92,6 +92,20 @@ export interface DemoGroup {
 }
 export interface DemoLibrary { demos: DemoGroup[]; samples: DemoSample[] }
 
+export interface SavedAnalysisListItem {
+  run_id: string
+  title: string
+  created_at: string
+  status: 'completed' | 'failed'
+  dataset: Dataset
+  input_mode: InputMode
+  reasoner_id: ReasonerId
+  source_filename?: string
+  case_count?: number
+  outcome_counts?: Record<string, number>
+  normal_gate_count?: number
+}
+
 export interface InferenceInput {
   file: File
   reference_file?: File
@@ -128,6 +142,7 @@ export function createTwoLoopClient(base: string) {
       new URLSearchParams({ after_sequence: String(afterSequence) }),
     ),
     listTasks: (limit = 50) => get<{ tasks: WorkTask[] }>('/api/tasks', new URLSearchParams({ limit: String(limit) })),
+    listAnalyses: (limit = 50) => get<{ runs: SavedAnalysisListItem[] }>('/api/analyses', new URLSearchParams({ limit: String(limit) })),
     retryTask: (id: string) => requestJson<WorkTask>(base, `/api/tasks/${encodeURIComponent(id)}/retry`, { method: 'POST' }),
     demos: () => get<DemoLibrary>('/api/demo-library'),
     reasoners: () => get<{ reasoners: Reasoner[] }>('/api/reasoners'),

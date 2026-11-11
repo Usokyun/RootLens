@@ -226,7 +226,8 @@ function useCurrentGraph() {
 }
 function returnToEvidence() {
   const detail = runDetail.value;
-  void router.push(detail?.run.source_contract === "analysis-v2"
+  const backend = preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import";
+  void router.push(backend && detail?.run.source_contract === "analysis-v2"
     ? savedAnalysisRoute("evidence", detail.run.run_id, activeCase.value?.case_id)
     : { name: "evidence" });
 }
@@ -1729,7 +1730,8 @@ function jumpToRecurringCase(hit: RecurrenceCaseHit) {
 }
 
 function syncRouteQuery(runId: string | null, caseId: string | null) {
-  const source = runDetail.value?.run.source_contract === "analysis-v2" ? "analysis-v2" : null;
+  const backend = preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import";
+  const source = backend ? runDetail.value?.run.source_contract ?? null : null;
   const nextQuery = {
     ...route.query,
     run_id: runId ?? undefined,
@@ -2110,8 +2112,10 @@ function handleRunChange(value: unknown) {
   selectedTraceStepId.value = null;
   crossCaseCompareOpen.value = false;
   const summary = runs.value.find(item => item.run_id === runId);
-  void router.replace(summary?.source_contract === "analysis-v2"
-    ? savedAnalysisRoute("graphs", runId) : { name: "graphs", query: { run_id: runId } });
+  const backend = preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import";
+  const source = backend ? summary?.source_contract : undefined;
+  void router.replace(source === "analysis-v2" ? savedAnalysisRoute("graphs", runId)
+    : { name: "graphs", query: { run_id: runId, source } });
 }
 
 function handleCaseChange(value: unknown) {
@@ -2153,7 +2157,8 @@ async function refreshWorkspace() {
     const requestedGraph = queryText(route.query.graph);
     const requestedRun = savedIntent?.runId ?? queryText(route.query.run_id);
     const requestedFrame = savedIntent?.frameId ?? queryText(route.query.case_id);
-    if (useLocalGraphs && (savedIntent || requestedGraph)) {
+    const runSource = savedIntent ? "analysis-v2" : route.query.source === "legacy-run" ? "legacy-run" : null;
+    if (useLocalGraphs && (runSource || requestedGraph)) {
       runs.value = [];
       throw new Error("此链接指向后端保存结果或工作图，请切换 Backend 后查看。");
     }
@@ -2161,14 +2166,11 @@ async function refreshWorkspace() {
     const graphTask = useLocalGraphs
       ? loadUnifiedGraphs()
       : requestedGraph ? service.kgStudio(requestedGraph) : Promise.resolve(null);
-    const runSource = savedIntent ? "analysis-v2" : !useLocalGraphs && requestedRun === workbenchState.value.selectedRunId
-      ? workbenchState.value.selectedRunSource ?? undefined : undefined;
-
     const [runsResult, graphResult, registryResult, explicitRunResult] = await Promise.allSettled([
       service.listRuns(),
       graphTask,
       useLocalGraphs ? Promise.resolve({ graphs: [] }) : service.listWorkingGraphs(),
-      requestedRun ? service.getRun(requestedRun, runSource) : Promise.resolve(null),
+      requestedRun && (runSource || useLocalGraphs) ? service.getRun(requestedRun, runSource ?? "legacy-run") : Promise.resolve(null),
     ] as const);
 
     if (revision !== workspaceRevision) return;
@@ -2200,19 +2202,27 @@ async function refreshWorkspace() {
     if (explicitRunResult.status === "rejected") throw explicitRunResult.reason;
     let detail = explicitRunResult.value;
     if (!detail) {
-      const next = runs.value.find(item => item.run_id === workbenchState.value.selectedRunId) ?? runs.value[0];
-      if (next) detail = await service.getRun(next.run_id, next.source_contract);
+      if (runsResult.status === "rejected") throw runsResult.reason;
+      const next = requestedRun
+        ? runs.value.find(item => item.run_id === requestedRun)
+        : runs.value.find(item => item.run_id === workbenchState.value.selectedRunId) ?? runs.value[0];
+      if (requestedRun && !next) throw new Error("未在运行目录中找到所选记录。");
+      if (next) {
+        const source = useLocalGraphs ? "legacy-run" : next.source_contract;
+        if (!source) throw new Error("运行目录未标记记录来源。");
+        detail = await service.getRun(next.run_id, source);
+      }
     }
     if (revision !== workspaceRevision) return;
-    if (savedIntent?.frameId && !detail?.cases.some(item => item.case_id === savedIntent.frameId)) {
-      throw new Error("该保存分析不包含所选 EvidenceFrame。");
+    if (requestedFrame && !detail?.cases.some(item => item.case_id === requestedFrame)) {
+      throw new Error("所选运行不包含此证据范围。");
     }
     if (detail) {
       runDetail.value = detail;
       if (!runs.value.some(item => item.run_id === detail.run.run_id)) runs.value = [detail.run, ...runs.value];
       const caseId = requestedFrame ?? (workbenchState.value.selectedRunId === detail.run.run_id ? workbenchState.value.selectedCaseId : null);
       const nextSelection = buildCaseSelection(detail, caseId);
-      updateState({ selectedRunId: detail.run.run_id, selectedRunSource: detail.run.source_contract ?? runSource ?? null, ...nextSelection });
+      updateState({ selectedRunId: detail.run.run_id, selectedRunSource: useLocalGraphs ? null : detail.run.source_contract ?? null, ...nextSelection });
       syncRouteQuery(detail.run.run_id, nextSelection.selectedCaseId);
     }
 

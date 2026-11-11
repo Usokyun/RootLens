@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
-import NewAnalysisDialog from '@/components/evidence/NewAnalysisDialog.vue'
 import UnifiedReasoningDetails from '@/components/evidence/UnifiedReasoningDetails.vue'
 import {
   IconBulb,
@@ -9,37 +8,25 @@ import {
   IconRefresh,
   IconRelation,
   IconStorage,
-  IconUpload,
 } from '@arco-design/web-vue/es/icon'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import type {
-  DashboardBootstrap,
-  DashboardReasoningProfileOption,
   RankedRootCause,
   RunCaseDetail,
   RunDetail,
-  RunSourceContract,
   RunSummary,
-  UploadMode,
   VisualEvidenceItem,
 } from '@/api/contracts'
-import { backendResourceUrl, type WorkTask } from '@/api/two-loop'
 import SectionCardTitle from '@/components/layout/SectionCardTitle.vue'
-import { isAnalysisDataset, type AnalysisDraftSeed } from '@/services/analysis-draft'
-import { newAnalysisIntent, savedAnalysisIntent, savedAnalysisRoute } from '@/services/analysis-entry'
+import { newAnalysisIntent } from '@/services/analysis-entry'
 import { useAppPreferences } from '@/services/app-preferences'
-import { buildLocalImportResult } from '@/services/browser-runtime'
-import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventName, getLocalSessionMeta, saveImportedSession } from '@/services/rootlens-data'
-import { getRootLensService } from '@/services/rootlens-service'
-import { restoreSessionImportFile } from '@/services/session-export'
+import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
+import { mockBackend } from '@/services/mock-backend'
 import { filterObservationBrowseItems, buildObservationBrowseItems, collectObservationModalities, collectObservationSources, findObservationBrowseItem, selectVisualEvidenceForObservation, type ObservationBrowseItem, type ObservationConfidenceBand, type ObservationModality } from '@/services/evidence-observation'
-import { extractFirstFileFromDataTransfer, markDragEventHandled } from '@/services/file-drop'
-import { taskStatusLabels } from '@/services/task-observer'
 import {
   formatClaimBoundaryCopy,
-  formatReasonerAdapterLabel,
   formatScoringMethodLabel,
   resolveRunReasoningSummary,
   resolveVisualEvidenceUrl,
@@ -68,59 +55,21 @@ const router = useRouter()
 const route = useRoute()
 const { preferences } = useAppPreferences()
 const { state: workbenchState, updateState } = useWorkbenchState()
-const isMockMode = computed(() => preferences.value.dataSourceMode === 'mock')
+const emit = defineEmits<{ 'import-replay': [] }>()
+const blockedAnalysisIntent = computed(() => !!newAnalysisIntent(route.query))
 
 let sourceRevision = 0
 let workspaceRevision = 0
 let runReadRevision = 0
-let suppressDefaultRun = false
 const workspaceLoading = ref(false)
 const runLoading = ref(false)
 const loading = computed(() => workspaceLoading.value || runLoading.value)
-const uploadLoading = ref(false)
-const bootstrap = ref<DashboardBootstrap | null>(null)
 const runs = ref<RunSummary[]>([])
 const runDetail = ref<RunDetail | null>(null)
 const errorMessage = ref('')
-const uploadMessage = ref('')
-const uploadInputRef = ref<HTMLInputElement | null>(null)
-const uploadDragActive = ref(false)
-const uploadDragDepth = ref(0)
-
-const replayModalVisible = ref(false)
-const replayImportLoading = ref(false)
-const replayRuntimeInputRef = ref<HTMLInputElement | null>(null)
-const replayGraphsInputRef = ref<HTMLInputElement | null>(null)
-const replayWorkspaceInputRef = ref<HTMLInputElement | null>(null)
 const importedSessionMeta = ref(getLocalSessionMeta())
 const importedSessionSummary = ref(getImportedSessionSummary())
-const replayWarnings = ref<string[]>([])
-
-const replayImportForm = reactive({
-  runtimeFile: null as File | null,
-  graphsFile: null as File | null,
-  workspaceFile: null as File | null,
-})
-
 const observationDetailModalVisible = ref(false)
-const analysisDialogVisible = ref(false)
-const analysisSeed = ref<AnalysisDraftSeed | null>(null)
-const analysisTask = ref<WorkTask | null>(null)
-
-const uploadForm = reactive({
-  mode: 'records' as UploadMode,
-  dataset: '',
-  topK: 5,
-  file: null as File | null,
-  objectName: '',
-  defectType: '',
-  modelPreset: 'auto',
-  reasoningProfileId: '',
-  roiSemantics: false,
-})
-
-const workingGraphOptions = ref<DashboardReasoningProfileOption[]>([])
-const workingGraphError = ref('')
 
 const evidenceFilter = reactive({
   graph: workbenchState.value.evidenceFilterGraph ?? 'all',
@@ -133,7 +82,6 @@ const evidenceFilter = reactive({
 })
 
 const isReplaySessionActive = computed(() => importedSessionMeta.value?.source === 'import')
-const canStartBackendAnalysis = computed(() => !isMockMode.value && !isReplaySessionActive.value)
 const replaySourceModeLabel = computed(() => {
   switch (importedSessionSummary.value?.sourceMode) {
     case 'graphs+evidence':
@@ -147,7 +95,7 @@ const replaySourceModeLabel = computed(() => {
   }
 })
 const evidenceClaimBoundaryCopy = computed(() =>
-  formatClaimBoundaryCopy(runDetail.value?.claim_boundary ?? bootstrap.value?.claim_boundary),
+  formatClaimBoundaryCopy(runDetail.value?.claim_boundary),
 )
 
 const selectedObservationId = computed(() => workbenchState.value.selectedObservationId)
@@ -164,11 +112,6 @@ const normalizedObservationFilters = computed(() => ({
 const selectedRunId = computed(() => workbenchState.value.selectedRunId)
 const activeCaseId = computed(() => workbenchState.value.selectedCaseId)
 const activeRun = computed(() => runDetail.value?.run ?? null)
-const analysisEvidenceUrl = computed(() => {
-  const path = runDetail.value?.summary?.evidence_download_url
-  return activeRun.value?.source_contract === 'analysis-v2' && canStartBackendAnalysis.value && typeof path === 'string'
-    ? backendResourceUrl(preferences.value.apiBaseUrl, path) : null
-})
 const activeCase = computed(() => {
   if (!runDetail.value) {
     return null
@@ -242,30 +185,8 @@ const selectedObservationVisualEvidence = computed(() =>
 
 function evidenceMediaUrl(item: VisualEvidenceItem) {
   const url = resolveVisualEvidenceUrl(item)
-  return activeRun.value?.source_contract === 'analysis-v2' && url?.startsWith('/api/')
-    ? backendResourceUrl(preferences.value.apiBaseUrl, url) : url
+  return url?.startsWith('/api/') ? null : url
 }
-
-const uploadAccept = computed(() => {
-  const modeConfig = bootstrap.value?.upload_modes.find((item) => item.mode === uploadForm.mode)
-  return modeConfig?.accepted_extensions.join(',') ?? ''
-})
-
-const uploadReasoningProfileOptions = computed<DashboardReasoningProfileOption[]>(() => {
-  const dataset = uploadForm.dataset.trim()
-  if (!dataset) {
-    return []
-  }
-
-  const options = bootstrap.value?.reasoning_profile_options?.[dataset] ?? []
-  return dataset === 'mvtec' ? [...options, ...workingGraphOptions.value] : options
-})
-
-const uploadReasoningHelp = computed(() => {
-  if (!uploadForm.dataset) return '先选择数据集，才能指定推理配置。'
-  if (!uploadReasoningProfileOptions.value.length) return '当前数据集使用后端默认推理配置。'
-  return '留空时使用后端默认配置。'
-})
 
 const caseEvidenceEntriesObservationItems = computed(() =>
   (runDetail.value?.cases ?? []).flatMap((caseItem) => buildObservationBrowseItems(caseItem)),
@@ -291,9 +212,9 @@ const activeReasoningSummary = computed(() =>
 )
 
 const runStatusHelp = computed(() => [
-  isMockMode.value
-    ? '当前为内置 Demo 模式：左侧展示预设 case，右侧固定展示唯一演示 run。'
-    : '左侧提交 record，右侧用紧凑列表切换当前 Run。',
+  isReplaySessionActive.value
+    ? '当前为成品回放：切换记录可查看已保存的结果。'
+    : '当前为内置 Demo：可查看成品示例，不执行分析。',
   evidenceClaimBoundaryCopy.value,
 ])
 
@@ -328,19 +249,6 @@ function formatDateTime(value: string | undefined | null) {
   return date.toLocaleString('zh-CN', {
     hour12: false,
   })
-}
-
-function formatUploadModeLabel(mode: UploadMode | undefined | null) {
-  switch (mode) {
-    case 'records':
-      return '批量记录'
-    case 'evidence':
-      return '单条证据'
-    case 'image':
-      return '图像'
-    default:
-      return '--'
-  }
 }
 
 function formatRunStatus(status: string | undefined | null) {
@@ -487,49 +395,6 @@ function buildCaseEvidenceEntry(caseItem: RunCaseDetail): CaseEvidenceEntry {
   }
 }
 
-function setUploadFile(file: File | null) {
-  uploadForm.file = file
-}
-
-function handleUploadFileChange(event: Event) {
-  const input = event.target as HTMLInputElement | null
-  setUploadFile(input?.files?.[0] ?? null)
-}
-
-function openUploadPicker() {
-  uploadInputRef.value?.click()
-}
-
-function resetUploadDragState() {
-  uploadDragDepth.value = 0
-  uploadDragActive.value = false
-}
-
-function handleUploadDragEnter(event: DragEvent) {
-  markDragEventHandled(event)
-  uploadDragDepth.value += 1
-  uploadDragActive.value = true
-}
-
-function handleUploadDragOver(event: DragEvent) {
-  markDragEventHandled(event, { dropEffect: 'copy' })
-  uploadDragActive.value = true
-}
-
-function handleUploadDragLeave(event: DragEvent) {
-  markDragEventHandled(event)
-  uploadDragDepth.value = Math.max(0, uploadDragDepth.value - 1)
-  if (uploadDragDepth.value === 0) {
-    uploadDragActive.value = false
-  }
-}
-
-function handleUploadDrop(event: DragEvent) {
-  markDragEventHandled(event, { dropEffect: 'copy' })
-  setUploadFile(extractFirstFileFromDataTransfer(event.dataTransfer))
-  resetUploadDragState()
-}
-
 function syncImportedSessionState() {
   importedSessionMeta.value = getLocalSessionMeta()
   importedSessionSummary.value = getImportedSessionSummary()
@@ -538,127 +403,7 @@ function syncImportedSessionState() {
 function handleLocalSessionChange() {
   clearSourceView()
   syncImportedSessionState()
-  if (savedAnalysisIntent(route.query) || newAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
   void refreshWorkspace()
-}
-
-function resetReplayImportForm() {
-  replayImportForm.runtimeFile = null
-  replayImportForm.graphsFile = null
-  replayImportForm.workspaceFile = null
-  replayWarnings.value = []
-}
-
-function openReplayAssetsModal() {
-  resetReplayImportForm()
-  replayModalVisible.value = true
-}
-
-function setReplayImportFile(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile', file: File | null) {
-  replayImportForm[kind] = file
-}
-
-function handleReplayFileChange(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile', event: Event) {
-  const input = event.target as HTMLInputElement | null
-  setReplayImportFile(kind, input?.files?.[0] ?? null)
-}
-
-function openReplayFilePicker(kind: 'runtimeFile' | 'graphsFile' | 'workspaceFile') {
-  if (kind === 'runtimeFile') {
-    replayRuntimeInputRef.value?.click()
-    return
-  }
-
-  if (kind === 'graphsFile') {
-    replayGraphsInputRef.value?.click()
-    return
-  }
-
-  replayWorkspaceInputRef.value?.click()
-}
-
-async function readSessionImportSchema(file: File) {
-  try {
-    const payload = JSON.parse(await file.text()) as Record<string, unknown>
-    return typeof payload.schema_version === 'string' ? payload.schema_version : null
-  } catch {
-    throw new Error('附加恢复文件不是合法 JSON。')
-  }
-}
-
-async function handleReplayImport() {
-  const assetFiles = [replayImportForm.runtimeFile, replayImportForm.graphsFile].filter(
-    (file): file is File => Boolean(file),
-  )
-  const workspaceFile = replayImportForm.workspaceFile
-
-  if (!assetFiles.length && !workspaceFile) {
-    errorMessage.value = '请至少选择一份完整回放资产或工作区恢复文件。'
-    return
-  }
-
-  replayImportLoading.value = true
-  errorMessage.value = ''
-  uploadMessage.value = ''
-
-  try {
-    const messages: string[] = []
-    const warnings: string[] = []
-
-    if (assetFiles.length) {
-      const importResult = await buildLocalImportResult(assetFiles)
-      await saveImportedSession({
-        graphs: importResult.graphs,
-        runtime: importResult.runtime,
-        summary: `导入完整回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
-        importSummary: importResult.summary,
-      })
-      syncImportedSessionState()
-      messages.push(
-        `已导入完整回放资产：${importResult.summary.datasets.length} 个 dataset，${importResult.summary.cases.length} 个 case。`,
-      )
-      warnings.push(...importResult.summary.warnings)
-    }
-
-    if (workspaceFile) {
-      const schemaVersion = await readSessionImportSchema(workspaceFile)
-      if (assetFiles.length && schemaVersion === 'rootlens-session-export.v1') {
-        throw new Error('完整 session bundle 请单独导入，不要与 runtime/graphs 原始资产混合。')
-      }
-
-      const restoreResult = await restoreSessionImportFile(workspaceFile)
-      syncImportedSessionState()
-      messages.push(restoreResult.summary)
-      warnings.push(...restoreResult.warnings)
-    }
-
-    replayWarnings.value = warnings
-    replayModalVisible.value = false
-    uploadMessage.value = [
-      messages.join(' '),
-      warnings.length ? `警告：${warnings.join('；')}` : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-
-    await refreshWorkspace()
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
-  } finally {
-    replayImportLoading.value = false
-  }
-}
-
-async function handleSwitchToLiveUpload() {
-  if (!isReplaySessionActive.value) {
-    return
-  }
-
-  clearImportedSession()
-  syncImportedSessionState()
-  replayWarnings.value = []
-  uploadMessage.value = '已退出回放会话，恢复当前实时/演示数据视图。'
-  await refreshWorkspace()
 }
 
 function setSelectedObservation(observationId: string | null) {
@@ -676,7 +421,7 @@ function openObservationDetail(observationId: string | null) {
   observationDetailModalVisible.value = true
 }
 
-function setSelectedCase(caseId: string | null, syncUrl = true) {
+function setSelectedCase(caseId: string | null) {
   updateState({
     selectedCaseId: caseId,
     selectedObservationId: null,
@@ -688,10 +433,7 @@ function setSelectedCase(caseId: string | null, syncUrl = true) {
     selectedSubgraphNodeId: null,
     selectedSubgraphEdgeId: null,
   })
-  const saved = savedAnalysisIntent(route.query)
-  if (syncUrl && saved && saved.runId === activeRun.value?.run_id && caseId !== saved.frameId) {
-    void router.replace(savedAnalysisRoute('evidence', saved.runId, caseId))
-  }
+
 }
 
 function findBestPathId(caseItem: RunCaseDetail | null, candidate: RankedRootCause | null) {
@@ -728,7 +470,7 @@ function selectCandidate(candidateId: string) {
   })
 }
 
-async function loadRun(runId: string, source?: RunSourceContract, frameId?: string | null) {
+async function loadRun(runId: string) {
   const revision = ++runReadRevision
   const fromSource = sourceRevision
   const isCurrent = () => revision === runReadRevision && fromSource === sourceRevision
@@ -737,17 +479,11 @@ async function loadRun(runId: string, source?: RunSourceContract, frameId?: stri
   if (activeRun.value?.run_id !== runId) runDetail.value = null
 
   try {
-    const detail = await getRootLensService().getRun(runId, source)
+    const detail = await mockBackend.getRun(runId)
     if (!isCurrent()) return
     const caseIds = detail.cases.map((item) => item.case_id)
-    if (frameId && !caseIds.includes(frameId)) throw new Error('本次保存分析不包含指定的 Evidence 范围。')
     runDetail.value = detail
-    const actualSource = detail.run.source_contract ?? source
-    if (actualSource === 'analysis-v2' && !runs.value.some((run) => run.run_id === runId)) runs.value = [detail.run, ...runs.value]
-    updateState(loadedRunSelectionPatch(workbenchState.value, runId, caseIds, { source: actualSource, frameId }))
-    if (savedAnalysisIntent(route.query)?.runId === runId && !frameId && workbenchState.value.selectedCaseId) {
-      void router.replace(savedAnalysisRoute('evidence', runId, workbenchState.value.selectedCaseId))
-    }
+    updateState({ ...loadedRunSelectionPatch(workbenchState.value, runId, caseIds), selectedRunSource: null })
   } catch (error) {
     if (isCurrent()) errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
@@ -759,191 +495,30 @@ function clearSourceView() {
   sourceRevision += 1
   runReadRevision += 1
   runLoading.value = false
-  suppressDefaultRun = false
   runDetail.value = null
   runs.value = []
-  bootstrap.value = null
-  workingGraphOptions.value = []
-  analysisDialogVisible.value = false
-  analysisTask.value = null
-  analysisSeed.value = null
 }
 
-function openNewAnalysis(graphId?: string) {
-  if (!canStartBackendAnalysis.value) return
-  uploadMessage.value = ''
-  if (graphId !== undefined) {
-    // Consume the explicit route before any catalog or old Run request can answer.
-    suppressDefaultRun = true
-    runReadRevision += 1
-    runLoading.value = false
-    runDetail.value = null
-    updateState(sourceSelectionReset())
-    analysisSeed.value = { graphId, graphOrigin: 'explicit' }
-  } else {
-    const previous = activeRun.value?.source_contract === 'analysis-v2' ? runDetail.value : null
-    const dataset = previous?.run.dataset
-    const reasoner = previous?.reasoning_metadata?.reasoner_adapter
-    analysisSeed.value = {
-      dataset: isAnalysisDataset(dataset) ? dataset : undefined,
-      graphId: previous?.reasoning_metadata?.graph_id ?? undefined,
-      reasonerId: reasoner === 'unified_abduction' || reasoner === 'tep_rootkgd' ? reasoner : undefined,
-      topK: previous?.run.top_k ?? undefined,
-    }
-  }
-  analysisDialogVisible.value = true
-}
-
-function showAnalysisTask() {
-  analysisSeed.value = null
-  analysisDialogVisible.value = true
-}
-
-function openSavedAnalysis(runId: string) {
-  analysisDialogVisible.value = false
-  suppressDefaultRun = true
-  const saved = savedAnalysisIntent(route.query)
-  if (saved?.runId === runId) void loadRun(runId, 'analysis-v2', saved.frameId)
-  else void router.push(savedAnalysisRoute('evidence', runId))
-}
-
-function openRunFromList(run: RunSummary) {
-  if (run.source_contract === 'analysis-v2') return openSavedAnalysis(run.run_id)
-  suppressDefaultRun = false
-  if (savedAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
-  void loadRun(run.run_id, run.source_contract)
-}
-
-function handleAnalysisRoute(): boolean {
-  if (route.name !== 'evidence') return false
-  const newIntent = newAnalysisIntent(route.query)
-  const saved = savedAnalysisIntent(route.query)
-  if (!newIntent && !saved) return false
-  suppressDefaultRun = true
-  if (!canStartBackendAnalysis.value) {
-    errorMessage.value = '请切换到 Backend 并退出回放，再打开该分析入口。'
-    return true
-  }
-  if (newIntent) {
-    errorMessage.value = ''
-    openNewAnalysis(newIntent.graphId)
-    void router.replace({ name: 'evidence' })
-  } else if (saved) {
-    analysisDialogVisible.value = false
-    if (activeRun.value?.run_id === saved.runId && activeRun.value.source_contract === 'analysis-v2'
-      && (!saved.frameId || runDetail.value?.cases.some((item) => item.case_id === saved.frameId))) {
-      if (saved.frameId && activeCaseId.value !== saved.frameId) setSelectedCase(saved.frameId, false)
-    } else {
-      void loadRun(saved.runId, 'analysis-v2', saved.frameId)
-    }
-  }
-  return true
-}
-
-async function exportBackendReplay() {
-  if (!selectedRunId.value) return
-  try {
-    const bundle = await getRootLensService().exportRunReplay(selectedRunId.value)
-    const url = URL.createObjectURL(new Blob([JSON.stringify(bundle)], { type: 'application/json' }))
-    const a = document.createElement('a'); a.href = url; a.download = `rootlens-${selectedRunId.value}-session.json`; a.click(); URL.revokeObjectURL(url)
-    uploadMessage.value = '已导出原始图谱、完整结果与图片，可从现有 Session 入口离线回放。'
-  } catch (error) { errorMessage.value = String(error) }
-}
-
-async function refreshWorkspace(options: { keepError?: boolean } = {}) {
+async function refreshWorkspace() {
   const revision = ++workspaceRevision
   const fromSource = sourceRevision
   const selectedAtStart = runReadRevision
   const isCurrent = () => revision === workspaceRevision && fromSource === sourceRevision
-  syncImportedSessionState()
   workspaceLoading.value = true
-  if (!options.keepError) errorMessage.value = ''
+  errorMessage.value = ''
 
   try {
-    const [bootstrapPayload, runSummaries] = await Promise.all([
-      getRootLensService().bootstrap(),
-      getRootLensService().listRuns(),
-    ])
+    const records = await mockBackend.listRuns()
     if (!isCurrent()) return
-    bootstrap.value = bootstrapPayload
-    const shown = activeRun.value
-    runs.value = shown?.source_contract === 'analysis-v2' && !runSummaries.some((run) => run.run_id === shown.run_id)
-      ? [shown, ...runSummaries] : runSummaries
-    uploadForm.mode = bootstrapPayload.upload_modes[0]?.mode ?? 'records'
-    workingGraphError.value = ''
-    try {
-      const result = await getRootLensService().listWorkingGraphs()
-      if (!isCurrent()) return
-      workingGraphOptions.value = result.graphs.map((graph) => ({
-        profile_id: `working:${graph.graph_id}`, label: graph.title,
-        reasoner_adapter: graph.knowledge ? 'unified_working_graph' : graph.dataset === 'mvtec' ? 'visual_profile_match' : graph.dataset === 'tep' ? 'process_graph_rbc' : 'wafer_spatial_profile', default: false,
-      }))
-    } catch (error) {
-      if (!isCurrent()) return
-      workingGraphOptions.value = []
-      workingGraphError.value = error instanceof Error ? error.message : String(error)
-    }
-
-    if (suppressDefaultRun || selectedAtStart !== runReadRevision) return
-    const saved = runSummaries.find((item) => item.run_id === selectedRunId.value)
-    if (!saved && selectedRunId.value && canStartBackendAnalysis.value && workbenchState.value.selectedRunSource === 'analysis-v2') {
-      await loadRun(selectedRunId.value, 'analysis-v2', activeCaseId.value)
-      return
-    }
-    const nextRun = saved ?? runSummaries[0]
-
-    if (nextRun) {
-      await loadRun(nextRun.run_id, nextRun.source_contract)
-      return
-    }
-
-    runDetail.value = null
+    runs.value = records
+    if (selectedAtStart !== runReadRevision) return
+    const next = records.find((item) => item.run_id === selectedRunId.value) ?? records[0]
+    if (next) await loadRun(next.run_id)
+    else runDetail.value = null
   } catch (error) {
     if (isCurrent()) errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
     if (isCurrent()) workspaceLoading.value = false
-  }
-}
-
-async function handleUpload() {
-  if (!canStartBackendAnalysis.value) {
-    uploadMessage.value = '请切换到 Backend 并退出回放后再上传。'
-    return
-  }
-
-  if (!uploadForm.file) {
-    uploadMessage.value = '请选择一个本地文件。'
-    return
-  }
-
-  uploadLoading.value = true
-  uploadMessage.value = ''
-  errorMessage.value = ''
-  const revision = sourceRevision
-
-  try {
-    const detail = await getRootLensService().uploadRun({
-      file: uploadForm.file,
-      mode: uploadForm.mode,
-      dataset: uploadForm.dataset || undefined,
-      object_name: uploadForm.objectName || undefined,
-      defect_type: uploadForm.defectType || undefined,
-      model_preset: uploadForm.modelPreset || undefined,
-      reasoning_profile_id: uploadForm.reasoningProfileId || undefined,
-      semantic_mode: uploadForm.mode === 'image' && uploadForm.roiSemantics ? 'vlm' : undefined,
-      top_k: uploadForm.topK,
-    })
-
-    if (revision !== sourceRevision) return
-    suppressDefaultRun = false
-    if (savedAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
-    uploadMessage.value = `已生成运行：${detail.run.run_id}`
-    await refreshWorkspace()
-    if (revision === sourceRevision) await loadRun(detail.run.run_id, 'legacy-run')
-  } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error)
-  } finally {
-    uploadLoading.value = false
   }
 }
 
@@ -955,7 +530,7 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
 
   updateState({
     selectedRunId: runId,
-    selectedRunSource: activeRun.value?.source_contract ?? workbenchState.value.selectedRunSource,
+    selectedRunSource: null,
     selectedCaseId: caseId,
     selectedObservationId:
       observationId ?? (caseId === activeCase.value?.case_id ? selectedObservationId.value : null),
@@ -965,10 +540,6 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
     selectedSubgraphEdgeId: null,
   })
 
-  if (activeRun.value?.source_contract === 'analysis-v2') {
-    void router.push(savedAnalysisRoute('graphs', runId, caseId))
-    return
-  }
   void router.push({
     name: 'graphs',
     query: {
@@ -979,44 +550,19 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
 }
 
 watch(
-  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
-  ([mode, address], [previousMode, previousAddress]) => {
+  [() => preferences.value.dataSourceMode, () => preferences.value.apiBaseUrl],
+  () => {
     clearSourceView()
     updateState(sourceSelectionReset())
-    if (savedAnalysisIntent(route.query) && previousMode === 'backend' && (mode !== 'backend' || address !== previousAddress)) {
-      void router.replace({ name: 'evidence' })
-      void refreshWorkspace()
-    } else {
-      void refreshWorkspace({ keepError: handleAnalysisRoute() })
-    }
+    void refreshWorkspace()
   },
 )
-
-watch(() => [route.name, route.query.intent, route.query.graph, route.query.source, route.query.run_id, route.query.case_id], handleAnalysisRoute)
 
 watch(
   () => workbenchState.value.selectedRunId,
   (runId) => {
-    if (!suppressDefaultRun && runId && runId !== runDetail.value?.run.run_id) {
-      void loadRun(runId, workbenchState.value.selectedRunSource ?? runs.value.find((item) => item.run_id === runId)?.source_contract)
-    }
-  },
-)
-
-watch(
-  () => [uploadForm.dataset, uploadReasoningProfileOptions.value.map((item) => item.profile_id).join('|')],
-  () => {
-    if (!uploadForm.dataset) {
-      uploadForm.reasoningProfileId = ''
-      return
-    }
-
-    if (!uploadForm.reasoningProfileId) {
-      return
-    }
-
-    if (!uploadReasoningProfileOptions.value.some((item) => item.profile_id === uploadForm.reasoningProfileId)) {
-      uploadForm.reasoningProfileId = ''
+    if (runId && runId !== runDetail.value?.run.run_id && runs.value.some(item => item.run_id === runId)) {
+      void loadRun(runId)
     }
   },
 )
@@ -1053,7 +599,7 @@ watch(activeObservationItems, (items) => {
 onMounted(() => {
   syncImportedSessionState()
   window.addEventListener(getLocalSessionEventName(), handleLocalSessionChange as EventListener)
-  void refreshWorkspace({ keepError: handleAnalysisRoute() })
+  void refreshWorkspace()
 })
 
 onBeforeUnmount(() => {
@@ -1069,13 +615,8 @@ onBeforeUnmount(() => {
     :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
   >
     <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
-    <a-alert v-if="uploadMessage" class="rl-alert" type="success" :title="uploadMessage" />
-
-    <NewAnalysisDialog
-      v-if="canStartBackendAnalysis" :key="preferences.apiBaseUrl" v-model:visible="analysisDialogVisible"
-      :base-url="preferences.apiBaseUrl" :seed="analysisSeed"
-      @task-change="analysisTask = $event" @open-result="openSavedAnalysis"
-    />
+    <a-alert v-if="blockedAnalysisIntent" class="rl-alert" type="info"
+      :title="isReplaySessionActive ? '请退出回放并切换到 Backend，再用所选工作图分析。' : '请切换到 Backend，再用所选工作图分析。'" />
 
     <section class="workspace-shell workspace-shell--evidence">
       <div class="workspace-evidence-layout">
@@ -1084,22 +625,14 @@ onBeforeUnmount(() => {
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="上传与运行状态" :help="runStatusHelp">
-                    <icon-upload />
+                  <SectionCardTitle title="成品运行" :help="runStatusHelp">
+                    <icon-storage />
                   </SectionCardTitle>
                 </h3>
               </div>
               <div class="rl-panel-actions">
-                <a-tag :color="isReplaySessionActive ? 'arcoblue' : isMockMode ? 'gold' : 'green'">
-                  {{
-                    isReplaySessionActive
-                      ? '回放会话'
-                      : isMockMode
-                        ? '内置 Demo'
-                        : formatUploadModeLabel(uploadForm.mode)
-                  }}
-                </a-tag>
-                <a-button :loading="loading" @click="refreshWorkspace({ keepError: handleAnalysisRoute() })">
+                <a-tag :color="isReplaySessionActive ? 'arcoblue' : 'gold'">{{ isReplaySessionActive ? '回放会话' : '内置 Demo' }}</a-tag>
+                <a-button :loading="loading" @click="refreshWorkspace">
                   <template #icon><icon-refresh /></template>
                   刷新视图
                 </a-button>
@@ -1109,25 +642,6 @@ onBeforeUnmount(() => {
               class="rl-section-card__body workspace-split-card workspace-split-card--run-status workspace-run-card__body"
             >
               <section class="workspace-stack workspace-stack--fill workspace-upload-form-stack">
-                <a-button-group aria-label="切换 Evidence 会话来源">
-                  <a-button
-                    :type="!isReplaySessionActive ? 'primary' : 'secondary'"
-                    :aria-pressed="!isReplaySessionActive"
-                    @click="handleSwitchToLiveUpload"
-                  >
-                    实时上传
-                  </a-button>
-                  <a-button
-                    :type="isReplaySessionActive ? 'primary' : 'secondary'"
-                    :aria-pressed="isReplaySessionActive"
-                    @click="openReplayAssetsModal"
-                  >
-                    回放资产
-                  </a-button>
-                </a-button-group>
-
-                <a-button v-if="analysisEvidenceUrl" :href="analysisEvidenceUrl" download>下载本次 Evidence</a-button>
-                <a-button v-else-if="canStartBackendAnalysis && selectedRunId && activeRun?.source_contract !== 'analysis-v2'" @click="exportBackendReplay">导出本次运行回放</a-button>
                 <div v-if="isReplaySessionActive" class="rl-section-card workspace-session-card">
                   <div class="rl-section-card__body workspace-stack workspace-stack--tight">
                     <div class="workspace-summary-list workspace-summary-list--two-col">
@@ -1164,227 +678,25 @@ onBeforeUnmount(() => {
                     </div>
 
                     <a-alert
-                      v-if="(importedSessionSummary?.warnings.length ?? 0) || replayWarnings.length"
+                      v-if="importedSessionSummary?.warnings.length"
                       type="warning"
                       :show-icon="false"
-                      :title="
-                        [...(importedSessionSummary?.warnings ?? []), ...replayWarnings].join('；')
-                      "
+                      :title="importedSessionSummary?.warnings.join('；')"
                     />
 
                     <div class="rl-form-actions rl-form-actions--dual">
-                      <a-button size="small" @click="openReplayAssetsModal">替换回放资产</a-button>
-                      <a-button size="small" status="warning" @click="handleSwitchToLiveUpload">
+                      <a-button size="small" @click="emit('import-replay')">替换回放资产</a-button>
+                      <a-button size="small" status="warning" @click="clearImportedSession">
                         退出回放
                       </a-button>
                     </div>
                   </div>
                 </div>
 
-                <a-alert
-                  v-else-if="isMockMode"
-                  type="info"
-                  title="Demo 为内置快照；上传文件请切换至 Backend。"
-                />
-
-                <a-form
-                  id="evidence-form-1"
-                  :model="uploadForm"
-                  layout="vertical"
-                  v-else
-                  class="workspace-stack workspace-stack--fill workspace-upload-form-stack workspace-form"
-                >
-                  <div class="workspace-form-row workspace-form-row--three">
-                    <a-form-item
-                      field="mode"
-                      label="模式"
-                      :label-attrs="{ for: 'evidence-uploadForm-mode-input' }"
-                      class="workspace-form-item"
-                    >
-                      <div
-                        id="evidence-uploadForm-mode"
-                        v-control-label="'模式'"
-                        class="workspace-control"
-                      >
-                        <a-select aria-label="模式" v-model="uploadForm.mode">
-                          <a-option
-                            v-for="item in bootstrap?.upload_modes ?? []"
-                            :key="item.mode"
-                            :value="item.mode"
-                          >
-                            {{ formatUploadModeLabel(item.mode) }}
-                          </a-option>
-                        </a-select>
-                      </div>
-                    </a-form-item>
-                    <a-form-item
-                      field="dataset"
-                      label="数据集"
-                      :label-attrs="{ for: 'evidence-uploadForm-dataset-input' }"
-                      class="workspace-form-item"
-                    >
-                      <div
-                        id="evidence-uploadForm-dataset"
-                        v-control-label="'数据集'"
-                        class="workspace-control"
-                      >
-                        <a-select aria-label="数据集" v-model="uploadForm.dataset" allow-clear>
-                          <a-option value="">自动</a-option>
-                          <a-option
-                            v-for="dataset in bootstrap?.supported_datasets ?? []"
-                            :key="dataset"
-                            :value="dataset"
-                          >
-                            {{ dataset }}
-                          </a-option>
-                        </a-select>
-                      </div>
-                    </a-form-item>
-                    <a-form-item
-                      field="topK"
-                      label="候选数"
-                      :label-attrs="{ for: 'evidence-uploadForm-topK-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input-number
-                        :input-attrs="{
-                          id: 'evidence-uploadForm-topK-input',
-                          'aria-label': '候选数',
-                        }"
-                        id="evidence-uploadForm-topK"
-                        aria-label="候选数"
-                        v-model="uploadForm.topK"
-                        :min="1"
-                        :max="20"
-                      />
-                    </a-form-item>
-                  </div>
-
-                  <a-form-item
-                    field="reasoningProfileId"
-                    label="推理配置"
-                    :label-attrs="{ for: 'evidence-uploadForm-reasoningProfileId-input' }"
-                    :tooltip="uploadReasoningHelp"
-                    class="workspace-form-item"
-                  >
-                    <div
-                      id="evidence-uploadForm-reasoningProfileId"
-                      v-control-label="'推理配置'"
-                      class="workspace-control"
-                    >
-                      <a-select
-                        aria-label="推理配置"
-                        v-model="uploadForm.reasoningProfileId"
-                        :disabled="!uploadForm.dataset"
-                      >
-                        <a-option value="">自动（按数据集默认）</a-option>
-                        <a-option
-                          v-for="option in uploadReasoningProfileOptions"
-                          :key="option.profile_id"
-                          :value="option.profile_id"
-                        >
-                          {{ option.label ?? option.profile_id }} ·
-                          {{ formatReasonerAdapterLabel(option.reasoner_adapter) }}
-                        </a-option>
-                      </a-select>
-                      <small v-if="workingGraphError">工作图列表不可用：{{ workingGraphError }}</small>
-                    </div>
-                  </a-form-item>
-
-                  <a-checkbox v-if="uploadForm.mode === 'image'" v-model="uploadForm.roiSemantics">
-                    识别区域语义（调用已配置的视觉模型，发送原图缩略图与 ROI）
-                  </a-checkbox>
-                  <div
-                    v-if="uploadForm.mode === 'image'"
-                    class="workspace-form-row workspace-form-row--three"
-                  >
-                    <a-form-item
-                      field="objectName"
-                      label="对象"
-                      :label-attrs="{ for: 'evidence-uploadForm-objectName-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'evidence-uploadForm-objectName-input',
-                          'aria-label': '对象',
-                        }"
-                        id="evidence-uploadForm-objectName"
-                        aria-label="对象"
-                        v-model="uploadForm.objectName"
-                        placeholder="例如 bottle"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="defectType"
-                      label="缺陷类型"
-                      :label-attrs="{ for: 'evidence-uploadForm-defectType-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'evidence-uploadForm-defectType-input',
-                          'aria-label': '缺陷类型',
-                        }"
-                        id="evidence-uploadForm-defectType"
-                        aria-label="缺陷类型"
-                        v-model="uploadForm.defectType"
-                        placeholder="例如 scratch"
-                      />
-                    </a-form-item>
-                    <a-form-item
-                      field="modelPreset"
-                      label="预设"
-                      :label-attrs="{ for: 'evidence-uploadForm-modelPreset-input' }"
-                      class="workspace-form-item"
-                    >
-                      <a-input
-                        :input-attrs="{
-                          id: 'evidence-uploadForm-modelPreset-input',
-                          'aria-label': '预设',
-                        }"
-                        id="evidence-uploadForm-modelPreset"
-                        aria-label="预设"
-                        v-model="uploadForm.modelPreset"
-                        placeholder="auto"
-                      />
-                    </a-form-item>
-                  </div>
-
-                  <a-form-item
-                    label="文件"
-                    label-component="span"
-                    class="workspace-form-item workspace-dropzone-field"
-                  >
-                    <div
-                      class="rl-file-dropzone rl-file-dropzone--fill"
-                      :class="{ 'rl-file-dropzone--active': uploadDragActive }"
-                      @dragenter="handleUploadDragEnter"
-                      @dragover="handleUploadDragOver"
-                      @dragleave="handleUploadDragLeave"
-                      @drop="handleUploadDrop"
-                    >
-                      <input
-                        ref="uploadInputRef"
-                        class="rl-file-input-native"
-                        type="file"
-                        :accept="uploadAccept"
-                        @change="handleUploadFileChange"
-                      />
-                      <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
-                        <div class="rl-file-dropzone__copy">
-                          <strong>
-                            {{ uploadForm.file?.name ?? '拖动文件到这里，或点击按钮选择文件' }}
-                          </strong>
-                          <span>{{ uploadAccept || '支持 JSON / JSONL / CSV / 图像输入' }}</span>
-                        </div>
-                        <a-button aria-label="选择运行文件" size="small" @click="openUploadPicker">
-                          选择文件
-                        </a-button>
-                      </div>
-                    </div>
-                  </a-form-item>
-                </a-form>
+                <div v-else class="workspace-stack workspace-stack--tight">
+                  <a-alert type="info" title="内置 Demo 只展示成品。要提交新分析，请切换到 Backend。" />
+                  <div class="rl-form-actions"><a-button size="small" @click="emit('import-replay')">导入回放</a-button></div>
+                </div>
                 <a-alert
                   v-if="activeReasoningSummary.fallbackApplied"
                   type="info"
@@ -1417,7 +729,7 @@ onBeforeUnmount(() => {
                         'workspace-basic-list-item--active': run.run_id === activeRun?.run_id,
                       }"
                       :title="`${run.run_id} · ${formatDateTime(run.created_at)}`"
-                      @click="openRunFromList(run)"
+                      @click="loadRun(run.run_id)"
                     >
                       <strong class="workspace-basic-list-item__primary">{{ run.label }}</strong>
                       <div
@@ -1431,24 +743,6 @@ onBeforeUnmount(() => {
                     </button>
                     <a-empty v-if="!runs.length && !loading">暂无运行记录</a-empty>
                   </div>
-                </div>
-                <div class="rl-form-actions workspace-run-list-panel__actions">
-                  <template v-if="isReplaySessionActive">
-                    <span class="workspace-subtle">当前为回放会话</span>
-                    <a-button size="small" status="warning" @click="handleSwitchToLiveUpload">
-                      退出回放
-                    </a-button>
-                  </template>
-                  <template v-else-if="!isMockMode">
-                    <a-button type="primary" @click="openNewAnalysis()">新建分析</a-button>
-                    <a-button v-if="analysisTask" @click="showAnalysisTask">分析任务 · {{ taskStatusLabels[analysisTask.status] }}</a-button>
-                    <a-button :loading="uploadLoading" @click="handleUpload">
-                      <template #icon>
-                        <icon-upload />
-                      </template>
-                      旧接口上传
-                    </a-button>
-                  </template>
                 </div>
               </section>
             </div>
@@ -1830,103 +1124,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
   </div>
-
-  <a-modal
-    v-model:visible="replayModalVisible"
-    title="导入回放资产"
-    :footer="false"
-    :mask-closable="!replayImportLoading"
-    :esc-to-close="!replayImportLoading"
-    class="workspace-replay-modal"
-  >
-    <a-form
-      id="evidence-form-3"
-      :model="replayImportForm"
-      layout="vertical"
-      class="workspace-stack workspace-stack--tight workspace-form"
-    >
-      <a-form-item
-        label="rootlens-runtime.json"
-        tooltip="与 unified-graphs.json 一起导入。"
-        label-component="span"
-        class="workspace-replay-import-field"
-      >
-        <input
-          ref="replayRuntimeInputRef"
-          class="rl-file-input-native"
-          type="file"
-          accept=".json"
-          @change="handleReplayFileChange('runtimeFile', $event)"
-        />
-        <a-button
-          aria-label="选择 rootlens-runtime.json"
-          size="small"
-          @click="openReplayFilePicker('runtimeFile')"
-        >
-          {{ replayImportForm.runtimeFile?.name ?? '选择文件' }}
-        </a-button>
-      </a-form-item>
-
-      <a-form-item
-        label="unified-graphs.json"
-        tooltip="与 rootlens-runtime.json 一起导入。"
-        label-component="span"
-        class="workspace-replay-import-field"
-      >
-        <input
-          ref="replayGraphsInputRef"
-          class="rl-file-input-native"
-          type="file"
-          accept=".json"
-          @change="handleReplayFileChange('graphsFile', $event)"
-        />
-        <a-button
-          aria-label="选择 unified-graphs.json"
-          size="small"
-          @click="openReplayFilePicker('graphsFile')"
-        >
-          {{ replayImportForm.graphsFile?.name ?? '选择文件' }}
-        </a-button>
-      </a-form-item>
-
-      <a-form-item
-        label="workspace export / session bundle"
-        tooltip="可选工作区；完整 session bundle 请单独导入。"
-        label-component="span"
-        class="workspace-replay-import-field"
-      >
-        <input
-          ref="replayWorkspaceInputRef"
-          class="rl-file-input-native"
-          type="file"
-          accept=".json"
-          @change="handleReplayFileChange('workspaceFile', $event)"
-        />
-        <a-button
-          aria-label="选择 workspace export / session bundle"
-          size="small"
-          @click="openReplayFilePicker('workspaceFile')"
-        >
-          {{ replayImportForm.workspaceFile?.name ?? '选择文件' }}
-        </a-button>
-      </a-form-item>
-
-      <a-alert
-        type="info"
-        :show-icon="false"
-        title="资产导入仅支持完整回放（runtime + graphs）；若同时导入 workspace export，会先恢复回放资产，再叠加 workspace。完整 session bundle 请单独导入。"
-      />
-
-      <div class="rl-form-actions rl-form-actions--dual">
-        <a-button type="primary" :loading="replayImportLoading" @click="handleReplayImport">
-          导入并切换到回放
-        </a-button>
-        <a-button :disabled="replayImportLoading" @click="replayModalVisible = false">
-          取消
-        </a-button>
-      </div>
-    </a-form>
-  </a-modal>
 
   <a-modal
     v-model:visible="observationDetailModalVisible"

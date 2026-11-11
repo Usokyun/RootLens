@@ -1,1929 +1,785 @@
 <script setup lang="ts">
-import {
-  IconBulb,
-  IconInfoCircle,
-  IconRefresh,
-  IconRelation,
-  IconStorage,
-  IconUpload,
-} from "@arco-design/web-vue/es/icon";
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { IconHistory, IconPlus, IconRefresh, IconRelation, IconSearch, IconSettings } from '@arco-design/web-vue/es/icon'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-import type {
-  KGDraftListRequest,
-  KGDraftRecord,
-  KGMaterialChunkRecord,
-  KGMaterialExtractionArtifactRecord,
-  KGMaterialExtractionRunRecord,
-  KGMaterialRecord,
-  KGSourceDraftResponse,
-  KGConstructionBuildDetail,
-  KGConstructionBuildListResponse,
-  KGConstructionBuildValidationResponse,
-  KGConstructionReviewQueueEdge,
-  KGConstructionReviewQueueResponse,
-  KGStudioPayload,
-} from "@/api/contracts";
-import { materialBuildBlocker, materialCapabilities, type MaterialBuildOptions } from "@/api/material-tasks";
-import type { WorkTask } from "@/api/two-loop";
-import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
-import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
-import TaskStatusPanel from "@/components/tasks/TaskStatusPanel.vue";
-import { useAppPreferences } from "@/services/app-preferences";
-import { extractFilesFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
-import { uploadKGMaterialFiles } from "@/services/material-upload";
-import { useMaterialSourceTasks } from "@/services/material-source-tasks";
-import { getLocalSessionEventName, getLocalSessionMeta } from "@/services/rootlens-data";
-import { getRootLensService } from "@/services/rootlens-service";
+import { createApiClient } from '@/api/client'
+import type { KGMaterialRecord } from '@/api/contracts'
+import { changeMaterialArchive, listArchivedMaterials } from '@/api/material-archive'
+import { materialBuildBlocker, materialCapabilities, type MaterialBuildScenario } from '@/api/material-tasks'
+import type { WorkTask } from '@/api/two-loop'
+import MaterialDetails from '@/components/materials/MaterialDetails.vue'
+import MaterialImportDialog from '@/components/materials/MaterialImportDialog.vue'
+import TaskStatusPanel from '@/components/tasks/TaskStatusPanel.vue'
+import { useAppPreferences } from '@/services/app-preferences'
 import {
-  buildMaterialsBuildEdgeProvenance,
-  buildMaterialsBuildProvenance,
-  type ProvenanceInspectorState,
-  type ProvenanceSourceMaterial,
-} from "@/services/provenance-inspector";
-import { downloadJsonFile } from "@/services/session-export";
-import { taskCanRetry, taskIsActive, taskStatusLabels } from "@/services/task-observer";
-import { formatClaimBoundaryCopy } from "@/services/ui-copy";
-import { sourceSelectionReset, useWorkbenchState } from "@/services/workbench-state";
+  formatMaterialDate, materialError, materialListSource, materialScenarios, materialStatus,
+  materialStatuses, materialTypeLabel, materialTypes, scenarioLabel, type MaterialStatus,
+} from '@/services/material-presentation'
+import { materialTaskGraphId, materialTaskIds, useMaterialSourceTasks } from '@/services/material-source-tasks'
+import { mockBackend } from '@/services/mock-backend'
+import { getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
+import { taskCanRetry, taskIsActive, taskStatusLabels } from '@/services/task-observer'
+import { sourceSelectionReset, useWorkbenchState } from '@/services/workbench-state'
 
-interface RootLensKGBuildExportV1 {
-  schema_version: "rootlens-kg-build-export.v1";
-  exported_at: string;
-  source_mode: "mock" | "backend";
-  build: KGConstructionBuildDetail["build"];
-  summary: KGConstructionBuildDetail["summary"];
-  manifest: KGConstructionBuildDetail["manifest"];
-  claim_boundary: string;
+const { preferences } = useAppPreferences()
+const { updateState } = useWorkbenchState()
+const router = useRouter()
+const replay = ref(getLocalSessionMeta())
+const replayActive = computed(() => replay.value?.source === 'import')
+const backendUrl = computed(() => preferences.value.dataSourceMode === 'backend' && !replayActive.value ? preferences.value.apiBaseUrl : null)
+const canManage = computed(() => backendUrl.value !== null)
+const reader = computed(() => backendUrl.value ? createApiClient(backendUrl.value) : mockBackend)
+const scenes = materialScenarios.filter((scene) => scene.value !== 'shared')
+
+type LibraryView = 'active' | 'archive'
+function emptyLibrary() {
+  return { rows: [] as KGMaterialRecord[], loading: false, loaded: false, error: '' }
 }
+const library = reactive({ active: emptyLibrary(), archive: emptyLibrary() })
+const listRequests = { active: 0, archive: 0 }
+const libraryView = ref<LibraryView>('active')
+const currentLibrary = computed(() => library[libraryView.value])
+const filters = reactive({ keyword: '', scene: 'all', type: 'all', status: 'all', sort: 'recent' })
+const hasFilters = computed(() => Boolean(filters.keyword.trim() || filters.scene !== 'all' || filters.type !== 'all' || filters.status !== 'all'))
+const focusedId = ref<string | null>(null)
+const selectedIds = ref<string[]>([])
+const detailRevision = ref(0)
+const notice = ref('')
+const importVisible = ref(false)
+const buildVisible = ref(false)
+const historyVisible = ref(false)
+const historyTab = ref<'build' | 'parse'>('build')
+const taskDialogId = ref<string | null>(null)
+const fromHistory = ref(false)
+const archiveTarget = ref<KGMaterialRecord | null>(null)
+const archiveBusy = ref(false)
+const archiveError = ref('')
+const buildScope = ref<KGMaterialRecord[]>([])
+const buildForm = reactive({ title: '', dataset: '' as MaterialBuildScenario | '', allowRepair: true })
+const submittingIds = ref<string[]>([])
+let sourceRevision = 0
 
-const { preferences } = useAppPreferences();
-const { state: workbenchState, updateState } = useWorkbenchState();
-const router = useRouter();
-const replayActive = ref(getLocalSessionMeta()?.source === "import");
-const backendUrl = computed(() => preferences.value.dataSourceMode === "backend" && !replayActive.value
-  ? preferences.value.apiBaseUrl : null);
-const canUseBackend = computed(() => backendUrl.value !== null);
-
-let sourceRevision = 0;
-const loading = ref(false);
-const errorMessage = ref("");
-const actionMessage = ref("");
-const activationLoading = ref(false);
-const activationDataset = ref<"mvtec" | "wafer" | "tep">("mvtec");
-
-const materials = ref<KGMaterialRecord[]>([]);
-const builds = ref<KGConstructionBuildListResponse | null>(null);
-const buildDetail = ref<KGConstructionBuildDetail | null>(null);
-const kgStudio = ref<KGStudioPayload | null>(null);
-const draftHistory = ref<KGDraftRecord[]>([]);
-
-const selectedMaterialId = ref<string | null>(null);
-const selectedMaterialIds = ref<string[]>([]);
-const selectedMaterialTab = ref<
-  "detail" | "chunks" | "extractions" | "artifacts" | "drafts" | "preview"
->("detail");
-const materialDetail = ref<KGMaterialRecord | null>(null);
-const materialChunks = ref<KGMaterialChunkRecord[]>([]);
-const materialExtractions = ref<KGMaterialExtractionRunRecord[]>([]);
-const materialArtifacts = ref<KGMaterialExtractionArtifactRecord[]>([]);
-const sourceDraftPreview = ref<KGSourceDraftResponse | null>(null);
-
-const materialDetailLoading = ref(false);
-const materialMutationLoading = ref(false);
-const materialSourceDrawerVisible = ref(false);
-const materialSourceTab = ref("upload");
-const materialSourceTriggerRef = ref<{ $el: HTMLButtonElement } | null>(null);
-const materialSourcePanelRef = ref<HTMLElement | null>(null);
-
-const sourceDraftLoading = ref(false);
-
-const buildDetailModalVisible = ref(false);
-const buildDetailModalLoading = ref(false);
-const buildDetailModalTab = ref<"manifest" | "qa" | "queue">("manifest");
-const buildValidation = ref<KGConstructionBuildValidationResponse | null>(null);
-const buildReviewQueue = ref<KGConstructionReviewQueueResponse | null>(null);
-const buildDetailModalError = ref("");
-const provenanceInspectorVisible = ref(false);
-const provenanceInspectorState = ref<ProvenanceInspectorState | null>(null);
-const buildReviewActionTargetKey = ref<string | null>(null);
-
-const filters = reactive({
-  search: "",
-  dataset: "all",
-  type: "all",
-  status: "all",
-  sortField: "updatedAt" as "updatedAt" | "title" | "type",
-  sortOrder: "desc" as "asc" | "desc",
-});
-
-const uploadForm = reactive({
-  files: [] as File[],
-  title: "",
-  scenario: "shared",
-  sourceType: "text",
-  notes: "",
-  materialId: "",
-});
-
-const registerUrlForm = reactive({
-  url: "",
-  title: "",
-  scenario: "shared",
-  sourceType: "webpage",
-  notes: "",
-  materialId: "",
-});
-
-const sourceDraftForm = reactive({
-  defaultScenario: "shared",
-  confidence: 0.55,
-});
-
-const buildForm = reactive<MaterialBuildOptions>({
-  title: "工作图",
-  dataset: "mvtec",
-  allowRepair: true,
-});
-
-const uploadInputRef = ref<HTMLInputElement | null>(null);
-const uploadDragActive = ref(false);
-const uploadDragDepth = ref(0);
-
-const selectedBuildRunId = computed(
-  () => workbenchState.value.selectedConstructionRunId,
-);
-
-const selectedMaterial = computed(() => {
-  return (
-    filteredMaterials.value.find((item) => item.material_id === selectedMaterialId.value) ??
-    filteredMaterials.value[0] ??
-    null
-  );
-});
-
-const selectedMaterials = computed(() =>
-  materials.value.filter((item) => selectedMaterialIds.value.includes(item.material_id)),
-);
-
-const sourceTasks = useMaterialSourceTasks(() => backendUrl.value, refreshParsedMaterials);
+const sourceTasks = useMaterialSourceTasks(() => backendUrl.value, refreshTaskMaterials)
 const {
-  task: sourceTask, history: sourceTaskHistory, historyError: sourceHistoryError,
+  task: sourceTask, history: sourceHistory, historyLoading: sourceHistoryLoading, historyError: sourceHistoryError,
   submitError: sourceSubmitError, submitting: sourceSubmitting, busy: sourceBusy,
   resultGraphId: sourceGraphId, connectionError: sourceConnectionError, retrying: sourceRetrying,
-} = sourceTasks;
-const materialExtractLoading = computed(() => sourceSubmitting.value === "material_parse"
-  || (sourceTask.value?.kind === "material_parse" && taskIsActive(sourceTask.value)));
-const buildBlocker = computed(() => materialBuildBlocker(selectedMaterials.value, buildForm));
-const materialProcessingHint = "Demo / Replay 只展示成品。请切换 Backend 并退出回放后处理素材。";
+} = sourceTasks
 
-const materialClaimBoundaryCopy = computed(() =>
-  formatClaimBoundaryCopy(
-    materialDetail.value?.claim_boundary ??
-      buildDetail.value?.build.claim_boundary ??
-      kgStudio.value?.claim_boundary,
-  ),
-);
+const activeIds = computed(() => new Set([
+  ...(taskIsActive(sourceTask.value) ? materialTaskIds(sourceTask.value) : []),
+  ...submittingIds.value,
+]))
 
-const canExportBuild = computed(() => !!buildDetail.value);
+function displayedStatus(material: KGMaterialRecord): MaterialStatus {
+  const status = materialStatus(material)
+  if (libraryView.value === 'active' && activeIds.value.has(material.material_id)
+    && (sourceTask.value?.kind === 'material_parse' || (status !== 'ready'
+      && (!sourceTask.value || ['queued', 'parsing'].includes(sourceTask.value.stage))))) return 'running'
+  return status
+}
 
-const materialsLibraryHelp =
-  "勾选用于构图的资料。未解析的资料会在制作任务中先解析。";
-
-const selectedMaterialHelp = computed(() => [
-  "聚合展示 detail / chunks / extractions / artifacts / draft history。",
-  materialClaimBoundaryCopy.value,
-]);
-
-const uploadSourceHelp = [
-  "上传或登记资料后，可先解析并查看来源片段，也可直接勾选制作。",
-  "登记 URL 不会立即抓取；解析时由 Backend 获取内容。",
-];
-
-const buildResultsHelp =
-  "查看真实制作任务、失败阶段及原有构图记录。";
-
-const buildRecipeHelp = computed(() => [
-  "提交后由 Backend 解析、生成并校验。完成后打开工作图编辑和启用。",
-  materialClaimBoundaryCopy.value,
-]);
-
-const filteredMaterials = computed(() => {
-  const keyword = filters.search.trim().toLowerCase();
-  const list = materials.value.filter((item) => {
-    if (filters.dataset !== "all" && item.scenario !== filters.dataset) {
-      return false;
-    }
-    if (filters.type !== "all" && item.source_type !== filters.type) {
-      return false;
-    }
-    if (
-      filters.status !== "all" &&
-      item.processing_status !== filters.status &&
-      item.extraction_status !== filters.status
-    ) {
-      return false;
-    }
-    if (!keyword) {
-      return true;
-    }
-
-    return [
-      item.title,
-      item.material_id,
-      item.source_type,
-      item.notes,
-      item.path,
-      item.url,
-      item.uri,
-    ]
-      .join(" ")
-      .toLowerCase()
-      .includes(keyword);
-  });
-
-  return list.sort((left, right) => {
-    const direction = filters.sortOrder === "asc" ? 1 : -1;
-
-    if (filters.sortField === "updatedAt") {
-      const leftTime = Date.parse(left.updated_at ?? left.created_at ?? "");
-      const rightTime = Date.parse(right.updated_at ?? right.created_at ?? "");
-      return ((Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime)) * direction;
-    }
-
-    if (filters.sortField === "title") {
-      return left.title.localeCompare(right.title) * direction;
-    }
-
-    return left.source_type.localeCompare(right.source_type) * direction;
-  });
-});
-
-const provenanceSourceMaterials = computed<ProvenanceSourceMaterial[]>(() =>
-  materials.value.map((item) => ({
-    sourceId: item.source_id ?? item.material_id,
-    title: item.title,
-    path: item.url ?? item.path ?? item.uri ?? "--",
-    sourceType: item.source_type,
-    note: item.notes ?? "",
-  })),
-);
-
-function formatDateTime(value: string | undefined | null) {
-  if (!value) {
-    return "--";
+const filtered = computed(() => {
+  const term = filters.keyword.trim().toLocaleLowerCase()
+  return currentLibrary.value.rows.filter((material) =>
+    (filters.scene === 'all' || material.scenario === filters.scene)
+    && (filters.type === 'all' || material.source_type === filters.type)
+    && (filters.status === 'all' || displayedStatus(material) === filters.status)
+    && (!term || [material.title, materialListSource(material), material.notes, material.material_id, material.source_id]
+      .some((value) => value?.toLocaleLowerCase().includes(term))),
+  ).sort((left, right) => {
+    if (filters.sort === 'title') return left.title.localeCompare(right.title, 'zh-CN')
+    if (filters.sort === 'type') return left.source_type.localeCompare(right.source_type)
+    const a = Date.parse(left.updated_at ?? left.created_at ?? '') || 0
+    const b = Date.parse(right.updated_at ?? right.created_at ?? '') || 0
+    return filters.sort === 'oldest' ? a - b : b - a
+  })
+})
+const focused = computed(() => filtered.value.find((material) => material.material_id === focusedId.value) ?? null)
+const selected = computed(() => library.active.rows.filter((material) => selectedIds.value.includes(material.material_id)))
+const visibleSelectedCount = computed(() => filtered.value.filter(({ material_id }) => selectedIds.value.includes(material_id)).length)
+const pending = computed(() => selected.value.filter((material) => materialStatus(material) !== 'ready'))
+const selectionSummary = computed(() => {
+  const counts: Record<MaterialStatus, number> = { ready: 0, pending: 0, failed: 0, running: 0 }
+  for (const material of selected.value) counts[displayedStatus(material)] += 1
+  const hidden = selected.value.length - visibleSelectedCount.value
+  const summary = (['ready', 'pending', 'failed', 'running'] as const)
+    .flatMap((status) => counts[status] ? [counts[status] + ' 份' + materialStatuses[status].label] : [])
+  if (hidden > 0) summary.push(hidden + ' 份不在当前列表')
+  return summary.join(' · ')
+})
+const selectedScene = computed(() => {
+  const nonShared = new Set(selected.value.map((material) => material.scenario).filter((scene) => scene !== 'shared'))
+  return nonShared.size === 1 ? scenarioLabel([...nonShared][0]!) : ''
+})
+const knownMaterials = computed(() => [...library.active.rows, ...library.archive.rows])
+const buildPending = computed(() => buildScope.value.filter((material) => materialStatus(material) !== 'ready').length)
+const buildBlocker = computed(() => {
+  if (buildScope.value.some(({ material_id }) => !library.active.rows.some((material) => material.material_id === material_id))) {
+    return '素材清单已变化，请关闭后重新选材。'
   }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  if (new Set(buildScope.value.map(({ scenario }) => scenario).filter((scene) => scene !== 'shared')).size > 1) {
+    return '一次只能生成一个场景的图谱。请调整选材，可保留共享素材。'
   }
+  if (!buildForm.dataset) return '请选择图谱场景。'
+  return materialBuildBlocker(buildScope.value, { ...buildForm, dataset: buildForm.dataset })
+})
+const taskDialogRecord = computed(() => {
+  const id = taskDialogId.value
+  if (!id) return null
+  return sourceTask.value?.task_id === id ? sourceTask.value : sourceHistory.value.find((task) => task.task_id === id) ?? null
+})
+const dialogGraphId = computed(() => materialTaskGraphId(taskDialogRecord.value))
+const dialogGraph = computed(() => {
+  const graph = taskDialogRecord.value?.result?.graph
+  return graph && typeof graph === 'object' ? graph as Record<string, unknown> : null
+})
+const dialogSourceIds = computed(() => materialTaskIds(taskDialogRecord.value))
+const taskIsTracked = computed(() => taskDialogRecord.value?.task_id === sourceTask.value?.task_id)
+const displayedHistory = computed(() => sourceHistory.value.filter((task) =>
+  task.kind === (historyTab.value === 'parse' ? 'material_parse' : 'material_build')))
+const taskHeading = computed(() => {
+  const task = taskDialogRecord.value
+  if (task?.kind === 'material_parse') return '提取进度'
+  if (dialogGraphId.value) return '工作图已生成'
+  if (taskCanRetry(task)) return '构图未完成'
+  return '构图进度'
+})
+const bannerLabel = computed(() => {
+  const task = sourceTask.value
+  if (!task) return ''
+  if (sourceGraphId.value) return '工作图已生成'
+  if (task.status === 'completed') return '构图任务已完成'
+  if (taskCanRetry(task)) return (task.kind === 'material_parse' ? '提取' : '构图') + taskStatusLabels[task.status]
+  return task.stage_label || taskStatusLabels[task.status]
+})
 
-  return date.toLocaleString("zh-CN", { hour12: false });
+function resetFilters() {
+  Object.assign(filters, { keyword: '', scene: 'all', type: 'all', status: 'all', sort: 'recent' })
+}
+function toggleSelection(id: string, checked: boolean) {
+  selectedIds.value = checked ? [...new Set([...selectedIds.value, id])] : selectedIds.value.filter((current) => current !== id)
+}
+function toggleVisible(checked: boolean) {
+  const ids = filtered.value.map(({ material_id }) => material_id)
+  selectedIds.value = checked ? [...new Set([...selectedIds.value, ...ids])] : selectedIds.value.filter((id) => !ids.includes(id))
 }
 
-function formatJsonPreview(value: unknown) {
-  return JSON.stringify(value ?? {}, null, 2);
-}
-
-function formatMaterialLocation(material: KGMaterialRecord | null | undefined) {
-  if (!material) {
-    return "--";
-  }
-
-  return material.url ?? material.path ?? material.uri ?? "--";
-}
-
-function formatMaterialStatus(material: KGMaterialRecord | null | undefined) {
-  if (!material) {
-    return "--";
-  }
-
-  if (material.extraction_status === "extracted") {
-    return "已抽取";
-  }
-
-  if (material.extraction_status === "failed") {
-    return "抽取失败";
-  }
-
-  return material.processing_status;
-}
-
-function setUploadFiles(files: File[]) {
-  if (!materialMutationLoading.value) {
-    uploadForm.files = files;
-  }
-}
-
-function handleUploadFileChange(event: Event) {
-  const input = event.target as HTMLInputElement | null;
-  setUploadFiles(Array.from(input?.files ?? []));
-  if (input) input.value = "";
-}
-
-function openUploadPicker() {
-  if (!materialMutationLoading.value) uploadInputRef.value?.click();
-}
-
-function resetUploadDragState() {
-  uploadDragDepth.value = 0;
-  uploadDragActive.value = false;
-}
-
-function handleUploadDragEnter(event: DragEvent) {
-  markDragEventHandled(event);
-  uploadDragDepth.value += 1;
-  uploadDragActive.value = true;
-}
-
-function handleUploadDragOver(event: DragEvent) {
-  markDragEventHandled(event, { dropEffect: "copy" });
-  uploadDragActive.value = true;
-}
-
-function handleUploadDragLeave(event: DragEvent) {
-  markDragEventHandled(event);
-  uploadDragDepth.value = Math.max(0, uploadDragDepth.value - 1);
-  if (uploadDragDepth.value === 0) {
-    uploadDragActive.value = false;
-  }
-}
-
-function handleUploadDrop(event: DragEvent) {
-  markDragEventHandled(event, { dropEffect: "copy" });
-  setUploadFiles(extractFilesFromDataTransfer(event.dataTransfer));
-  resetUploadDragState();
-}
-
-function toggleMaterialSelection(materialId: string, checked: boolean) {
-  if (checked) {
-    selectedMaterialIds.value = [...new Set([...selectedMaterialIds.value, materialId])];
-  } else {
-    selectedMaterialIds.value = selectedMaterialIds.value.filter((item) => item !== materialId);
-  }
-  const scenarios = new Set(selectedMaterials.value.map(({ scenario }) => scenario).filter((s) => s !== "shared"));
-  if (scenarios.size === 1) {
-    const scenario = [...scenarios][0]!;
-    if (Object.hasOwn(materialCapabilities, scenario)) buildForm.dataset = scenario as MaterialBuildOptions["dataset"];
-  }
-}
-
-function materialTaskSourceCount(task: WorkTask) {
-  const ids = task.request?.material_ids;
-  return Array.isArray(ids) ? ids.length : "—";
-}
-
-function materialTaskGraphSize(task: WorkTask) {
-  const graph = task.result?.graph as { node_count?: number; edge_count?: number } | undefined;
-  return typeof graph?.node_count === "number" && typeof graph.edge_count === "number"
-    ? `${graph.node_count} / ${graph.edge_count}` : "—";
-}
-
-function openSourceTask(task: WorkTask) {
-  actionMessage.value = "";
-  sourceTasks.viewTask(task);
-}
-
-function openGeneratedGraph() {
-  if (!canUseBackend.value || !sourceGraphId.value) return;
-  void router.push({ name: "graphs", query: { graph: sourceGraphId.value } });
-}
-
-function selectLegacyBuild(runId: string) {
-  sourceTasks.clear();
-  sourceSubmitError.value = "";
-  void loadBuildDetail(runId);
-}
-
-async function loadBuildDetail(runId: string) {
-  const revision = sourceRevision;
+async function refreshMaterials(view: LibraryView = libraryView.value) {
+  const base = backendUrl.value
+  if (view === 'archive' && !base) return
+  const revision = sourceRevision
+  const request = ++listRequests[view]
+  const state = library[view]
+  const stillCurrent = () => revision === sourceRevision && request === listRequests[view]
+  state.loading = true
+  state.error = ''
   try {
-    const detail = await getRootLensService().getKGConstructionBuild(runId);
-    if (revision !== sourceRevision) return;
-    buildDetail.value = detail;
-    updateState({ selectedConstructionRunId: runId });
-  } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
-  }
-}
-
-function openMaterialsProvenance(state: ProvenanceInspectorState | null) {
-  if (!state) {
-    return;
-  }
-
-  provenanceInspectorState.value = state;
-  provenanceInspectorVisible.value = true;
-}
-
-function openBuildProvenance() {
-  openMaterialsProvenance(
-    buildMaterialsBuildProvenance({
-      buildDetail: buildDetail.value,
-      buildValidation: buildValidation.value,
-      materials: provenanceSourceMaterials.value,
-      claimBoundary: materialClaimBoundaryCopy.value,
-    }),
-  );
-}
-
-function openBuildReviewEdgeProvenance(edge: KGConstructionReviewQueueEdge) {
-  openMaterialsProvenance(
-    buildMaterialsBuildEdgeProvenance({
-      buildDetail: buildDetail.value,
-      edge,
-      materials: provenanceSourceMaterials.value,
-      claimBoundary: materialClaimBoundaryCopy.value,
-    }),
-  );
-}
-
-async function loadBuildDetailModalState(runId: string) {
-  buildDetailModalLoading.value = true;
-  buildDetailModalError.value = "";
-
-  try {
-    const [detailResult, validationResult, reviewQueueResult] =
-      await Promise.allSettled([
-        getRootLensService().getKGConstructionBuild(runId),
-        canUseBackend.value ? getRootLensService().validateKGConstructionBuild(runId) : Promise.resolve(null),
-        getRootLensService().getKGConstructionReviewQueue(runId, { limit: 12 }),
-      ]);
-
-    if (detailResult.status !== "fulfilled") {
-      throw detailResult.reason;
+    const response = view === 'archive' && base ? await listArchivedMaterials(base) : await reader.value.listKGMaterials()
+    if (!stillCurrent()) return
+    state.rows = response.materials
+    state.loaded = true
+    if (view === 'active') {
+      const existing = new Set(response.materials.map(({ material_id }) => material_id))
+      selectedIds.value = selectedIds.value.filter((id) => existing.has(id))
     }
-
-    buildDetail.value = detailResult.value;
-    updateState({ selectedConstructionRunId: runId });
-    buildValidation.value =
-      validationResult.status === "fulfilled" ? validationResult.value : null;
-    buildReviewQueue.value =
-      reviewQueueResult.status === "fulfilled" ? reviewQueueResult.value : null;
-
-    const warnings = [
-      validationResult.status === "rejected"
-        ? "当前构图详情暂未返回 QA 报告。"
-        : "",
-      reviewQueueResult.status === "rejected"
-        ? "当前构图详情暂未返回 review queue。"
-        : "",
-    ].filter(Boolean);
-
-    buildDetailModalError.value = warnings.join(" ");
   } catch (error) {
-    buildDetailModalError.value =
-      error instanceof Error ? error.message : String(error);
+    if (stillCurrent()) state.error = materialError(error)
   } finally {
-    buildDetailModalLoading.value = false;
+    if (stillCurrent()) state.loading = false
   }
 }
 
-async function openBuildDetailModal(runId: string) {
-  buildDetailModalVisible.value = true;
-  buildDetailModalTab.value = "manifest";
-  await loadBuildDetailModalState(runId);
+async function refreshTaskMaterials(ids: string[]) {
+  const revision = sourceRevision
+  if (!canManage.value) return
+  await refreshMaterials('active')
+  if (revision === sourceRevision && focusedId.value && ids.includes(focusedId.value)) detailRevision.value += 1
 }
 
-async function handleBuildReviewAction(
-  targetKey: string,
-  action: "accept" | "reject",
-) {
-  if (!buildDetail.value || !canUseBackend.value) {
-    return;
+function changeLibrary(view: LibraryView) {
+  if (!canManage.value) return
+  libraryView.value = view
+  resetFilters()
+  void refreshMaterials(view)
+}
+
+function applyMaterialChanges(records: KGMaterialRecord[], archived: boolean) {
+  // An older list response must not undo a successfully acknowledged write.
+  const ids = new Set(records.map(({ material_id }) => material_id))
+  for (const key of ['active', 'archive'] as const) {
+    listRequests[key] += 1
+    library[key].loading = false
+    const rest = library[key].rows.filter((record) => !ids.has(record.material_id))
+    library[key].rows = key === (archived ? 'archive' : 'active') ? [...records, ...rest] : rest
   }
+  if (archived) selectedIds.value = selectedIds.value.filter((id) => !ids.has(id))
+}
 
-  buildReviewActionTargetKey.value = targetKey;
-  buildDetailModalError.value = "";
+function handleAdded(records: KGMaterialRecord[]) {
+  applyMaterialChanges(records, false)
+  libraryView.value = 'active'
+  resetFilters()
+  focusedId.value = records[0]?.material_id ?? focusedId.value
+  detailRevision.value += 1
+  notice.value = '已添加 ' + records.length + ' 份素材。'
+  void refreshMaterials('active')
+}
 
+function requestArchive() {
+  if (!focused.value || !canManage.value || activeIds.value.has(focused.value.material_id)) return
+  archiveError.value = ''
+  archiveTarget.value = focused.value
+}
+function dismissArchive() {
+  if (!archiveBusy.value) archiveTarget.value = null
+}
+async function mutateArchive(material: KGMaterialRecord | null, action: 'archive' | 'restore') {
+  const base = backendUrl.value
+  if (!material || !base || archiveBusy.value || (action === 'archive' && activeIds.value.has(material.material_id))) return
+  const revision = sourceRevision
+  archiveBusy.value = true
+  archiveError.value = ''
+  notice.value = ''
   try {
-    await getRootLensService().reviewKGConstructionEdge(
-      buildDetail.value.build.run_id,
-      {
-        action,
-        target_key: targetKey,
-        reviewer: "rootlens-frontend",
-      },
-    );
-    actionMessage.value = `已${action === "accept" ? "接受" : "拒绝"}构图边：${targetKey}`;
-    await refreshWorkspace();
-    await loadBuildDetailModalState(buildDetail.value.build.run_id);
-    buildDetailModalTab.value = "queue";
-  } catch (error) {
-    buildDetailModalError.value =
-      error instanceof Error ? error.message : String(error);
-  } finally {
-    buildReviewActionTargetKey.value = null;
-  }
-}
-
-async function loadSelectedMaterialState(materialId: string) {
-  const revision = sourceRevision;
-  materialDetailLoading.value = true;
-  sourceDraftPreview.value = null;
-
-  try {
-    const [detail, chunks, extractions, artifacts] = await Promise.all([
-      getRootLensService().getKGMaterial(materialId),
-      getRootLensService().getKGMaterialChunks(materialId),
-      getRootLensService().getKGMaterialExtractions(materialId),
-      getRootLensService().getKGMaterialArtifacts(materialId),
-    ]);
-    if (revision !== sourceRevision) return;
-    materialDetail.value = detail.material;
-    materialChunks.value = chunks.chunks;
-    materialExtractions.value = extractions.runs;
-    materialArtifacts.value = artifacts.artifacts;
-  } catch (error) {
-    if (revision !== sourceRevision) return;
-    materialDetail.value = null;
-    materialChunks.value = [];
-    materialExtractions.value = [];
-    materialArtifacts.value = [];
-    errorMessage.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    if (revision === sourceRevision) materialDetailLoading.value = false;
-  }
-}
-
-async function handleActivateBuild() {
-  if (!buildDetail.value || !canUseBackend.value) return;
-  activationLoading.value = true;
-  errorMessage.value = "";
-  try {
-    const graph = await getRootLensService().activateWorkingGraph(
-      buildDetail.value.build.run_id, `${activationDataset.value} · ${buildDetail.value.build.run_id}`, activationDataset.value,
-      buildDetail.value.summary.target_contract === "unified-v2" ? "unified-v2" : "legacy",
-    );
-    actionMessage.value = `已装载 ${graph.title}。可在图谱页查看；v2 工作图启用后才可用于新分析。`;
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    activationLoading.value = false;
-  }
-}
-
-async function refreshWorkspace() {
-  const revision = sourceRevision;
-  loading.value = true;
-  errorMessage.value = "";
-
-  try {
-    const [materialsResponse, buildList, kgStudioPayload, draftHistoryResponse] =
-      await Promise.all([
-        getRootLensService().listKGMaterials(),
-        getRootLensService().listKGConstructionBuilds(),
-        getRootLensService().kgStudio(),
-        getRootLensService().listKGDrafts({ limit: 50 } as KGDraftListRequest),
-      ]);
-
-    if (revision !== sourceRevision) return;
-    materials.value = materialsResponse.materials;
-    builds.value = buildList;
-    kgStudio.value = kgStudioPayload;
-    draftHistory.value = draftHistoryResponse.records;
-
-    selectedMaterialIds.value = selectedMaterialIds.value.filter((materialId) =>
-      materialsResponse.materials.some((item) => item.material_id === materialId),
-    );
-
-    const nextMaterialId =
-      materialsResponse.materials.find(
-        (item) => item.material_id === selectedMaterialId.value,
-      )?.material_id ?? materialsResponse.materials[0]?.material_id ?? null;
-    selectedMaterialId.value = nextMaterialId;
-    if (nextMaterialId) {
-      await loadSelectedMaterialState(nextMaterialId);
-    } else {
-      materialDetail.value = null;
-      materialChunks.value = [];
-      materialExtractions.value = [];
-      materialArtifacts.value = [];
+    const result = await changeMaterialArchive(base, material.material_id, action)
+    if (revision !== sourceRevision) return
+    applyMaterialChanges([result.material], action === 'archive')
+    if (action === 'restore') {
+      libraryView.value = 'active'
+      resetFilters()
+      focusedId.value = result.material.material_id
+      detailRevision.value += 1
     }
-
-    if (revision !== sourceRevision) return;
-
-    const nextBuildId =
-      buildList.builds.find((item) => item.run_id === selectedBuildRunId.value)
-        ?.run_id ??
-      buildList.builds[0]?.run_id ??
-      null;
-
-    if (nextBuildId) {
-      await loadBuildDetail(nextBuildId);
-    } else {
-      buildDetail.value = null;
-    }
+    archiveTarget.value = null
+    notice.value = action === 'archive' ? '已移出「' + material.title + '」。' : '已恢复「' + material.title + '」。'
+    void refreshMaterials('active')
   } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
+    if (revision === sourceRevision) archiveError.value = materialError(error)
   } finally {
-    if (revision === sourceRevision) loading.value = false;
+    if (revision === sourceRevision) archiveBusy.value = false
   }
 }
 
-async function refreshMaterialsView() {
-  await Promise.all([refreshWorkspace(), sourceTasks.refreshHistory(true), sourceTasks.refresh()]);
-}
-
-async function refreshParsedMaterials(materialIds: string[]) {
-  const revision = sourceRevision;
-  if (!canUseBackend.value || !materialIds.length) return;
-  const response = await getRootLensService().listKGMaterials();
-  if (revision !== sourceRevision || !canUseBackend.value) return;
-  materials.value = response.materials;
-  const selected = selectedMaterialId.value;
-  if (selected && materialIds.includes(selected)) {
-    await loadSelectedMaterialState(selected);
-    if (revision === sourceRevision && selectedMaterialId.value === selected) selectedMaterialTab.value = "chunks";
-  }
-}
-
-function handleMaterialSourceKeydown(event: KeyboardEvent) {
-  if (event.key !== "Tab" || !materialSourceDrawerVisible.value) return;
-
-  const drawer = materialSourcePanelRef.value?.closest(".arco-drawer");
-  const controls = Array.from(
-    drawer?.querySelectorAll<HTMLElement>(
-      'button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])',
-    ) ?? [],
-  ).filter((control) =>
-    control.tabIndex >= 0 && !control.matches(":disabled") && control.getClientRects().length > 0,
-  );
-  const first = controls[0];
-  const last = controls[controls.length - 1];
-  if (!first || !last) return;
-
-  const active = document.activeElement;
-  if (event.shiftKey && (active === first || active === materialSourcePanelRef.value)) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && (active === last || active === materialSourcePanelRef.value)) {
-    event.preventDefault();
-    first.focus();
-  }
-}
-
-async function handleMaterialUpload() {
-  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
-  if (materialMutationLoading.value) return;
-  if (!uploadForm.files.length) {
-    actionMessage.value = "请选择待上传的素材文件。";
-    return;
-  }
-
-  materialMutationLoading.value = true;
-  actionMessage.value = "";
-  errorMessage.value = "";
-
+async function extractMaterials(materials: KGMaterialRecord[], force = false) {
+  if (!canManage.value || sourceBusy.value || archiveBusy.value || libraryView.value !== 'active' || !materials.length) return
+  const revision = sourceRevision
+  notice.value = ''
+  const ids = materials.map(({ material_id }) => material_id)
+  submittingIds.value = ids
   try {
-    const files = [...uploadForm.files];
-    const { uploaded, failed } = await uploadKGMaterialFiles(
-      files,
-      {
-        title: uploadForm.title || undefined,
-        scenario: uploadForm.scenario || undefined,
-        source_type: uploadForm.sourceType || undefined,
-        notes: uploadForm.notes || undefined,
-        material_id: uploadForm.materialId || undefined,
-      },
-      getRootLensService().uploadKGMaterial,
-    );
-    uploadForm.files = failed.map((item) => item.file);
-    if (!failed.length) {
-      uploadForm.title = "";
-      uploadForm.notes = "";
-      uploadForm.materialId = "";
-    }
-    const lastUploaded = uploaded[uploaded.length - 1];
-    if (lastUploaded) {
-      actionMessage.value = files.length === 1
-        ? `素材已上传：${lastUploaded.material.material_id}`
-        : `已上传 ${uploaded.length} 个素材。`;
-      await refreshWorkspace();
-      selectedMaterialId.value = lastUploaded.material.material_id;
-      await loadSelectedMaterialState(lastUploaded.material.material_id);
-    }
-    if (failed.length) {
-      errorMessage.value = [
-        errorMessage.value,
-        ...failed.map((item) => `${item.file.name}：${item.error}`),
-      ].filter(Boolean).join("；");
-    }
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
+    await sourceTasks.parse(ids, force)
   } finally {
-    materialMutationLoading.value = false;
+    if (revision === sourceRevision) submittingIds.value = []
   }
 }
 
-async function handleRegisterUrl() {
-  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
-  if (!registerUrlForm.url.trim()) {
-    actionMessage.value = "请输入待注册的 URL。";
-    return;
-  }
-
-  materialMutationLoading.value = true;
-  actionMessage.value = "";
-  errorMessage.value = "";
-
+function requestBuild() {
+  if (!canManage.value || sourceBusy.value || archiveBusy.value || !selected.value.length || libraryView.value !== 'active') return
+  buildScope.value = [...selected.value]
+  const nonShared = new Set(buildScope.value.map((material) => material.scenario).filter((scene) => scene !== 'shared'))
+  const single = nonShared.size === 1 ? [...nonShared][0] : undefined
+  buildForm.dataset = single && Object.hasOwn(materialCapabilities, single) ? single as MaterialBuildScenario : ''
+  buildForm.title = buildForm.dataset ? scenarioLabel(buildForm.dataset) + ' 工作图' : '新建工作图'
+  buildForm.allowRepair = true
+  sourceSubmitError.value = ''
+  buildVisible.value = true
+}
+async function submitBuild() {
+  if (!canManage.value || sourceBusy.value || archiveBusy.value || buildBlocker.value || !buildForm.dataset) return
+  const revision = sourceRevision
+  notice.value = ''
+  submittingIds.value = buildScope.value.map(({ material_id }) => material_id)
   try {
-    const response = await getRootLensService().registerKGMaterialUrl({
-      url: registerUrlForm.url,
-      title: registerUrlForm.title || undefined,
-      scenario: registerUrlForm.scenario || undefined,
-      source_type: registerUrlForm.sourceType || undefined,
-      notes: registerUrlForm.notes || undefined,
-      material_id: registerUrlForm.materialId || undefined,
-    });
-    actionMessage.value = `URL 已注册：${response.material.material_id}`;
-    registerUrlForm.url = "";
-    registerUrlForm.title = "";
-    registerUrlForm.notes = "";
-    registerUrlForm.materialId = "";
-    await refreshWorkspace();
-    selectedMaterialId.value = response.material.material_id;
-    await loadSelectedMaterialState(response.material.material_id);
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
+    const task = await sourceTasks.build(buildScope.value, { ...buildForm, dataset: buildForm.dataset })
+    if (revision === sourceRevision && task) {
+      buildVisible.value = false
+      showTask(task)
+    }
   } finally {
-    materialMutationLoading.value = false;
+    if (revision === sourceRevision) submittingIds.value = []
   }
 }
 
-async function handleMaterialExtract() {
-  const material = selectedMaterial.value;
-  if (!material || !canUseBackend.value || sourceBusy.value) return;
-  actionMessage.value = "";
-  errorMessage.value = "";
-  await sourceTasks.parse(material.material_id, material.extraction_status === "extracted");
+function openGraph(graphId: string) {
+  if (!canManage.value) return
+  void router.push({ name: 'graphs', query: { graph: graphId } })
 }
-
-async function handleGenerateSourceDraftPreview() {
-  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
-  if (!selectedMaterial.value) {
-    actionMessage.value = "请先选择一份素材。";
-    return;
-  }
-
-  if (!materialChunks.value.length) {
-    actionMessage.value = "请先对当前素材执行抽取，再生成预览。";
-    return;
-  }
-
-  sourceDraftLoading.value = true;
-  actionMessage.value = "";
-  errorMessage.value = "";
-
+function showTask(task: WorkTask, historical = false) {
+  if (historical && taskIsActive(task) && !sourceBusy.value) sourceTasks.viewTask(task)
+  fromHistory.value = historical
+  historyVisible.value = false
+  taskDialogId.value = task.task_id
+  if (historical && library.archive.loaded === false && library.archive.loading === false) void refreshMaterials('archive')
+}
+function closeTask(back = false) {
+  taskDialogId.value = null
+  if (back && fromHistory.value) historyVisible.value = true
+}
+async function retryTask() {
+  const task = taskDialogRecord.value
+  if (!canManage.value || !task || !taskCanRetry(task) || sourceBusy.value || archiveBusy.value) return
+  const revision = sourceRevision
+  if (!taskIsTracked.value) sourceTasks.viewTask(task)
+  submittingIds.value = materialTaskIds(task)
   try {
-    sourceDraftPreview.value = await getRootLensService().generateKGSourceDraft({
-      source_id: selectedMaterial.value.source_id ?? selectedMaterial.value.material_id,
-      source_text: materialChunks.value
-        .slice(0, 5)
-        .map((chunk) => chunk.text_content)
-        .join("\n"),
-      provider: "heuristic",
-      default_scenario:
-        sourceDraftForm.defaultScenario || selectedMaterial.value.scenario,
-      confidence: sourceDraftForm.confidence,
-    });
-    selectedMaterialTab.value = "preview";
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
+    await sourceTasks.retry()
+    if (revision === sourceRevision && taskDialogId.value === task.task_id && sourceTask.value) taskDialogId.value = sourceTask.value.task_id
   } finally {
-    sourceDraftLoading.value = false;
+    if (revision === sourceRevision) submittingIds.value = []
   }
 }
 
-async function handleBuild() {
-  if (!canUseBackend.value || sourceBusy.value || buildBlocker.value) return;
-  actionMessage.value = "";
-  errorMessage.value = "";
-  await sourceTasks.build(selectedMaterials.value, buildForm);
+function showHistory() {
+  if (!canManage.value) return
+  historyTab.value = 'build'
+  historyVisible.value = true
+  void sourceTasks.refreshHistory(true)
+}
+function selectHistoryTab(value: string | number) {
+  if (value === 'build' || value === 'parse') historyTab.value = value
+}
+function sourceTitle(id: string) {
+  return knownMaterials.value.find((record) => record.material_id === id)?.title ?? id
 }
 
-function handleExportBuild() {
-  if (!buildDetail.value) {
-    return;
-  }
-
-  const payload: RootLensKGBuildExportV1 = {
-    schema_version: "rootlens-kg-build-export.v1",
-    exported_at: new Date().toISOString(),
-    source_mode: preferences.value.dataSourceMode,
-    build: buildDetail.value.build,
-    summary: buildDetail.value.summary,
-    manifest: buildDetail.value.manifest,
-    claim_boundary: buildDetail.value.build.claim_boundary,
-  };
-
-  downloadJsonFile(
-    `rootlens-kg-build-${buildDetail.value.build.run_id}.json`,
-    payload,
-  );
-  actionMessage.value = `已导出图谱 bundle：${buildDetail.value.build.run_id}`;
-}
-
+watch(filtered, (rows) => {
+  if (!rows.some(({ material_id }) => material_id === focusedId.value)) focusedId.value = rows[0]?.material_id ?? null
+})
 watch(
-  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl, replayActive.value],
+  [() => preferences.value.dataSourceMode, () => preferences.value.apiBaseUrl, replayActive, () => replay.value?.updatedAt],
   () => {
-    sourceRevision += 1;
-    materials.value = []; builds.value = null; buildDetail.value = null; kgStudio.value = null; draftHistory.value = [];
-    selectedMaterialId.value = null; selectedMaterialIds.value = []; materialDetail.value = null; sourceDraftPreview.value = null;
-    materialChunks.value = []; materialExtractions.value = []; materialArtifacts.value = [];
-    buildDetailModalVisible.value = false;
-    actionMessage.value = "";
-    updateState(sourceSelectionReset());
-    void refreshWorkspace();
+    sourceRevision += 1
+    Object.assign(library.active, emptyLibrary())
+    Object.assign(library.archive, emptyLibrary())
+    libraryView.value = 'active'
+    resetFilters()
+    selectedIds.value = []
+    focusedId.value = null
+    submittingIds.value = []
+    detailRevision.value += 1
+    notice.value = ''
+    importVisible.value = buildVisible.value = historyVisible.value = false
+    taskDialogId.value = null
+    archiveTarget.value = null
+    archiveError.value = ''
+    archiveBusy.value = false
+    if (sourceRevision > 1) updateState(sourceSelectionReset())
+    void refreshMaterials('active')
   },
-);
-
-watch(selectedMaterialId, (materialId) => {
-  if (!materialId) {
-    materialDetail.value = null;
-    materialChunks.value = [];
-    materialExtractions.value = [];
-    materialArtifacts.value = [];
-    sourceDraftPreview.value = null;
-    return;
-  }
-
-  void loadSelectedMaterialState(materialId);
-});
-
-watch(selectedMaterial, (material) => {
-  if (material?.scenario) {
-    sourceDraftForm.defaultScenario = material.scenario;
-  }
-});
-
-watch(filteredMaterials, (list) => {
-  if (!list.length) {
-    selectedMaterialId.value = null;
-    return;
-  }
-
-  if (!list.some((item) => item.material_id === selectedMaterialId.value)) {
-    selectedMaterialId.value = list[0].material_id;
-  }
-});
-
-watch(buildDetailModalVisible, (visible) => {
-  if (!visible) {
-    provenanceInspectorVisible.value = false;
-    provenanceInspectorState.value = null;
-  }
-});
-
-function updateReplayState() { replayActive.value = getLocalSessionMeta()?.source === "import"; }
-
-onMounted(() => {
-  window.addEventListener(getLocalSessionEventName(), updateReplayState);
-  updateReplayState();
-  void refreshWorkspace();
-});
+  { immediate: true },
+)
+function updateReplay() { replay.value = getLocalSessionMeta() }
+onMounted(() => window.addEventListener(getLocalSessionEventName(), updateReplay))
 onBeforeUnmount(() => {
-  sourceRevision += 1;
-  window.removeEventListener(getLocalSessionEventName(), updateReplayState);
-});
+  sourceRevision += 1
+  window.removeEventListener(getLocalSessionEventName(), updateReplay)
+})
 </script>
 
 <template>
-  <div
-    class="rl-page rl-screen"
-    :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
-  >
-    <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
-    <a-alert v-if="actionMessage" class="rl-alert" type="success" :title="actionMessage" />
+  <div class="rl-page rl-screen materials-page" :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }">
+    <header class="materials-page__heading">
+      <div>
+        <h1>素材库</h1>
+        <p>管理知识图谱的来源资料</p>
+      </div>
+      <a-space v-if="canManage" wrap>
+        <a-button @click="showHistory"><template #icon><IconHistory /></template>构图记录</a-button>
+        <a-button :type="selected.length ? 'secondary' : 'primary'" @click="importVisible = true">
+          <template #icon><IconPlus /></template>添加素材
+        </a-button>
+      </a-space>
+    </header>
 
-    <section class="workspace-shell workspace-shell--materials">
-      <div class="workspace-materials-layout">
-        <section class="workspace-materials-top-grid">
-          <article class="rl-section-card workspace-materials-card">
-            <header class="rl-section-card__header">
-              <div>
-                <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="素材库" :help="materialsLibraryHelp">
-                    <icon-relation />
-                  </SectionCardTitle>
-                </h3>
-              </div>
-              <div class="rl-panel-actions">
-                <a-tag color="green">{{ filteredMaterials.length }} 份</a-tag>
-                <a-button
-                  ref="materialSourceTriggerRef"
-                  type="primary"
-                  :disabled="!canUseBackend"
-                  :aria-expanded="materialSourceDrawerVisible"
-                  aria-controls="material-source-drawer"
-                  @click="materialSourceDrawerVisible = true"
-                >
-                  <template #icon><icon-upload /></template>
-                  上传 / 注册素材
-                </a-button>
-                <a-button :loading="loading" @click="refreshMaterialsView">
-                  <template #icon><icon-refresh /></template>
-                  刷新视图
-                </a-button>
-              </div>
-            </header>
-            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
-              <a-form
-                id="materials-form-1"
-                :model="filters"
-                layout="vertical"
-                class="workspace-filter-row workspace-form"
-              >
-                <a-form-item
-                  field="search"
-                  label="搜索"
-                  :label-attrs="{ for: 'material-filter-search-input' }"
-                >
-                  <a-input
-                    :input-attrs="{ id: 'material-filter-search-input', 'aria-label': '搜索' }"
-                    id="material-filter-search"
-                    aria-label="搜索"
-                    v-model="filters.search"
-                    placeholder="搜索 material / 路径 / 说明"
-                  />
-                </a-form-item>
-                <a-form-item
-                  field="dataset"
-                  label="场景"
-                  :label-attrs="{ for: 'material-filter-dataset-input' }"
-                >
-                  <div
-                    id="material-filter-dataset"
-                    v-control-label="'场景'"
-                    class="workspace-control"
-                  >
-                    <a-select aria-label="场景" v-model="filters.dataset">
-                      <a-option value="all">全部场景</a-option>
-                      <a-option value="shared">shared</a-option>
-                      <a-option value="tep">tep</a-option>
-                      <a-option value="mvtec">mvtec</a-option>
-                      <a-option value="wafer">wafer</a-option>
-                    </a-select>
-                  </div>
-                </a-form-item>
-                <a-form-item
-                  field="type"
-                  label="类型"
-                  :label-attrs="{ for: 'material-filter-type-input' }"
-                >
-                  <div id="material-filter-type" v-control-label="'类型'" class="workspace-control">
-                    <a-select aria-label="类型" v-model="filters.type">
+    <a-alert v-if="!canManage" type="info">
+      {{ replayActive ? '回放只展示已有结果。退出回放并切换到 Backend 后可管理素材。' : 'Demo 为只读快照。切换到 Backend 后可管理素材。' }}
+    </a-alert>
+    <div v-if="sourceTask && (sourceTask.kind === 'material_build' || sourceTask.status !== 'completed')" class="materials-task-banner" :class="'materials-task-banner--' + sourceTask.status" aria-live="polite">
+      <div>
+        <strong>{{ bannerLabel }}</strong>
+        <span v-if="taskCanRetry(sourceTask) && sourceTask.stage_label"> · {{ sourceTask.stage_label }}</span>
+        <span class="materials-task-banner__title">{{ sourceTask.title }}</span>
+      </div>
+      <a-space wrap>
+        <a-button type="text" @click="showTask(sourceTask)">{{ taskIsActive(sourceTask) ? '查看进度' : '查看结果' }}</a-button>
+        <a-button v-if="sourceGraphId" @click="openGraph(sourceGraphId)">打开图谱</a-button>
+      </a-space>
+    </div>
+    <a-alert v-if="notice" type="success" closable @close="notice = ''">{{ notice }}</a-alert>
+    <a-alert v-if="sourceSubmitError && !buildVisible" type="error">{{ sourceSubmitError }}</a-alert>
+    <a-alert v-if="archiveError && !archiveTarget" type="error">{{ archiveError }}</a-alert>
+
+    <section class="rl-section-card materials-workspace" aria-label="素材工作区">
+      <div class="materials-workspace__columns">
+        <section class="materials-library" aria-label="素材列表" :aria-busy="currentLibrary.loading">
+          <div class="materials-library__filters">
+            <a-input
+              v-model="filters.keyword" class="materials-library__search" allow-clear
+              :input-attrs="{ 'aria-label': '搜索素材' }" placeholder="搜索名称或来源"
+            >
+              <template #prefix><IconSearch /></template>
+            </a-input>
+            <div id="materials-filter-scene" v-control-label="'筛选场景'" class="materials-library__filter">
+              <a-select v-model="filters.scene">
+                <a-option value="all">全部场景</a-option>
+                <a-option v-for="scene in materialScenarios" :key="scene.value" :value="scene.value">{{ scene.label }}</a-option>
+              </a-select>
+            </div>
+            <div id="materials-filter-status" v-control-label="'筛选提取状态'" class="materials-library__filter">
+              <a-select v-model="filters.status">
+                <a-option value="all">全部状态</a-option>
+                <a-option v-for="(status, key) in materialStatuses" :key="key" :value="key">{{ status.label }}</a-option>
+              </a-select>
+            </div>
+            <a-popover trigger="click" position="br">
+              <a-button aria-label="更多筛选"><template #icon><IconSettings /></template></a-button>
+              <template #content>
+                <div class="materials-filter-options">
+                  <label for="materials-filter-type-input">类型</label>
+                  <div id="materials-filter-type" v-control-label="'筛选素材类型'">
+                    <a-select v-model="filters.type">
                       <a-option value="all">全部类型</a-option>
-                      <a-option value="text">text</a-option>
-                      <a-option value="markdown">markdown</a-option>
-                      <a-option value="webpage">webpage</a-option>
-                      <a-option value="pdf">pdf</a-option>
-                      <a-option value="csv">csv</a-option>
-                      <a-option value="json">json</a-option>
-                      <a-option value="jsonl">jsonl</a-option>
+                      <a-option v-for="type in materialTypes" :key="type.value" :value="type.value">{{ type.label }}</a-option>
                     </a-select>
                   </div>
-                </a-form-item>
-                <a-form-item
-                  field="status"
-                  label="状态"
-                  :label-attrs="{ for: 'material-filter-status-input' }"
-                >
-                  <div
-                    id="material-filter-status"
-                    v-control-label="'状态'"
-                    class="workspace-control"
-                  >
-                    <a-select aria-label="状态" v-model="filters.status">
-                      <a-option value="all">全部状态</a-option>
-                      <a-option value="registered">registered</a-option>
-                      <a-option value="uploaded">uploaded</a-option>
-                      <a-option value="extracted">extracted</a-option>
-                    </a-select>
-                  </div>
-                </a-form-item>
-                <a-form-item
-                  field="sortField"
-                  label="排序字段"
-                  :label-attrs="{ for: 'material-filter-sortField-input' }"
-                >
-                  <div
-                    id="material-filter-sortField"
-                    v-control-label="'排序字段'"
-                    class="workspace-control"
-                  >
-                    <a-select aria-label="排序字段" v-model="filters.sortField">
-                      <a-option value="updatedAt">按更新时间</a-option>
+                  <label for="materials-filter-sort-input">排序</label>
+                  <div id="materials-filter-sort" v-control-label="'排序'">
+                    <a-select v-model="filters.sort">
+                      <a-option value="recent">最近更新</a-option>
+                      <a-option value="oldest">最早更新</a-option>
                       <a-option value="title">按名称</a-option>
                       <a-option value="type">按类型</a-option>
                     </a-select>
                   </div>
-                </a-form-item>
-                <a-form-item
-                  field="sortOrder"
-                  label="排序方向"
-                  :label-attrs="{ for: 'material-filter-sortOrder-input' }"
-                >
-                  <div
-                    id="material-filter-sortOrder"
-                    v-control-label="'排序方向'"
-                    class="workspace-control"
-                  >
-                    <a-select aria-label="排序方向" v-model="filters.sortOrder">
-                      <a-option value="desc">降序</a-option>
-                      <a-option value="asc">升序</a-option>
-                    </a-select>
-                  </div>
-                </a-form-item>
-              </a-form>
+                </div>
+              </template>
+            </a-popover>
+          </div>
 
-              <div
-                class="workspace-table-wrap workspace-table-wrap--materials workspace-table-wrap--fill"
-              >
-                <table class="workspace-table">
-                  <thead>
-                    <tr>
-                      <th>选择</th>
-                      <th>名称</th>
-                      <th>类型</th>
-                      <th>场景</th>
-                      <th>source_id</th>
-                      <th>状态</th>
-                      <th>更新时间</th>
-                    </tr>
-                  </thead>
-                  <tbody v-if="filteredMaterials.length">
-                    <tr
-                      v-for="material in filteredMaterials"
-                      :key="material.material_id"
-                      :class="{
-                        'workspace-table__row--active':
-                          material.material_id === selectedMaterial?.material_id,
-                      }"
-                      @click="selectedMaterialId = material.material_id"
-                    >
-                      <td>
-                        <a-checkbox
-                          :model-value="selectedMaterialIds.includes(material.material_id)"
-                          :aria-label="'选择素材 ' + material.title"
-                          @click.stop
-                          @change="toggleMaterialSelection(material.material_id, Boolean($event))"
-                        />
-                      </td>
-                      <td>
-                        <strong>{{ material.title }}</strong>
-                      </td>
-                      <td>{{ material.source_type }}</td>
-                      <td>{{ material.scenario }}</td>
-                      <td>{{ material.source_id ?? '--' }}</td>
-                      <td>{{ formatMaterialStatus(material) }}</td>
-                      <td>{{ formatDateTime(material.updated_at ?? material.created_at) }}</td>
-                    </tr>
-                  </tbody>
-                  <tbody v-else>
-                    <tr class="workspace-table__row--empty">
-                      <td colspan="7">
-                        <div class="workspace-table__empty-state">
-                          <a-empty>当前 backend material library 为空</a-empty>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+          <div class="materials-library__meta">
+            <div>
+              <strong>{{ libraryView === 'active' ? '素材列表' : '已移出素材' }}</strong>
+              <span v-if="currentLibrary.loaded || filtered.length"> · {{ filtered.length }} 份</span>
             </div>
-          </article>
+            <a-space>
+              <a-button type="text" size="mini" aria-label="刷新素材列表" :loading="currentLibrary.loading" @click="refreshMaterials()">
+                <template #icon><IconRefresh /></template>
+              </a-button>
+              <a-button v-if="canManage && libraryView === 'active'" type="text" size="mini" @click="changeLibrary('archive')">已移出</a-button>
+              <a-button v-else-if="canManage" type="text" size="mini" @click="changeLibrary('active')">返回素材库</a-button>
+            </a-space>
+          </div>
 
-          <div class="workspace-materials-top-side-stack">
-            <article class="rl-section-card workspace-material-editor-card">
-              <header class="rl-section-card__header">
-                <div>
-                  <h3 class="rl-section-card__title">
-                    <SectionCardTitle title="当前选中素材" :help="selectedMaterialHelp">
-                      <icon-storage />
-                    </SectionCardTitle>
-                  </h3>
-                </div>
-                <a-tag color="arcoblue">{{ selectedMaterial?.material_id ?? '未选择' }}</a-tag>
-              </header>
-              <a-form
-                id="materials-form-2"
-                :model="sourceDraftForm"
-                layout="vertical"
-                class="rl-section-card__body workspace-stack workspace-stack--tight workspace-form workspace-material-editor-form"
-              >
-                <div class="workspace-summary-list workspace-summary-list--two-col">
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-info-circle />
-                      <span>类型</span>
-                    </span>
-                    <strong>{{ selectedMaterial?.source_type ?? '--' }}</strong>
-                  </div>
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-bulb />
-                      <span>场景</span>
-                    </span>
-                    <strong>{{ selectedMaterial?.scenario ?? '--' }}</strong>
-                  </div>
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-storage />
-                      <span>状态</span>
-                    </span>
-                    <strong>{{ formatMaterialStatus(selectedMaterial) }}</strong>
-                  </div>
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-relation />
-                      <span>Source ID</span>
-                    </span>
-                    <strong>{{ selectedMaterial?.source_id ?? '--' }}</strong>
-                  </div>
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-upload />
-                      <span>Chunks</span>
-                    </span>
-                    <strong>{{ materialChunks.length }}</strong>
-                  </div>
-                  <div class="workspace-summary-list__item">
-                    <span class="workspace-summary-label">
-                      <icon-info-circle />
-                      <span>Extractions</span>
-                    </span>
-                    <strong>{{ materialExtractions.length }}</strong>
-                  </div>
-                </div>
+          <a-alert v-if="currentLibrary.error" type="error" class="materials-library__error">
+            {{ currentLibrary.error }} <a-button type="text" size="mini" @click="refreshMaterials()">重新读取</a-button>
+          </a-alert>
 
-                <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-info-circle />
-                    <span>Location</span>
-                  </span>
-                  <strong :title="formatMaterialLocation(selectedMaterial)">
-                    {{ formatMaterialLocation(selectedMaterial) }}
-                  </strong>
-                </div>
-
-                <div class="rl-form-actions rl-form-actions--dual">
-                  <a-button
-                    size="small"
-                    :disabled="!selectedMaterial"
-                    @click="
-                      selectedMaterial?.material_id &&
-                      loadSelectedMaterialState(selectedMaterial.material_id)
-                    "
-                  >
-                    刷新详情
-                  </a-button>
-                  <a-button
-                    type="primary"
-                    size="small"
-                    :disabled="!selectedMaterial || !canUseBackend || sourceBusy"
-                    :loading="materialExtractLoading"
-                    @click="handleMaterialExtract"
-                  >
-                    {{ selectedMaterial?.extraction_status === 'extracted' ? '重新解析' : '解析资料' }}
-                  </a-button>
-                  <a-button
-                    size="small"
-                    :disabled="!canUseBackend || !selectedMaterial || !materialChunks.length"
-                    :loading="sourceDraftLoading"
-                    @click="handleGenerateSourceDraftPreview"
-                  >
-                    生成预览
-                  </a-button>
-                </div>
-
-                <div class="workspace-form-row workspace-form-row--two">
-                  <a-form-item
-                    field="defaultScenario"
-                    label="预览场景"
-                    :label-attrs="{ for: 'material-sourceDraftForm-defaultScenario-input' }"
-                    class="workspace-form-item"
-                  >
-                    <a-input
-                      :input-attrs="{
-                        id: 'material-sourceDraftForm-defaultScenario-input',
-                        'aria-label': '预览场景',
-                      }"
-                      id="material-sourceDraftForm-defaultScenario"
-                      aria-label="预览场景"
-                      v-model="sourceDraftForm.defaultScenario"
+          <div v-if="filtered.length" class="materials-library__rows">
+            <table class="materials-library__table">
+              <thead>
+                <tr>
+                  <th v-if="canManage && libraryView === 'active'" scope="col" class="materials-library__check">
+                    <input
+                      type="checkbox"
+                      aria-label="选择当前列表中的全部素材"
+                      :checked="visibleSelectedCount === filtered.length"
+                      :indeterminate="visibleSelectedCount > 0 && visibleSelectedCount < filtered.length"
+                      @change="toggleVisible(($event.target as HTMLInputElement).checked)"
                     />
-                  </a-form-item>
-                  <a-form-item
-                    field="confidence"
-                    label="预览置信度"
-                    :label-attrs="{ for: 'material-sourceDraftForm-confidence-input' }"
-                    class="workspace-form-item"
-                  >
-                    <a-input-number
-                      :input-attrs="{
-                        id: 'material-sourceDraftForm-confidence-input',
-                        'aria-label': '预览置信度',
-                      }"
-                      id="material-sourceDraftForm-confidence"
-                      aria-label="预览置信度"
-                      v-model="sourceDraftForm.confidence"
-                      :min="0"
-                      :max="1"
-                      :step="0.05"
+                  </th>
+                  <th scope="col">素材名称</th>
+                  <th scope="col" class="materials-library__scene">场景</th>
+                  <th scope="col" class="materials-library__status">提取状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="material in filtered"
+                  :key="material.material_id"
+                  :data-material-id="material.material_id"
+                  :class="{ 'materials-library__row--focused': material.material_id === focusedId }"
+                >
+                  <td v-if="canManage && libraryView === 'active'" class="materials-library__check">
+                    <input
+                      type="checkbox"
+                      :checked="selectedIds.includes(material.material_id)"
+                      :aria-label="'选择素材 ' + material.title"
+                      @change="toggleSelection(material.material_id, ($event.target as HTMLInputElement).checked)"
                     />
-                  </a-form-item>
-                </div>
-
-                <a-spin v-if="materialDetailLoading" />
-
-                <a-tabs v-else v-model:active-key="selectedMaterialTab" lazy-load>
-                  <a-tab-pane key="detail" title="Detail">
-                    <pre class="rl-json-preview">{{
-                      formatJsonPreview(materialDetail ?? selectedMaterial)
-                    }}</pre>
-                  </a-tab-pane>
-                  <a-tab-pane key="chunks" title="Chunks">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(materialChunks) }}</pre>
-                  </a-tab-pane>
-                  <a-tab-pane key="extractions" title="Extractions">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(materialExtractions) }}</pre>
-                  </a-tab-pane>
-                  <a-tab-pane key="artifacts" title="Artifacts">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(materialArtifacts) }}</pre>
-                  </a-tab-pane>
-                  <a-tab-pane key="drafts" title="Draft History">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(draftHistory) }}</pre>
-                  </a-tab-pane>
-                  <a-tab-pane key="preview" title="Source Draft Preview">
-                    <pre class="rl-json-preview">{{ formatJsonPreview(sourceDraftPreview) }}</pre>
-                  </a-tab-pane>
-                </a-tabs>
-              </a-form>
-            </article>
+                  </td>
+                  <td>
+                    <button
+                      type="button" class="materials-library__name"
+                      :aria-label="'查看素材 ' + material.title"
+                      :aria-pressed="material.material_id === focusedId"
+                      aria-controls="materials-focused-detail"
+                      @click="focusedId = material.material_id"
+                    >
+                      <span class="materials-library__format">{{ materialTypeLabel(material.source_type) }}</span>
+                      <span class="materials-library__name-text">
+                        <strong :title="material.title">{{ material.title }}</strong>
+                        <span :title="materialListSource(material)">
+                          <span class="materials-library__mobile-scene">{{ scenarioLabel(material.scenario) }} · </span>
+                          {{ materialListSource(material) || material.material_id }}
+                        </span>
+                      </span>
+                    </button>
+                  </td>
+                  <td class="materials-library__scene">{{ scenarioLabel(material.scenario) }}</td>
+                  <td class="materials-library__status">
+                    <a-tag
+                      :color="materialStatuses[displayedStatus(material)].color"
+                      :class="'materials-status--' + displayedStatus(material)"
+                    >{{ materialStatuses[displayedStatus(material)].label }}</a-tag>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else-if="currentLibrary.loading" class="materials-library__empty"><a-spin /> 正在读取素材…</div>
+          <div v-else-if="!currentLibrary.error" class="materials-library__empty">
+            <strong>{{ hasFilters ? '没有匹配的素材' : (libraryView === 'archive' ? '没有已移出的素材' : '还没有素材') }}</strong>
+            <a-button v-if="hasFilters" type="text" size="small" @click="resetFilters">清除筛选</a-button>
+            <span v-else-if="canManage && libraryView === 'active'">上传文件或登记网址后，素材会显示在这里。</span>
           </div>
         </section>
 
-        <section class="workspace-materials-bottom-grid">
-          <article class="rl-section-card workspace-builds-card">
-            <header class="rl-section-card__header">
-              <div>
-                <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="制作任务 / 构图结果" :help="buildResultsHelp">
-                    <icon-relation />
-                  </SectionCardTitle>
-                </h3>
-              </div>
-              <a-tag color="gold">{{ sourceTaskHistory.length + (builds?.builds.length ?? 0) }} 次</a-tag>
-            </header>
-            <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
-              <a-alert v-if="sourceHistoryError" type="warning">
-                无法读取制作任务：{{ sourceHistoryError }}
-                <a-button type="text" size="mini" @click="sourceTasks.refreshHistory(true)">重读任务</a-button>
-              </a-alert>
-              <div
-                class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill"
-              >
-                <table class="workspace-table">
-                  <thead>
-                    <tr>
-                      <th>任务 / 图谱名</th>
-                      <th>来源素材数</th>
-                      <th>节点/边</th>
-                      <th>状态</th>
-                      <th>更新时间</th>
-                      <th>操作</th>
-                    </tr>
-                  </thead>
-                  <tbody v-if="sourceTaskHistory.length || builds?.builds.length">
-                    <tr
-                      v-for="task in sourceTaskHistory"
-                      :key="task.task_id"
-                      :data-task-id="task.task_id"
-                      :class="{ 'workspace-table__row--active': task.task_id === sourceTask?.task_id }"
-                      @click="openSourceTask(task)"
-                    >
-                      <td><strong>{{ task.title }}</strong></td>
-                      <td>{{ materialTaskSourceCount(task) }}</td>
-                      <td>{{ materialTaskGraphSize(task) }}</td>
-                      <td>{{ taskStatusLabels[task.status] }}</td>
-                      <td>{{ formatDateTime(task.updated_at) }}</td>
-                      <td><a-button size="mini" type="text" @click.stop="openSourceTask(task)">查看任务</a-button></td>
-                    </tr>
-                    <tr
-                      v-for="build in builds?.builds ?? []"
-                      :key="build.run_id"
-                      :class="{
-                        'workspace-table__row--active': !sourceTask && build.run_id === buildDetail?.build.run_id,
-                      }"
-                      @click="selectLegacyBuild(build.run_id)"
-                    >
-                      <td>
-                        <strong>{{ build.run_id }}</strong>
-                      </td>
-                      <td>{{ build.source_count }}</td>
-                      <td>{{ build.node_count }} / {{ build.edge_count }}</td>
-                      <td>{{ build.status }}</td>
-                      <td>{{ formatDateTime(build.created_at) }}</td>
-                      <td>
-                        <a-button
-                          size="mini"
-                          type="text"
-                          @click.stop="openBuildDetailModal(build.run_id)"
-                        >
-                          查看详情
-                        </a-button>
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tbody v-else>
-                    <tr class="workspace-table__row--empty">
-                      <td colspan="6">
-                        <div class="workspace-table__empty-state">
-                          <a-empty>暂无构图结果</a-empty>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </article>
-
-          <article class="rl-section-card workspace-build-recipe-card">
-            <header class="rl-section-card__header">
-              <div>
-                <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="Build Recipe" :help="buildRecipeHelp">
-                    <icon-bulb />
-                  </SectionCardTitle>
-                </h3>
-              </div>
-              <a-tag color="arcoblue">{{ selectedMaterials.length }} 份已选</a-tag>
-            </header>
-            <a-form
-              id="materials-form-5"
-              :model="buildForm"
-              layout="vertical"
-              class="rl-section-card__body workspace-stack workspace-form"
-            >
-              <div class="workspace-summary-list workspace-summary-list--two-col">
-                <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-upload />
-                    <span>已选素材</span>
-                  </span>
-                  <strong>{{ selectedMaterials.length }}</strong>
-                </div>
-                <div class="workspace-summary-list__item">
-                  <span class="workspace-summary-label">
-                    <icon-storage />
-                    <span>当前结果</span>
-                  </span>
-                  <strong>{{ sourceTask ? (sourceGraphId ? sourceTask.title : taskStatusLabels[sourceTask.status]) : (buildDetail?.build.run_id ?? '未选择') }}</strong>
-                </div>
-              </div>
-
-              <div class="workspace-form-row workspace-form-row--two">
-                <a-form-item
-                  field="title"
-                  label="输出图谱名"
-                  :label-attrs="{ for: 'material-buildForm-output_name-input' }"
-                  class="workspace-form-item"
-                >
-                  <a-input
-                    :input-attrs="{
-                      id: 'material-buildForm-output_name-input',
-                      'aria-label': '输出图谱名',
-                    }"
-                    id="material-buildForm-output_name"
-                    aria-label="输出图谱名"
-                    v-model="buildForm.title"
-                  />
-                </a-form-item>
-                <a-form-item
-                  field="dataset"
-                  label="构图场景"
-                  :label-attrs="{ for: 'material-buildForm-source_type-input' }"
-                  class="workspace-form-item"
-                >
-                  <div
-                    id="material-buildForm-source_type"
-                    v-control-label="'构图场景'"
-                    class="workspace-control"
-                  >
-                    <a-select aria-label="构图场景" v-model="buildForm.dataset">
-                      <a-option value="mvtec">视觉缺陷 · MVTec</a-option>
-                      <a-option value="tep">过程监测 · TEP</a-option>
-                      <a-option value="wafer">晶圆图案 · Wafer</a-option>
-                    </a-select>
-                  </div>
-                </a-form-item>
-              </div>
-
-              <div class="rl-form-actions rl-form-actions--dual">
-                <a-button
-                  type="primary"
-                  :disabled="!canUseBackend || !!buildBlocker || sourceBusy"
-                  :loading="sourceSubmitting === 'material_build'"
-                  @click="handleBuild"
-                >生成构图</a-button>
-                <a-checkbox v-model="buildForm.allowRepair" :disabled="!canUseBackend || sourceBusy">
-                  允许一次自动修复
-                </a-checkbox>
-              </div>
-              <small v-if="!canUseBackend">{{ materialProcessingHint }}</small>
-              <small v-else-if="buildBlocker">{{ buildBlocker }}</small>
-              <small v-else>提交后由 Backend 解析与校验，共最多 {{ buildForm.allowRepair ? 2 : 1 }} 次模型调用。</small>
-              <a-alert v-if="sourceSubmitError" type="error">{{ sourceSubmitError }}</a-alert>
-              <TaskStatusPanel
-                v-if="sourceTask"
-                :task="sourceTask"
-                :connection-error="sourceConnectionError"
-                :retrying="sourceRetrying"
-                @refresh="sourceTasks.refresh"
-                @retry="canUseBackend && sourceTasks.retry()"
-              >
-                <template #actions>
-                  <a-button v-if="sourceGraphId" type="primary" size="small" @click="openGeneratedGraph">打开并编辑此图</a-button>
-                </template>
-              </TaskStatusPanel>
-              <small v-if="sourceTask?.kind === 'material_build' && taskCanRetry(sourceTask)">
-                重试会保留原输入和修复额度，另建任务并可能再次调用模型。
-              </small>
-              <small v-if="sourceGraphId">工作图已保存。打开图谱编辑和启用后，可用这张图分析。</small>
-              <a-alert v-else-if="sourceTask?.kind === 'material_build' && sourceTask.status === 'completed'" type="error">
-                制作任务未返回工作图编号，无法打开结果。请重读任务状态。
-                <a-button type="text" size="mini" @click="sourceTasks.refresh">重新读取状态</a-button>
-              </a-alert>
-
-              <div v-if="!sourceTask && buildDetail" class="rl-form-actions rl-form-actions--dual">
-                <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
-                <a-select v-model="activationDataset" style="width: 105px" aria-label="工作图场景"><a-option value="mvtec">MVTec</a-option><a-option value="wafer">Wafer</a-option><a-option value="tep">TEP</a-option></a-select>
-                <a-button :disabled="!buildDetail || !canUseBackend"
-                  :loading="activationLoading" @click="handleActivateBuild">装载工作图</a-button>
-                <a-button
-                  :disabled="!buildDetail"
-                  @click="
-                    buildDetail?.build.run_id && openBuildDetailModal(buildDetail.build.run_id)
-                  "
-                >
-                  构图详情
-                </a-button>
-              </div>
-            </a-form>
-          </article>
-        </section>
+        <aside id="materials-focused-detail" class="materials-workspace__detail" aria-label="素材详情">
+          <MaterialDetails
+            v-if="focused" :key="focused.material_id"
+            :material="focused" :reader="reader" :revision="detailRevision" :status="displayedStatus(focused)"
+            :can-manage="canManage" :archived="libraryView === 'archive'" :archive-blocked="activeIds.has(focused.material_id)"
+            :mutation-busy="archiveBusy" :task-busy="sourceBusy"
+            @archive="requestArchive" @restore="mutateArchive(focused, 'restore')"
+            @parse="extractMaterials([focused], materialStatus(focused) === 'ready')"
+          />
+          <div v-else class="materials-library__empty"><strong>素材详情</strong><span>选择一份素材查看内容。</span></div>
+        </aside>
       </div>
+
+      <footer v-if="canManage && libraryView === 'active'" class="materials-selection" aria-label="构图选材">
+        <div aria-live="polite">
+          <strong>构图选材</strong>
+          <b v-if="selected.length">已选 {{ selected.length }} 份{{ selectedScene ? ' · ' + selectedScene : '' }}</b>
+          <p v-if="selected.length">{{ selectionSummary }}</p>
+          <p v-else>勾选本次构图使用的素材。</p>
+        </div>
+        <a-space wrap>
+          <a-button v-if="selected.length" type="text" @click="selectedIds = []">清空</a-button>
+          <a-button v-if="pending.length" :disabled="sourceBusy || archiveBusy" @click="extractMaterials(pending)">批量提取</a-button>
+          <a-button type="primary" :disabled="!selected.length || sourceBusy || archiveBusy" @click="requestBuild">
+            <template #icon><IconRelation /></template>生成知识图谱
+          </a-button>
+        </a-space>
+      </footer>
     </section>
   </div>
 
+  <MaterialImportDialog v-model:visible="importVisible" :backend-url="backendUrl" @added="handleAdded" />
+
   <a-modal
-    v-model:visible="buildDetailModalVisible"
-    title="构图详情"
-    :footer="false"
-    width="960px"
-    class="workspace-build-detail-modal"
+    :visible="Boolean(archiveTarget)" title="移出素材库？" width="min(480px, calc(100vw - 32px))"
+    :mask-closable="false" :esc-to-close="!archiveBusy" :closable="!archiveBusy" @cancel="dismissArchive"
   >
-    <div class="workspace-stack workspace-stack--tight">
-      <div class="workspace-summary-list workspace-summary-list--two-col">
-        <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">
-            <icon-storage />
-            <span>Build</span>
-          </span>
-          <strong>{{ buildDetail?.build.run_id ?? '--' }}</strong>
-        </div>
-        <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">
-            <icon-info-circle />
-            <span>Status</span>
-          </span>
-          <strong>{{ buildDetail?.build.status ?? '--' }}</strong>
-        </div>
-        <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">
-            <icon-upload />
-            <span>Sources</span>
-          </span>
-          <strong>{{ buildDetail?.build.source_count ?? 0 }}</strong>
-        </div>
-        <div class="workspace-summary-list__item">
-          <span class="workspace-summary-label">
-            <icon-relation />
-            <span>Nodes / Edges</span>
-          </span>
-          <strong>
-            {{ buildDetail?.build.node_count ?? 0 }} / {{ buildDetail?.build.edge_count ?? 0 }}
-          </strong>
+    <div class="materials-dialog__body">
+      <p><strong>{{ archiveTarget?.title }}</strong> 将不再用于新构图。</p>
+      <p class="materials-dialog__note">原文件、提取结果和历史图谱的来源记录会保留。可在「已移出」中恢复。</p>
+      <a-alert v-if="archiveError" type="error">{{ archiveError }}</a-alert>
+    </div>
+    <template #footer>
+      <a-space>
+        <a-button :disabled="archiveBusy" @click="dismissArchive">取消</a-button>
+        <a-button type="primary" status="danger" :loading="archiveBusy" @click="mutateArchive(archiveTarget, 'archive')">确认移出</a-button>
+      </a-space>
+    </template>
+  </a-modal>
+
+  <a-modal
+    v-model:visible="buildVisible" title="生成知识图谱" width="min(510px, calc(100vw - 32px))"
+    :mask-closable="false" :esc-to-close="!sourceSubmitting" :closable="!sourceSubmitting" :footer="false"
+  >
+    <form class="materials-dialog__body" @submit.prevent="submitBuild">
+      <h3>本次使用 {{ buildScope.length }} 份素材</h3>
+      <ul class="materials-dialog__scope">
+        <li v-for="material in buildScope" :key="material.material_id">
+          <span>{{ material.title }}</span>
+          <a-tag
+            :color="materialStatuses[materialStatus(material)].color"
+            :class="'materials-status--' + materialStatus(material)"
+          >{{ materialStatuses[materialStatus(material)].label }}</a-tag>
+        </li>
+      </ul>
+      <a-alert v-if="buildPending" type="info">{{ buildPending }} 份素材需先提取内容，已提取的内容直接复用。</a-alert>
+      <div class="materials-dialog__field">
+        <label for="materials-graph-title">图谱名称</label>
+        <a-input v-model="buildForm.title" :input-attrs="{ id: 'materials-graph-title', 'aria-label': '图谱名称' }" :disabled="!!sourceSubmitting" />
+      </div>
+      <div class="materials-dialog__field">
+        <label for="materials-graph-scene-input">图谱场景</label>
+        <div id="materials-graph-scene" v-control-label="'图谱场景'">
+          <a-select v-model="buildForm.dataset" placeholder="选择图谱场景" :disabled="!!sourceSubmitting">
+            <a-option v-for="scene in scenes" :key="scene.value" :value="scene.value">{{ scene.buildLabel }}</a-option>
+          </a-select>
         </div>
       </div>
+      <details class="materials-dialog__advanced">
+        <summary>高级设置</summary>
+        <a-checkbox v-model="buildForm.allowRepair" :disabled="!!sourceSubmitting">校验失败时允许自动修复一次</a-checkbox>
+      </details>
+      <a-alert v-if="buildBlocker || sourceSubmitError" :type="sourceSubmitError ? 'error' : 'warning'">{{ sourceSubmitError || buildBlocker }}</a-alert>
+      <footer class="materials-dialog__actions">
+        <span class="materials-dialog__note">最多 {{ buildForm.allowRepair ? 2 : 1 }} 次模型调用</span>
+        <a-space>
+          <a-button :disabled="!!sourceSubmitting" @click="buildVisible = false">取消</a-button>
+          <a-button type="primary" html-type="submit" :disabled="!!buildBlocker || archiveBusy || (sourceBusy && !sourceSubmitting)" :loading="sourceSubmitting === 'material_build'">
+            开始构图
+          </a-button>
+        </a-space>
+      </footer>
+    </form>
+  </a-modal>
 
-      <div class="workspace-claim-note workspace-claim-note--compact">
-        <span class="workspace-summary-label">
-          <icon-info-circle />
-          <span>Claim boundary</span>
-        </span>
-        <strong>{{ materialClaimBoundaryCopy }}</strong>
-      </div>
-
-      <a-alert
-        v-if="buildDetailModalError"
-        type="warning"
-        :show-icon="false"
-        :title="buildDetailModalError"
-      />
-
-      <div v-if="buildDetailModalLoading" class="workspace-build-detail-modal__loading">
-        <a-spin />
-      </div>
-
-      <a-tabs v-else v-model:active-key="buildDetailModalTab">
-        <a-tab-pane key="manifest" title="Manifest">
-          <div class="workspace-stack workspace-stack--tight">
-            <div class="workspace-summary-list workspace-summary-list--two-col">
-              <div class="workspace-summary-list__item">
-                <span class="workspace-summary-label">
-                  <icon-upload />
-                  <span>Source IDs</span>
-                </span>
-                <strong>{{ buildDetail?.build.source_ids?.join(', ') || '--' }}</strong>
-              </div>
-              <div class="workspace-summary-list__item">
-                <span class="workspace-summary-label">
-                  <icon-relation />
-                  <span>Manifest Path</span>
-                </span>
-                <strong>{{ buildDetail?.build.manifest_path ?? '--' }}</strong>
-              </div>
-            </div>
-            <div class="workspace-feedback-pane__footer">
-              <a-button size="small" @click="openBuildProvenance">
-                Inspect Build Provenance
-              </a-button>
-            </div>
-            <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.manifest ?? {}) }}</pre>
-          </div>
-        </a-tab-pane>
-
-        <a-tab-pane key="qa" title="QA / Summary">
-          <div class="workspace-stack workspace-stack--tight">
-            <pre class="rl-json-preview">{{ formatJsonPreview(buildDetail?.summary ?? {}) }}</pre>
-            <pre class="rl-json-preview">{{
-              formatJsonPreview(buildValidation?.qa_report ?? { note: '暂无 QA 详情（mock 占位）' })
-            }}</pre>
-          </div>
-        </a-tab-pane>
-
-        <a-tab-pane key="queue" title="Review Queue">
-          <div
-            v-if="buildReviewQueue?.edges.length"
-            class="workspace-scroll-list workspace-scroll-list--fill workspace-build-review-queue"
-          >
-            <div
-              class="workspace-build-review-edge"
-              v-for="edge in buildReviewQueue.edges"
-              :key="edge.target_key"
-            >
-              <div class="workspace-build-review-edge__head">
-                <strong>{{ edge.head }} —{{ edge.relation }}→ {{ edge.tail }}</strong>
-                <span>{{ edge.review_status }}</span>
-              </div>
-              <div class="workspace-build-review-edge__meta">
-                <span>{{ edge.source }}</span>
-                <span>confidence {{ edge.confidence.toFixed(2) }}</span>
-              </div>
-              <p>{{ edge.evidence || '当前边没有附带 evidence snippet。' }}</p>
-              <div class="workspace-build-review-edge__actions">
-                <a-button size="mini" type="text" @click="openBuildReviewEdgeProvenance(edge)">
-                  Provenance
-                </a-button>
-                <a-button
-                  size="mini"
-                  type="primary"
-                  :loading="buildReviewActionTargetKey === edge.target_key"
-                  @click="handleBuildReviewAction(edge.target_key, 'accept')"
-                >
-                  接受
-                </a-button>
-                <a-button
-                  size="mini"
-                  status="danger"
-                  :loading="buildReviewActionTargetKey === edge.target_key"
-                  @click="handleBuildReviewAction(edge.target_key, 'reject')"
-                >
-                  拒绝
-                </a-button>
-              </div>
-            </div>
-          </div>
-          <a-empty v-else>当前构图暂无待审阅边</a-empty>
-        </a-tab-pane>
-      </a-tabs>
+  <a-modal v-model:visible="historyVisible" title="构图记录" width="min(620px, calc(100vw - 32px))" :footer="false">
+    <a-tabs :active-key="historyTab" @change="selectHistoryTab">
+      <a-tab-pane key="build" title="构图任务" />
+      <a-tab-pane key="parse" title="提取任务" />
+    </a-tabs>
+    <div class="materials-dialog__body materials-history">
+      <a-alert v-if="sourceHistoryError" type="error">{{ sourceHistoryError }} <a-button type="text" size="mini" @click="sourceTasks.refreshHistory(true)">重新读取</a-button></a-alert>
+      <div v-else-if="sourceHistoryLoading && !displayedHistory.length" class="materials-library__empty"><a-spin /> 正在读取任务…</div>
+      <a-empty v-else-if="!displayedHistory.length" :description="historyTab === 'build' ? '暂无构图任务' : '暂无提取任务'" />
+      <ul v-if="displayedHistory.length" class="materials-history__rows">
+        <li v-for="item in displayedHistory" :key="item.task_id">
+          <button type="button" :data-task-id="item.task_id" @click="showTask(item, true)">
+            <span><strong>{{ item.title }}</strong><small>{{ materialTaskIds(item).length }} 份素材 · {{ formatMaterialDate(item.updated_at) }}</small></span>
+            <a-tag :color="item.status === 'completed' ? 'green' : taskCanRetry(item) ? 'red' : 'arcoblue'">{{ taskStatusLabels[item.status] }}</a-tag>
+          </button>
+        </li>
+      </ul>
+      <footer class="materials-dialog__actions"><a-button @click="historyVisible = false">关闭</a-button></footer>
     </div>
   </a-modal>
 
-  <a-drawer
-    v-model:visible="materialSourceDrawerVisible"
-    width="min(520px, 100vw)"
-    :body-style="{ padding: '12px' }"
-    role="dialog"
-    aria-modal="true"
-    aria-label="上传 / 注册素材"
-    :aria-hidden="!materialSourceDrawerVisible"
-    @open="materialSourcePanelRef?.focus()"
-    @close="materialSourceTriggerRef?.$el.focus()"
-    @keydown="handleMaterialSourceKeydown"
-  >
-    <template #title>
-      <SectionCardTitle title="上传 / 注册素材" :help="uploadSourceHelp">
-        <icon-upload />
-      </SectionCardTitle>
-    </template>
-    <div
-      id="material-source-drawer"
-      ref="materialSourcePanelRef"
-      tabindex="-1"
-      class="workspace-material-source-drawer workspace-stack"
-    >
-      <a-alert v-if="errorMessage" type="error" :title="errorMessage" />
-      <a-alert v-if="actionMessage" type="success" :title="actionMessage" />
-      <a-tabs v-model:active-key="materialSourceTab" lazy-load>
-        <a-tab-pane key="upload" title="本地上传">
-          <a-form
-            id="materials-form-3"
-            :model="uploadForm"
-            :disabled="materialMutationLoading"
-            layout="vertical"
-            class="workspace-form"
-          >
-            <a-form-item
-              label="本地文件"
-              label-component="span"
-              class="workspace-form-item workspace-dropzone-field"
-            >
-              <div
-                class="rl-file-dropzone rl-file-dropzone--fill"
-                :class="{ 'rl-file-dropzone--active': uploadDragActive }"
-                @dragenter="handleUploadDragEnter"
-                @dragover="handleUploadDragOver"
-                @dragleave="handleUploadDragLeave"
-                @drop="handleUploadDrop"
-              >
-                <input
-                  ref="uploadInputRef"
-                  class="rl-file-input-native"
-                  type="file"
-                  multiple
-                  :disabled="materialMutationLoading"
-                  @change="handleUploadFileChange"
-                />
-                <div class="rl-file-dropzone__content rl-file-dropzone__content--fill">
-                  <div class="rl-file-dropzone__copy">
-                    <strong>
-                      {{ uploadForm.files.length > 1 ? `已选择 ${uploadForm.files.length} 个文件` : uploadForm.files[0]?.name ?? '拖动素材文件到这里，或点击选择文件' }}
-                    </strong>
-                  </div>
-                  <a-button aria-label="选择素材文件" size="small" @click="openUploadPicker">
-                    选择文件
-                  </a-button>
-                </div>
-              </div>
-            </a-form-item>
-
-            <div class="workspace-form-row workspace-form-row--two">
-              <a-form-item
-                field="title"
-                label="标题"
-                :label-attrs="{ for: 'material-uploadForm-title-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-uploadForm-title-input',
-                    'aria-label': '标题',
-                  }"
-                  id="material-uploadForm-title"
-                  aria-label="标题"
-                  v-model="uploadForm.title"
-                  :disabled="materialMutationLoading || uploadForm.files.length > 1"
-                />
-              </a-form-item>
-              <a-form-item
-                field="materialId"
-                label="素材 ID"
-                :label-attrs="{ for: 'material-uploadForm-materialId-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-uploadForm-materialId-input',
-                    'aria-label': '素材 ID',
-                  }"
-                  id="material-uploadForm-materialId"
-                  aria-label="素材 ID"
-                  v-model="uploadForm.materialId"
-                  :disabled="materialMutationLoading || uploadForm.files.length > 1"
-                />
-              </a-form-item>
-            </div>
-            <div class="workspace-form-row workspace-form-row--two">
-              <a-form-item
-                field="scenario"
-                label="场景"
-                :label-attrs="{ for: 'material-uploadForm-scenario-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-uploadForm-scenario-input',
-                    'aria-label': '场景',
-                  }"
-                  id="material-uploadForm-scenario"
-                  aria-label="场景"
-                  v-model="uploadForm.scenario"
-                />
-              </a-form-item>
-              <a-form-item
-                field="sourceType"
-                label="类型"
-                :label-attrs="{ for: 'material-uploadForm-sourceType-input' }"
-                class="workspace-form-item"
-              >
-                <div
-                  id="material-uploadForm-sourceType"
-                  v-control-label="'类型'"
-                  class="workspace-control"
-                >
-                  <a-select aria-label="类型" v-model="uploadForm.sourceType" :disabled="materialMutationLoading || uploadForm.files.length > 1">
-                    <a-option value="text">text</a-option>
-                    <a-option value="markdown">markdown</a-option>
-                    <a-option value="webpage">webpage</a-option>
-                    <a-option value="pdf">pdf</a-option>
-                    <a-option value="csv">csv</a-option>
-                    <a-option value="json">json</a-option>
-                    <a-option value="jsonl">jsonl</a-option>
-                    <a-option value="other">other</a-option>
-                  </a-select>
-                </div>
-              </a-form-item>
-            </div>
-            <a-form-item
-              field="notes"
-              label="备注"
-              :label-attrs="{ for: 'material-uploadForm-notes-input' }"
-              class="workspace-form-item"
-            >
-              <a-textarea
-                :textarea-attrs="{
-                  id: 'material-uploadForm-notes-input',
-                  'aria-label': '备注',
-                }"
-                id="material-uploadForm-notes"
-                aria-label="备注"
-                v-model="uploadForm.notes"
-                :auto-size="{ minRows: 2, maxRows: 4 }"
-              />
-            </a-form-item>
-            <div class="rl-form-actions">
-              <a-button
-                type="primary"
-                :loading="materialMutationLoading"
-                @click="handleMaterialUpload"
-              >
-                上传素材
-              </a-button>
-            </div>
-          </a-form>
-        </a-tab-pane>
-        <a-tab-pane key="url" title="URL 注册">
-          <a-form
-            id="materials-form-4"
-            :model="registerUrlForm"
-            layout="vertical"
-            class="workspace-form"
-          >
-            <a-form-item
-              field="url"
-              label="URL"
-              :label-attrs="{ for: 'material-registerUrlForm-url-input' }"
-              class="workspace-form-item"
-            >
-              <a-input
-                :input-attrs="{
-                  id: 'material-registerUrlForm-url-input',
-                  'aria-label': 'URL',
-                }"
-                id="material-registerUrlForm-url"
-                aria-label="URL"
-                v-model="registerUrlForm.url"
-                placeholder="https://example.com/doc"
-              />
-            </a-form-item>
-            <div class="workspace-form-row workspace-form-row--two">
-              <a-form-item
-                field="title"
-                label="标题"
-                :label-attrs="{ for: 'material-registerUrlForm-title-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-registerUrlForm-title-input',
-                    'aria-label': '标题',
-                  }"
-                  id="material-registerUrlForm-title"
-                  aria-label="标题"
-                  v-model="registerUrlForm.title"
-                />
-              </a-form-item>
-              <a-form-item
-                field="materialId"
-                label="素材 ID"
-                :label-attrs="{ for: 'material-registerUrlForm-materialId-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-registerUrlForm-materialId-input',
-                    'aria-label': '素材 ID',
-                  }"
-                  id="material-registerUrlForm-materialId"
-                  aria-label="素材 ID"
-                  v-model="registerUrlForm.materialId"
-                />
-              </a-form-item>
-            </div>
-            <div class="workspace-form-row workspace-form-row--two">
-              <a-form-item
-                field="scenario"
-                label="场景"
-                :label-attrs="{ for: 'material-registerUrlForm-scenario-input' }"
-                class="workspace-form-item"
-              >
-                <a-input
-                  :input-attrs="{
-                    id: 'material-registerUrlForm-scenario-input',
-                    'aria-label': '场景',
-                  }"
-                  id="material-registerUrlForm-scenario"
-                  aria-label="场景"
-                  v-model="registerUrlForm.scenario"
-                />
-              </a-form-item>
-              <a-form-item
-                field="sourceType"
-                label="类型"
-                :label-attrs="{ for: 'material-registerUrlForm-sourceType-input' }"
-                class="workspace-form-item"
-              >
-                <div
-                  id="material-registerUrlForm-sourceType"
-                  v-control-label="'类型'"
-                  class="workspace-control"
-                >
-                  <a-select aria-label="类型" v-model="registerUrlForm.sourceType">
-                    <a-option value="webpage">webpage</a-option>
-                    <a-option value="pdf">pdf</a-option>
-                    <a-option value="other">other</a-option>
-                  </a-select>
-                </div>
-              </a-form-item>
-            </div>
-            <a-form-item
-              field="notes"
-              label="备注"
-              :label-attrs="{ for: 'material-registerUrlForm-notes-input' }"
-              class="workspace-form-item"
-            >
-              <a-textarea
-                :textarea-attrs="{
-                  id: 'material-registerUrlForm-notes-input',
-                  'aria-label': '备注',
-                }"
-                id="material-registerUrlForm-notes"
-                aria-label="备注"
-                v-model="registerUrlForm.notes"
-                :auto-size="{ minRows: 2, maxRows: 4 }"
-              />
-            </a-form-item>
-            <div class="rl-form-actions">
-              <a-button :loading="materialMutationLoading" @click="handleRegisterUrl">
-                注册 URL 素材
-              </a-button>
-            </div>
-          </a-form>
-        </a-tab-pane>
-      </a-tabs>
+  <a-modal :visible="Boolean(taskDialogRecord)" :title="taskHeading" width="min(540px, calc(100vw - 32px))" :footer="false" @cancel="closeTask()">
+    <div v-if="taskDialogRecord" class="materials-dialog__body">
+      <TaskStatusPanel
+        :task="taskDialogRecord"
+        :connection-error="taskIsTracked ? sourceConnectionError : undefined"
+        :retrying="taskIsTracked && sourceRetrying"
+        @refresh="sourceTasks.refresh"
+        @retry="retryTask"
+      />
+      <div v-if="dialogGraphId" class="materials-result">
+        <div class="materials-result__stats">
+          <span v-if="typeof dialogGraph?.node_count === 'number'"><strong>{{ dialogGraph.node_count }}</strong> 个节点</span>
+          <span v-if="typeof dialogGraph?.edge_count === 'number'"><strong>{{ dialogGraph.edge_count }}</strong> 条关系</span>
+          <span v-if="dialogSourceIds.length"><strong>{{ dialogSourceIds.length }}</strong> 份来源</span>
+          <a-tag v-if="dialogGraph?.enabled === false">生成时未启用</a-tag>
+        </div>
+        <ul v-if="dialogSourceIds.length" class="materials-dialog__scope">
+          <li v-for="id in dialogSourceIds" :key="id">{{ sourceTitle(id) }}</li>
+        </ul>
+        <p class="materials-dialog__note">在图谱页查看或编辑，启用后可用于新分析。</p>
+      </div>
+      <a-alert v-else-if="taskDialogRecord.kind === 'material_build' && taskDialogRecord.status === 'completed'" type="error">
+        后端未返回工作图编号，无法打开结果。
+        <a-button v-if="taskIsTracked" size="mini" type="text" @click="sourceTasks.refresh">重新读取状态</a-button>
+      </a-alert>
+      <p v-if="taskCanRetry(taskDialogRecord) && taskDialogRecord.kind === 'material_build'" class="materials-dialog__note">
+        重试会保留原输入与设置、另建任务，并可能再次调用模型。
+      </p>
+      <a-alert v-if="taskCanRetry(taskDialogRecord) && sourceBusy && !sourceRetrying" type="info">当前有素材任务进行中，结束后可重试。</a-alert>
+      <footer class="materials-dialog__actions">
+        <a-button @click="closeTask(true)">{{ fromHistory ? '返回构图记录' : '返回素材库' }}</a-button>
+        <a-button v-if="dialogGraphId" type="primary" @click="openGraph(dialogGraphId)">打开图谱</a-button>
+      </footer>
     </div>
-    <template #footer>
-      <a-button @click="materialSourceDrawerVisible = false">收起</a-button>
-    </template>
-  </a-drawer>
+  </a-modal>
 
-  <ProvenanceInspectorDrawer
-    v-model:visible="provenanceInspectorVisible"
-    :state="provenanceInspectorState"
-  />
 </template>
+
+<style scoped>
+.materials-page { padding: 7px 8px 18px; }
+.materials-page__heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.materials-page__heading h1 { margin: 0; font-size: 23px; line-height: 1.38; font-weight: 600; color: var(--color-text-1); }
+.materials-page__heading p { margin: 3px 0 0; font-size: 13px; color: var(--color-text-2); }
+.materials-workspace__columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, .58fr); }
+.materials-workspace__detail { display: flex; min-width: 0; border-left: 1px solid var(--rl-border); background: var(--rl-bg-soft); }
+.materials-library { min-width: 0; }
+.materials-library__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 13px 13px 5px; }
+.materials-library__search { flex: 1 1 160px; width: auto; }
+.materials-library__filter { flex: 0 1 102px; min-width: 92px; }
+.materials-library__meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 8px; min-height: 32px; padding: 0 13px 2px; font-size: 12px; color: var(--color-text-2); }
+.materials-library__meta strong { color: var(--color-text-1); font-weight: 600; }
+.materials-filter-options { display: grid; gap: 5px; width: 148px; }
+.materials-filter-options label { color: var(--color-text-2); font-size: 12px; }
+.materials-library__error { width: auto; margin: 0 12px 8px; }
+.materials-library__rows { max-height: clamp(280px, 56vh, 540px); overflow: auto; }
+.materials-library__table { width: 100%; border-spacing: 0; table-layout: fixed; text-align: left; }
+.materials-library__table th, .materials-library__table td { border-bottom: 1px solid var(--rl-border); padding: 0 6px; }
+.materials-library__table th { position: sticky; top: 0; z-index: 1; height: 34px; background: var(--color-fill-1); color: var(--color-text-2); font-size: 12px; font-weight: 500; }
+.materials-library__table tbody tr:hover { background: var(--color-fill-1); }
+.materials-library__table tbody .materials-library__row--focused { background: rgb(var(--primary-1)); }
+.materials-library__table .materials-library__check { width: 40px; text-align: center; }
+.materials-library__check input { width: 14px; height: 14px; margin: 0; accent-color: rgb(var(--primary-6)); vertical-align: middle; cursor: pointer; }
+.materials-library__table .materials-library__scene { width: 73px; color: var(--color-text-2); font-size: 12px; }
+.materials-library__table .materials-library__status { width: 92px; padding-right: 9px; }
+.materials-status--ready { color: rgb(var(--green-8)); }
+.materials-status--pending { color: rgb(var(--gold-9)); }
+.materials-status--failed { color: rgb(var(--red-8)); }
+.materials-library__name { display: flex; width: 100%; align-items: center; gap: 8px; min-height: 54px; padding: 6px 0; text-align: left; border: 0; background: transparent; color: var(--color-text-1); font: inherit; cursor: pointer; }
+.materials-library__name:focus-visible { outline: 2px solid rgb(var(--primary-6)); outline-offset: -2px; border-radius: 3px; }
+.materials-library__format { flex: 0 0 34px; display: grid; place-items: center; height: 26px; border-radius: 3px; font-size: 10px; font-weight: 600; background: rgb(var(--primary-1)); color: rgb(var(--primary-6)); }
+.materials-library__name-text { display: grid; min-width: 0; gap: 2px; }
+.materials-library__name-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.materials-library__name-text strong { font-size: 13px; font-weight: 600; }
+.materials-library__name-text > span { font-size: 12px; color: var(--color-text-2); }
+.materials-library__mobile-scene { display: none; }
+.materials-library__empty { display: grid; align-content: start; justify-items: start; gap: 6px; padding: 20px 13px; color: var(--color-text-2); font-size: 13px; }
+.materials-library__empty strong { color: var(--color-text-1); }
+.materials-selection { border-top: 1px solid var(--rl-border); display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 13px; background: var(--rl-bg-soft); }
+.materials-selection b { margin-left: 7px; color: rgb(var(--primary-6)); font-size: 13px; font-weight: 600; }
+.materials-selection p { margin: 2px 0 0; color: var(--color-text-2); font-size: 12px; }
+.materials-task-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; min-height: 42px; padding: 6px 10px 6px 12px; border: 1px solid var(--rl-border); border-radius: 4px; background: rgb(var(--primary-1)); font-size: 13px; }
+.materials-task-banner--completed { background: rgb(var(--green-1)); }
+.materials-task-banner--failed, .materials-task-banner--interrupted { background: rgb(var(--red-1)); }
+.materials-task-banner__title { margin-left: 7px; color: var(--color-text-2); overflow-wrap: anywhere; }
+.materials-dialog__body { display: grid; gap: 12px; min-width: 0; }
+.materials-dialog__body p, .materials-dialog__body h3 { margin: 0; }
+.materials-dialog__body h3 { font-size: 14px; font-weight: 600; }
+.materials-dialog__note { color: var(--color-text-2); font-size: 12px; line-height: 1.55; }
+.materials-dialog__scope { margin: 0; padding: 0 10px; max-height: 145px; overflow: auto; list-style: none; border: 1px solid var(--rl-border); border-radius: 3px; }
+.materials-dialog__scope li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 10px; padding: 7px 0; overflow-wrap: anywhere; }
+.materials-dialog__scope li + li { border-top: 1px solid var(--rl-border); }
+.materials-dialog__field { display: grid; gap: 5px; }
+.materials-dialog__field label, .materials-dialog__advanced { color: var(--color-text-2); font-size: 13px; }
+.materials-dialog__advanced summary { cursor: pointer; }
+.materials-dialog__advanced :deep(.arco-checkbox) { padding-block: 6px; }
+.materials-dialog__actions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--rl-border); }
+.materials-dialog__actions > .materials-dialog__note { margin-right: auto; }
+.materials-history { padding-top: 8px; }
+.materials-history__rows { margin: 0; padding: 0; list-style: none; max-height: 48vh; overflow: auto; }
+.materials-history__rows button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 0; border-bottom: 1px solid var(--rl-border); background: var(--color-bg-1); padding: 8px 6px; text-align: left; color: var(--color-text-1); font: inherit; cursor: pointer; }
+.materials-history__rows button:hover { background: var(--color-fill-1); }
+.materials-history__rows strong, .materials-history__rows small { display: block; overflow-wrap: anywhere; }
+.materials-history__rows small { color: var(--color-text-2); margin-top: 2px; }
+.materials-result { display: grid; gap: 8px; }
+.materials-result__stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 8px 10px; background: var(--color-fill-1); border-radius: 3px; }
+.materials-result__stats strong { font-size: 16px; }
+@media (max-width: 960px) {
+  .materials-page { padding-inline: 2px; }
+  .materials-workspace__columns { grid-template-columns: minmax(0, 1fr); }
+  .materials-workspace__detail { border-left: 0; border-top: 1px solid var(--rl-border); }
+}
+@media (max-width: 600px) {
+  .materials-library__filters { padding-inline: 8px; }
+  .materials-library__search { flex-basis: 100%; }
+  .materials-library__filter { flex: 1 1 90px; min-width: 0; }
+  .materials-library__table .materials-library__scene { display: none; }
+  .materials-library__mobile-scene { display: inline; }
+  .materials-library__table .materials-library__check { width: 30px; }
+  .materials-library__table .materials-library__status { width: 78px; padding-right: 4px; }
+}
+</style>

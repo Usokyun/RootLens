@@ -6,20 +6,17 @@ import json
 import re
 import uuid
 from pathlib import Path
-from typing import Annotated, Any, Literal, cast
+from typing import Annotated, Any, cast
 
-from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict
 
-from kgtracevis.kg.import_neo4j import Neo4jImportError
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.kg.working_graph_package import WorkingGraphPackage
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
-from kgtracevis.producers.model_assets import MODEL_ASSET_CHOICES, ModelAsset
-from kgtracevis.producers.visual_semantics import ROISemanticServiceError
 from kgtracevis.schema.unified_evidence import EvidenceFrame
 from kgtracevis.service.dashboard import dashboard_bootstrap
 from kgtracevis.service.handlers import (
@@ -35,50 +32,19 @@ from kgtracevis.service.handlers import (
     record_feedback,
     what_if_request,
 )
-from kgtracevis.service.kg_construction import (
-    ConstructionSourceFormat,
-    ConstructionSourceType,
-    KGConstructionBuildRequest,
-    KGConstructionEdgeReviewRequest,
-    KGConstructionOverlayValidationRequest,
-    KGConstructionPublishRequest,
-    KGConstructionReviewQueueRequest,
-    get_kg_construction_build,
-    get_kg_construction_build_artifact_path,
-    get_kg_construction_build_job,
-    get_kg_construction_review_queue,
-    list_kg_construction_builds,
-    list_kg_construction_source_uploads,
-    publish_kg_construction_build,
-    review_kg_construction_edge,
-    run_kg_construction_build,
-    save_kg_construction_source_upload,
-    submit_kg_construction_build_job,
-    validate_kg_construction_build,
-    validate_kg_construction_overlay,
-)
-from kgtracevis.service.kg_drafts import (
-    KGDraftListRequest,
-    KGDraftRequest,
-    list_kg_drafts,
-    record_kg_draft,
-)
-from kgtracevis.service.kg_material_build import run_kg_material_build
 from kgtracevis.service.kg_materials import (
-    KGMaterialDirectBuildRequest,
-    KGMaterialExtractionRunRequest,
     KGMaterialRegisterRequest,
-    KGMaterialSelectedBuildRequest,
+    MaterialConflictError,
+    MaterialNotFoundError,
     MaterialType,
-    extract_kg_material_to_structured_records,
     get_kg_material,
     list_kg_material_chunks,
     list_kg_material_extraction_artifacts,
     list_kg_material_extraction_runs,
     list_kg_materials,
-    prepare_kg_material_construction_build,
     register_kg_material,
     save_kg_material_upload,
+    set_kg_material_archived,
 )
 from kgtracevis.service.kg_runtime_edit import (
     RuntimeKGEdgeConfidenceRequest,
@@ -90,21 +56,13 @@ from kgtracevis.service.kg_runtime_edit import (
     upsert_runtime_kg_edge,
     upsert_runtime_kg_node,
 )
-from kgtracevis.service.kg_source_drafts import (
-    KGSourceDraftRequest,
-    generate_source_kg_draft,
-)
 from kgtracevis.service.kg_studio import KGStudioRuntimeError, kg_studio_payload
 from kgtracevis.service.runs import (
-    create_run_from_upload,
-    download_model_assets,
     get_run_artifact_path,
     get_run_detail,
     list_runs,
-    mvtec_model_presets,
-    parse_dataset_override,
-    parse_upload_mode,
 )
+from kgtracevis.service.two_loop_store import TwoLoopStorageError
 from kgtracevis.service.working_graph_editor import (
     WorkingGraphMutation,
     export_working_graph,
@@ -113,20 +71,9 @@ from kgtracevis.service.working_graph_editor import (
     save_working_graph,
 )
 from kgtracevis.service.working_graphs import (
-    ActivateWorkingGraphRequest,
     WorkingGraphStorageError,
-    activate_compiler_build,
     working_graph_store,
 )
-
-
-class ModelAssetDownloadRequest(BaseModel):
-    """Request body for downloading trusted public model assets."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    models: list[str] | None = None
-    force: bool = False
 
 
 class KGMaterialRegisterUrlRequest(BaseModel):
@@ -187,26 +134,6 @@ def create_app() -> FastAPI:
     def runs() -> list[dict[str, object]]:
         return [run.model_dump(mode="json") for run in list_runs()]
 
-    @app.get("/api/runs/mvtec-model-presets")
-    def mvtec_presets() -> dict[str, object]:
-        return {
-            "default_preset": "auto",
-            "presets": mvtec_model_presets(),
-        }
-
-    @app.post("/api/model-assets/download")
-    def download_assets(request: ModelAssetDownloadRequest) -> dict[str, object]:
-        try:
-            requested = request.models or ["mvtec-patchcore"]
-            invalid = sorted({model for model in requested if model not in MODEL_ASSET_CHOICES})
-            if invalid:
-                supported = ", ".join(MODEL_ASSET_CHOICES)
-                raise ValueError(f"model asset must be one of: {supported}")
-            models = cast(tuple[ModelAsset, ...], tuple(requested))
-            return download_model_assets(models=models, force=request.force)
-        except (RuntimeError, ValueError, FileNotFoundError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
     @app.get("/api/runs/{run_id}")
     def run_detail(run_id: str) -> dict[str, object]:
         try:
@@ -265,20 +192,6 @@ def create_app() -> FastAPI:
         except WorkingGraphStorageError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    @app.post("/api/kg/construction/builds/{run_id}/activate")
-    def activate_working_graph(
-        run_id: str,
-        request: ActivateWorkingGraphRequest,
-    ) -> dict[str, object]:
-        try:
-            return activate_compiler_build(run_id, request).model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except WorkingGraphStorageError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except (DriverError, Neo4jError) as exc:
-            raise HTTPException(status_code=503, detail="工作图 Neo4j 存储不可用。") from exc
-
     def graph_action(action):
         try:
             return action().model_dump(mode="json")
@@ -322,36 +235,6 @@ def create_app() -> FastAPI:
         except (WorkingGraphStorageError, DriverError, Neo4jError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    @app.get("/api/kg/drafts")
-    def kg_draft_history(
-        target_type: Literal["edge", "kg_edge"] | None = None,
-        target_id: str | None = None,
-        target_key: str | None = None,
-        reviewer: str | None = None,
-        source: str | None = None,
-        offset: Annotated[int, Query(ge=0)] = 0,
-        limit: Annotated[int, Query(ge=1, le=500)] = 50,
-    ) -> dict[str, object]:
-        return list_kg_drafts(
-            KGDraftListRequest(
-                target_type=target_type,
-                target_id=target_id,
-                target_key=target_key,
-                reviewer=reviewer,
-                source=source,
-                offset=offset,
-                limit=limit,
-            )
-        ).model_dump(mode="json")
-
-    @app.post("/api/kg/drafts")
-    def kg_draft(request: KGDraftRequest) -> dict[str, object]:
-        return record_kg_draft(request)
-
-    @app.post("/api/kg/source-draft")
-    def kg_source_draft(request: KGSourceDraftRequest) -> dict[str, object]:
-        return generate_source_kg_draft(request).model_dump(mode="json")
-
     @app.post("/api/kg/runtime/nodes")
     def kg_runtime_node_upsert(request: RuntimeKGNodeRequest) -> dict[str, object]:
         try:
@@ -394,9 +277,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
     @app.get("/api/kg/materials")
-    def kg_materials() -> dict[str, object]:
+    def kg_materials(archived: bool = False) -> dict[str, object]:
         try:
-            response = list_kg_materials()
+            response = list_kg_materials(archived=archived)
             materials = [_material_api_record(material) for material in response.materials]
             return {
                 "status": "ok",
@@ -447,8 +330,35 @@ def create_app() -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    def update_material_archive(material_id: str, *, archived: bool) -> dict[str, object]:
+        try:
+            material = set_kg_material_archived(material_id, archived=archived)
+        except MaterialNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except MaterialConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except TwoLoopStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "status": "archived" if archived else "restored",
+            "material": _material_api_record(material),
+            "note": (
+                "已移出素材库，原文件、提取结果和历史来源保留。" if archived else "已恢复到素材库。"
+            ),
+        }
+
+    @app.post("/api/kg/materials/{material_id}/archive")
+    def kg_material_archive(material_id: str) -> dict[str, object]:
+        return update_material_archive(material_id, archived=True)
+
+    @app.post("/api/kg/materials/{material_id}/restore")
+    def kg_material_restore(material_id: str) -> dict[str, object]:
+        return update_material_archive(material_id, archived=False)
+
     @app.post("/api/kg/materials/upload")
-    async def kg_material_upload(
+    def kg_material_upload(
         file: Annotated[UploadFile, File()],
         title: Annotated[str | None, Form()] = None,
         scenario: Annotated[str, Form()] = "shared",
@@ -459,7 +369,7 @@ def create_app() -> FastAPI:
         overwrite: Annotated[bool, Form()] = False,
     ) -> dict[str, object]:
         try:
-            content = await file.read()
+            content = file.file.read()
             parsed_metadata = _metadata_from_form(metadata)
             if notes:
                 parsed_metadata["notes"] = notes
@@ -487,6 +397,8 @@ def create_app() -> FastAPI:
                 "material": _material_api_record(record),
                 "note": record.claim_boundary,
             }
+        except MaterialConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except (FileNotFoundError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -516,283 +428,10 @@ def create_app() -> FastAPI:
                 "material": _material_api_record(record),
                 "note": record.claim_boundary,
             }
+        except MaterialConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/kg/materials/register")
-    def kg_material_register(request: KGMaterialRegisterRequest) -> dict[str, object]:
-        try:
-            record = register_kg_material(request)
-            return {
-                "status": record.status,
-                "material": _material_api_record(record),
-                "note": record.claim_boundary,
-            }
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/kg/materials/{material_id}/extract")
-    def kg_material_extract(
-        material_id: str,
-        request: KGMaterialExtractionRunRequest | None = None,
-    ) -> dict[str, object]:
-        try:
-            response = extract_kg_material_to_structured_records(
-                material_id,
-                request or KGMaterialExtractionRunRequest(),
-            )
-            payload = response.model_dump(mode="json")
-            payload["material"] = _material_api_record(response.material)
-            return payload
-        except ImportError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except ValueError as exc:
-            status_code = 404 if "unknown material_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.post("/api/kg/materials/build-sources")
-    def kg_material_build_sources(
-        request: KGMaterialSelectedBuildRequest,
-    ) -> dict[str, object]:
-        try:
-            response = prepare_kg_material_construction_build(request)
-            return response.model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown material_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.post("/api/kg/materials/build")
-    def kg_material_build(request: KGMaterialDirectBuildRequest) -> dict[str, object]:
-        try:
-            return run_kg_material_build(request).model_dump(mode="json")
-        except ImportError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except ValueError as exc:
-            status_code = 404 if "unknown material_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/build")
-    def kg_construction_build(request: KGConstructionBuildRequest) -> dict[str, object]:
-        try:
-            return run_kg_construction_build(request).model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/build-jobs")
-    def kg_construction_build_job_submit(
-        request: KGConstructionBuildRequest,
-    ) -> dict[str, object]:
-        try:
-            return submit_kg_construction_build_job(request).model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/build-jobs/{job_id}")
-    def kg_construction_build_job_status(
-        job_id: str,
-        after_sequence: Annotated[int, Query(ge=0)] = 0,
-        limit: Annotated[int, Query(ge=0, le=500)] = 200,
-    ) -> dict[str, object]:
-        try:
-            return get_kg_construction_build_job(
-                job_id,
-                after_sequence=after_sequence,
-                limit=limit,
-            ).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/builds")
-    def kg_construction_builds() -> dict[str, object]:
-        try:
-            return list_kg_construction_builds().model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/builds/{run_id}")
-    def kg_construction_build_detail(run_id: str) -> dict[str, object]:
-        try:
-            return get_kg_construction_build(run_id).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/builds/{run_id}/validate")
-    def kg_construction_build_validate(run_id: str) -> dict[str, object]:
-        try:
-            return validate_kg_construction_build(run_id).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/builds/{run_id}/validate-overlay")
-    def kg_construction_build_validate_overlay(
-        run_id: str,
-        request: KGConstructionOverlayValidationRequest | None = None,
-    ) -> dict[str, object]:
-        try:
-            validation_request = request or KGConstructionOverlayValidationRequest()
-            return validate_kg_construction_overlay(
-                run_id,
-                validation_request,
-            ).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown construction build run_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/builds/{run_id}/artifacts/{artifact_key}")
-    def kg_construction_build_artifact(
-        run_id: str,
-        artifact_key: str,
-    ) -> FileResponse:
-        try:
-            return FileResponse(get_kg_construction_build_artifact_path(run_id, artifact_key))
-        except ValueError as exc:
-            detail = str(exc)
-            status_code = (
-                404
-                if "unknown construction build run_id" in detail
-                or "unknown construction artifact key" in detail
-                or "construction build artifact not found" in detail
-                or "construction build artifact is a directory" in detail
-                else 400
-            )
-            raise HTTPException(status_code=status_code, detail=detail) from exc
-
-    @app.post("/api/kg/construction/builds/{run_id}/publish")
-    def kg_construction_build_publish(
-        run_id: str,
-        request: Annotated[
-            KGConstructionPublishRequest | None,
-            Body(),
-        ] = None,
-    ) -> dict[str, object]:
-        try:
-            publish_request = request or KGConstructionPublishRequest()
-            return publish_kg_construction_build(
-                run_id,
-                publish_request,
-            ).model_dump(mode="json")
-        except Neo4jImportError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except ValueError as exc:
-            status_code = 404 if "unknown construction build run_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/builds/{run_id}/review")
-    def kg_construction_edge_review(
-        run_id: str,
-        request: KGConstructionEdgeReviewRequest,
-    ) -> dict[str, object]:
-        try:
-            return review_kg_construction_edge(run_id, request).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = (
-                404
-                if "unknown construction build run_id" in str(exc)
-                or "unknown construction edge target_key" in str(exc)
-                or "unknown construction review target_key" in str(exc)
-                else 400
-            )
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/builds/{run_id}/review-queue")
-    def kg_construction_review_queue(
-        run_id: str,
-        review_status: Literal["auto", "reviewed", "rejected"] | None = None,
-        source: str | None = None,
-        scenario: str | None = None,
-        relation: str | None = None,
-        query: str | None = None,
-        offset: Annotated[int, Query(ge=0)] = 0,
-        limit: Annotated[int, Query(ge=1, le=500)] = 50,
-    ) -> dict[str, object]:
-        try:
-            request = KGConstructionReviewQueueRequest(
-                review_status=review_status,
-                source=source,
-                scenario=scenario,
-                relation=relation,
-                query=query,
-                offset=offset,
-                limit=limit,
-            )
-            return get_kg_construction_review_queue(
-                run_id,
-                request,
-            ).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown construction build run_id" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.get("/api/kg/construction/sources")
-    def kg_construction_sources() -> dict[str, object]:
-        try:
-            return list_kg_construction_source_uploads().model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/kg/construction/sources/upload")
-    async def kg_construction_source_upload(
-        file: Annotated[UploadFile, File()],
-        source_id: Annotated[str, Form()],
-        source_type: Annotated[str, Form()] = "manual_table",
-        scenario: Annotated[str, Form()] = "shared",
-        source_format: Annotated[str | None, Form()] = None,
-    ) -> dict[str, object]:
-        try:
-            content = await file.read()
-            return save_kg_construction_source_upload(
-                source_id=source_id,
-                source_type=cast(ConstructionSourceType, source_type),
-                scenario=scenario,
-                filename=file.filename or "source.csv",
-                content=content,
-                source_format=cast(ConstructionSourceFormat | None, source_format),
-            ).model_dump(mode="json")
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/runs/upload")
-    async def upload_run(
-        file: Annotated[UploadFile, File()],
-        mode: Annotated[str, Form()] = "records",
-        dataset: Annotated[str | None, Form()] = None,
-        object_name: Annotated[str | None, Form()] = None,
-        defect_type: Annotated[str | None, Form()] = None,
-        model_preset: Annotated[str | None, Form()] = None,
-        reasoning_profile_id: Annotated[str | None, Form()] = None,
-        graph_id: Annotated[str | None, Form()] = None,
-        semantic_mode: Annotated[Literal["disabled", "vlm"], Form()] = "disabled",
-        top_k: Annotated[int, Form()] = 5,
-    ) -> dict[str, object]:
-        try:
-            upload_mode = parse_upload_mode(mode)
-            dataset_override = parse_dataset_override(dataset)
-            content = await file.read()
-            graph_options = {"graph_id": graph_id} if graph_id else {}
-            if semantic_mode != "disabled":
-                graph_options["semantic_mode"] = semantic_mode
-            return create_run_from_upload(
-                file.filename or "upload",
-                content,
-                mode=upload_mode,
-                dataset=dataset_override,
-                object_name=object_name,
-                defect_type=defect_type,
-                model_preset=model_preset,
-                reasoning_profile_id=(
-                    str(reasoning_profile_id).strip() if reasoning_profile_id else None
-                ),
-                top_k=top_k,
-                **graph_options,
-            ).model_dump(mode="json")
-        except ROISemanticServiceError as exc:
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-        except (FileNotFoundError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except WorkingGraphStorageError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except (DriverError, Neo4jError) as exc:
-            raise HTTPException(status_code=503, detail="Neo4j 运行图不可用。") from exc
 
     @app.post("/api/analyze")
     def analyze(request: AnalyzeRequest) -> dict[str, object]:
@@ -901,7 +540,11 @@ def _material_api_record(material: Any) -> dict[str, object]:
         "filename": payload.get("original_filename"),
         "processing_status": payload.get("status"),
         "extraction_status": extraction.get("status"),
-        "chunk_count": metadata.get("chunk_count"),
+        "chunk_count": (
+            extraction["chunk_count"]
+            if extraction.get("chunk_count") is not None
+            else metadata.get("chunk_count")
+        ),
         "page_count": metadata.get("page_count"),
         "source_id": extraction.get("source_id"),
         "notes": metadata.get("notes"),

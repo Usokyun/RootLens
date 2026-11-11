@@ -5,10 +5,14 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import urllib.request
 import uuid
+from collections.abc import Iterator, Sequence
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Literal, Protocol
 from urllib.parse import urlparse
 
@@ -39,6 +43,18 @@ MaterialType = Literal[
 ]
 MaterialStatus = Literal["registered", "uploaded", "extracted", "failed"]
 ExtractionStatus = Literal["not_started", "extracted", "failed"]
+
+
+class MaterialConflictError(ValueError):
+    """The material's current lifecycle state does not allow this operation."""
+
+
+class MaterialNotFoundError(ValueError):
+    """The material identity does not exist."""
+
+
+def material_busy_error(material_id: str) -> MaterialConflictError:
+    return MaterialConflictError(f"素材正在被处理，任务结束后可移出：{material_id}")
 
 
 class KGMaterialExtractionState(BaseModel):
@@ -101,7 +117,7 @@ class KGMaterialUploadRequest(BaseModel):
     @model_validator(mode="after")
     def validate_upload_shape(self) -> KGMaterialUploadRequest:
         """Validate upload metadata."""
-        _safe_path_component(self.material_id, field_name="material_id")
+        self.material_id = _safe_path_component(self.material_id, field_name="material_id")
         _safe_upload_filename(self.filename)
         _require_non_empty(self.title, field_name="title")
         _require_non_empty(self.scenario, field_name="scenario")
@@ -125,7 +141,7 @@ class KGMaterialRegisterRequest(BaseModel):
     @model_validator(mode="after")
     def validate_register_shape(self) -> KGMaterialRegisterRequest:
         """Reject ambiguous source references."""
-        _safe_path_component(self.material_id, field_name="material_id")
+        self.material_id = _safe_path_component(self.material_id, field_name="material_id")
         _require_non_empty(self.title, field_name="title")
         _require_non_empty(self.scenario, field_name="scenario")
         _require_non_empty(self.source_uri, field_name="source_uri")
@@ -154,6 +170,7 @@ class KGMaterialRecord(BaseModel):
     metadata_path: str
     registered_at: str
     updated_at: str
+    archived_at: str | None = None
     original_filename: str | None = None
     content_type: str | None = None
     size_bytes: int = Field(default=0, ge=0)
@@ -169,7 +186,8 @@ class KGMaterialRecord(BaseModel):
         """Return whether this material can be fed to the source KG compiler."""
         needs_parse = self.source_kind == "url" or self.material_type in {"pdf", "webpage"}
         return (
-            (not needs_parse or self.extraction.status == "extracted")
+            self.archived_at is None
+            and (not needs_parse or self.extraction.status == "extracted")
             and self.extraction.status != "failed"
             and bool(_compiler_source_path(self, must_exist=False))
         )
@@ -220,6 +238,7 @@ class KGMaterialSelectedBuildRequest(BaseModel):
         )
         if duplicates:
             raise ValueError(f"material_ids contains duplicates: {', '.join(duplicates)}")
+        self.material_ids = normalized
         return self
 
 
@@ -255,13 +274,6 @@ class KGMaterialExtractionRunRequest(BaseModel):
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("chunk_overlap must be smaller than chunk_size")
         return self
-
-
-class KGMaterialDirectBuildRequest(KGMaterialSelectedBuildRequest):
-    """Request to run selected source materials through the current compiler."""
-
-    extraction_mode: Literal["never", "missing", "always"] = "never"
-    extraction_request: KGMaterialExtractionRunRequest | None = None
 
 
 class KGMaterialExtractionRunResponse(BaseModel):
@@ -399,11 +411,24 @@ class KGMaterialStore(Protocol):
     def save_material_record(self, material: KGMaterialRecord) -> KGMaterialRecord:
         """Persist one material record and return the validated record."""
 
-    def list_material_records(self) -> list[KGMaterialRecord]:
-        """Return persisted material records."""
+    def list_material_records(self, *, archived: bool | None = None) -> list[KGMaterialRecord]:
+        """Return persisted material records, optionally restricted by archive state."""
 
     def get_material_record(self, material_id: str) -> KGMaterialRecord:
         """Return one material record."""
+
+    def set_material_archived_at(
+        self, material_id: str, archived_at: str | None
+    ) -> KGMaterialRecord:
+        """Change only archive state, retaining the source and processing history."""
+
+    def lock_material_operations(
+        self, material_ids: Sequence[str], *, wait: bool
+    ) -> AbstractContextManager[None]:
+        """Serialize lifecycle changes with selection and submission for the same IDs."""
+
+    def material_has_active_task(self, material_id: str) -> bool:
+        """Check queued/running material work, without limiting the history queried."""
 
     def save_source_chunks(
         self,
@@ -446,6 +471,9 @@ class KGMaterialStore(Protocol):
         """Return stored extraction artifacts for one material."""
 
 
+_FILE_MATERIAL_LOCKS: dict[tuple[Path, str], threading.Lock] = {}
+
+
 class FileKGMaterialStore:
     """File-backed material store used for local/default workflows."""
 
@@ -457,7 +485,7 @@ class FileKGMaterialStore:
         _write_material_record(material)
         return material
 
-    def list_material_records(self) -> list[KGMaterialRecord]:
+    def list_material_records(self, *, archived: bool | None = None) -> list[KGMaterialRecord]:
         """Return material records from local metadata JSON files."""
         if not self.root.exists():
             return []
@@ -465,7 +493,9 @@ class FileKGMaterialStore:
             _load_material_record(metadata_path)
             for metadata_path in sorted(self.root.glob("*/metadata.json"))
         ]
-        materials.sort(key=lambda item: item.updated_at, reverse=True)
+        if archived is not None:
+            materials = [item for item in materials if (item.archived_at is not None) == archived]
+        materials.sort(key=lambda item: item.archived_at or item.updated_at, reverse=True)
         return materials
 
     def get_material_record(self, material_id: str) -> KGMaterialRecord:
@@ -478,8 +508,32 @@ class FileKGMaterialStore:
             / "metadata.json"
         )
         if not metadata_path.is_file():
-            raise ValueError(f"unknown material_id: {material_id}")
+            raise MaterialNotFoundError(f"unknown material_id: {material_id}")
         return _load_material_record(metadata_path)
+
+    def set_material_archived_at(
+        self, material_id: str, archived_at: str | None
+    ) -> KGMaterialRecord:
+        material = self.get_material_record(material_id)
+        return self.save_material_record(material.model_copy(update={"archived_at": archived_at}))
+
+    @contextmanager
+    def lock_material_operations(
+        self, material_ids: Sequence[str], *, wait: bool
+    ) -> Iterator[None]:
+        root = self.root.resolve()
+        with ExitStack() as locks:
+            for material_id in material_ids:
+                lock = _FILE_MATERIAL_LOCKS.setdefault((root, material_id), threading.Lock())
+                if not lock.acquire(blocking=wait):
+                    raise material_busy_error(material_id)
+                locks.callback(lock.release)
+            yield
+
+    def material_has_active_task(self, material_id: str) -> bool:
+        from kgtracevis.service.two_loop_tasks import file_material_has_active_task
+
+        return file_material_has_active_task(material_id)
 
     def save_source_chunks(
         self,
@@ -611,6 +665,49 @@ def material_store(*, material_root: Path | None = None) -> KGMaterialStore:
     return FileKGMaterialStore(DEFAULT_SOURCE_KG_MATERIAL_DIR)
 
 
+@contextmanager
+def material_operations(
+    material_ids: Sequence[str],
+    *,
+    material_root: Path | None = None,
+    wait: bool = True,
+) -> Iterator[KGMaterialStore]:
+    """Reserve source IDs in stable order; let unrelated materials proceed."""
+    store = material_store(material_root=material_root)
+    identities = sorted(
+        {_safe_path_component(identity, field_name="material_id") for identity in material_ids}
+    )
+    with store.lock_material_operations(identities, wait=wait):
+        yield store
+
+
+def require_active_material(store: KGMaterialStore, material_id: str) -> KGMaterialRecord:
+    material = store.get_material_record(material_id)
+    if material.archived_at is not None:
+        raise MaterialConflictError(f"「{material.title}」已移出素材库，请先恢复。")
+    return material
+
+
+def set_kg_material_archived(
+    material_id: str,
+    *,
+    archived: bool,
+    material_root: Path | None = None,
+) -> KGMaterialRecord:
+    """Move a material out of or back into the active library without deleting data."""
+    with material_operations(
+        [material_id], material_root=material_root, wait=not archived
+    ) as store:
+        material = store.get_material_record(material_id)
+        if (material.archived_at is not None) == archived:
+            return material
+        if archived and store.material_has_active_task(material.material_id):
+            raise material_busy_error(material.material_id)
+        return store.set_material_archived_at(
+            material.material_id, _utc_now() if archived else None
+        )
+
+
 def save_kg_material_upload(
     *,
     material_id: str,
@@ -640,36 +737,31 @@ def save_kg_material_upload(
         raise ValueError(
             f"uploaded material file exceeds {MAX_MATERIAL_UPLOAD_BYTES} bytes: {len(content)}"
         )
-    store = material_store(material_root=material_root)
-    record_dir = _material_dir(request.material_id, material_root=material_root)
-    metadata_path = record_dir / "metadata.json"
-    if _material_record_exists(store, request.material_id) and not overwrite:
-        raise ValueError(
-            f"material_id already exists; pass overwrite=true to replace: {material_id}"
+    with material_operations([request.material_id], material_root=material_root) as store:
+        _check_registration(store, request.material_id, overwrite=overwrite)
+        record_dir = _material_dir(request.material_id, material_root=material_root)
+        # A user's metadata.json (or another sidecar name) is still an original.
+        source_path = record_dir / "original" / _safe_upload_filename(request.filename)
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        source_path.write_bytes(content)
+        now = _utc_now()
+        record = KGMaterialRecord(
+            status="uploaded",
+            material_id=request.material_id,
+            title=request.title,
+            scenario=request.scenario,
+            material_type=request.material_type,
+            source_kind="uploaded_file",
+            source_uri=str(source_path),
+            metadata_path=str(record_dir / "metadata.json"),
+            registered_at=now,
+            updated_at=now,
+            original_filename=request.filename,
+            content_type=request.content_type,
+            size_bytes=len(content),
+            metadata=request.metadata,
         )
-
-    record_dir.mkdir(parents=True, exist_ok=True)
-    stored_filename = _safe_upload_filename(request.filename)
-    source_path = record_dir / stored_filename
-    source_path.write_bytes(content)
-    now = _utc_now()
-    record = KGMaterialRecord(
-        status="uploaded",
-        material_id=request.material_id,
-        title=request.title,
-        scenario=request.scenario,
-        material_type=request.material_type,
-        source_kind="uploaded_file",
-        source_uri=str(source_path),
-        metadata_path=str(metadata_path),
-        registered_at=now,
-        updated_at=now,
-        original_filename=request.filename,
-        content_type=request.content_type,
-        size_bytes=len(content),
-        metadata=request.metadata,
-    )
-    return store.save_material_record(record)
+        return store.save_material_record(record)
 
 
 def register_kg_material(
@@ -679,37 +771,34 @@ def register_kg_material(
     overwrite: bool = False,
 ) -> KGMaterialRecord:
     """Register a source material reference."""
-    store = material_store(material_root=material_root)
-    record_dir = _material_dir(request.material_id, material_root=material_root)
-    metadata_path = record_dir / "metadata.json"
-    if _material_record_exists(store, request.material_id) and not overwrite:
-        raise ValueError(
-            f"material_id already exists; pass overwrite=true to replace: {request.material_id}"
+    with material_operations([request.material_id], material_root=material_root) as store:
+        _check_registration(store, request.material_id, overwrite=overwrite)
+        record_dir = _material_dir(request.material_id, material_root=material_root)
+        record_dir.mkdir(parents=True, exist_ok=True)
+        now = _utc_now()
+        record = KGMaterialRecord(
+            status="extracted" if request.extraction.status == "extracted" else "registered",
+            material_id=request.material_id,
+            title=request.title,
+            scenario=request.scenario,
+            material_type=request.material_type,
+            source_kind=request.source_kind,
+            source_uri=request.source_uri,
+            metadata_path=str(record_dir / "metadata.json"),
+            registered_at=now,
+            updated_at=now,
+            metadata=request.metadata,
+            extraction=request.extraction,
         )
-    record_dir.mkdir(parents=True, exist_ok=True)
-    now = _utc_now()
-    record = KGMaterialRecord(
-        status="extracted" if request.extraction.status == "extracted" else "registered",
-        material_id=request.material_id,
-        title=request.title,
-        scenario=request.scenario,
-        material_type=request.material_type,
-        source_kind=request.source_kind,
-        source_uri=request.source_uri,
-        metadata_path=str(metadata_path),
-        registered_at=now,
-        updated_at=now,
-        metadata=request.metadata,
-        extraction=request.extraction,
-    )
-    return store.save_material_record(record)
+        return store.save_material_record(record)
 
 
-def list_kg_materials(*, material_root: Path | None = None) -> KGMaterialListResponse:
-    """List persisted material-library records."""
+def list_kg_materials(
+    *, archived: bool = False, material_root: Path | None = None
+) -> KGMaterialListResponse:
+    """List either the active library or its recoverable archive."""
     root = material_root or DEFAULT_SOURCE_KG_MATERIAL_DIR
-    materials = material_store(material_root=material_root).list_material_records()
-    materials.sort(key=lambda item: item.updated_at, reverse=True)
+    materials = material_store(material_root=material_root).list_material_records(archived=archived)
     return KGMaterialListResponse(material_root=str(root), materials=materials)
 
 
@@ -783,7 +872,7 @@ def extract_kg_material_to_structured_records(
     from kgtracevis.source_kg_compiler.material_parser import parse_material
 
     store = material_store(material_root=material_root)
-    material = get_kg_material(material_id, material_root=material_root).material
+    material = require_active_material(store, material_id)
     if material.extraction.status == "extracted" and not request.overwrite:
         raise ValueError("material already parsed; pass overwrite=true to reparse")
     record_dir = Path(material.metadata_path).parent
@@ -799,7 +888,7 @@ def extract_kg_material_to_structured_records(
                 url=material.source_uri,
                 material_id=material_id,
                 material_root=material_root,
-                destination_dir=output_dir,
+                destination_dir=output_dir / "original",
             )
             if material.source_kind == "url"
             else Path(material.source_uri).expanduser()
@@ -928,9 +1017,9 @@ def prepare_kg_material_construction_build(
     material_root: Path | None = None,
 ) -> KGMaterialBuildSourcesResponse:
     """Return compiler source inputs for selected materials."""
+    store = material_store(material_root=material_root)
     materials = [
-        get_kg_material(material_id, material_root=material_root).material
-        for material_id in request.material_ids
+        require_active_material(store, material_id) for material_id in request.material_ids
     ]
     for index, material in enumerate(materials):
         if (
@@ -1043,12 +1132,15 @@ def _source_format_from_path(path: Path) -> ConstructionSourceFormat:
     return "text"
 
 
-def _material_record_exists(store: KGMaterialStore, material_id: str) -> bool:
+def _check_registration(store: KGMaterialStore, material_id: str, *, overwrite: bool) -> None:
     try:
-        store.get_material_record(material_id)
-    except ValueError:
-        return False
-    return True
+        require_active_material(store, material_id)
+    except MaterialNotFoundError:
+        return
+    if not overwrite:
+        raise ValueError(
+            f"material_id already exists; pass overwrite=true to replace: {material_id}"
+        )
 
 
 def _material_dir(material_id: str, *, material_root: Path | None = None) -> Path:
@@ -1061,7 +1153,14 @@ def _material_dir(material_id: str, *, material_root: Path | None = None) -> Pat
 def _write_material_record(material: KGMaterialRecord) -> None:
     path = Path(material.metadata_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    _write_json_object(path, material.model_dump(mode="json"))
+    with NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        temporary_path = Path(handle.name)
+        try:
+            json.dump(material.model_dump(mode="json"), handle, indent=2, sort_keys=True)
+            handle.close()
+            temporary_path.replace(path)
+        finally:
+            temporary_path.unlink(missing_ok=True)
 
 
 def _load_material_record(path: Path) -> KGMaterialRecord:
@@ -1146,7 +1245,6 @@ __all__ = [
     "KGMaterialChunkListResponse",
     "KGMaterialChunkRecord",
     "KGMaterialDetailResponse",
-    "KGMaterialDirectBuildRequest",
     "KGMaterialExtractionArtifactListResponse",
     "KGMaterialExtractionArtifactRecord",
     "KGMaterialExtractionRunListResponse",
@@ -1160,6 +1258,8 @@ __all__ = [
     "KGMaterialSelectedBuildRequest",
     "KGMaterialStore",
     "KGMaterialUploadRequest",
+    "MaterialConflictError",
+    "MaterialNotFoundError",
     "MaterialSourceKind",
     "MaterialStatus",
     "MaterialType",
@@ -1171,8 +1271,11 @@ __all__ = [
     "list_kg_material_extraction_artifacts",
     "list_kg_material_extraction_runs",
     "list_kg_materials",
+    "material_operations",
     "material_store",
     "prepare_kg_material_construction_build",
     "register_kg_material",
+    "require_active_material",
     "save_kg_material_upload",
+    "set_kg_material_archived",
 ]

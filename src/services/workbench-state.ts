@@ -15,7 +15,6 @@ export interface WorkbenchState {
   subgraphMode: 'path' | 'neighborhood'
   selectedSubgraphNodeId: string | null
   selectedSubgraphEdgeId: string | null
-  selectedConstructionRunId: string | null
   evidenceFilterGraph: string | null
   evidenceFilterModality: ObservationModality | null
   evidenceFilterSource: string | null
@@ -51,7 +50,7 @@ export function loadedRunSelectionPatch(state: WorkbenchState, runId: string, ca
 export function sourceSelectionReset():Partial<WorkbenchState> {
   return {selectedRunId:null,selectedRunSource:null,selectedCaseId:null,selectedObservationId:null,selectedCandidateId:null,
     selectedPathId:null,selectedReviewTargetKey:null,selectedGraphNodeId:null,subgraphMode:'path',
-    selectedSubgraphNodeId:null,selectedSubgraphEdgeId:null,selectedConstructionRunId:null}
+    selectedSubgraphNodeId:null,selectedSubgraphEdgeId:null}
 }
 
 const WORKBENCH_STATE_STORAGE_KEY = 'rootlens.workbench-state'
@@ -69,7 +68,6 @@ const DEFAULT_WORKBENCH_STATE: WorkbenchState = {
   subgraphMode: 'path',
   selectedSubgraphNodeId: null,
   selectedSubgraphEdgeId: null,
-  selectedConstructionRunId: null,
   evidenceFilterGraph: null,
   evidenceFilterModality: null,
   evidenceFilterSource: null,
@@ -115,7 +113,6 @@ function normalizeWorkbenchState(candidate?: Partial<WorkbenchState> | null): Wo
     subgraphMode: candidate?.subgraphMode === 'neighborhood' ? 'neighborhood' : 'path',
     selectedSubgraphNodeId: normalizeString(candidate?.selectedSubgraphNodeId),
     selectedSubgraphEdgeId: normalizeString(candidate?.selectedSubgraphEdgeId),
-    selectedConstructionRunId: normalizeString(candidate?.selectedConstructionRunId),
     evidenceFilterGraph: normalizeString(candidate?.evidenceFilterGraph),
     evidenceFilterModality: normalizeObservationModality(candidate?.evidenceFilterModality),
     evidenceFilterSource: normalizeString(candidate?.evidenceFilterSource),

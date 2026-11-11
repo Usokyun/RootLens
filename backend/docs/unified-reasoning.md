@@ -99,11 +99,11 @@ uv run --no-sync python scripts/build_unified_knowledge.py \
 
 ## 在现有三页使用 v2
 
-1. **素材与构图**：解析后选择 Build Recipe 的“统一推理 · 图像 ROI／过程窗口／空间网格”；生成后选择相同场景并“装载工作图”。
-2. **根因与图谱**：“管理工作图”可导入种子／新包、修改 canonical `knowledge` 并保存／导出。实体、别名、主体绑定、值绑定、原子条件和规则一起持久化；派生边不是第二份真值。保存前自动备份，历史 run 保留当时的图和结果。
-3. **运行与证据**：上传原图或完整 records，并明确选择 `working:<graph_id>`。图像需语义时启用 ROI 识别。结果点击“推理依据”，查看同一后端保存的候选 U/C/A/J、实测值、冲突、缺失、联合条件和源边／证明；浏览器不重新判断。
+1. **素材与构图**：勾选资料后点“生成知识图谱”，确认场景和名称。完成后“打开图谱”使用本次返回的图 ID。
+2. **根因与图谱**：导入种子／新包、编辑完整 canonical `knowledge`、保存并投入使用。绑定、条件和规则一起保存，派生图不是第二份知识。历史 run 保留当时的图和结果。
+3. **运行与证据**：“新建分析”选择已启用图和解释器，提交原始输入或原生 Frame。打开保存详情查看同一 Frame 的候选、实测值、联合条件或传播依据和源边；浏览器不重新判断。
 
-v1 包／旧策略没有被替换。默认策略仍按原合同运行，只有显式选择 v2 工作图才走公共内核。v2 JSON 的原生服务入口为：
+离线研究仍可使用 v1 包和旧策略。下面是直接计算 v2 Frame、不保存 Run 的研究接口：
 
 ```bash
 curl -sS -H 'Content-Type: application/json' \
@@ -115,13 +115,13 @@ curl -sS -H 'Content-Type: application/json' \
   'http://127.0.0.1:8012/api/reasoning/<graph_id>/analyze?top_k=5'
 ```
 
-持久 Run 继续通过现有 `/api/runs/upload` 的原图／records 入口创建；不要把 v2 Frame 当成旧 `mode=evidence` 上传。工作图 GET／PUT `/api/kg/working-graphs/{graph_id}/package` 完整交换同一包。导入默认创建新图，保存当前图才修改原 ID。
+持久分析使用 `POST /api/tasks/inference`（multipart，`input_mode=evidence` 可直接接收原生 Frame），由 `GET /api/analyses/{run_id}` 读取。已导入的图须先投入使用；完整包可经 `GET/PUT /api/kg/working-graphs/{graph_id}/package` 交换。旧 Run 上传端点已退役。
 
 ### 本机演示与恢复
 
 当前演示前端 `http://127.0.0.1:5186`、API `http://127.0.0.1:8012` 使用独立 Compose 项目 `rootlens-mvtec-m1-test`：PG 55433、Neo4j bolt 57687；原本机库／来源备份保持。恢复命令和测试专用连接配置见 [M1 配置与恢复](mvtec-m1-demo.md#配置与恢复)，已有服务不要重复启动，不执行 `backend:init` 或删除卷。
 
-完整回放：`runs/unified_reasoning/u5_replay/all-scenes-session.json`。包含 3 个原始 Run、3 张知识快照、22 个 case 与内嵌预览。Evidence 页“回放资产”→“workspace export / session bundle”单独导入；刷新后仍从 IndexedDB 读取，不请求后端 API 重算。D3 渲染器仍沿用原有 CDN 依赖。
+完整回放：`runs/unified_reasoning/u5_replay/all-scenes-session.json`。包含 3 个原始 Run、3 张知识快照、22 个 case 与内嵌预览。运行页“导入回放”打开该成品，不请求后端重新测量或推理。D3 使用项目锁定依赖。
 
 建议依次展示：bottle 的 4 条并列原因；TEP 的正常／异常窗口、完整 52 通道及错误首位对应的条件；Wafer 的实际网格、空间统计和分类一致／不一致。支持和失败都能从同一“推理依据”检查。
 

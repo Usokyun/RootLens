@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import type {
-  KGConstructionBuildDetail,
-  KGConstructionBuildValidationResponse,
-  KGConstructionReviewQueueEdge,
   RunCaseDetail,
 } from "@/api/contracts";
 import {
@@ -11,9 +8,6 @@ import {
   buildGraphEdgeProvenance,
   buildGraphEntityLinkProvenance,
   buildGraphPathProvenance,
-  buildMaterialsBuildEdgeProvenance,
-  buildMaterialsBuildProvenance,
-  type ProvenanceSourceMaterial,
 } from "@/services/provenance-inspector";
 import type { UnifiedGraphEdge } from "@/types/graph";
 
@@ -213,72 +207,6 @@ const selectedEdge: UnifiedGraphEdge = {
   },
 };
 
-const buildDetail: KGConstructionBuildDetail = {
-  build: {
-    run_id: "build-1",
-    status: "completed",
-    created_at: "2026-05-16T09:00:00Z",
-    output_dir: "mock://build-1",
-    nodes_path: "mock://build-1/nodes.json",
-    edges_path: "mock://build-1/edges.json",
-    summary_path: "mock://build-1/summary.json",
-    manifest_path: "mock://build-1/manifest.json",
-    source_ids: ["source-a", "source-b"],
-    source_count: 2,
-    node_count: 12,
-    edge_count: 18,
-    scenarios: { shared: 18 },
-    review_status_counts: { auto: 18 },
-    claim_boundary: claimBoundary,
-  },
-  summary: {
-    accepted_edges: 18,
-  },
-  manifest: {
-    sources: ["source-a", "source-b"],
-  },
-};
-
-const buildValidation: KGConstructionBuildValidationResponse = {
-  build: buildDetail.build,
-  qa_report: {
-    warnings: ["edge confidence below threshold"],
-  },
-  claim_boundary: claimBoundary,
-};
-
-const buildEdge: KGConstructionReviewQueueEdge = {
-  target_key: "head|REL|tail|shared",
-  head: "head",
-  relation: "REL",
-  tail: "tail",
-  scenario: "shared",
-  source: "source-a",
-  evidence: "edge extracted from source-a",
-  confidence: 0.82,
-  weight: 0.82,
-  review_status: "auto",
-  feedback_count: 0,
-  accepted_count: 0,
-  rejected_count: 0,
-};
-
-const materials: ProvenanceSourceMaterial[] = [
-  {
-    sourceId: "source-a",
-    title: "Source A",
-    path: "/tmp/source-a.csv",
-    sourceType: "manual_table",
-    note: "seeded source material",
-  },
-  {
-    sourceId: "source-b",
-    title: "Source B",
-    path: "/tmp/source-b.json",
-    sourceType: "structured_records",
-  },
-];
-
 describe("provenance inspector builders", () => {
   it("builds path provenance from support observations, visual evidence, and edge provenance with a TEP projection note", () => {
     const result = buildGraphPathProvenance({
@@ -353,44 +281,5 @@ describe("provenance inspector builders", () => {
       ]),
     );
     expect(result?.linkedReviewTarget).toBe("correction:1");
-  });
-
-  it("builds build-level provenance from manifest, summary, qa report, and linked source materials", () => {
-    const result = buildMaterialsBuildProvenance({
-      buildDetail,
-      buildValidation,
-      materials,
-      claimBoundary,
-    });
-
-    expect(result?.semanticNotes).toContain(
-      "当前溯源主要来自构图生成产物（清单 / 摘要 / QA / 审阅队列）及其关联来源元数据。",
-    );
-    expect(result?.records.map((item) => item.sourceType)).toEqual(
-      expect.arrayContaining([
-        "manifest",
-        "summary",
-        "qa_report",
-        "source_material",
-      ]),
-    );
-    expect(result?.records.map((item) => item.sourceLabel)).toEqual(
-      expect.arrayContaining(["构图清单", "构图摘要", "质检报告"]),
-    );
-  });
-
-  it("builds build-edge provenance from review queue metadata and mapped source materials", () => {
-    const result = buildMaterialsBuildEdgeProvenance({
-      buildDetail,
-      edge: buildEdge,
-      materials,
-      claimBoundary,
-    });
-
-    expect(result?.linkedReviewTarget).toBe("head|REL|tail|shared");
-    expect(result?.records.map((item) => item.sourceType)).toEqual([
-      "review_queue",
-      "source_material",
-    ]);
   });
 });

@@ -108,6 +108,53 @@ def test_invalid_process_windows_rejected_before_running_backbone(client_runtime
     assert not manager.store.tasks
 
 
+def test_raw_analysis_with_unregistered_model_stops_at_adapter(
+    client_runtime,
+    tmp_path,
+    monkeypatch,
+):
+    client, manager, _ = client_runtime
+    monkeypatch.setenv("KGTRACEVIS_MVTEC_MODEL_MANIFEST", str(tmp_path / "missing.json"))
+    response = client.post(
+        "/api/tasks/inference",
+        data={
+            "graph_id": "g",
+            "input_mode": "image",
+            "object_name": "bottle",
+            "model_preset": "efficientad",
+        },
+        files={"file": ("unused.png", b"not-read", "image/png")},
+    )
+    assert response.status_code == 202
+    task = finish(manager, response.json())
+    assert task["status"] == "failed"
+    assert task["error"]["stage"] == "adapter"
+    assert "efficientad" in task["error"]["message"]
+    assert not manager.store.analyses
+
+
+def test_visual_provider_failure_does_not_save_a_substitute_diagnosis(client_runtime, monkeypatch):
+    from kgtracevis.producers.visual_semantics import ROISemanticServiceError
+
+    client, manager, _ = client_runtime
+
+    def failed(*_args):
+        raise ROISemanticServiceError("ROI 视觉服务调用失败")
+
+    monkeypatch.setattr(runtime, "_image_records", failed)
+    response = client.post(
+        "/api/tasks/inference",
+        data={"graph_id": "g", "input_mode": "image", "semantic_mode": "vlm"},
+        files={"file": ("public.png", b"image-fixture", "image/png")},
+    )
+    assert response.status_code == 202
+    task = finish(manager, response.json())
+    assert task["status"] == "failed"
+    assert task["error"]["stage"] == "adapter"
+    assert "视觉服务" in task["error"]["message"]
+    assert not manager.store.analyses
+
+
 def test_demo_library_only_resolves_manifest_whitelist(client_runtime, tmp_path, monkeypatch):
     client, _, _ = client_runtime
     manifest = tmp_path / "unsafe.json"

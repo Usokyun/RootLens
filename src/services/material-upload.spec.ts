@@ -76,6 +76,15 @@ describe('material batch upload', () => {
     expect(upload).toHaveBeenCalledExactlyOnceWith({ file, ...options })
   })
 
+  it('identifies single-file formats when no custom type was chosen', async () => {
+    const file = new File(['<p>source</p>'], 'manual.html')
+    const upload = vi.fn(async (input: UploadInput) => uploadedMaterial(input))
+    await uploadKGMaterialFiles([file], { scenario: 'shared' }, upload)
+    expect(upload).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      file, scenario: 'shared', source_type: 'webpage',
+    }))
+  })
+
   it('continues after a failure and returns only failed files for retry', async () => {
     const files = ['one.md', 'two.pdf', 'three.m'].map((name) => new File(['source'], name))
     const upload = vi.fn(async (input: UploadInput) => {

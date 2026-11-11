@@ -286,22 +286,3 @@ def test_observed_provider_transport_tag_does_not_weaken_semantic_schema(image, 
     )
     assert result[0].semantic_status == "unknown"
     assert (tmp_path / "roi_1.semantics.json").is_file()
-
-
-def test_provider_failure_is_reported_without_a_substitute_diagnosis(monkeypatch):
-    from fastapi.testclient import TestClient
-
-    from kgtracevis.producers.visual_semantics import ROISemanticServiceError
-    from kgtracevis.service import api
-
-    def failed(*args, **kwargs):
-        raise ROISemanticServiceError("ROI 视觉服务调用失败")
-
-    monkeypatch.setattr(api, "create_run_from_upload", failed)
-    response = TestClient(api.app).post(
-        "/api/runs/upload",
-        files={"file": ("public.png", b"png", "image/png")},
-        data={"mode": "image", "semantic_mode": "vlm"},
-    )
-    assert response.status_code == 502
-    assert "视觉服务" in response.json()["detail"]

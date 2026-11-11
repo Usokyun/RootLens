@@ -110,9 +110,11 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 ### 1. 运行与证据 · `/evidence`
 
-保留原运行列表、case／observation 浏览与成品回放。Backend 点 **新建分析**，选择原图、52通道过程文件＋正常参考、晶圆网格，或上传原生EvidenceFrame；选择已启用的同场景工作图及推理器后提交真实任务。原 Evidence／records／image 仍可经“旧接口上传”使用。
+1. 在 **Backend** 点 **新建分析**，选择原图、52 通道过程文件＋正常参考、晶圆网格或原生 EvidenceFrame，再选已启用的同场景图和解释器。列表集中显示实际任务阶段；历史表分别显示运行状态和保存结论。未知进度不显示估算百分比。
+2. 从历史点 **打开**，进入 `/evidence/runs/:runId`。在同一保存范围查看输入、Backbone、Evidence、推理与图谱。候选、路径和观测按本次记录联动；换窗口不带入上一窗的选中项。路径图只画本次保存的源边。
+3. 点 **下载 Evidence** 获取本次保存 Frame，可作为中间入口重新提交。中间入口不重跑 Backbone；已有原图、网格或曲线可以关联，未保存的产物不补造。改图不会重算历史，候选分数也不是根因概率。
 
-成功后载入该次“已保存分析”。原候选、每Frame、分数和源路径保留；**下载本次 Evidence** 后可直接作为中间入口复算。新分析的旧Session导出不支持，原Run导出保持。之后改图不重算历史；无匹配、证据不足与同分候选均是有效结果，分数不是概率。
+**导入回放**只打开成品 Session／runtime 快照，不运行模型。旧上传工作台已退役；图谱页仍能读取已保存的旧 Run、附件和回放。
 
 ### 2. 根因与图谱 · `/graphs`
 
@@ -124,7 +126,11 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 ### 3. 素材与构图 · `/materials`
 
-保留原素材库、文件／URL 登记和片段定位。勾选资料后在原 Build Recipe 点 **生成构图**，读取实际解析、LLM、校验和保存阶段。默认每次任务最多两个文本请求（首次＋一次修复）；失败停住，重试须明确点击。完成后点 **打开并编辑此图**，沿原图谱页保存并启用。制作成功不等于当前观测足以诊断。
+1. 在 Backend 点 **添加素材**，上传文件或登记网址。网址在提取时才抓取。点素材名称查看详情；点 **提取内容** 后可以按原文位置读片段。
+2. 勾选素材，点 **生成知识图谱**，核对清单、图谱名和场景。同一张图只使用该场景与共享素材；已提取的内容直接复用。制作进度和失败原因可从 **构图记录** 重看，重试须明确点击。
+3. 完成后点 **打开图谱**，进入本次生成的工作图。新图默认未启用；在图谱页编辑和启用后才可用于新分析。
+
+**移出素材库**会把素材从新构图候选中移除，保留原文件、提取结果和历史图谱来源。可在 **已移出**中恢复。正在被提取或构图任务使用的素材要等任务结束后才能移出。
 
 ## 保留的后端推理能力
 
@@ -139,11 +145,13 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 ## 当前边界与历史资产
 
-Demo 成品快照、Session／runtime Replay 与原页面工作区已随原前端恢复；回放不执行新的推理。仍不支持从 nodes／edges／Evidence 在浏览器临时组装 runtime，也不执行本地构图或 RCA／what-if。Backend 保留旧接口与新双闭环接口各自的合同，不能用旧 run 外壳冒充重算的新结果。
+创建操作统一走后端 `/api/tasks/material-parse`、`/api/tasks/material-build` 和 `/api/tasks/inference`。旧同步素材提取、多套构图／草稿、旧 Run 上传及其模型下载端点已退役；原素材、构图产物、旧 Run 和回放文件都保留。浏览器不从 nodes／edges／Evidence 临时组装 runtime，也不执行本地构图或推理。
 
 U0–U5 的结果保留为历史：32 份同输入的独立平坦对照完全等价，TEP 首位有明确错误；当时前端 95 项／build 通过，后端 442 通过／5 项既有失败／1 跳过。统一架构不等于准确率提升。见 [U5 历史验收](backend/docs/unified-reasoning-u5.md)。M1–M6 的迁移、模型接入和旧回放走查见 [渐进重构历史](backend/docs/progressive-demo-2026-11-10.md)，其旧模式入口说明不覆盖当前产品。
 
-本轮前端原生Vitest **28文件／147项通过**，类型与生产构建通过；保留Arco主chunk大小警告。后端原生pytest **575 passed／4 既有可选跳过**：3项隔离数据库 opt-in 和1项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实跑见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)；`f5e93aa` 的22文件／109项和 `8cf4d0b` 的18文件／97项按各自历史候选保留。
+原界面接通双闭环阶段前端原生 Vitest **28 文件／147 项通过**，类型与生产构建通过；保留 Arco 主 chunk 大小警告。后端原生 pytest **575 passed／4 既有可选跳过**：3 项隔离数据库 opt-in 和 1 项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实跑见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)；`f5e93aa` 的 22 文件／109 项和 `8cf4d0b` 的 18 文件／97 项按各自历史候选保留。
+
+两页合验的后端原生 pytest 为 **575 通过／4 既有可选跳过**。本机隔离 API 可用时，在 `backend/` 执行 `uv run --offline --no-sync python scripts/smoke_rootlens_dashboard.py`，只读核对素材归档、任务和分析列表；传 `--task-id`、`--run-id` 可核对指定历史及实际 Evidence 下载。
 
 ## 仓库与数据安全
 
@@ -165,7 +173,7 @@ backend/runs/local_runtime/  预置本机数据库与工具（忽略）
 - [当前集成边界](src/doc/backend-integration-current.md)：当前行为真值，含迁移／U0–U5 历史摘要。
 - [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：任务、图启用与完整分析合同。
 - [演示资产索引](src/doc/rootlens-two-loop-demo-assets.md)与[现场手册](backend/docs/two-loop-demo.md)。
-- [原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)与[实际操作验收](backend/docs/original-ui-loop-acceptance.md)：当前操作、真实运行和保留限制。
+- [原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)与[实际操作验收](backend/docs/original-ui-loop-acceptance.md)：前一阶段的真实运行和保留限制。
 - [前端还原记录](src/doc/rootlens-original-frontend-restoration.md)与[独立实屏验收](backend/docs/frontend-restoration-acceptance.md)：原布局恢复阶段的兼容与检查。
 - [双闭环历史独立验收](backend/docs/two-loop-acceptance.md)与[重构前端交付](src/doc/rootlens-two-loop-frontend.md)：还原前的界面验收、后端消费证据和保留限制。
 - [来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。

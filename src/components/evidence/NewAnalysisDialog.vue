@@ -2,16 +2,14 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { ApiError, createApiClient } from '@/api/client'
 import { backendResourceUrl, createTwoLoopClient, type Dataset, type InputVariant, type ReasonerId, type WorkTask } from '@/api/two-loop'
-import TaskStatusPanel from '@/components/tasks/TaskStatusPanel.vue'
 import {
   analysisSubmission, createAnalysisDraft, currentDemoSample, datasetNames, demoGraphReference, demoGraphUnavailableNote,
   demoInputAvailable, enabledAnalysisGraphs, isAnalysisDataset, modeForDraft, readyDemoGraph, reconcileAnalysisSelection,
   sampleIdentity, type AnalysisCatalog, type AnalysisDraftSeed,
 } from '@/services/analysis-draft'
-import { taskIsActive, useTaskObserver } from '@/services/task-observer'
 
-const props = defineProps<{ visible: boolean; baseUrl: string; seed: AnalysisDraftSeed | null }>()
-const emit = defineEmits<{ 'update:visible': [visible: boolean]; 'task-change': [task: WorkTask | null]; 'open-result': [runId: string] }>()
+const props = defineProps<{ visible: boolean; baseUrl: string; seed: AnalysisDraftSeed; submissionBlocked?: boolean }>()
+const emit = defineEmits<{ 'update:visible': [visible: boolean]; submitted: [task: WorkTask] }>()
 const draft = ref(createAnalysisDraft())
 const catalog = shallowRef<AnalysisCatalog | null>(null)
 const preparing = ref(false)
@@ -19,24 +17,12 @@ const catalogError = ref('')
 const sampleError = ref('')
 const submitError = ref('')
 const submitting = ref(false)
-const showTask = ref(false)
 const fileKey = ref(0)
 const fileInput = ref<HTMLInputElement | null>(null)
 const referenceInput = ref<HTMLInputElement | null>(null)
 let catalogRevision = 0
 let draftRevision = 0
 let disposed = false
-
-const observer = useTaskObserver(() => createTwoLoopClient(props.baseUrl), (finished) => {
-  const id = finished.result?.run_id
-  if (typeof id !== 'string' || !id) throw new Error('任务已完成，但服务未返回保存分析编号。')
-  if (props.visible && showTask.value) emit('open-result', id)
-})
-const { task, connectionError, retrying } = observer
-watch(task, (next) => emit('task-change', next))
-const activeTask = computed(() => taskIsActive(task.value))
-const completedRunId = computed(() => task.value?.status === 'completed' && typeof task.value.result?.run_id === 'string'
-  ? task.value.result.run_id : null)
 
 const sample = computed(() => catalog.value ? currentDemoSample(draft.value, catalog.value) : null)
 const availableGraphs = computed(() => enabledAnalysisGraphs(catalog.value?.graphs ?? [], draft.value.dataset))
@@ -59,7 +45,7 @@ const inputHint = computed(() => ({
   evidence: '上传原生 EvidenceFrame、Frame 数组或 {frames:[…]}，不重复模型测量。',
   records: 'JSON / JSONL 测量记录。',
 })[inputMode.value])
-const canSubmit = computed(() => !!catalog.value && !preparing.value && !catalogError.value && !activeTask.value && !submitting.value
+const canSubmit = computed(() => !!catalog.value && !preparing.value && !catalogError.value && !props.submissionBlocked && !submitting.value
   && graphUsable.value && !!chosenReasoner.value && (draft.value.sampleId ? !!sample.value && demoInputAvailable(sample.value, draft.value.variant)
     : !!draft.value.file && (inputMode.value !== 'process' || !!draft.value.referenceFile)))
 const sampleGroups = computed(() => (Object.keys(datasetNames) as Dataset[]).map((dataset) => ({
@@ -148,8 +134,7 @@ async function submit() {
     const service = createTwoLoopClient(base)
     const next = await (submission.kind === 'demo' ? service.inferDemo(submission.input) : service.infer(submission.input))
     if (disposed || props.baseUrl !== base) return
-    if (revision === draftRevision) showTask.value = true
-    observer.observe(next)
+    emit('submitted', next)
   } catch (error) {
     if (disposed || props.baseUrl !== base) return
     if (revision !== draftRevision) return
@@ -160,19 +145,13 @@ async function submit() {
   }
 }
 
-watch(() => [props.visible, props.seed] as const, ([visible, seed], previous) => {
-  if (!visible) return
-  if (!seed) {
-    showTask.value = true
-    return
-  }
-  if (previous?.[1] === seed) return
+watch([() => props.visible, () => props.seed], ([visible, seed], previous) => {
+  if (!visible || (previous?.[0] && previous[1] === seed)) return
   draftRevision += 1
   draft.value = createAnalysisDraft(seed)
   catalog.value = null
   fileKey.value += 1
   submitError.value = ''
-  showTask.value = false
   void readCatalog(true)
 }, { immediate: true })
 onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
@@ -180,16 +159,10 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
 
 <template>
   <a-modal
-    :visible="visible" :title="showTask ? '分析任务' : '新建分析'" :footer="false"
+    :visible="visible" title="新建分析" :footer="false"
     width="min(640px, calc(100vw - 32px))" :mask-closable="false" :closable="!submitting" :esc-to-close="!submitting"
     @update:visible="emit('update:visible', $event)"
   >
-    <TaskStatusPanel v-if="showTask && task" :task="task" :connection-error="connectionError" :retrying="retrying" @refresh="observer.refresh" @retry="observer.retry">
-      <template #actions>
-        <a-button v-if="completedRunId" type="primary" size="small" @click="emit('open-result', completedRunId)">打开本次分析</a-button>
-      </template>
-    </TaskStatusPanel>
-    <template v-else>
       <a-alert v-if="catalogError" type="error">
         {{ catalogError }}
         <a-button size="mini" type="text" :loading="preparing" @click="readCatalog(!catalog)">重新读取图谱与推理器</a-button>
@@ -302,13 +275,12 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
           </div>
         </details>
         <a-alert v-if="submitError" type="error" class="new-analysis-note">{{ submitError }}</a-alert>
+        <a-alert v-if="submissionBlocked" type="info" class="new-analysis-note">当前查看的任务仍在处理，请等它结束后再提交。</a-alert>
         <div class="rl-form-actions new-analysis-actions">
           <a-button :loading="preparing" :disabled="submitting" @click="readCatalog()">重读目录</a-button>
-          <a-button v-if="activeTask" @click="showTask = true">查看进行中的分析</a-button>
           <a-button type="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">开始分析</a-button>
         </div>
       </a-form>
-    </template>
   </a-modal>
 </template>
 

@@ -1,5 +1,7 @@
 # KG Construction
 
+> The HTTP construction and draft examples below describe a retired workbench. The current [material-to-working-graph contract](../../src/doc/rootlens-two-loop-backend-contract.md) uses asynchronous material tasks. Offline compiler workflows and their saved files remain available.
+
 KG construction is source-constrained.
 
 Candidate entities and triples may come from dataset labels, official tables,

@@ -8,7 +8,7 @@ import re
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from kgtracevis.adapters import evidence_from_mvtec_record
 from kgtracevis.adapters.batch import load_records as load_adapter_records
@@ -20,14 +20,12 @@ from kgtracevis.producers import (
     AnomalibMVTecBackend,
     MVTecAnomalyPredictor,
     build_mvtec_records,
-    download_selected_model_assets,
     is_amazon_patchcore_artifact_collection,
     is_amazon_patchcore_artifact_dir,
     list_mvtec_model_presets,
     resolve_amazon_patchcore_artifact_dir,
     write_jsonl_records,
 )
-from kgtracevis.producers.model_assets import ModelAsset
 from kgtracevis.producers.mvtec_models import (
     DEFAULT_MVTEC_EFFICIENTAD_CHECKPOINT,
     DEFAULT_MVTEC_PATCHCORE_CHECKPOINT,
@@ -67,13 +65,10 @@ __all__ = [
     "WorkflowStep",
     "configure_run_store_for_testing",
     "create_run_from_upload",
-    "download_model_assets",
     "get_run_artifact_path",
     "get_run_detail",
     "list_runs",
     "mvtec_model_presets",
-    "parse_dataset_override",
-    "parse_upload_mode",
     "workflow_steps_for_case",
 ]
 
@@ -221,28 +216,6 @@ def create_run_from_upload(
     if store is None:
         raise ValueError("Postgres run store is not configured")
     return enrich_run_detail(RunDetail.model_validate(store.save_run(detail)))
-
-
-def parse_upload_mode(value: str) -> UploadMode:
-    """Normalize a string form value into a supported upload mode."""
-    normalized = value.strip().lower()
-    if normalized in {"evidence", "record", "records", "image", "img"}:
-        if normalized in {"image", "img"}:
-            return "image"
-        return "records" if normalized in {"record", "records"} else "evidence"
-    raise ValueError("upload mode must be evidence, records, or image")
-
-
-def parse_dataset_override(value: str | None) -> DatasetName | None:
-    """Normalize an optional dataset override from form data."""
-    if value is None:
-        return None
-    normalized = value.strip().lower()
-    if not normalized:
-        return None
-    if normalized not in {"mvtec", "tep", "wafer"}:
-        raise ValueError("dataset must be one of mvtec, tep, wafer")
-    return cast(DatasetName, normalized)
 
 
 def _run_reasoning_metadata_payload(value: Any) -> dict[str, Any]:
@@ -675,15 +648,6 @@ def _build_mvtec_upload_predictor(
 def mvtec_model_presets() -> list[dict[str, Any]]:
     """Return the selectable MVTec model presets for API clients."""
     return list_mvtec_model_presets()
-
-
-def download_model_assets(
-    *,
-    models: tuple[ModelAsset, ...] = ("mvtec-patchcore",),
-    force: bool = False,
-) -> dict[str, Any]:
-    """Download trusted default model assets for service clients."""
-    return download_selected_model_assets(models=models, force=force)
 
 
 def _load_visual_records(input_path: Path) -> list[dict[str, Any]]:

@@ -68,7 +68,7 @@ describe("mock backend paper demo mode", () => {
       evidence_frames: [{ schema_version: 'rootlens-evidence.v2', observations: [{ status: 'missing', value: null }] }],
     };
     const runtime = await loadBundledRootLensRuntime();
-    saveImportedSession({ graphs: null, runtime: { ...runtime, backend_runs: [original] } });
+    await saveImportedSession({ graphs: null, runtime: { ...runtime, backend_runs: [original] } });
     expect((await mockBackend.listRuns())[0].run_id).toBe("saved-backend-run");
     expect(await mockBackend.getRun("saved-backend-run")).toEqual(original);
   });
@@ -136,16 +136,13 @@ describe("mock backend paper demo mode", () => {
     expect(ledger.records[1].target_key).toBe(pathTarget?.target_key ?? null);
   });
 
-  it("rejects uploads in mock mode", async () => {
+  it("keeps older stored records intact when adding local feedback", async () => {
     const { mockBackend } = await import("@/services/mock-backend");
-
-    await expect(
-      mockBackend.uploadRun({
-        file: new File(["{}"], "demo.json", { type: "application/json" }),
-        mode: "evidence",
-        top_k: 5,
-      }),
-    ).rejects.toThrow("内置 Demo 模式不支持上传");
+    const key = "rootlens.mock-backend-state";
+    const history = { construction_builds: [{ id: "old-build" }], uploaded_runs: [{ id: "old-run" }] };
+    localStorage.setItem(key, JSON.stringify(history));
+    await mockBackend.submitReview({ target_type: "path", target_id: "path", action: "accept", source: "test" });
+    expect(JSON.parse(localStorage.getItem(key)!)).toMatchObject(history);
   });
 
   it("uses imported runtime sessions as the active replay run source", async () => {
@@ -158,7 +155,7 @@ describe("mock backend paper demo mode", () => {
     ]);
 
     const bundledRuntime = await loadBundledRootLensRuntime();
-    saveImportedSession({
+    await saveImportedSession({
       graphs: null,
       runtime: {
         ...bundledRuntime,

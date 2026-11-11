@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS source_materials (
         CHECK (status IN ('registered', 'uploaded', 'extracted', 'failed')),
     registered_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
+    archived_at timestamptz,
     original_filename text,
     content_type text,
     size_bytes bigint NOT NULL DEFAULT 0 CHECK (size_bytes >= 0),

@@ -49,11 +49,12 @@ export function submitMaterialBuild(
 
 export function submitMaterialParse(
   baseUrl: string,
-  materialId: string,
+  materialIds: string | readonly string[],
   force: boolean,
 ): Promise<WorkTask> {
+  const ids = typeof materialIds === 'string' ? [materialIds] : [...new Set(materialIds)]
   return requestJson(baseUrl, '/api/tasks/material-parse', jsonInit('POST', {
-    material_ids: [materialId],
+    material_ids: ids,
     force,
   }))
 }

@@ -1,49 +1,13 @@
-import { parse as parseCsv } from "csv-parse/browser/esm/sync";
-
 import type {
-  DashboardBootstrap,
-  DashboardReasoningProfileOption,
-  KGDraftListRequest,
-  KGDraftListResponse,
-  KGDraftRecord,
-  KGDraftRequest,
-  KGMaterialBuildSourcesRequest,
-  KGMaterialBuildSourcesResponse,
   KGMaterialChunkListResponse,
   KGMaterialChunkRecord,
   KGMaterialDetailResponse,
-  KGMaterialExtractRequest,
-  KGMaterialExtractResponse,
   KGMaterialExtractionArtifactListResponse,
   KGMaterialExtractionArtifactRecord,
   KGMaterialExtractionRunListResponse,
   KGMaterialExtractionRunRecord,
   KGMaterialListResponse,
-  KGMaterialMutationResponse,
   KGMaterialRecord,
-  KGMaterialRegisterUrlRequest,
-  KGSourceDraftEdge,
-  KGSourceDraftRequest,
-  KGSourceDraftResponse,
-  KGStudioGraphEdge,
-  KGStudioGraphNode,
-  KGStudioPayload,
-  KGConstructionBuildDetail,
-  KGConstructionBuildListResponse,
-  KGConstructionBuildRecord,
-  KGConstructionBuildRequest,
-  KGConstructionBuildResponse,
-  KGConstructionBuildValidationResponse,
-  KGConstructionEdgeReviewRequest,
-  KGConstructionEdgeReviewResponse,
-  KGConstructionPublishRequest,
-  KGConstructionPublishResponse,
-  KGConstructionReviewQueueEdge,
-  KGConstructionReviewQueueRequest,
-  KGConstructionReviewQueueResponse,
-  KGConstructionReviewQueueSummary,
-  KGConstructionSourceListResponse,
-  KGConstructionUploadedSource,
   PathGraph,
   RankedRootCause,
   ReviewLedgerListRequest,
@@ -57,12 +21,10 @@ import type {
   RunReasoningMetadata,
   RunSummary,
   UploadMode,
-  UploadRequest,
   VisualEvidenceItem,
 } from "@/api/contracts";
 import {
   getLocalSessionMeta,
-  getStoredImportedRuntime,
   loadStoredImportedRuntime,
   loadBundledRootLensRuntime,
 } from "@/services/rootlens-data";
@@ -93,78 +55,21 @@ const REVIEWABLE_FEEDBACK_TARGETS = new Set<ReviewTargetType>([
   "root_cause_candidate",
 ]);
 
-const MOCK_REASONING_PROFILE_OPTIONS: Record<
-  string,
-  DashboardReasoningProfileOption[]
-> = {
-  mvtec: [
-    {
-      profile_id: "generic_graph_path_default",
-      reasoner_adapter: "generic_graph_path",
-      default: true,
-    },
-  ],
-  wafer: [
-    {
-      profile_id: "generic_graph_path_default",
-      reasoner_adapter: "generic_graph_path",
-      default: true,
-    },
-  ],
-  tep: [
-    {
-      profile_id: "tep_root_kgd_default",
-      reasoner_adapter: "tep_root_kgd",
-      default: true,
-    },
-    {
-      profile_id: "generic_graph_path_default",
-      reasoner_adapter: "generic_graph_path",
-      default: false,
-    },
-  ],
-};
-
 interface MockFeedbackRecord {
   feedback_id: string;
   created_at: string;
   request: ReviewRequest;
 }
 
-interface MockDraftRecord {
-  draft_id: string;
-  created_at: string;
-  request: KGDraftRequest;
-}
-
-interface MockConstructionBuild {
-  build: KGConstructionBuildRecord;
-  summary: Record<string, unknown>;
-  manifest: Record<string, unknown>;
-  qa_report: Record<string, unknown>;
-  edges: KGConstructionReviewQueueEdge[];
-}
-
-interface MockPersistentState {
-  uploaded_runs: RunDetail[];
+interface MockPersistentState extends Record<string, unknown> {
   feedback_records: MockFeedbackRecord[];
-  kg_draft_records: MockDraftRecord[];
-  source_uploads: KGConstructionUploadedSource[];
-  construction_builds: MockConstructionBuild[];
   material_records: KGMaterialRecord[];
   material_chunks: KGMaterialChunkRecord[];
   material_extraction_runs: KGMaterialExtractionRunRecord[];
   material_artifacts: KGMaterialExtractionArtifactRecord[];
 }
 
-interface SeedBundle {
-  runs: RunDetail[];
-  bootstrap: DashboardBootstrap;
-  kgStudio: KGStudioPayload;
-  constructionBuilds: MockConstructionBuild[];
-}
-
-let seedBundlePromise: Promise<SeedBundle> | null = null;
+let demoRuns: Promise<RunDetail[]> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -172,10 +77,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function compactList<T>(items: Array<T | null | undefined>): T[] {
-  return items.filter((item): item is T => item !== null && item !== undefined);
 }
 
 function normalizeNullableText(value: unknown): string | null {
@@ -293,11 +194,6 @@ function reviewTargetKey(targetType: string, targetId: string) {
   return `${targetType}:${targetId}`;
 }
 
-function safeNumber(value: unknown, fallback = 0): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 function uniqueByKey<T>(items: T[], getKey: (item: T) => string): T[] {
   const seen = new Set<string>();
   const result: T[] = [];
@@ -316,82 +212,21 @@ function uniqueByKey<T>(items: T[], getKey: (item: T) => string): T[] {
 }
 
 function readPersistentState(): MockPersistentState {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage === "undefined"
-  ) {
-    return {
-      uploaded_runs: [],
-      feedback_records: [],
-      kg_draft_records: [],
-      source_uploads: [],
-      construction_builds: [],
-      material_records: [],
-      material_chunks: [],
-      material_extraction_runs: [],
-      material_artifacts: [],
-    };
-  }
-
+  let parsed: Record<string, unknown> = {};
   try {
-    const raw = window.localStorage.getItem(MOCK_STORAGE_KEY);
-    if (!raw) {
-      return {
-        uploaded_runs: [],
-        feedback_records: [],
-        kg_draft_records: [],
-        source_uploads: [],
-        construction_builds: [],
-        material_records: [],
-        material_chunks: [],
-        material_extraction_runs: [],
-        material_artifacts: [],
-      };
-    }
-
-    const parsed = JSON.parse(raw) as Partial<MockPersistentState>;
-    return {
-      uploaded_runs: Array.isArray(parsed.uploaded_runs)
-        ? (parsed.uploaded_runs as RunDetail[])
-        : [],
-      feedback_records: Array.isArray(parsed.feedback_records)
-        ? (parsed.feedback_records as MockFeedbackRecord[])
-        : [],
-      kg_draft_records: Array.isArray(parsed.kg_draft_records)
-        ? (parsed.kg_draft_records as MockDraftRecord[])
-        : [],
-      source_uploads: Array.isArray(parsed.source_uploads)
-        ? (parsed.source_uploads as KGConstructionUploadedSource[])
-        : [],
-      construction_builds: Array.isArray(parsed.construction_builds)
-        ? (parsed.construction_builds as MockConstructionBuild[])
-        : [],
-      material_records: Array.isArray(parsed.material_records)
-        ? (parsed.material_records as KGMaterialRecord[])
-        : [],
-      material_chunks: Array.isArray(parsed.material_chunks)
-        ? (parsed.material_chunks as KGMaterialChunkRecord[])
-        : [],
-      material_extraction_runs: Array.isArray(parsed.material_extraction_runs)
-        ? (parsed.material_extraction_runs as KGMaterialExtractionRunRecord[])
-        : [],
-      material_artifacts: Array.isArray(parsed.material_artifacts)
-        ? (parsed.material_artifacts as KGMaterialExtractionArtifactRecord[])
-        : [],
-    };
-  } catch {
-    return {
-      uploaded_runs: [],
-      feedback_records: [],
-      kg_draft_records: [],
-      source_uploads: [],
-      construction_builds: [],
-      material_records: [],
-      material_chunks: [],
-      material_extraction_runs: [],
-      material_artifacts: [],
-    };
-  }
+    const data: unknown = JSON.parse(window.localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    if (isRecord(data)) parsed = data;
+  } catch { /* No readable local state. */ }
+  const rows = <T>(key: string): T[] => Array.isArray(parsed[key]) ? parsed[key] as T[] : [];
+  return {
+    // Keep existing local records even when their former workbench UI is gone.
+    ...parsed,
+    feedback_records: rows<MockFeedbackRecord>("feedback_records"),
+    material_records: rows<KGMaterialRecord>("material_records"),
+    material_chunks: rows<KGMaterialChunkRecord>("material_chunks"),
+    material_extraction_runs: rows<KGMaterialExtractionRunRecord>("material_extraction_runs"),
+    material_artifacts: rows<KGMaterialExtractionArtifactRecord>("material_artifacts"),
+  };
 }
 
 function writePersistentState(state: MockPersistentState) {
@@ -403,22 +238,6 @@ function writePersistentState(state: MockPersistentState) {
   }
 
   window.localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
-}
-
-async function fetchPublicJson<T>(path: string): Promise<T> {
-  const response = await fetch(path);
-  if (!response.ok) {
-    throw new Error(`模拟资产读取失败：${path}`);
-  }
-  return (await response.json()) as T;
-}
-
-async function fetchPublicText(path: string): Promise<string> {
-  const response = await fetch(path);
-  if (!response.ok) {
-    throw new Error(`模拟资产读取失败：${path}`);
-  }
-  return response.text();
 }
 
 function detectPathScoringMethod(caseItem: RootLensRuntimeCase): string {
@@ -1123,304 +942,14 @@ function buildImportedReplayRuns(runtime: RootLensRuntimeFile): RunDetail[] {
   ];
 }
 
-function parseCsvRecords(text: string): Record<string, string>[] {
-  return parseCsv(text, {
-    columns: true,
-    skip_empty_lines: true,
-    bom: true,
-  }) as Record<string, string>[];
-}
-
-function countBy<T extends string>(items: T[]): Record<string, number> {
-  return items.reduce<Record<string, number>>((accumulator, item) => {
-    accumulator[item] = (accumulator[item] ?? 0) + 1;
-    return accumulator;
-  }, {});
-}
-
-function buildKgStudioReviewTargets(
-  edges: KGStudioGraphEdge[],
-): ReviewTarget[] {
-  return edges.map((edge) => ({
-    target_type: "edge",
-    target_id: edge.edge_id,
-    target_key: edge.target_key,
-    label: `${edge.head} ${edge.relation} ${edge.tail}`,
-  }));
-}
-
-async function buildSeedKgStudio(): Promise<{
-  kgStudio: KGStudioPayload;
-  build: MockConstructionBuild;
-}> {
-  const [nodesCsv, edgesCsv, validationReport, generationSummary] =
-    await Promise.all([
-      fetchPublicText("/generated/mvtec-candidate-kg/nodes_candidate.csv"),
-      fetchPublicText("/generated/mvtec-candidate-kg/edges_candidate.csv"),
-      fetchPublicJson<Record<string, unknown>>(
-        "/generated/mvtec-candidate-kg/validation_report.json",
-      ),
-      fetchPublicJson<Record<string, unknown>>(
-        "/generated/mvtec-candidate-kg/kg_generation_summary.json",
-      ),
-    ]);
-
-  const nodeRows = parseCsvRecords(nodesCsv);
-  const edgeRows = parseCsvRecords(edgesCsv);
-
-  const graphNodes: KGStudioGraphNode[] = nodeRows.slice(0, 36).map((row) => ({
-    node_id: normalizeText(row.id),
-    label: normalizeText(row.name, normalizeText(row.id)),
-    node_type: normalizeText(row.label),
-    scenario: normalizeText(row.scenario, "shared"),
-    description: normalizeText(row.description),
-  }));
-
-  const graphEdges: KGStudioGraphEdge[] = edgeRows.slice(0, 72).map((row) => {
-    const edgeId = `${normalizeText(row.head)}|${normalizeText(row.relation)}|${normalizeText(row.tail)}|${normalizeText(row.scenario, "shared")}`;
-    return {
-      edge_id: edgeId,
-      target_key: edgeId,
-      head: normalizeText(row.head),
-      relation: normalizeText(row.relation),
-      tail: normalizeText(row.tail),
-      scenario: normalizeText(row.scenario, "shared"),
-      source: normalizeText(row.source),
-      evidence: normalizeText(row.evidence),
-      confidence: safeNumber(row.confidence, 0),
-      weight: safeNumber(row.weight, 0),
-      review_status: normalizeText(row.review_status, "auto"),
-    };
-  });
-
-  const reviewTargets = buildKgStudioReviewTargets(graphEdges);
-  const reviewStatusCounts = countBy(
-    graphEdges.map((edge) => edge.review_status),
-  );
-  const scenarioCounts = countBy(graphEdges.map((edge) => edge.scenario));
-  const sourceCounts = countBy(graphEdges.map((edge) => edge.source));
-  const confidenceValues = graphEdges.map((edge) => edge.confidence ?? 0);
-  const avgConfidence = confidenceValues.length
-    ? confidenceValues.reduce((sum, value) => sum + value, 0) /
-      confidenceValues.length
-    : 0;
-
-  const buildRecord: KGConstructionBuildRecord = {
-    run_id: "mock-construction-seed",
-    status: "completed",
-    created_at: toIsoDate(40),
-    output_dir: "/generated/mvtec-candidate-kg",
-    nodes_path: "/generated/mvtec-candidate-kg/nodes_candidate.csv",
-    edges_path: "/generated/mvtec-candidate-kg/edges_candidate.csv",
-    summary_path: "/generated/mvtec-candidate-kg/validation_report.json",
-    manifest_path: "/generated/mvtec-candidate-kg/kg_generation_summary.json",
-    source_ids: [
-      "wm811k_low_confidence_investigation_rule",
-      "wafer_factory_sop_private_summary",
-    ],
-    source_count: 2,
-    node_count: nodeRows.length,
-    edge_count: edgeRows.length,
-    scenarios: scenarioCounts,
-    review_status_counts: reviewStatusCounts,
-    claim_boundary: CLAIM_BOUNDARY,
-  };
-
-  const reviewQueueEdges: KGConstructionReviewQueueEdge[] = edgeRows.map(
-    (row) => ({
-      target_key: `${normalizeText(row.head)}|${normalizeText(row.relation)}|${normalizeText(row.tail)}|${normalizeText(row.scenario, "shared")}`,
-      head: normalizeText(row.head),
-      relation: normalizeText(row.relation),
-      tail: normalizeText(row.tail),
-      scenario: normalizeText(row.scenario, "shared"),
-      source: normalizeText(row.source),
-      evidence: normalizeText(row.evidence),
-      confidence: safeNumber(row.confidence, 0),
-      weight: safeNumber(row.weight, 0),
-      review_status: normalizeText(row.review_status, "auto"),
-      feedback_count: safeNumber(row.feedback_count, 0),
-      accepted_count: safeNumber(row.accepted_count, 0),
-      rejected_count: safeNumber(row.rejected_count, 0),
-    }),
-  );
-
-  const build: MockConstructionBuild = {
-    build: buildRecord,
-    summary: generationSummary,
-    manifest: generationSummary,
-    qa_report: validationReport,
-    edges: reviewQueueEdges,
-  };
-
-  return {
-    kgStudio: {
-      status: "ok",
-      claim_boundary: CLAIM_BOUNDARY,
-      candidate_dir: "/generated/mvtec-candidate-kg",
-      nodes_path: "/generated/mvtec-candidate-kg/nodes_candidate.csv",
-      edges_path: "/generated/mvtec-candidate-kg/edges_candidate.csv",
-      summary_path: "/generated/mvtec-candidate-kg/validation_report.json",
-      manifest_path: "/generated/mvtec-candidate-kg/kg_generation_summary.json",
-      source_registry_path: "mock://source_registry.csv",
-      node_count: nodeRows.length,
-      edge_count: edgeRows.length,
-      scenario_counts: scenarioCounts,
-      review_status_counts: reviewStatusCounts,
-      source_counts: sourceCounts,
-      confidence_summary: {
-        average: Number(avgConfidence.toFixed(3)),
-        min: Math.min(...confidenceValues),
-        max: Math.max(...confidenceValues),
-      },
-      validation_summary:
-        (validationReport.summary as Record<string, unknown>) ??
-        validationReport,
-      construction_manifest: generationSummary,
-      sources: [
-        {
-          source_id: "wm811k_low_confidence_investigation_rule",
-          title: "WM811K 低置信度排查规则",
-          source_type: "manual_table",
-          path_or_url: "/generated/mvtec-candidate-kg/edges_candidate.csv",
-          used_for: "模拟候选图谱预览",
-          notes: "前端模拟来源登记条目。",
-        },
-        {
-          source_id: "wafer_factory_sop_private_summary",
-          title: "晶圆工厂 SOP 摘要",
-          source_type: "structured_records",
-          path_or_url: "/generated/mvtec-candidate-kg/validation_report.json",
-          used_for: "构建校验摘要",
-          notes: "由仓库内公开资产整理出的模拟来源登记条目。",
-        },
-      ],
-      source_documents: [
-        {
-          path: "/generated/mvtec-candidate-kg/top_case_explanations.md",
-          title: "案例解释摘要",
-          line_count: 12,
-        },
-      ],
-      graph_nodes: graphNodes,
-      graph_edges: graphEdges,
-      review_targets: reviewTargets.map((target) => ({
-        target_type: "edge",
-        target_id: target.target_id,
-        target_key: target.target_key,
-        label: target.label,
-        source:
-          graphEdges.find((edge) => edge.edge_id === target.target_id)
-            ?.source ?? "",
-        confidence:
-          graphEdges.find((edge) => edge.edge_id === target.target_id)
-            ?.confidence ?? null,
-        review_status:
-          graphEdges.find((edge) => edge.edge_id === target.target_id)
-            ?.review_status ?? "auto",
-      })),
-      note: "模拟图谱工坊基于仓库内已提交的候选图谱资产构建。",
-    },
-    build,
-  };
-}
-
-async function ensureSeedBundle(): Promise<SeedBundle> {
-  if (!seedBundlePromise) {
-    seedBundlePromise = Promise.all([
-      loadBundledRootLensRuntime(),
-      buildSeedKgStudio(),
-    ]).then(([runtime, kgSeed]) => {
-      const runs = buildSeedRuns(runtime);
-      const bootstrap: DashboardBootstrap = {
-        status: "ok",
-        api_version: "mock-paper-demo-1.0",
-        claim_boundary: CLAIM_BOUNDARY,
-        supported_datasets: ["mvtec", "tep", "wafer"],
-        supported_feedback_targets: [
-          "path",
-          "edge",
-          "entity_link",
-          "correction",
-        ],
-        supported_feedback_actions: ["accept", "reject", "needs_review"],
-        upload_modes: [
-          {
-            mode: "records",
-            label: "批量记录",
-            description:
-              "论文演示模式固定使用 4 个预设 case；上传仅在 backend 模式启用。",
-            accepted_extensions: [".json", ".jsonl", ".csv"],
-            required_fields: [],
-          },
-          {
-            mode: "evidence",
-            label: "证据 JSON",
-            description:
-              "论文演示模式固定使用静态 evidence 快照；真实上传请切换 backend。",
-            accepted_extensions: [".json"],
-            required_fields: [],
-          },
-          {
-            mode: "image",
-            label: "MVTec 图像",
-            description:
-              "论文演示模式不开放 mock 图像上传；截图请直接切换预设 case。",
-            accepted_extensions: [".png", ".jpg", ".jpeg"],
-            required_fields: ["dataset", "object_name", "model_preset"],
-          },
-        ],
-        reasoning_profile_options: deepClone(MOCK_REASONING_PROFILE_OPTIONS),
-        mvtec_model_presets: {
-          default_preset: "mock-default",
-          presets: [
-            { preset: "mock-default", note: "仓库内置的模拟图像预设" },
-            { preset: "mock-high-recall", note: "更高召回率的模拟图像预设" },
-          ],
-        },
-        recent_runs: runs.map((run) => run.run),
-      };
-
-      return {
-        runs,
-        bootstrap,
-        kgStudio: kgSeed.kgStudio,
-        constructionBuilds: [kgSeed.build],
-      };
-    });
+async function readSnapshotRuns(): Promise<RunDetail[]> {
+  if (getLocalSessionMeta()?.source === "import") {
+    const runtime = await loadStoredImportedRuntime();
+    return runtime ? buildImportedReplayRuns(runtime).sort((left, right) =>
+      right.run.created_at.localeCompare(left.run.created_at)) : [];
   }
-
-  return seedBundlePromise;
-}
-
-async function loadCurrentState() {
-  if (getLocalSessionMeta()?.source === "import") await loadStoredImportedRuntime();
-  const seed = await ensureSeedBundle();
-  return {
-    seed,
-    persistentState: readPersistentState(),
-  };
-}
-
-function mergedRuns(seed: SeedBundle): RunDetail[] {
-  const sessionMeta = getLocalSessionMeta();
-
-  if (sessionMeta?.source === "import") {
-    const importedRuntime = getStoredImportedRuntime();
-    return buildImportedReplayRuns(
-      importedRuntime ?? {
-        schema_version: "rootlens-runtime.v1",
-        generated_at: sessionMeta.updatedAt,
-        generator: "browser-import",
-        cases: [],
-      },
-    ).sort((left, right) =>
-      right.run.created_at.localeCompare(left.run.created_at),
-    );
-  }
-
-  return [...seed.runs].sort((left, right) =>
-    right.run.created_at.localeCompare(left.run.created_at),
-  );
+  demoRuns ??= loadBundledRootLensRuntime().then(buildSeedRuns);
+  return demoRuns;
 }
 
 function findRunById(runs: RunDetail[], runId: string): RunDetail {
@@ -1430,284 +959,6 @@ function findRunById(runs: RunDetail[], runId: string): RunDetail {
   }
 
   return deepClone(run);
-}
-
-function parseDraftLines(request: KGSourceDraftRequest): KGSourceDraftEdge[] {
-  const lines = request.source_text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  return lines.map((line, index) => {
-    const parts = line.split(",").map((part) => part.trim());
-    const [
-      head,
-      relation,
-      tail,
-      scenario = request.default_scenario,
-      evidence = line,
-    ] = parts;
-    const edgeId = `${head || "Source"}|${relation || "SUGGESTS_PLAUSIBLE_MECHANISM"}|${tail || "Target"}|${scenario}`;
-    return {
-      edge_id: edgeId,
-      head: head || `Source_${index + 1}`,
-      relation: relation || "SUGGESTS_PLAUSIBLE_MECHANISM",
-      tail: tail || `Target_${index + 1}`,
-      scenario,
-      source: request.source_id,
-      evidence,
-      confidence: request.confidence,
-      weight: Number((request.confidence * 0.9).toFixed(2)),
-      review_status: "auto",
-    };
-  });
-}
-
-function parseConstructionSourceRows(
-  source: KGConstructionBuildRequest["sources"][number],
-): Array<Record<string, unknown>> {
-  const sourceText = source.source_text?.trim();
-  if (!sourceText) {
-    return [];
-  }
-
-  if (source.source_format === "csv") {
-    try {
-      return parseCsv(sourceText, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-      }) as Array<Record<string, unknown>>;
-    } catch {
-      return [];
-    }
-  }
-
-  if (source.source_format === "json") {
-    try {
-      const parsed = JSON.parse(sourceText) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed.filter(isRecord);
-      }
-      if (isRecord(parsed) && Array.isArray(parsed.records)) {
-        return parsed.records.filter(isRecord);
-      }
-    } catch {
-      return [];
-    }
-  }
-
-  if (source.source_format === "jsonl") {
-    return sourceText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        try {
-          return JSON.parse(line) as unknown;
-        } catch {
-          return null;
-        }
-      })
-      .filter(isRecord);
-  }
-
-  return [];
-}
-
-function parseConstructionSourceEdges(
-  source: KGConstructionBuildRequest["sources"][number],
-): KGConstructionReviewQueueEdge[] {
-  const rows = parseConstructionSourceRows(source);
-  if (rows.length) {
-    return compactList(
-      rows.map((row, index) => {
-        const head = normalizeText(row.head ?? row.subject ?? row.source_node);
-        const relation = normalizeText(
-          row.relation ?? row.predicate ?? row.edge_type,
-        );
-        const tail = normalizeText(row.tail ?? row.object ?? row.target_node);
-
-        if (!head || !relation || !tail) {
-          return null;
-        }
-
-        const scenario = normalizeText(row.scenario, source.scenario);
-        const sourceId = normalizeText(
-          row.source ?? row.source_id,
-          source.source_id,
-        );
-        return {
-          target_key: `${head}|${relation}|${tail}|${scenario}`,
-          head,
-          relation,
-          tail,
-          scenario,
-          source: sourceId,
-          evidence: normalizeText(row.evidence, `${sourceId}:${index + 1}`),
-          confidence: safeNumber(row.confidence, 0.62),
-          weight: safeNumber(row.weight, 0.56),
-          review_status: normalizeText(row.review_status, "auto"),
-          feedback_count: safeNumber(row.feedback_count, 0),
-          accepted_count: safeNumber(row.accepted_count, 0),
-          rejected_count: safeNumber(row.rejected_count, 0),
-        } satisfies KGConstructionReviewQueueEdge;
-      }),
-    );
-  }
-
-  if (!source.source_text) {
-    return [];
-  }
-
-  return parseDraftLines({
-    source_id: source.source_id,
-    source_text: source.source_text,
-    provider: "heuristic",
-    default_scenario: source.scenario,
-    confidence: 0.62,
-  }).map((edge) => ({
-    target_key: edge.edge_id,
-    head: edge.head,
-    relation: edge.relation,
-    tail: edge.tail,
-    scenario: edge.scenario,
-    source: edge.source,
-    evidence: edge.evidence,
-    confidence: edge.confidence,
-    weight: edge.weight,
-    review_status: edge.review_status,
-    feedback_count: 0,
-    accepted_count: 0,
-    rejected_count: 0,
-  }));
-}
-
-function buildConstructionReviewSummary(
-  edges: KGConstructionReviewQueueEdge[],
-): KGConstructionReviewQueueSummary {
-  return {
-    review_status_counts: countBy(edges.map((edge) => edge.review_status)),
-    relation_counts: countBy(edges.map((edge) => edge.relation)),
-    scenario_counts: countBy(edges.map((edge) => edge.scenario)),
-    source_counts: countBy(edges.map((edge) => edge.source)),
-  };
-}
-
-function buildConstructionBuildFromRequest(
-  request: KGConstructionBuildRequest,
-): MockConstructionBuild {
-  const createdAt = new Date().toISOString();
-  const runId = request.run_id || `mock-build-${Date.now()}`;
-  const sourceIds = request.sources.map((source) => source.source_id);
-  const edges: KGConstructionReviewQueueEdge[] = request.sources.flatMap(
-    (source, sourceIndex) => {
-      const parsedEdges = parseConstructionSourceEdges(source);
-
-      if (parsedEdges.length) {
-        return parsedEdges;
-      }
-
-      return [
-        {
-          target_key: `${source.source_id}|SUGGESTS_PLAUSIBLE_MECHANISM|Candidate_${sourceIndex + 1}|${source.scenario}`,
-          head: source.source_id,
-          relation: "SUGGESTS_PLAUSIBLE_MECHANISM",
-          tail: `Candidate_${sourceIndex + 1}`,
-          scenario: source.scenario,
-          source: source.source_id,
-          evidence:
-            source.path ?? source.source_text ?? "Mock construction source",
-          confidence: 0.58,
-          weight: 0.51,
-          review_status: "auto",
-          feedback_count: 0,
-          accepted_count: 0,
-          rejected_count: 0,
-        },
-      ];
-    },
-  );
-
-  const buildRecord: KGConstructionBuildRecord = {
-    run_id: runId,
-    status: "completed",
-    created_at: createdAt,
-    output_dir: `mock://construction/${request.output_name}`,
-    nodes_path: `mock://construction/${request.output_name}/nodes.csv`,
-    edges_path: `mock://construction/${request.output_name}/edges.csv`,
-    summary_path: `mock://construction/${request.output_name}/summary.json`,
-    manifest_path: `mock://construction/${request.output_name}/manifest.json`,
-    source_ids: sourceIds,
-    source_count: sourceIds.length,
-    node_count: Math.max(2, sourceIds.length * 2),
-    edge_count: edges.length,
-    scenarios: countBy(edges.map((edge) => edge.scenario)),
-    review_status_counts: countBy(edges.map((edge) => edge.review_status)),
-    claim_boundary: CLAIM_BOUNDARY,
-  };
-
-  return {
-    build: buildRecord,
-    summary: {
-      output_name: request.output_name,
-      overwrite: request.overwrite,
-      source_ids: sourceIds,
-      edge_count: edges.length,
-    },
-    manifest: {
-      generated_at: createdAt,
-      request,
-    },
-    qa_report: {
-      summary: {
-        passed: true,
-        issue_count: 0,
-        warning_count: edges.some((edge) => edge.confidence < 0.6) ? 1 : 0,
-      },
-      edges,
-    },
-    edges,
-  };
-}
-
-function filterConstructionEdges(
-  edges: KGConstructionReviewQueueEdge[],
-  request: KGConstructionReviewQueueRequest | undefined,
-): KGConstructionReviewQueueEdge[] {
-  if (!request) {
-    return edges;
-  }
-
-  return edges.filter((edge) => {
-    if (request.review_status && edge.review_status !== request.review_status) {
-      return false;
-    }
-    if (request.source && edge.source !== request.source) {
-      return false;
-    }
-    if (request.scenario && edge.scenario !== request.scenario) {
-      return false;
-    }
-    if (request.relation && edge.relation !== request.relation) {
-      return false;
-    }
-    if (request.query) {
-      const haystack = [
-        edge.head,
-        edge.relation,
-        edge.tail,
-        edge.source,
-        edge.evidence,
-      ]
-        .join(" ")
-        .toLowerCase();
-      if (!haystack.includes(request.query.toLowerCase())) {
-        return false;
-      }
-    }
-    return true;
-  });
 }
 
 function persistFeedbackRecord(record: MockFeedbackRecord) {
@@ -1792,48 +1043,6 @@ function filterReviewLedgerRecords(
   });
 }
 
-function persistKGDraftRecord(record: MockDraftRecord) {
-  const state = readPersistentState();
-  state.kg_draft_records = [record, ...state.kg_draft_records];
-  writePersistentState(state);
-}
-
-function persistConstructionSource(source: KGConstructionUploadedSource) {
-  const state = readPersistentState();
-  state.source_uploads = [source, ...state.source_uploads];
-  writePersistentState(state);
-}
-
-function persistConstructionBuild(build: MockConstructionBuild) {
-  const state = readPersistentState();
-  state.construction_builds = uniqueByKey(
-    [build, ...state.construction_builds],
-    (item) => item.build.run_id,
-  );
-  writePersistentState(state);
-}
-
-function mergedConstructionBuilds(
-  seed: SeedBundle,
-  persistentState: MockPersistentState,
-): MockConstructionBuild[] {
-  return uniqueByKey(
-    [...persistentState.construction_builds, ...seed.constructionBuilds],
-    (item) => item.build.run_id,
-  );
-}
-
-function inferMockMaterialSourceFormat(value: string | null | undefined) {
-  const normalized = (value ?? "").toLowerCase();
-  if (normalized.endsWith(".jsonl")) {
-    return "jsonl" as const;
-  }
-  if (normalized.endsWith(".json")) {
-    return "json" as const;
-  }
-  return "csv" as const;
-}
-
 function listMockMaterialRecords(persistentState: MockPersistentState) {
   return [...persistentState.material_records].sort((left, right) => {
     const leftTime = Date.parse(left.updated_at ?? left.created_at ?? "");
@@ -1858,45 +1067,6 @@ function findMockMaterialRecord(
     throw new Error(`未找到素材：${materialId}`);
   }
   return material;
-}
-
-function persistMockMaterialRecord(record: KGMaterialRecord) {
-  const state = readPersistentState();
-  state.material_records = uniqueByKey(
-    [record, ...state.material_records],
-    (item) => item.material_id,
-  );
-  writePersistentState(state);
-}
-
-function replaceMockMaterialDerivedState(input: {
-  materialId: string;
-  chunks?: KGMaterialChunkRecord[];
-  extractionRuns?: KGMaterialExtractionRunRecord[];
-  artifacts?: KGMaterialExtractionArtifactRecord[];
-}) {
-  const state = readPersistentState();
-  if (input.chunks) {
-    state.material_chunks = [
-      ...state.material_chunks.filter((item) => item.material_id !== input.materialId),
-      ...input.chunks,
-    ];
-  }
-  if (input.extractionRuns) {
-    state.material_extraction_runs = [
-      ...state.material_extraction_runs.filter(
-        (item) => item.material_id !== input.materialId,
-      ),
-      ...input.extractionRuns,
-    ];
-  }
-  if (input.artifacts) {
-    state.material_artifacts = [
-      ...state.material_artifacts.filter((item) => item.material_id !== input.materialId),
-      ...input.artifacts,
-    ];
-  }
-  writePersistentState(state);
 }
 
 function listMockMaterialChunks(
@@ -1932,160 +1102,12 @@ function listMockMaterialArtifacts(
     );
 }
 
-function buildMockMaterialRecord(config: {
-  materialId: string;
-  title: string;
-  scenario: string;
-  sourceType: string;
-  sourceKind: string;
-  sourceUri: string;
-  filename?: string | null;
-  contentType?: string | null;
-  sizeBytes?: number;
-  notes?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  extraction?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-  status?: string;
-}) {
-  const createdAt = config.createdAt ?? new Date().toISOString();
-  const updatedAt = config.updatedAt ?? createdAt;
-  const extraction = isRecord(config.extraction) ? config.extraction : {};
-  const metadata: Record<string, unknown> = {
-    ...(isRecord(config.metadata) ? config.metadata : {}),
-    ...(config.notes ? { notes: config.notes } : {}),
-  };
-  return {
-    status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
-    material_id: config.materialId,
-    title: config.title,
-    scenario: config.scenario,
-    material_type: config.sourceType,
-    source_kind: config.sourceKind,
-    source_uri: config.sourceUri,
-    metadata_path: `mock://materials/${config.materialId}/metadata.json`,
-    registered_at: createdAt,
-    updated_at: updatedAt,
-    original_filename: config.filename ?? null,
-    content_type: config.contentType ?? null,
-    size_bytes: config.sizeBytes ?? 0,
-    metadata,
-    extraction,
-    claim_boundary:
-      "source materials are provenance inputs for candidate KG construction; registration or upload does not verify industrial facts or publish KG rows",
-    source_type: config.sourceType,
-    source_format:
-      typeof extraction.source_format === "string"
-        ? extraction.source_format
-        : config.sourceKind === "url"
-          ? null
-          : inferMockMaterialSourceFormat(config.filename ?? config.sourceUri),
-    path: config.sourceKind === "url" ? null : config.sourceUri,
-    url: config.sourceKind === "url" ? config.sourceUri : null,
-    uri: config.sourceUri,
-    filename: config.filename ?? null,
-    processing_status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
-    extraction_status:
-      typeof extraction.status === "string" ? extraction.status : "not_started",
-    chunk_count:
-      typeof metadata.chunk_count === "number" ? metadata.chunk_count : null,
-    page_count:
-      typeof metadata.page_count === "number" ? metadata.page_count : null,
-    source_id:
-      typeof extraction.source_id === "string" ? extraction.source_id : null,
-    notes: config.notes ?? null,
-    created_at: createdAt,
-  } satisfies KGMaterialRecord;
-}
-
-function buildMockDraftRecord(draft: MockDraftRecord): KGDraftRecord {
-  const targetKey =
-    draft.request.target_key ?? `edge:${draft.request.target_id}`;
-  return {
-    draft_id: draft.draft_id,
-    created_at: draft.created_at,
-    target_type: "edge",
-    target_id: draft.request.target_id,
-    target_key: targetKey,
-    draft_action: draft.request.draft_action,
-    proposed_relation: draft.request.proposed_relation ?? null,
-    proposed_evidence: draft.request.proposed_evidence ?? null,
-    proposed_confidence: draft.request.proposed_confidence ?? null,
-    note: draft.request.note ?? null,
-    reviewer: draft.request.reviewer ?? null,
-    source: draft.request.source,
-    metadata: draft.request.metadata ?? {},
-    review_decision: {
-      action: draft.request.draft_action,
-      target_id: draft.request.target_id,
-      target_key: targetKey,
-      note: draft.request.note ?? null,
-      reviewer: draft.request.reviewer ?? null,
-      source: draft.request.source,
-      proposed_payload: {
-        ...(draft.request.proposed_relation
-          ? { relation: draft.request.proposed_relation }
-          : {}),
-        ...(draft.request.proposed_evidence
-          ? { evidence: draft.request.proposed_evidence }
-          : {}),
-        ...(typeof draft.request.proposed_confidence === "number"
-          ? { confidence: draft.request.proposed_confidence }
-          : {}),
-      },
-      metadata: draft.request.metadata ?? {},
-    },
-  };
-}
-
-function listMockDraftRecords(
-  persistentState: MockPersistentState,
-  request?: KGDraftListRequest,
-) {
-  const records = persistentState.kg_draft_records
-    .map((item) => buildMockDraftRecord(item))
-    .sort((left, right) => right.created_at.localeCompare(left.created_at));
-  return records.filter((record) => {
-    if (request?.target_type && record.target_type !== request.target_type) {
-      return false;
-    }
-    if (request?.target_id && record.target_id !== request.target_id) {
-      return false;
-    }
-    if (request?.target_key && record.target_key !== request.target_key) {
-      return false;
-    }
-    if (request?.reviewer && record.reviewer !== request.reviewer) {
-      return false;
-    }
-    if (request?.source && record.source !== request.source) {
-      return false;
-    }
-    return true;
-  });
-}
-
 export const mockBackend = {
-  async bootstrap(): Promise<DashboardBootstrap> {
-    const { seed } = await loadCurrentState();
-    return {
-      ...deepClone(seed.bootstrap),
-      recent_runs: mergedRuns(seed).map((run) => run.run),
-    };
-  },
   async listRuns(): Promise<RunSummary[]> {
-    const { seed } = await loadCurrentState();
-    return mergedRuns(seed).map((run) => run.run);
+    return (await readSnapshotRuns()).map((run) => deepClone(run.run));
   },
   async getRun(runId: string): Promise<RunDetail> {
-    const { seed } = await loadCurrentState();
-    return findRunById(mergedRuns(seed), runId);
-  },
-  async uploadRun(_request: UploadRequest): Promise<RunDetail> {
-    throw new Error(
-      "内置 Demo 模式不支持上传，请切换到 backend 模式后再上传真实数据。",
-    );
+    return findRunById(await readSnapshotRuns(), runId);
   },
   async submitReview(
     request: ReviewRequest,
@@ -2104,8 +1126,8 @@ export const mockBackend = {
   async listReviewLedger(
     request?: ReviewLedgerListRequest,
   ): Promise<ReviewLedgerListResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const runs = mergedRuns(seed);
+    const runs = await readSnapshotRuns();
+    const persistentState = readPersistentState();
     const records = persistentState.feedback_records
       .map((item) => buildReviewLedgerRecord(runs, item))
       .filter((item): item is ReviewLedgerRecord => item !== null)
@@ -2125,7 +1147,7 @@ export const mockBackend = {
     };
   },
   async listKGMaterials(): Promise<KGMaterialListResponse> {
-    const { persistentState } = await loadCurrentState();
+    const persistentState = readPersistentState();
     const materials = listMockMaterialRecords(persistentState);
     return {
       status: "ok",
@@ -2137,250 +1159,16 @@ export const mockBackend = {
     };
   },
   async getKGMaterial(materialId: string): Promise<KGMaterialDetailResponse> {
-    const { persistentState } = await loadCurrentState();
+    const persistentState = readPersistentState();
     return {
       status: "ok",
       material: deepClone(findMockMaterialRecord(persistentState, materialId)),
     };
   },
-  async uploadKGMaterial(input: {
-    file: File;
-    title?: string;
-    scenario?: string;
-    source_type?: string;
-    notes?: string;
-    metadata?: Record<string, unknown>;
-    material_id?: string;
-    overwrite?: boolean;
-  }): Promise<KGMaterialMutationResponse> {
-    const materialId = normalizeText(
-      input.material_id,
-      `mock_material_${Date.now()}`,
-    );
-    const sourceText = await input.file.text();
-    const now = new Date().toISOString();
-    const record = buildMockMaterialRecord({
-      materialId,
-      title: normalizeText(input.title, input.file.name),
-      scenario: normalizeText(input.scenario, "shared"),
-      sourceType: normalizeText(input.source_type, "text"),
-      sourceKind: "uploaded_file",
-      sourceUri: `mock://materials/${materialId}/${input.file.name}`,
-      filename: input.file.name,
-      contentType: input.file.type || "text/plain",
-      sizeBytes: input.file.size,
-      notes: normalizeText(input.notes) || null,
-      createdAt: now,
-      updatedAt: now,
-      metadata: {
-        ...(input.metadata ?? {}),
-        source_text: sourceText,
-      },
-      status: "uploaded",
-    });
-    persistMockMaterialRecord(record);
-    replaceMockMaterialDerivedState({
-      materialId,
-      chunks: [],
-      extractionRuns: [],
-      artifacts: [],
-    });
-    return {
-      status: "uploaded",
-      material: record,
-      note: record.claim_boundary ?? CLAIM_BOUNDARY,
-    };
-  },
-  async registerKGMaterialUrl(
-    request: KGMaterialRegisterUrlRequest,
-  ): Promise<KGMaterialMutationResponse> {
-    const materialId = normalizeText(
-      request.material_id,
-      `mock_material_${Date.now()}`,
-    );
-    const now = new Date().toISOString();
-    const record = buildMockMaterialRecord({
-      materialId,
-      title: normalizeText(request.title, request.url),
-      scenario: normalizeText(request.scenario, "shared"),
-      sourceType: normalizeText(request.source_type, "webpage"),
-      sourceKind: "url",
-      sourceUri: request.url,
-      notes: normalizeText(request.notes) || null,
-      createdAt: now,
-      updatedAt: now,
-      metadata: request.metadata ?? {},
-      status: "registered",
-    });
-    persistMockMaterialRecord(record);
-    replaceMockMaterialDerivedState({
-      materialId,
-      chunks: [],
-      extractionRuns: [],
-      artifacts: [],
-    });
-    return {
-      status: "registered",
-      material: record,
-      note: record.claim_boundary ?? CLAIM_BOUNDARY,
-    };
-  },
-  async extractKGMaterial(
-    materialId: string,
-    request?: KGMaterialExtractRequest,
-  ): Promise<KGMaterialExtractResponse> {
-    const { persistentState } = await loadCurrentState();
-    const base = findMockMaterialRecord(persistentState, materialId);
-    const now = new Date().toISOString();
-    const sourceText =
-      normalizeText(base.metadata?.source_text) ||
-      normalizeText(base.notes) ||
-      `${base.title} source chunk`;
-    const chunk: KGMaterialChunkRecord = {
-      chunk_id: `${materialId}_chunk_0000`,
-      material_id: materialId,
-      chunk_index: 0,
-      source_locator: `chars=0-${sourceText.length}`,
-      text_content: sourceText,
-      char_start: 0,
-      char_end: sourceText.length,
-      metadata: {
-        source_id: base.source_id ?? materialId,
-        scenario: base.scenario,
-      },
-      created_at: now,
-    };
-    const structuredRecordsPath = `mock://materials/${materialId}/structured_records.jsonl`;
-    const extractionRecord: KGMaterialExtractionRunRecord = {
-      extraction_run_id: `extract-${Date.now()}`,
-      material_id: materialId,
-      status: "extracted",
-      provider: request?.provider ?? "none",
-      source_format: "json",
-      structured_records_path: structuredRecordsPath,
-      source_id: materialId,
-      extractor_name: "mock_document_ie",
-      extractor_version: "v1",
-      record_count: 3,
-      error_message: null,
-      started_at: now,
-      completed_at: now,
-      parameters: {
-        max_chars: request?.chunk_size ?? 2000,
-        overlap_chars: request?.chunk_overlap ?? 200,
-        overwrite: request?.overwrite ?? false,
-      },
-      result_summary: {
-        record_count: 3,
-        structured_records_path: structuredRecordsPath,
-      },
-    };
-    const artifact: KGMaterialExtractionArtifactRecord = {
-      artifact_id: `artifact-${Date.now()}`,
-      material_id: materialId,
-      extraction_run_id: extractionRecord.extraction_run_id,
-      artifact_type: "structured_records",
-      uri: structuredRecordsPath,
-      media_type: "application/jsonl",
-      payload: {
-        record_count: 3,
-        source_text_preview: sourceText,
-      },
-      created_at: now,
-    };
-    const extractedRecord = buildMockMaterialRecord({
-      materialId,
-      title: base.title,
-      scenario: base.scenario,
-      sourceType: base.source_type,
-      sourceKind: base.source_kind ?? (base.url ? "url" : "uploaded_file"),
-      sourceUri: base.uri ?? base.url ?? base.path ?? `mock://materials/${materialId}`,
-      filename: base.filename ?? null,
-      contentType: base.content_type ?? null,
-      sizeBytes: base.size_bytes ?? 0,
-      notes: base.notes ?? null,
-      createdAt: base.created_at ?? now,
-      updatedAt: now,
-      metadata: {
-        ...(base.metadata ?? {}),
-        source_text: sourceText,
-        chunk_count: 1,
-      },
-      extraction: {
-        status: "extracted",
-        structured_records_path: structuredRecordsPath,
-        source_format: "json",
-        source_id: materialId,
-        extractor_name: "mock_document_ie",
-        extractor_version: "v1",
-        extracted_at: now,
-        record_count: 3,
-      },
-      status: "extracted",
-    });
-    persistMockMaterialRecord(extractedRecord);
-    replaceMockMaterialDerivedState({
-      materialId,
-      chunks: [chunk],
-      extractionRuns: [extractionRecord],
-      artifacts: [artifact],
-    });
-    return {
-      status: "extracted",
-      material: extractedRecord,
-      structured_records_path: structuredRecordsPath,
-      record_count: 3,
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async buildKGMaterialSources(
-    request: KGMaterialBuildSourcesRequest,
-  ): Promise<KGMaterialBuildSourcesResponse> {
-    const { persistentState } = await loadCurrentState();
-    const materials = request.material_ids.map((materialId) => {
-      const material = findMockMaterialRecord(persistentState, materialId);
-      if (material.extraction_status !== "extracted") {
-        throw new Error(`素材尚未完成 extract：${materialId}`);
-      }
-      return material;
-    });
-    const sources = materials.map((material) => ({
-      source_id: material.source_id ?? material.material_id,
-      source_type: (request.source_type ?? "structured_records") as "structured_records" | "manual_table",
-      scenario: material.scenario,
-      path:
-        typeof material.extraction?.structured_records_path === "string"
-          ? material.extraction.structured_records_path
-          : `mock://materials/${material.material_id}/structured_records.jsonl`,
-      source_format:
-        typeof material.extraction?.source_format === "string"
-          ? (material.extraction.source_format as "csv" | "json" | "jsonl")
-          : "jsonl",
-      metadata: {
-        material_id: material.material_id,
-        material_title: material.title,
-        material_source_kind: material.source_kind,
-      },
-    }));
-    return {
-      status: "ready",
-      material_root: "mock://materials",
-      request,
-      materials,
-      sources,
-      construction_request: {
-        sources,
-        output_name: request.output_name,
-        overwrite: request.overwrite,
-        run_id: request.run_id ?? undefined,
-      },
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
   async getKGMaterialChunks(
     materialId: string,
   ): Promise<KGMaterialChunkListResponse> {
-    const { persistentState } = await loadCurrentState();
+    const persistentState = readPersistentState();
     const material = findMockMaterialRecord(persistentState, materialId);
     const chunks = listMockMaterialChunks(persistentState, materialId);
     return {
@@ -2394,7 +1182,7 @@ export const mockBackend = {
   async getKGMaterialExtractions(
     materialId: string,
   ): Promise<KGMaterialExtractionRunListResponse> {
-    const { persistentState } = await loadCurrentState();
+    const persistentState = readPersistentState();
     const material = findMockMaterialRecord(persistentState, materialId);
     const runs = listMockMaterialExtractions(persistentState, materialId);
     return {
@@ -2408,7 +1196,7 @@ export const mockBackend = {
   async getKGMaterialArtifacts(
     materialId: string,
   ): Promise<KGMaterialExtractionArtifactListResponse> {
-    const { persistentState } = await loadCurrentState();
+    const persistentState = readPersistentState();
     const material = findMockMaterialRecord(persistentState, materialId);
     const artifacts = listMockMaterialArtifacts(persistentState, materialId);
     return {
@@ -2418,276 +1206,6 @@ export const mockBackend = {
       artifacts: deepClone(artifacts),
       claim_boundary: CLAIM_BOUNDARY,
     };
-  },
-  async listKGDrafts(
-    request?: KGDraftListRequest,
-  ): Promise<KGDraftListResponse> {
-    const { persistentState } = await loadCurrentState();
-    const records = listMockDraftRecords(persistentState, request);
-    const offset = request?.offset ?? 0;
-    const limit = request?.limit ?? 50;
-    const paged = records.slice(offset, offset + limit);
-    return {
-      records: paged,
-      total_count: records.length,
-      returned_count: paged.length,
-      offset,
-      limit,
-      claim_boundary:
-        "KG draft records are append-only candidate review adjustments; they do not mutate candidate CSV files or publish KG rows",
-    };
-  },
-  async kgStudio(): Promise<KGStudioPayload> {
-    const { seed } = await loadCurrentState();
-    return deepClone(seed.kgStudio);
-  },
-  async generateKGSourceDraft(
-    request: KGSourceDraftRequest,
-  ): Promise<KGSourceDraftResponse> {
-    return {
-      provider: "heuristic",
-      source_id: request.source_id,
-      claim_boundary: CLAIM_BOUNDARY,
-      candidate_edges: parseDraftLines(request),
-      note: "模拟来源草稿边已从文本框输入中解析完成。",
-    };
-  },
-  async submitKGDraft(
-    request: KGDraftRequest,
-  ): Promise<{ status: string; record: Record<string, unknown> }> {
-    const draftRecord: MockDraftRecord = {
-      draft_id: `draft-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      request,
-    };
-    persistKGDraftRecord(draftRecord);
-    return {
-      status: "recorded",
-      record: draftRecord as unknown as Record<string, unknown>,
-    };
-  },
-  async buildKGConstruction(
-    request: KGConstructionBuildRequest,
-  ): Promise<KGConstructionBuildResponse> {
-    const build = buildConstructionBuildFromRequest(request);
-    persistConstructionBuild(build);
-    return {
-      status: build.build.status,
-      run_id: build.build.run_id,
-      output_dir: build.build.output_dir,
-      nodes_path: build.build.nodes_path,
-      edges_path: build.build.edges_path,
-      summary_path: build.build.summary_path,
-      manifest_path: build.build.manifest_path,
-      summary: build.summary,
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async listKGConstructionBuilds(): Promise<KGConstructionBuildListResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const builds = mergedConstructionBuilds(seed, persistentState);
-    return {
-      build_root: "mock://construction",
-      builds: builds.map((build) => build.build),
-    };
-  },
-  async getKGConstructionBuild(
-    runId: string,
-  ): Promise<KGConstructionBuildDetail> {
-    const { seed, persistentState } = await loadCurrentState();
-    const build = mergedConstructionBuilds(seed, persistentState).find(
-      (item) => item.build.run_id === runId,
-    );
-    if (!build) {
-      throw new Error(`未找到构建记录：${runId}`);
-    }
-    return {
-      build: build.build,
-      summary: build.summary,
-      manifest: build.manifest,
-    };
-  },
-  async validateKGConstructionBuild(
-    runId: string,
-  ): Promise<KGConstructionBuildValidationResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const build = mergedConstructionBuilds(seed, persistentState).find(
-      (item) => item.build.run_id === runId,
-    );
-    if (!build) {
-      throw new Error(`未找到构建记录：${runId}`);
-    }
-    return {
-      build: build.build,
-      qa_report: build.qa_report,
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async publishKGConstructionBuild(
-    runId: string,
-    request: KGConstructionPublishRequest,
-  ): Promise<KGConstructionPublishResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const build = mergedConstructionBuilds(seed, persistentState).find(
-      (item) => item.build.run_id === runId,
-    );
-    if (!build) {
-      throw new Error(`未找到构建记录：${runId}`);
-    }
-    return {
-      build: build.build,
-      import_summary: {
-        node_count: build.build.node_count,
-        edge_count: build.build.edge_count,
-        dry_run: request.dry_run !== false,
-      },
-      include_defaults: request.include_defaults !== false,
-      node_paths: [build.build.nodes_path],
-      edge_paths: [build.build.edges_path],
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async reviewKGConstructionEdge(
-    runId: string,
-    request: KGConstructionEdgeReviewRequest,
-  ): Promise<KGConstructionEdgeReviewResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const merged = mergedConstructionBuilds(seed, persistentState);
-    const existing = merged.find((item) => item.build.run_id === runId);
-    if (!existing) {
-      throw new Error(`未找到构建记录：${runId}`);
-    }
-    const targetKey = normalizeText(
-      request.target_key,
-      `${request.head ?? ""}|${request.relation ?? ""}|${request.tail ?? ""}|${request.scenario ?? ""}`,
-    );
-    const reviewedBuild: MockConstructionBuild = {
-      ...existing,
-      build: {
-        ...existing.build,
-        review_status_counts: countBy(
-          existing.edges.map((edge) =>
-            edge.target_key === targetKey
-              ? request.action === "accept"
-                ? "reviewed"
-                : "rejected"
-              : edge.review_status,
-          ),
-        ),
-      },
-      edges: existing.edges.map((edge) =>
-        edge.target_key === targetKey
-          ? {
-              ...edge,
-              review_status:
-                request.action === "accept" ? "reviewed" : "rejected",
-              feedback_count: edge.feedback_count + 1,
-              accepted_count:
-                edge.accepted_count + (request.action === "accept" ? 1 : 0),
-              rejected_count:
-                edge.rejected_count + (request.action === "reject" ? 1 : 0),
-            }
-          : edge,
-      ),
-      qa_report: {
-        ...existing.qa_report,
-        last_review: {
-          target_key: targetKey,
-          action: request.action,
-          reviewer: request.reviewer ?? "mock-reviewer",
-          note: request.note ?? null,
-        },
-      },
-    };
-    persistConstructionBuild(reviewedBuild);
-    const edge = reviewedBuild.edges.find(
-      (item) => item.target_key === targetKey,
-    );
-    return {
-      build: reviewedBuild.build,
-      decision: {
-        action: request.action,
-        reviewer: request.reviewer ?? "mock-reviewer",
-        note: request.note ?? null,
-      },
-      edge: edge ? (edge as unknown as Record<string, unknown>) : {},
-      summary: reviewedBuild.summary,
-      manifest_path: reviewedBuild.build.manifest_path,
-      edges_path: reviewedBuild.build.edges_path,
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async getKGConstructionReviewQueue(
-    runId: string,
-    request?: KGConstructionReviewQueueRequest,
-  ): Promise<KGConstructionReviewQueueResponse> {
-    const { seed, persistentState } = await loadCurrentState();
-    const build = mergedConstructionBuilds(seed, persistentState).find(
-      (item) => item.build.run_id === runId,
-    );
-    if (!build) {
-      throw new Error(`未找到构建记录：${runId}`);
-    }
-    const filteredEdges = filterConstructionEdges(build.edges, request);
-    const offset = request?.offset ?? 0;
-    const limit = request?.limit ?? 50;
-    const pagedEdges = filteredEdges.slice(offset, offset + limit);
-    return {
-      build: build.build,
-      filters: request ?? {},
-      total_count: filteredEdges.length,
-      returned_count: pagedEdges.length,
-      offset,
-      limit,
-      edges: pagedEdges,
-      summary: buildConstructionReviewSummary(filteredEdges),
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-  },
-  async listKGConstructionSources(): Promise<KGConstructionSourceListResponse> {
-    const { persistentState } = await loadCurrentState();
-    return {
-      source_root: "mock://construction/sources",
-      sources: persistentState.source_uploads,
-    };
-  },
-  async uploadKGConstructionSource(input: {
-    file: File;
-    source_id: string;
-    source_type?: string;
-    scenario?: string;
-    source_format?: string;
-  }): Promise<Record<string, unknown>> {
-    const uploadedSource: KGConstructionUploadedSource = {
-      status: "uploaded",
-      source_id: input.source_id,
-      source_type:
-        (input.source_type as KGConstructionUploadedSource["source_type"]) ??
-        "manual_table",
-      scenario: input.scenario ?? "shared",
-      source_format:
-        (input.source_format as KGConstructionUploadedSource["source_format"]) ??
-        "csv",
-      filename: input.file.name,
-      path: `mock://construction/sources/${input.file.name}`,
-      metadata_path: `mock://construction/sources/${input.source_id}.json`,
-      size_bytes: input.file.size,
-      uploaded_at: new Date().toISOString(),
-      build_source: {
-        source_id: input.source_id,
-        source_type:
-          (input.source_type as KGConstructionUploadedSource["source_type"]) ??
-          "manual_table",
-        scenario: input.scenario ?? "shared",
-        path: `mock://construction/sources/${input.file.name}`,
-        source_format:
-          (input.source_format as KGConstructionUploadedSource["source_format"]) ??
-          "csv",
-      },
-      claim_boundary: CLAIM_BOUNDARY,
-    };
-    persistConstructionSource(uploadedSource);
-    return uploadedSource as unknown as Record<string, unknown>;
   },
 };
 

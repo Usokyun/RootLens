@@ -8,14 +8,6 @@ export type ReviewTargetType =
   | "root_cause_candidate"
   | "case"
   | "link";
-export type KGConstructionSourceType =
-  | "structured_records"
-  | "manual_table"
-  | "tep_semantic_lift"
-  | "tep_variable_mapping";
-export type KGConstructionSourceFormat = "csv" | "json" | "jsonl";
-export type ConstructionReviewStatus = "auto" | "reviewed" | "rejected";
-
 export interface WorkflowStep {
   step_id: string;
   title: string;
@@ -119,13 +111,6 @@ export interface RankedRootCause {
   source?: string | null;
   review_status?: string | null;
   [key: string]: unknown;
-}
-
-export interface DashboardReasoningProfileOption {
-  profile_id: string;
-  reasoner_adapter: string;
-  default: boolean;
-  label?: string;
 }
 
 export interface WorkingGraphSummary {
@@ -236,43 +221,6 @@ export interface RunDetail {
   visual_evidence: VisualEvidenceItem[];
 }
 
-export interface UploadModeInfo {
-  mode: UploadMode;
-  label: string;
-  description: string;
-  accepted_extensions: string[];
-  required_fields: string[];
-}
-
-export interface DashboardBootstrap {
-  status: string;
-  api_version: string;
-  claim_boundary: string;
-  supported_datasets: string[];
-  supported_feedback_targets: string[];
-  supported_feedback_actions: string[];
-  upload_modes: UploadModeInfo[];
-  reasoning_profile_options: Record<string, DashboardReasoningProfileOption[]>;
-  mvtec_model_presets: {
-    default_preset: string;
-    presets: Array<Record<string, unknown>>;
-  };
-  recent_runs: RunSummary[];
-}
-
-export interface UploadRequest {
-  file: File;
-  mode: UploadMode;
-  dataset?: string;
-  object_name?: string;
-  defect_type?: string;
-  model_preset?: string;
-  reasoning_profile_id?: string;
-  graph_id?: string;
-  semantic_mode?: "disabled" | "vlm";
-  top_k: number;
-}
-
 export interface ReviewRequest {
   run_id?: string;
   case_id?: string;
@@ -329,6 +277,7 @@ export interface KGMaterialRecord {
   metadata_path?: string;
   registered_at?: string;
   updated_at?: string;
+  archived_at?: string | null;
   original_filename?: string | null;
   content_type?: string | null;
   size_bytes?: number;
@@ -445,93 +394,6 @@ export interface KGMaterialMutationResponse {
   note: string;
 }
 
-export interface KGMaterialExtractRequest {
-  provider?: "none";
-  chunk_size?: number;
-  chunk_overlap?: number;
-  overwrite?: boolean;
-}
-
-export interface KGMaterialExtractResponse {
-  status: string;
-  material: KGMaterialRecord;
-  structured_records_path: string;
-  record_count: number;
-  claim_boundary: string;
-}
-
-export interface KGMaterialBuildSourcesRequest {
-  material_ids: string[];
-  output_name: string;
-  overwrite: boolean;
-  run_id?: string | null;
-  source_type?: "structured_records" | "manual_table";
-  target_contract?: "legacy" | "unified-v2";
-  capability_id?: string;
-}
-
-export interface KGMaterialBuildSourcesResponse {
-  status: string;
-  material_root: string;
-  request: KGMaterialBuildSourcesRequest;
-  materials: KGMaterialRecord[];
-  sources: KGConstructionSourceInput[];
-  construction_request: KGConstructionBuildRequest;
-  claim_boundary: string;
-}
-
-export type KGDraftAction = "keep" | "revise" | "reject" | "promote_later";
-
-export interface KGDraftRecord {
-  draft_id: string;
-  created_at: string;
-  target_type: "edge";
-  target_id: string;
-  target_key: string;
-  draft_action: KGDraftAction;
-  proposed_relation?: string | null;
-  proposed_evidence?: string | null;
-  proposed_confidence?: number | null;
-  note?: string | null;
-  reviewer?: string | null;
-  source: string;
-  metadata: Record<string, unknown>;
-  review_decision: Record<string, unknown>;
-}
-
-export interface KGDraftListRequest {
-  target_type?: "edge";
-  target_id?: string;
-  target_key?: string;
-  reviewer?: string;
-  source?: string;
-  offset?: number;
-  limit?: number;
-}
-
-export interface KGDraftListResponse {
-  records: KGDraftRecord[];
-  total_count: number;
-  returned_count: number;
-  offset: number;
-  limit: number;
-  claim_boundary: string;
-}
-
-export interface KGDraftRequest {
-  target_type: "edge";
-  target_id: string;
-  target_key?: string;
-  draft_action: KGDraftAction;
-  proposed_relation?: string;
-  proposed_evidence?: string;
-  proposed_confidence?: number;
-  note?: string;
-  reviewer?: string;
-  source: string;
-  metadata?: Record<string, unknown>;
-}
-
 export interface KGStudioSource {
   source_id: string;
   title: string;
@@ -604,215 +466,4 @@ export interface KGStudioPayload {
   graph_edges: KGStudioGraphEdge[];
   review_targets: KGStudioReviewTarget[];
   note: string;
-}
-
-export interface KGSourceDraftRequest {
-  source_id: string;
-  source_text: string;
-  provider: "heuristic";
-  default_scenario: string;
-  confidence: number;
-}
-
-export interface KGSourceDraftEdge {
-  edge_id: string;
-  head: string;
-  relation: string;
-  tail: string;
-  scenario: string;
-  source: string;
-  evidence: string;
-  confidence: number;
-  weight: number;
-  review_status: string;
-}
-
-export interface KGSourceDraftResponse {
-  provider: "heuristic";
-  source_id: string;
-  claim_boundary: string;
-  candidate_edges: KGSourceDraftEdge[];
-  note: string;
-}
-
-export interface KGConstructionSourceInput {
-  source_id: string;
-  source_type: KGConstructionSourceType;
-  scenario: string;
-  path?: string;
-  source_text?: string;
-  source_format?: KGConstructionSourceFormat;
-  semantic_nodes_path?: string;
-  semantic_edges_path?: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface KGConstructionBuildRequest {
-  sources: KGConstructionSourceInput[];
-  output_name: string;
-  overwrite: boolean;
-  run_id?: string;
-  target_contract?: "legacy" | "unified-v2";
-  capability_id?: string;
-}
-
-export interface KGConstructionBuildResponse {
-  status: string;
-  run_id: string;
-  output_dir: string;
-  nodes_path: string;
-  edges_path: string;
-  summary_path: string;
-  manifest_path: string;
-  summary: Record<string, unknown>;
-  claim_boundary: string;
-}
-
-export interface KGConstructionUploadedSource {
-  status: string;
-  source_id: string;
-  source_type: KGConstructionSourceType;
-  scenario: string;
-  source_format: KGConstructionSourceFormat;
-  filename: string;
-  path: string;
-  metadata_path: string;
-  size_bytes: number;
-  uploaded_at: string;
-  build_source: KGConstructionSourceInput;
-  claim_boundary: string;
-}
-
-export interface KGConstructionSourceListResponse {
-  source_root: string;
-  sources: KGConstructionUploadedSource[];
-}
-
-export interface KGConstructionBuildRecord {
-  run_id: string;
-  status: string;
-  created_at?: string | null;
-  output_dir: string;
-  nodes_path: string;
-  edges_path: string;
-  summary_path: string;
-  manifest_path: string;
-  source_ids: string[];
-  source_count: number;
-  node_count: number;
-  edge_count: number;
-  scenarios: Record<string, number>;
-  review_status_counts: Record<string, number>;
-  claim_boundary: string;
-}
-
-export interface KGConstructionBuildListResponse {
-  build_root: string;
-  builds: KGConstructionBuildRecord[];
-}
-
-export interface KGConstructionBuildDetail {
-  build: KGConstructionBuildRecord;
-  summary: Record<string, unknown>;
-  manifest: Record<string, unknown>;
-}
-
-export interface KGConstructionBuildValidationResponse {
-  build: KGConstructionBuildRecord;
-  qa_report: Record<string, unknown>;
-  claim_boundary: string;
-}
-
-export interface KGConstructionPublishRequest {
-  dry_run?: boolean;
-  include_defaults?: boolean;
-  confirm_publish?: boolean;
-  config_path?: string;
-  uri?: string;
-  user?: string;
-  password?: string;
-  database?: string;
-}
-
-export interface KGConstructionImportSummary {
-  node_count: number;
-  edge_count: number;
-  dry_run: boolean;
-}
-
-export interface KGConstructionPublishResponse {
-  build: KGConstructionBuildRecord;
-  import_summary: KGConstructionImportSummary;
-  include_defaults: boolean;
-  node_paths: string[];
-  edge_paths: string[];
-  claim_boundary: string;
-}
-
-export interface KGConstructionEdgeReviewRequest {
-  action: "accept" | "reject";
-  target_key?: string;
-  head?: string;
-  relation?: string;
-  tail?: string;
-  scenario?: string;
-  reviewer?: string;
-  note?: string;
-  proposed_payload?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-}
-
-export interface KGConstructionEdgeReviewResponse {
-  build: KGConstructionBuildRecord;
-  decision: Record<string, unknown>;
-  edge: Record<string, unknown>;
-  summary: Record<string, unknown>;
-  manifest_path: string;
-  edges_path: string;
-  claim_boundary: string;
-}
-
-export interface KGConstructionReviewQueueRequest {
-  review_status?: ConstructionReviewStatus;
-  source?: string;
-  scenario?: string;
-  relation?: string;
-  query?: string;
-  offset?: number;
-  limit?: number;
-}
-
-export interface KGConstructionReviewQueueEdge {
-  target_key: string;
-  head: string;
-  relation: string;
-  tail: string;
-  scenario: string;
-  source: string;
-  evidence: string;
-  confidence: number;
-  weight: number;
-  review_status: string;
-  feedback_count: number;
-  accepted_count: number;
-  rejected_count: number;
-}
-
-export interface KGConstructionReviewQueueSummary {
-  review_status_counts: Record<string, number>;
-  relation_counts: Record<string, number>;
-  scenario_counts: Record<string, number>;
-  source_counts: Record<string, number>;
-}
-
-export interface KGConstructionReviewQueueResponse {
-  build: KGConstructionBuildRecord;
-  filters: KGConstructionReviewQueueRequest;
-  total_count: number;
-  returned_count: number;
-  offset: number;
-  limit: number;
-  edges: KGConstructionReviewQueueEdge[];
-  summary: KGConstructionReviewQueueSummary;
-  claim_boundary: string;
 }

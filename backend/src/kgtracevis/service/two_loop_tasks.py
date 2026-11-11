@@ -8,6 +8,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+from kgtracevis.service.kg_materials import material_operations, require_active_material
 from kgtracevis.service.two_loop_store import TwoLoopStore
 
 LOGGER = logging.getLogger(__name__)
@@ -79,6 +80,25 @@ class TaskManager:
     def submit(self, kind, request, *, title, retry_of=None):
         if kind not in self.handlers:
             raise ValueError(f"unknown task kind: {kind}")
+        if kind in {"material_parse", "material_build"}:
+            with material_operations(request["material_ids"]) as store:
+                materials = [
+                    require_active_material(store, identity) for identity in request["material_ids"]
+                ]
+                ids = [material.material_id for material in materials]
+                if len(ids) != len(set(ids)):
+                    raise ValueError("同一份资料不能重复选择。")
+                if kind == "material_build" and any(
+                    material.scenario not in {request["dataset"], "shared"}
+                    for material in materials
+                ):
+                    raise ValueError("选中的资料包含其它场景，请分开制作工作图。")
+                # Publish the queued task before releasing the same locks used for archive.
+                request = {**request, "material_ids": ids}
+                return self._enqueue(kind, request, title=title, retry_of=retry_of)
+        return self._enqueue(kind, request, title=title, retry_of=retry_of)
+
+    def _enqueue(self, kind, request, *, title, retry_of):
         now = utc_now()
         task = {
             "task_id": "task_" + uuid.uuid4().hex,
@@ -140,6 +160,11 @@ class TaskManager:
 
 _manager = None
 _manager_lock = threading.Lock()
+
+
+def file_material_has_active_task(material_id: str) -> bool:
+    """File-backed materials may be used by the current API process's task worker."""
+    return _manager is not None and _manager.store.material_has_active_task(material_id)
 
 
 def task_manager():

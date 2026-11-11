@@ -36,10 +36,6 @@ function formatTargetKind(value: ProvenanceTargetKind | null | undefined) {
       return "实体链接";
     case "correction":
       return "修正建议";
-    case "build":
-      return "构图批次";
-    case "build_edge":
-      return "构图边";
     default:
       return "--";
   }
@@ -59,14 +55,6 @@ function formatSourceType(value: ProvenanceSourceType) {
       return "修正建议";
     case "edge_metadata":
       return "边元数据";
-    case "manifest":
-      return "构图清单";
-    case "summary":
-      return "构图摘要";
-    case "qa_report":
-      return "质检报告";
-    case "review_queue":
-      return "审阅队列";
     case "source_material":
       return "来源素材";
     default:

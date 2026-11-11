@@ -1,42 +1,19 @@
 import { analysisRunSummary, analysisSnapshotView } from '@/services/analysis-snapshot-view';
 import type {
-  DashboardBootstrap,
-  KGDraftListRequest,
-  KGDraftListResponse,
-  KGDraftRequest,
-  KGMaterialBuildSourcesRequest,
-  KGMaterialBuildSourcesResponse,
   KGMaterialChunkListResponse,
   KGMaterialDetailResponse,
-  KGMaterialExtractRequest,
-  KGMaterialExtractResponse,
   KGMaterialExtractionArtifactListResponse,
   KGMaterialExtractionRunListResponse,
   KGMaterialListResponse,
   KGMaterialMutationResponse,
   KGMaterialRegisterUrlRequest,
-  KGSourceDraftRequest,
-  KGSourceDraftResponse,
   KGStudioPayload,
-  KGConstructionBuildDetail,
-  KGConstructionBuildListResponse,
-  KGConstructionBuildRequest,
-  KGConstructionBuildResponse,
-  KGConstructionBuildValidationResponse,
-  KGConstructionEdgeReviewRequest,
-  KGConstructionEdgeReviewResponse,
-  KGConstructionPublishRequest,
-  KGConstructionPublishResponse,
-  KGConstructionReviewQueueRequest,
-  KGConstructionReviewQueueResponse,
-  KGConstructionSourceListResponse,
   ReviewLedgerListRequest,
   ReviewLedgerListResponse,
   ReviewRequest,
   RunDetail,
   RunSourceContract,
   RunSummary,
-  UploadRequest,
   WorkingGraphSummary,
   WorkingGraphPackage,
 } from "@/api/contracts";
@@ -168,7 +145,6 @@ export function jsonInit(method: string, body: unknown): RequestInit {
 }
 
 export interface ApiClient {
-  bootstrap: () => Promise<DashboardBootstrap>;
   kgStudio: (graphId?: string) => Promise<KGStudioPayload>;
   listWorkingGraphs: () => Promise<{ graphs: WorkingGraphSummary[] }>;
   getWorkingGraphPackage: (graphId: string) => Promise<WorkingGraphPackage>;
@@ -176,26 +152,14 @@ export interface ApiClient {
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
   enableWorkingGraph: (graphId: string, enabled: boolean) => Promise<WorkingGraphSummary>;
-  activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep", targetContract?: "legacy" | "unified-v2") => Promise<WorkingGraphSummary>;
-  exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
-  getRun: (runId: string, source?: RunSourceContract) => Promise<RunDetail>;
-  uploadRun: (request: UploadRequest) => Promise<RunDetail>;
+  getRun: (runId: string, source: RunSourceContract) => Promise<RunDetail>;
   submitReview: (
     request: ReviewRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
   listReviewLedger: (
     request?: ReviewLedgerListRequest,
   ) => Promise<ReviewLedgerListResponse>;
-  submitKGDraft: (
-    request: KGDraftRequest,
-  ) => Promise<{ status: string; record: Record<string, unknown> }>;
-  listKGDrafts: (
-    request?: KGDraftListRequest,
-  ) => Promise<KGDraftListResponse>;
-  generateKGSourceDraft: (
-    request: KGSourceDraftRequest,
-  ) => Promise<KGSourceDraftResponse>;
   listKGMaterials: () => Promise<KGMaterialListResponse>;
   getKGMaterial: (materialId: string) => Promise<KGMaterialDetailResponse>;
   uploadKGMaterial: (input: {
@@ -211,13 +175,6 @@ export interface ApiClient {
   registerKGMaterialUrl: (
     request: KGMaterialRegisterUrlRequest,
   ) => Promise<KGMaterialMutationResponse>;
-  extractKGMaterial: (
-    materialId: string,
-    request?: KGMaterialExtractRequest,
-  ) => Promise<KGMaterialExtractResponse>;
-  buildKGMaterialSources: (
-    request: KGMaterialBuildSourcesRequest,
-  ) => Promise<KGMaterialBuildSourcesResponse>;
   getKGMaterialChunks: (
     materialId: string,
   ) => Promise<KGMaterialChunkListResponse>;
@@ -227,44 +184,10 @@ export interface ApiClient {
   getKGMaterialArtifacts: (
     materialId: string,
   ) => Promise<KGMaterialExtractionArtifactListResponse>;
-  buildKGConstruction: (
-    request: KGConstructionBuildRequest,
-  ) => Promise<KGConstructionBuildResponse>;
-  listKGConstructionBuilds: () => Promise<KGConstructionBuildListResponse>;
-  getKGConstructionBuild: (runId: string) => Promise<KGConstructionBuildDetail>;
-  validateKGConstructionBuild: (
-    runId: string,
-  ) => Promise<KGConstructionBuildValidationResponse>;
-  publishKGConstructionBuild: (
-    runId: string,
-    request: KGConstructionPublishRequest,
-  ) => Promise<KGConstructionPublishResponse>;
-  reviewKGConstructionEdge: (
-    runId: string,
-    request: KGConstructionEdgeReviewRequest,
-  ) => Promise<KGConstructionEdgeReviewResponse>;
-  getKGConstructionReviewQueue: (
-    runId: string,
-    request?: KGConstructionReviewQueueRequest,
-  ) => Promise<KGConstructionReviewQueueResponse>;
-  listKGConstructionSources: () => Promise<KGConstructionSourceListResponse>;
-  uploadKGConstructionSource: (input: {
-    file: File;
-    source_id: string;
-    source_type?: string;
-    scenario?: string;
-    source_format?: string;
-  }) => Promise<Record<string, unknown>>;
-  artifactUrl: (runId: string, artifactName: string) => string;
 }
 
-const analysisIdsByBackend = new Map<string, Set<string>>();
 export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
-  const sourceKey = trimTrailingSlash(baseUrl);
-  const isAnalysis = (id:string) => analysisIdsByBackend.get(sourceKey)?.has(id) === true;
   return {
-    bootstrap: () =>
-      requestJson<DashboardBootstrap>(baseUrl, "/api/dashboard/bootstrap"),
     kgStudio: (graphId) => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio", undefined,
       graphId ? new URLSearchParams({ graph_id: graphId }) : undefined),
     listWorkingGraphs: () => requestJson(baseUrl, "/api/kg/working-graphs"),
@@ -273,45 +196,28 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
     importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
     mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
     enableWorkingGraph: (id, enabled) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/enable`, jsonInit("POST", { enabled })),
-    activateWorkingGraph: (buildId, title, dataset = "mvtec", target_contract = "legacy") => requestJson(baseUrl,
-      `/api/kg/construction/builds/${encodeURIComponent(buildId)}/activate`,
-      jsonInit("POST", { title, dataset, compact_runtime: true, ...(target_contract !== "legacy" ? { target_contract } : {}) })),
-    exportRunReplay: (id) => {
-      if (isAnalysis(id)) return Promise.reject(new Error("此双闭环分析当前以只读快照展示；旧 Session 导出仅支持原运行接口。原 Evidence 下载仍由分析 API 提供。"));
-      return requestJson(baseUrl, `/api/runs/${encodeURIComponent(id)}/replay`);
-    },
     listRuns: async () => {
       const [legacy, current] = await Promise.all([
-        requestJson<RunSummary[]>(baseUrl,"/api/runs"),
-        requestJson<{runs:Record<string,unknown>[]}>(baseUrl,"/api/analyses"),
+        requestJson<RunSummary[]>(baseUrl, "/api/runs"),
+        requestJson<{ runs: Record<string, unknown>[] }>(baseUrl, "/api/analyses"),
       ]);
-      analysisIdsByBackend.set(sourceKey,new Set(current.runs.map(run=>String(run.run_id))));
-      const merged = new Map<string,RunSummary>(legacy.map(run=>[run.run_id,{...run,source_contract:'legacy-run'}]));
-      current.runs.forEach(run=>merged.set(String(run.run_id),analysisRunSummary(run)));
-      return [...merged.values()].sort((left,right)=>right.created_at.localeCompare(left.created_at));
+      const merged = new Map<string, RunSummary>(legacy.map(run => [run.run_id, { ...run, source_contract: "legacy-run" }]));
+      current.runs.forEach(run => merged.set(String(run.run_id), analysisRunSummary(run)));
+      return [...merged.values()].sort((left, right) => right.created_at.localeCompare(left.created_at));
     },
-    getRun: (runId, source) => (source === "analysis-v2" || (!source && isAnalysis(runId)))
-      ? requestJson<unknown>(baseUrl, `/api/analyses/${encodeURIComponent(runId)}`).then(analysisSnapshotView)
-      : requestJson<RunDetail>(baseUrl, `/api/runs/${encodeURIComponent(runId)}`),
-    uploadRun: (request) => {
-      const form = new FormData();
-      form.append("file", request.file);
-      form.append("mode", request.mode);
-      form.append("top_k", String(request.top_k));
-      if (request.dataset) form.append("dataset", request.dataset);
-      if (request.object_name) form.append("object_name", request.object_name);
-      if (request.defect_type) form.append("defect_type", request.defect_type);
-      if (request.model_preset)
-        form.append("model_preset", request.model_preset);
-      if (request.reasoning_profile_id)
-        form.append("reasoning_profile_id", request.reasoning_profile_id);
-      if (request.semantic_mode) form.append("semantic_mode", request.semantic_mode);
-      if (request.graph_id) form.append("graph_id", request.graph_id);
-
-      return requestJson<RunDetail>(baseUrl, "/api/runs/upload", {
-        method: "POST",
-        body: form,
-      });
+    getRun: async (runId, source) => {
+      const id = encodeURIComponent(runId);
+      let detail: RunDetail;
+      if (source === "analysis-v2") {
+        detail = analysisSnapshotView(await requestJson<unknown>(baseUrl, `/api/analyses/${id}`));
+      } else if (source === "legacy-run") {
+        const archived = await requestJson<RunDetail>(baseUrl, `/api/runs/${id}`);
+        detail = { ...archived, run: { ...archived.run, source_contract: "legacy-run" } };
+      } else {
+        throw new Error("运行来源未指定。");
+      }
+      if (detail.run.run_id !== runId) throw new Error("服务返回的运行编号与请求不一致。");
+      return detail;
     },
     submitReview: (request) =>
       requestJson<{ status: string; record: Record<string, unknown> }>(
@@ -337,34 +243,6 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
         search,
       );
     },
-    submitKGDraft: (request) =>
-      requestJson<{ status: string; record: Record<string, unknown> }>(
-        baseUrl,
-        "/api/kg/drafts",
-        jsonInit("POST", request),
-      ),
-    listKGDrafts: (request) => {
-      const search = new URLSearchParams();
-      if (request?.target_type) search.set("target_type", request.target_type);
-      if (request?.target_id) search.set("target_id", request.target_id);
-      if (request?.target_key) search.set("target_key", request.target_key);
-      if (request?.reviewer) search.set("reviewer", request.reviewer);
-      if (request?.source) search.set("source", request.source);
-      if (typeof request?.offset === "number") search.set("offset", String(request.offset));
-      if (typeof request?.limit === "number") search.set("limit", String(request.limit));
-      return requestJson<KGDraftListResponse>(
-        baseUrl,
-        "/api/kg/drafts",
-        undefined,
-        search,
-      );
-    },
-    generateKGSourceDraft: (request) =>
-      requestJson<KGSourceDraftResponse>(
-        baseUrl,
-        "/api/kg/source-draft",
-        jsonInit("POST", request),
-      ),
     listKGMaterials: () =>
       requestJson<KGMaterialListResponse>(baseUrl, "/api/kg/materials"),
     getKGMaterial: (materialId) =>
@@ -399,18 +277,6 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
         "/api/kg/materials/register-url",
         jsonInit("POST", request),
       ),
-    extractKGMaterial: (materialId, request) =>
-      requestJson<KGMaterialExtractResponse>(
-        baseUrl,
-        `/api/kg/materials/${materialId}/extract`,
-        request ? jsonInit("POST", request) : { method: "POST" },
-      ),
-    buildKGMaterialSources: (request) =>
-      requestJson<KGMaterialBuildSourcesResponse>(
-        baseUrl,
-        "/api/kg/materials/build-sources",
-        jsonInit("POST", request),
-      ),
     getKGMaterialChunks: (materialId) =>
       requestJson<KGMaterialChunkListResponse>(
         baseUrl,
@@ -426,84 +292,5 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
         baseUrl,
         `/api/kg/materials/${materialId}/artifacts`,
       ),
-    buildKGConstruction: (request) =>
-      requestJson<KGConstructionBuildResponse>(
-        baseUrl,
-        "/api/kg/construction/build",
-        jsonInit("POST", request),
-      ),
-    listKGConstructionBuilds: () =>
-      requestJson<KGConstructionBuildListResponse>(
-        baseUrl,
-        "/api/kg/construction/builds",
-      ),
-    getKGConstructionBuild: (runId) =>
-      requestJson<KGConstructionBuildDetail>(
-        baseUrl,
-        `/api/kg/construction/builds/${runId}`,
-      ),
-    validateKGConstructionBuild: (runId) =>
-      requestJson<KGConstructionBuildValidationResponse>(
-        baseUrl,
-        `/api/kg/construction/builds/${runId}/validate`,
-        { method: "POST" },
-      ),
-    publishKGConstructionBuild: (runId, request) =>
-      requestJson<KGConstructionPublishResponse>(
-        baseUrl,
-        `/api/kg/construction/builds/${runId}/publish`,
-        jsonInit("POST", request),
-      ),
-    reviewKGConstructionEdge: (runId, request) =>
-      requestJson<KGConstructionEdgeReviewResponse>(
-        baseUrl,
-        `/api/kg/construction/builds/${runId}/review`,
-        jsonInit("POST", request),
-      ),
-    getKGConstructionReviewQueue: (runId, request) => {
-      const search = new URLSearchParams();
-      if (request?.review_status)
-        search.set("review_status", request.review_status);
-      if (request?.source) search.set("source", request.source);
-      if (request?.scenario) search.set("scenario", request.scenario);
-      if (request?.relation) search.set("relation", request.relation);
-      if (request?.query) search.set("query", request.query);
-      if (typeof request?.offset === "number")
-        search.set("offset", String(request.offset));
-      if (typeof request?.limit === "number")
-        search.set("limit", String(request.limit));
-      return requestJson<KGConstructionReviewQueueResponse>(
-        baseUrl,
-        `/api/kg/construction/builds/${runId}/review-queue`,
-        undefined,
-        search,
-      );
-    },
-    listKGConstructionSources: () =>
-      requestJson<KGConstructionSourceListResponse>(
-        baseUrl,
-        "/api/kg/construction/sources",
-      ),
-    uploadKGConstructionSource: (input) => {
-      const form = new FormData();
-      form.append("file", input.file);
-      form.append("source_id", input.source_id);
-      if (input.source_type) form.append("source_type", input.source_type);
-      if (input.scenario) form.append("scenario", input.scenario);
-      if (input.source_format)
-        form.append("source_format", input.source_format);
-      return requestJson<Record<string, unknown>>(
-        baseUrl,
-        "/api/kg/construction/sources/upload",
-        {
-          method: "POST",
-          body: form,
-        },
-      );
-    },
-    artifactUrl: (runId, artifactName) =>
-      buildUrl(baseUrl, `/api/runs/${runId}/artifacts/${artifactName}`),
   };
 }
-
-export const apiClient = createApiClient(DEFAULT_API_BASE_URL);

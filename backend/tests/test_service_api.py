@@ -17,7 +17,6 @@ from PIL import Image
 
 from kgtracevis.core import KGTracePipeline
 from kgtracevis.producers.backends import AMAZON_PATCHCORE_BACKEND, ANOMALIB_ENGINE_BACKEND
-from kgtracevis.service import api as service_api
 from kgtracevis.service import dashboard as service_dashboard
 from kgtracevis.service import handlers as service_handlers
 from kgtracevis.service import kg_construction as service_kg_construction
@@ -198,38 +197,17 @@ def test_case_detail_returns_analysis_for_generated_outputs(generated_case_catal
     assert detail["claim_boundary"].startswith("candidate/plausible explanation")
 
 
-def test_upload_run_route_persists_a_run_manifest(tmp_path: Path, monkeypatch) -> None:
-    """Uploaded sample bundles should create reusable Postgres-backed run state."""
-    original = service_api.create_run_from_upload
-    original_list_runs = service_api.list_runs
-    original_get_run_detail = service_api.get_run_detail
-
-    def _patched_create_run_from_upload(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original(*args, **kwargs)
-
-    def _patched_list_runs(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original_list_runs(*args, **kwargs)
-
-    def _patched_get_run_detail(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original_get_run_detail(*args, **kwargs)
-
-    monkeypatch.setattr(service_api, "create_run_from_upload", _patched_create_run_from_upload)
-    monkeypatch.setattr(service_api, "list_runs", _patched_list_runs)
-    monkeypatch.setattr(service_api, "get_run_detail", _patched_get_run_detail)
-
+def test_legacy_run_list_and_detail_read_persisted_state(tmp_path: Path) -> None:
+    """Historical reads still consume runs persisted by the offline workflow."""
+    records = Path("data/examples/records/mvtec_records.jsonl")
+    payload = service_runs.create_run_from_upload(
+        records.name,
+        records.read_bytes(),
+        mode="records",
+        top_k=2,
+        runs_dir=tmp_path / "run_artifacts",
+    ).model_dump(mode="json")
     client = TestClient(app)
-    with Path("data/examples/records/mvtec_records.jsonl").open("rb") as handle:
-        response = client.post(
-            "/api/runs/upload",
-            files={"file": ("mvtec_records.jsonl", handle, "application/jsonl")},
-            data={"mode": "records", "top_k": "2"},
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
     assert payload["run"]["mode"] == "records"
     assert payload["run"]["case_count"] == 2
     assert payload["workflow_steps"]
@@ -301,24 +279,11 @@ def test_upload_run_uses_tep_root_kgd_reasoner(
     assert ranked[0]["scoring_method"] == "tep_root_kgd"
 
 
-def test_upload_run_prepares_visual_evidence_artifacts(
+def test_legacy_run_artifacts_remain_readable(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
     """Record uploads should expose browser-safe visual evidence previews."""
-    original = service_api.create_run_from_upload
-    original_get_artifact_path = service_api.get_run_artifact_path
-
-    def _patched_create_run_from_upload(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original(*args, **kwargs)
-
-    def _patched_get_run_artifact_path(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original_get_artifact_path(*args, **kwargs)
-
-    monkeypatch.setattr(service_api, "create_run_from_upload", _patched_create_run_from_upload)
-    monkeypatch.setattr(service_api, "get_run_artifact_path", _patched_get_run_artifact_path)
     monkeypatch.setattr(service_visual_evidence, "PROJECT_ROOT", tmp_path)
     client = TestClient(app)
 
@@ -358,13 +323,14 @@ def test_upload_run_prepares_visual_evidence_artifacts(
         encoding="utf-8",
     )
 
-    with records_path.open("rb") as handle:
-        response = client.post(
-            "/api/runs/upload",
-            files={"file": ("visual_records.jsonl", handle, "application/jsonl")},
-            data={"mode": "records", "top_k": "2"},
-        )
-
+    detail = service_runs.create_run_from_upload(
+        records_path.name,
+        records_path.read_bytes(),
+        mode="records",
+        top_k=2,
+        runs_dir=tmp_path / "run_artifacts",
+    )
+    response = client.get(f"/api/runs/{detail.run.run_id}")
     assert response.status_code == 200
     payload = response.json()
     visual_items = payload["visual_evidence"]
@@ -421,11 +387,6 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
     monkeypatch,
 ) -> None:
     """Raw image uploads should not require an operator defect label."""
-    original = service_api.create_run_from_upload
-
-    def _patched_create_run_from_upload(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original(*args, **kwargs)
 
     class _FakeMVTecUploadPredictor:
         def predict(self, _image_path: Path) -> dict[str, object]:
@@ -435,7 +396,6 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
                 "metadata": {"fixture": "service_upload"},
             }
 
-    monkeypatch.setattr(service_api, "create_run_from_upload", _patched_create_run_from_upload)
     monkeypatch.setattr(
         service_runs,
         "_build_mvtec_upload_predictor",
@@ -446,22 +406,16 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
     checkpoint = tmp_path / "stfpm.xml"
     checkpoint.write_text("fixture selected through the injected predictor")
     monkeypatch.setenv("KGTRACEVIS_MVTEC_STFPM_CHECKPOINT", str(checkpoint))
-    client = TestClient(app)
-    with image.open("rb") as handle:
-        response = client.post(
-            "/api/runs/upload",
-            files={"file": ("000.png", handle, "image/png")},
-            data={
-                "mode": "image",
-                "dataset": "mvtec",
-                "object_name": "capsule",
-                "model_preset": "stfpm",
-                "top_k": "2",
-            },
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
+    payload = service_runs.create_run_from_upload(
+        "000.png",
+        image.read_bytes(),
+        mode="image",
+        dataset="mvtec",
+        object_name="capsule",
+        model_preset="stfpm",
+        top_k=2,
+        runs_dir=tmp_path / "run_artifacts",
+    ).model_dump(mode="json")
     assert payload["run"]["mode"] == "image"
     assert payload["evidence"]["anomaly_type"] == "unknown"
     assert payload["evidence"]["morphology"] is None
@@ -476,7 +430,7 @@ def test_image_upload_mode_defaults_to_unknown_label_when_unspecified(
         ((), None),
     ],
 )
-def test_mvtec_model_preset_route_reports_available_default(
+def test_mvtec_model_presets_reports_available_default(
     tmp_path: Path,
     monkeypatch,
     available,
@@ -489,13 +443,7 @@ def test_mvtec_model_preset_route_reports_available_default(
             checkpoint.write_bytes(b"checkpoint-existence fixture; never loaded")
         monkeypatch.setenv("KGTRACEVIS_MVTEC_" + preset.upper() + "_CHECKPOINT", str(checkpoint))
 
-    client = TestClient(app)
-    response = client.get("/api/runs/mvtec-model-presets")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["default_preset"] == "auto"
-    presets = {item["preset"]: item for item in payload["presets"]}
+    presets = {item["preset"]: item for item in service_runs.mvtec_model_presets()}
     assert presets["auto"]["resolved_preset"] == expected
     for preset in ("patchcore", "efficientad", "stfpm"):
         assert presets[preset]["available"] == (preset in available)
@@ -531,11 +479,11 @@ def test_dashboard_bootstrap_route_exposes_contract(monkeypatch) -> None:
     assert "presets" in payload["mvtec_model_presets"]
 
 
-def test_mvtec_model_preset_route_detects_makefile_patchcore_asset(
+def test_mvtec_model_presets_detects_makefile_patchcore_asset(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """The model preset route should recognize make download-patchcore output."""
+    """The model registry should recognize make download-patchcore output."""
     monkeypatch.chdir(tmp_path)
     checkpoint = (
         tmp_path
@@ -549,11 +497,7 @@ def test_mvtec_model_preset_route_detects_makefile_patchcore_asset(
     checkpoint.parent.mkdir(parents=True)
     checkpoint.write_bytes(b"trusted local checkpoint placeholder")
 
-    client = TestClient(app)
-    response = client.get("/api/runs/mvtec-model-presets")
-
-    assert response.status_code == 200
-    presets = {item["preset"]: item for item in response.json()["presets"]}
+    presets = {item["preset"]: item for item in service_runs.mvtec_model_presets()}
     assert presets["auto"]["resolved_preset"] == "patchcore"
     assert presets["patchcore"]["available"] is True
     assert presets["patchcore"]["checkpoint_path"].endswith(
@@ -561,32 +505,28 @@ def test_mvtec_model_preset_route_detects_makefile_patchcore_asset(
     )
 
 
-def test_mvtec_model_preset_route_detects_amazon_patchcore_artifact_dir(
+def test_mvtec_model_presets_detects_amazon_patchcore_artifact_dir(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """The model preset route should recognize official Amazon PatchCore artifacts."""
+    """The model registry should recognize official Amazon PatchCore artifacts."""
     checkpoint = tmp_path / "models" / "mvtec_bottle"
     checkpoint.mkdir(parents=True)
     (checkpoint / "patchcore_params.pkl").write_bytes(b"params")
     (checkpoint / "nnscorer_search_index.faiss").write_bytes(b"faiss")
     monkeypatch.setenv("KGTRACEVIS_MVTEC_PATCHCORE_CHECKPOINT", str(checkpoint))
 
-    client = TestClient(app)
-    response = client.get("/api/runs/mvtec-model-presets")
-
-    assert response.status_code == 200
-    presets = {item["preset"]: item for item in response.json()["presets"]}
+    presets = {item["preset"]: item for item in service_runs.mvtec_model_presets()}
     assert presets["patchcore"]["available"] is True
     assert presets["patchcore"]["backend"] == "amazon-patchcore"
     assert presets["patchcore"]["checkpoint_path"] == str(checkpoint)
 
 
-def test_mvtec_model_preset_route_detects_amazon_patchcore_artifact_root(
+def test_mvtec_model_presets_detects_amazon_patchcore_artifact_root(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    """The model preset route should recognize full official PatchCore object roots."""
+    """The model registry should recognize full official PatchCore object roots."""
     root = tmp_path / "models"
     checkpoint = root / "mvtec_bottle"
     checkpoint.mkdir(parents=True)
@@ -594,17 +534,13 @@ def test_mvtec_model_preset_route_detects_amazon_patchcore_artifact_root(
     (checkpoint / "nnscorer_search_index.faiss").write_bytes(b"faiss")
     monkeypatch.setenv("KGTRACEVIS_MVTEC_PATCHCORE_CHECKPOINT", str(root))
 
-    client = TestClient(app)
-    response = client.get("/api/runs/mvtec-model-presets")
-
-    assert response.status_code == 200
-    presets = {item["preset"]: item for item in response.json()["presets"]}
+    presets = {item["preset"]: item for item in service_runs.mvtec_model_presets()}
     assert presets["patchcore"]["available"] is True
     assert presets["patchcore"]["backend"] == "amazon-patchcore"
     assert presets["patchcore"]["checkpoint_path"] == str(root)
 
 
-def test_mvtec_model_preset_route_ignores_amazon_patchcore_lfs_pointers(
+def test_mvtec_model_presets_ignores_amazon_patchcore_lfs_pointers(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -622,80 +558,10 @@ def test_mvtec_model_preset_route_ignores_amazon_patchcore_lfs_pointers(
     (checkpoint / "nnscorer_search_index.faiss").write_bytes(pointer)
     monkeypatch.setenv("KGTRACEVIS_MVTEC_PATCHCORE_CHECKPOINT", str(root))
 
-    client = TestClient(app)
-    response = client.get("/api/runs/mvtec-model-presets")
-
-    assert response.status_code == 200
-    presets = {item["preset"]: item for item in response.json()["presets"]}
+    presets = {item["preset"]: item for item in service_runs.mvtec_model_presets()}
     assert presets["patchcore"]["available"] is False
     assert presets["patchcore"]["checkpoint_path"] is None
     assert presets["auto"]["resolved_preset"] is None
-
-
-def test_model_asset_download_route_uses_default_asset(monkeypatch) -> None:
-    """The API should expose a trusted default model asset download action."""
-    captured: dict[str, dict[str, object]] = {}
-
-    def _patched_download_model_assets(*, models, force=False):
-        captured["models"] = models
-        captured["force"] = force
-        return {
-            "artifact_type": "model_asset_download_v0",
-            "assets_root": "runs/real_model_pipeline/assets",
-            "assets": {"mvtec_patchcore": {"checkpoint": "checkpoint.ckpt"}},
-        }
-
-    monkeypatch.setattr(service_api, "download_model_assets", _patched_download_model_assets)
-
-    client = TestClient(app)
-    response = client.post("/api/model-assets/download", json={})
-
-    assert response.status_code == 200
-    assert captured == {"models": ("mvtec-patchcore",), "force": False}
-    assert response.json()["assets"]["mvtec_patchcore"]["checkpoint"] == "checkpoint.ckpt"
-
-
-def test_model_asset_download_route_rejects_unknown_asset() -> None:
-    """The download route should only accept configured trusted model assets."""
-    client = TestClient(app)
-    response = client.post("/api/model-assets/download", json={"models": ["unknown-model"]})
-
-    assert response.status_code == 400
-    assert "model asset must be one of" in response.json()["detail"]
-
-
-def test_image_upload_missing_requested_model_preset_returns_400(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    """Selecting an unavailable preset should fail before fake evidence is produced."""
-    original = service_api.create_run_from_upload
-
-    def _patched_create_run_from_upload(*args, **kwargs):
-        kwargs["runs_dir"] = tmp_path / "run_artifacts"
-        return original(*args, **kwargs)
-
-    monkeypatch.setattr(service_api, "create_run_from_upload", _patched_create_run_from_upload)
-    monkeypatch.setenv(
-        "KGTRACEVIS_MVTEC_EFFICIENTAD_CHECKPOINT",
-        str(tmp_path / "missing_efficientad.pt"),
-    )
-
-    client = TestClient(app)
-    response = client.post(
-        "/api/runs/upload",
-        files={"file": ("010.png", b"not-read", "image/png")},
-        data={
-            "mode": "image",
-            "dataset": "mvtec",
-            "object_name": "capsule",
-            "model_preset": "efficientad",
-            "top_k": "2",
-        },
-    )
-
-    assert response.status_code == 400
-    assert "efficientad" in response.json()["detail"]
 
 
 def test_image_upload_mode_runs_mvtec_producer_path(tmp_path: Path, monkeypatch) -> None:
@@ -978,28 +844,19 @@ def test_evidence_upload_persists_summary_pipeline_reasoning_metadata(
     assert detail.cases[0]["reasoning_metadata"]["reasoner_adapter"] == "generic_graph_path"
 
 
-def test_records_upload_route_keeps_explicit_reasoning_profile_in_run_detail(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Explicit profile selection should survive upload response and persisted run reads."""
-    monkeypatch.setattr(service_runs, "DEFAULT_RUNS_DIR", tmp_path / "rootlens_sessions")
-
+def test_legacy_run_detail_keeps_explicit_reasoning_profile(tmp_path: Path) -> None:
+    """The read route retains an offline workflow's explicit profile selection."""
+    records = Path("data/examples/records/mvtec_records.jsonl")
+    payload = service_runs.create_run_from_upload(
+        records.name,
+        records.read_bytes(),
+        mode="records",
+        dataset="mvtec",
+        reasoning_profile_id="generic_graph_path_default",
+        top_k=2,
+        runs_dir=tmp_path / "rootlens_sessions",
+    ).model_dump(mode="json")
     client = TestClient(app)
-    with Path("data/examples/records/mvtec_records.jsonl").open("rb") as handle:
-        response = client.post(
-            "/api/runs/upload",
-            files={"file": ("mvtec_records.jsonl", handle, "application/jsonl")},
-            data={
-                "mode": "records",
-                "dataset": "mvtec",
-                "reasoning_profile_id": "generic_graph_path_default",
-                "top_k": "2",
-            },
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
     assert payload["summary"]["pipeline"]["reasoning_profile_id"] == "generic_graph_path_default"
     assert payload["summary"]["pipeline"]["selection_mode"] == "explicit"
     assert payload["cases"][0]["reasoning_metadata"]["selection_mode"] == "explicit"
@@ -1017,83 +874,49 @@ def test_records_upload_route_keeps_explicit_reasoning_profile_in_run_detail(
     )
 
 
-def test_kg_construction_validate_route_returns_qa_report(tmp_path: Path, monkeypatch) -> None:
-    """Construction validate route should expose the RootLens qa_report field."""
+def test_offline_construction_build_returns_qa_report(tmp_path: Path) -> None:
     run_id = _write_fake_construction_build(tmp_path, qa_status="passed")
-    monkeypatch.setattr(service_kg_construction, "DEFAULT_SOURCE_KG_BUILD_DIR", tmp_path)
-
-    client = TestClient(app)
-    response = client.post(f"/api/kg/construction/builds/{run_id}/validate")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["qa_report"]["status"] == "passed"
-    assert payload["report"]["status"] == "passed"
+    result = service_kg_construction.validate_kg_construction_build(run_id, build_root=tmp_path)
+    assert result.qa_report["status"] == "passed"
+    assert result.report["status"] == "passed"
 
 
-def test_kg_construction_publish_route_accepts_confirm_publish_alias(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Publish route should accept RootLens request aliases and return path fields."""
-    run_id = _write_fake_construction_build(tmp_path, qa_status="ready")
-    monkeypatch.setattr(service_kg_construction, "DEFAULT_SOURCE_KG_BUILD_DIR", tmp_path)
-
-    client = TestClient(app)
-    response = client.post(
-        f"/api/kg/construction/builds/{run_id}/publish",
-        json={
-            "dry_run": False,
-            "include_defaults": False,
-            "confirm_publish": True,
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["import_summary"]["dry_run"] is False
-    assert payload["include_defaults"] is False
-    assert payload["node_paths"] == [str(tmp_path / run_id / "nodes.csv")]
-    assert payload["edge_paths"] == [str(tmp_path / run_id / "edges.csv")]
-
-
-def test_kg_construction_review_route_updates_review_queue_and_qa_report(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Construction edge review should update counters and remain visible after refresh."""
+def test_offline_construction_review_persists_counters_and_qa(tmp_path: Path) -> None:
     run_id = _write_fake_construction_build(tmp_path, qa_status="pending")
-    monkeypatch.setattr(service_kg_construction, "DEFAULT_SOURCE_KG_BUILD_DIR", tmp_path)
-
-    client = TestClient(app)
-    queue_response = client.get(f"/api/kg/construction/builds/{run_id}/review-queue")
-    assert queue_response.status_code == 200
-    target_key = queue_response.json()["edges"][0]["target_key"]
-
-    review_response = client.post(
-        f"/api/kg/construction/builds/{run_id}/review",
-        json={
-            "action": "accept",
-            "target_key": target_key,
-            "reviewer": "rootlens-frontend",
-        },
+    queue_request = service_kg_construction.KGConstructionReviewQueueRequest()
+    queue = service_kg_construction.get_kg_construction_review_queue(
+        run_id,
+        queue_request,
+        build_root=tmp_path,
     )
+    target_key = queue.edges[0].target_key
+    request = service_kg_construction.KGConstructionEdgeReviewRequest(
+        action="accept",
+        target_key=target_key,
+        reviewer="rootlens-frontend",
+    )
+    review = service_kg_construction.review_kg_construction_edge(
+        run_id,
+        request,
+        build_root=tmp_path,
+    )
+    assert review.decision["target_key"] == target_key
+    assert review.edge["review_status"] == "reviewed"
+    assert review.edge["accepted_count"] == 1
 
-    assert review_response.status_code == 200
-    review_payload = review_response.json()
-    assert review_payload["decision"]["target_key"] == target_key
-    assert review_payload["edge"]["review_status"] == "reviewed"
-    assert review_payload["edge"]["accepted_count"] == 1
+    refreshed = service_kg_construction.get_kg_construction_review_queue(
+        run_id,
+        queue_request,
+        build_root=tmp_path,
+    )
+    edge = refreshed.edges[0]
+    assert edge.target_key == target_key
+    assert edge.review_status == "reviewed"
+    assert edge.feedback_count == 1
+    assert edge.accepted_count == 1
 
-    refreshed_queue = client.get(f"/api/kg/construction/builds/{run_id}/review-queue")
-    assert refreshed_queue.status_code == 200
-    edge = refreshed_queue.json()["edges"][0]
-    assert edge["target_key"] == target_key
-    assert edge["review_status"] == "reviewed"
-    assert edge["feedback_count"] == 1
-    assert edge["accepted_count"] == 1
-
-    validation_response = client.post(f"/api/kg/construction/builds/{run_id}/validate")
-    assert validation_response.status_code == 200
-    assert validation_response.json()["qa_report"]["last_review"]["target_key"] == target_key
+    validated = service_kg_construction.validate_kg_construction_build(run_id, build_root=tmp_path)
+    assert validated.qa_report["last_review"]["target_key"] == target_key
 
 
 def _manual_source_csv() -> str:

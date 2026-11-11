@@ -21,8 +21,9 @@ from kgtracevis.service.kg_materials import (
     KGMaterialExtractionRunRequest,
     KGMaterialSelectedBuildRequest,
     extract_kg_material_to_structured_records,
-    get_kg_material,
+    material_store,
     prepare_kg_material_construction_build,
+    require_active_material,
 )
 from kgtracevis.service.two_loop_tasks import utc_now
 from kgtracevis.service.working_graph_editor import import_working_graph
@@ -58,9 +59,10 @@ def enable_graph(graph_id, enabled):
 
 def parse_materials(context, request):
     ids = request["material_ids"]
+    store = material_store()
     context.progress("parsing", completed=0, total=len(ids), unit="份资料")
     for index, identity in enumerate(ids, 1):
-        material = get_kg_material(identity).material
+        material = require_active_material(store, identity)
         if request.get("force") or material.extraction.status != "extracted":
             extract_kg_material_to_structured_records(
                 identity, KGMaterialExtractionRunRequest(overwrite=bool(request.get("force")))

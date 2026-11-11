@@ -10,12 +10,14 @@ export const router = createRouter({
     {
       path: '/evidence',
       name: 'evidence',
-      component: () => import('@/views/EvidenceManageView.vue'),
-      meta: {
-        label: '运行与证据',
-        description: '上传运行、浏览 run / case / observation，并导入回放资产。',
-        tags: ['Run Upload', 'Observation Browse', 'Replay Import'],
-      },
+      component: () => import('@/views/EvidenceHomeView.vue'),
+      meta: { label: '运行与证据', description: '发起分析、查看任务与历史记录。' },
+    },
+    {
+      path: '/evidence/runs/:runId',
+      name: 'saved-analysis',
+      component: () => import('@/views/SavedAnalysisDetailView.vue'),
+      meta: { label: '运行与证据', description: '打开本次保存的输入、证据与解释。' },
     },
     {
       path: '/graphs',

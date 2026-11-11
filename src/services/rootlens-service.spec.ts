@@ -1,21 +1,35 @@
-import { canSubmitReviewTargetType } from '@/services/rootlens-service'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { updateAppPreferences } from '@/services/app-preferences'
+import { canSubmitReviewTargetType, getRootLensService } from '@/services/rootlens-service'
+
+afterEach(() => { localStorage.clear(); vi.unstubAllGlobals() })
 
 describe('review target feedback gating', () => {
   it('allows supported feedback target types', () => {
-    expect(canSubmitReviewTargetType('path')).toBe(true)
-    expect(canSubmitReviewTargetType('edge')).toBe(true)
-    expect(canSubmitReviewTargetType('entity_link')).toBe(true)
-    expect(canSubmitReviewTargetType('correction')).toBe(true)
-  })
-
-  it('allows root cause candidate feedback once backend mode catches up', () => {
-    expect(canSubmitReviewTargetType('root_cause_candidate')).toBe(true)
+    for (const target of ['path', 'edge', 'entity_link', 'correction', 'root_cause_candidate']) {
+      expect(canSubmitReviewTargetType(target)).toBe(true)
+    }
   })
 })
 
-describe('restored Demo processing boundary',()=>{
-  it('keeps source extraction and graph construction on the real backend',async()=>{
-    const {updateAppPreferences}=await import('@/services/app-preferences');const {getRootLensService}=await import('@/services/rootlens-service');updateAppPreferences({dataSourceMode:'mock'});const service=getRootLensService();await expect(service.extractKGMaterial('source')).rejects.toThrow('只展示成品快照');await expect(service.buildKGConstruction({sources:[],output_name:'readonly-test',overwrite:false})).rejects.toThrow('浏览器不执行');await expect(service.generateKGSourceDraft({source_id:'source',source_text:'公开资料',provider:'heuristic',default_scenario:'mvtec',confidence:.5})).rejects.toThrow('切换 Backend')
+describe('offline graph source boundary', () => {
+  it('does not call live graph management or read a native result in Demo', async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    updateAppPreferences({ dataSourceMode: 'mock' })
+    const service = getRootLensService()
+    await expect(service.enableWorkingGraph('graph', true)).rejects.toThrow('需要 Backend')
+    await expect(service.getRun('analysis', 'analysis-v2')).rejects.toThrow('已保存分析属于 Backend')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+  it('keeps an imported Replay offline even with Backend selected', async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    updateAppPreferences({ dataSourceMode: 'backend' })
+    localStorage.setItem('rootlens.local.meta', JSON.stringify({ source: 'import', updatedAt: '2026-11-11' }))
+    const service = getRootLensService()
+    await expect(service.listRuns()).resolves.toEqual([])
+    await expect(service.kgStudio('active-graph')).rejects.toThrow('请先退出成品回放')
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

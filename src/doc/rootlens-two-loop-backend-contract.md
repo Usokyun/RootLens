@@ -93,11 +93,19 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host
 
 素材上传／URL 注册／列表／chunks 沿用 `/api/kg/materials` 系列；解析改走异步任务。构图任务自动完成解析（仅缺失时）、LLM、自动校验、确定性编译与隔离工作图装载；无需人工审核门。
 
+这是两页唯一的任务提交合同。旧 `POST /api/runs/upload`、旧运行模型预设／下载、素材同步提取／构图、旧 `/api/kg/construction/*` 和旧草稿 HTTP 路由已退役。素材登记用 `/api/kg/materials/upload` 或 `/api/kg/materials/register-url`。已存旧 Run 的 GET、附件与回放仍供图谱历史使用；旧构图产物留在原路径，由离线工作流读取。
+
+- `GET /api/kg/materials` 默认只列活动素材；`?archived=true` 只列已移出素材。记录的 `archived_at` 为 `null` 或移出时间。
+- `POST /api/kg/materials/{material_id}/archive` 和 `/restore` 返回 `{status, material, note}`。移出和恢复不改原文件、提取结果或历史图谱来源；详情、片段和处理记录仍可按原 ID 读取。
+- 排队或运行中的素材任务阻止移出（HTTP 409）；已移出素材要先恢复，才能新建或重试提取与构图任务。
+
+升级既有库时，素材存储首次访问按需增加可空的 `archived_at` 列，已有记录保持活动。更新后端进程即可载入新路由；既有库不运行 `backend:init`。
+
 Source Blueprint将presence/context条件提到ALL前置，原ANY或at_least仅作用于具体diagnostic atoms；ALL只等价重组。ANY/at_least收紧写入`authoring_normalizations`并在实际validation事件展示`semantic_change=true`；at_least计数不能满足剩余诊断项时明确失败，不猜替代count。纯门控签名与canonical JSON绕过均拒绝，每条支持proof必须包含具体诊断观测。`appearance.defect_present=true`不能单独证明Finish、部位或制造原因。
 
 ## 保存分析
 
-- `GET /api/analyses` → `{runs:[AnalysisRunSummary]}`。
+- `GET /api/analyses` → `{runs:[AnalysisRunSummary]}`；不返回完整 cases 或知识快照。`outcome_counts` 按已保存 Frame 结果统计；明确的 `no_match`／`normal_reference_gate_is_false` 单独进入 `normal_gate_count`，不再计入 `no_match`。未保存结果时省略两项。
 - `GET /api/analyses/{run_id}` → `AnalysisRun`；任务完成后用它载入。
 - `GET /api/analyses/{run_id}/evidence`：下载本次实际生成的 `{frames:[...]}`，可按 `input_mode=evidence` 重新上传；不重跑 backbone/LLM。
 - `GET /api/analyses/{run_id}/artifacts/{name}`：原图／mask／heatmap／输入等实际文件。
@@ -151,5 +159,7 @@ RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution
 本轻量 worker 部署为一个 API 进程、两个线程任务 worker；不使用多进程 Uvicorn workers。新的任务服务第一次访问会把旧进程遗留的 queued/running 标为 interrupted，不自动重算。新知识制作的视觉默认硬预算为32候选／8签名／每签名32假设，过程为32／12／32，wafer为8／8／1；视觉／过程可显式调候选／每签名硬限到64。建议规模与结构硬限分开，报告保留二者。推理器原128候选、256分支、2048组合、1024状态搜索预算不改，耗尽仍明确search_incomplete。
 
 本机8012演示服务改由手动加载的launchd会话作业 `com.rootlens.dev.two-loop-api` 管理，不依赖agent exec会话，不配置登录／开机自启。`backend/scripts/development_api.py` 提供 `start/status/stop/health --name two-loop-api`，启动8012时加 `--port 8012`；日志、PID记录与恢复命令见 [后端运行记录](../../backend/docs/two-loop-backend.md#0239-断连恢复进程归-launchd不归临时执行会话)。
+
+本机隔离容器已存在但停止时，先确认 Docker 运行，从仓库根目录执行 `docker compose -p rootlens-mvtec-m1-test -f backend/compose.test.yaml start --wait postgres neo4j`，然后启动上述命名作业。该命令只启动既有容器，不建库或重建卷。服务起来后在 `backend/` 执行 `uv run --offline --no-sync python scripts/smoke_rootlens_dashboard.py` 检查两页实际读取。
 
 复算除同一知识快照／reasoner外，还需保留 `run.input_snapshot.top_k` 等选项（本轮demo为8）；默认5会少返回部分候选和路径。RootKGD 的 `propagation.scoring_input_obs_ids` 列出所有52个实际评分输入，不将未展示路径的贡献误标为unused。

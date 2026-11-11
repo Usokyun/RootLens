@@ -1,5 +1,7 @@
 # RootLens Dashboard v1
 
+> Historical v1 design. For the current Vue workbench and API, use the [current integration guide](../../src/doc/backend-integration-current.md). The legacy upload and KG draft endpoints described here are retired.
+
 RootLens v1 is a foundation-first dashboard boundary for KGTraceVis. It keeps
 analysis logic in `src/kgtracevis/`, uses the FastAPI service as the dashboard
 contract, and keeps the React client under `web/` focused on upload, run
@@ -200,33 +202,13 @@ npm run typecheck
 npm run build
 ```
 
-Dashboard contract smoke:
+Current read-only contract smoke, against the running isolated API:
 
 ```bash
-uv run python scripts/smoke_rootlens_dashboard.py
+uv run --offline --no-sync python scripts/smoke_rootlens_dashboard.py \
+  --api-url http://127.0.0.1:8012
 ```
 
-The smoke uses FastAPI `TestClient` instead of launching a browser. It exercises
-the same API path used by the Vite client: bootstrap, producer-record upload,
-run history, run detail, path graph/review target linkage, and review feedback.
-It also exercises the KG Studio route and verifies candidate edge review targets
-plus append-only draft submission when local candidate KG artifacts are
-available. It always exercises source-to-KG draft generation.
-By default it stores run and feedback artifacts in a temporary directory; pass
-this if you want to inspect the generated manifest afterward:
-
-```bash
-uv run python scripts/smoke_rootlens_dashboard.py --persist-runs runs/rootlens_smoke
-```
-
-Optional browser spot check:
-
-```bash
-uv run python scripts/run_web_api.py
-cd web
-npm run dev
-```
-
-Then open `http://127.0.0.1:5173`, upload
-`data/examples/records/mvtec_records.jsonl` in producer-record mode, select the
-new history row, and submit `Needs review` for one target.
+The smoke reads the material archive, tasks, and analysis summaries. Pass
+`--task-id` to inspect a saved task and `--run-id` to compare a saved analysis
+with its downloaded Evidence. It does not submit work or write records.

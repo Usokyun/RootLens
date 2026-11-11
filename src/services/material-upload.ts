@@ -39,7 +39,7 @@ export async function uploadKGMaterialFiles(
         file,
         title: isBatch ? undefined : options.title,
         material_id: isBatch ? undefined : options.material_id,
-        source_type: isBatch ? materialTypeFromFilename(file.name) : options.source_type,
+        source_type: isBatch ? materialTypeFromFilename(file.name) : options.source_type ?? materialTypeFromFilename(file.name),
       }))
     } catch (error) {
       failed.push({ file, error: error instanceof Error ? error.message : String(error) })

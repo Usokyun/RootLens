@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
+import threading
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, cast
 
-from kgtracevis.service.kg_materials import KGMaterialExtractionState, KGMaterialRecord
+from kgtracevis.service.kg_materials import (
+    KGMaterialExtractionState,
+    KGMaterialRecord,
+    MaterialNotFoundError,
+    material_busy_error,
+)
 from kgtracevis.service.postgres import PostgresConfig, resolve_postgres_config
+from kgtracevis.service.two_loop_store import TwoLoopStore
+
+_ARCHIVE_MIGRATION = Path(__file__).with_name("migrations") / "003_material_archive.sql"
+_ARCHIVE_SCHEMA_READY: set[PostgresConfig] = set()
+_ARCHIVE_SCHEMA_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -41,10 +54,10 @@ class PostgresMaterialStore:
                         (material_id, title, scenario, material_type, source_kind,
                          source_uri, metadata_path, status, registered_at, updated_at,
                          original_filename, content_type, size_bytes, metadata,
-                         extraction, claim_boundary)
+                         extraction, claim_boundary, archived_at)
                     VALUES
                         (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                         %s, %s, %s)
+                         %s, %s, %s, %s)
                     ON CONFLICT (material_id) DO UPDATE SET
                         title = EXCLUDED.title,
                         scenario = EXCLUDED.scenario,
@@ -79,22 +92,25 @@ class PostgresMaterialStore:
                         Jsonb(payload["metadata"]),
                         Jsonb(payload["extraction"]),
                         record.claim_boundary,
+                        record.archived_at,
                     ),
                 )
         return record
 
-    def list_material_records(self) -> list[KGMaterialRecord]:
-        """Return persisted source material records, newest first."""
+    def list_material_records(self, *, archived: bool | None = None) -> list[KGMaterialRecord]:
+        """Return persisted source material records, optionally filtered by archive state."""
         with self._connection() as connection:
             rows = connection.execute(
                 """
                 SELECT material_id, title, scenario, material_type, source_kind,
                        source_uri, metadata_path, status, registered_at, updated_at,
                        original_filename, content_type, size_bytes, metadata,
-                       extraction, claim_boundary
+                       extraction, claim_boundary, archived_at
                 FROM source_materials
-                ORDER BY updated_at DESC, material_id ASC
-                """
+                WHERE %s::boolean IS NULL OR (archived_at IS NOT NULL) = %s
+                ORDER BY COALESCE(archived_at, updated_at) DESC, material_id ASC
+                """,
+                (archived, archived),
             ).fetchall()
         return [_record_from_row(row) for row in rows]
 
@@ -107,15 +123,52 @@ class PostgresMaterialStore:
                 SELECT material_id, title, scenario, material_type, source_kind,
                        source_uri, metadata_path, status, registered_at, updated_at,
                        original_filename, content_type, size_bytes, metadata,
-                       extraction, claim_boundary
+                       extraction, claim_boundary, archived_at
                 FROM source_materials
                 WHERE material_id = %s
                 """,
                 (material_id,),
             ).fetchone()
         if row is None:
-            raise ValueError(f"unknown material_id: {material_id}")
+            raise MaterialNotFoundError(f"unknown material_id: {material_id}")
         return _record_from_row(row)
+
+    def set_material_archived_at(
+        self, material_id: str, archived_at: str | None
+    ) -> KGMaterialRecord:
+        material_id = _require_material_id(material_id)
+        with self._connection() as connection:
+            row = connection.execute(
+                "UPDATE source_materials SET archived_at = %s WHERE material_id = %s RETURNING *",
+                (archived_at, material_id),
+            ).fetchone()
+        if row is None:
+            raise MaterialNotFoundError(f"unknown material_id: {material_id}")
+        return _record_from_row(row)
+
+    @contextmanager
+    def lock_material_operations(
+        self, material_ids: Sequence[str], *, wait: bool
+    ) -> Iterator[None]:
+        """Use the same material-ID locks across API processes."""
+        with self._connection() as connection:
+            for identity in material_ids:
+                key = f"rootlens:material:{identity}"
+                if wait:
+                    connection.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (key,)
+                    )
+                else:
+                    row = connection.execute(
+                        "SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0)) AS locked",
+                        (key,),
+                    ).fetchone()
+                    if not row["locked"]:
+                        raise material_busy_error(identity)
+            yield
+
+    def material_has_active_task(self, material_id: str) -> bool:
+        return TwoLoopStore(self.config).material_has_active_task(material_id)
 
     def save_source_chunks(
         self,
@@ -125,8 +178,7 @@ class PostgresMaterialStore:
         """Replace stored source chunks for one material and return stored payloads."""
         material_id = _require_material_id(material_id)
         normalized = [
-            _chunk_payload(material_id, index, chunk)
-            for index, chunk in enumerate(chunks)
+            _chunk_payload(material_id, index, chunk) for index, chunk in enumerate(chunks)
         ]
         from psycopg.types.json import Jsonb
 
@@ -339,7 +391,35 @@ class PostgresMaterialStore:
         import psycopg
         from psycopg.rows import dict_row
 
-        return psycopg.connect(self.config.dsn, row_factory=dict_row)
+        connection = psycopg.connect(self.config.dsn, row_factory=dict_row)
+        try:
+            self._ensure_archive_schema(connection)
+        except Exception:
+            connection.close()
+            raise
+        return connection
+
+    def _ensure_archive_schema(self, connection: Any) -> None:
+        """Apply the additive column to an existing material table, at most once per DSN."""
+        if self.config in _ARCHIVE_SCHEMA_READY:
+            return
+        with _ARCHIVE_SCHEMA_LOCK:
+            if self.config in _ARCHIVE_SCHEMA_READY:
+                return
+            with connection.transaction():
+                ready = connection.execute(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM pg_attribute
+                        WHERE attrelid = to_regclass('source_materials')
+                          AND attname = 'archived_at'
+                          AND NOT attisdropped
+                    ) AS ready
+                    """
+                ).fetchone()
+                if not ready["ready"]:
+                    connection.execute(_ARCHIVE_MIGRATION.read_text(encoding="utf-8"))
+            _ARCHIVE_SCHEMA_READY.add(self.config)
 
 
 def _material_record(material: KGMaterialRecord | Mapping[str, Any]) -> KGMaterialRecord:
@@ -369,6 +449,7 @@ def _record_from_row(row: Mapping[str, Any]) -> KGMaterialRecord:
             "metadata_path": row["metadata_path"],
             "registered_at": _iso_or_none(row["registered_at"]),
             "updated_at": _iso_or_none(row["updated_at"]),
+            "archived_at": _iso_or_none(row.get("archived_at")),
             "original_filename": row.get("original_filename"),
             "content_type": row.get("content_type"),
             "size_bytes": row.get("size_bytes") or 0,

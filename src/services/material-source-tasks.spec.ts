@@ -134,6 +134,33 @@ describe('original material page task contract', () => {
     expect(state.resultGraphId.value).toBeNull()
   })
 
+  it('submits one batch without overwrite and reads back possibly persisted items after a later item fails', async () => {
+    const queued = task({
+      task_id: 'batch-parse', kind: 'material_parse',
+      request: { material_ids: ['parsed-first', 'failed-second'] },
+    })
+    const fetcher = intercept((url) => {
+      if (url.pathname === '/api/tasks') return json({ tasks: [] })
+      if (url.pathname === '/api/tasks/material-parse') return json(queued, 202)
+      if (url.pathname === '/api/tasks/batch-parse') return json({
+        ...queued, status: 'failed', stage: 'parsing', error: { message: 'source has no readable text' },
+      })
+      throw new Error(`Unexpected ${url.pathname}`)
+    })
+    const { state, onParsed } = mount()
+    await state.parse(['parsed-first', 'failed-second', 'parsed-first'])
+    await state.refresh()
+    await nextTick()
+
+    const posts = fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')
+    expect(posts).toHaveLength(1)
+    expect(JSON.parse(String(posts[0]?.[1]?.body))).toEqual({
+      material_ids: ['parsed-first', 'failed-second'], force: false,
+    })
+    expect(onParsed).toHaveBeenCalledExactlyOnceWith(['parsed-first', 'failed-second'])
+    expect(state.task.value?.status).toBe('failed')
+  })
+
   it('selects the real historical graph and does not synthesize an absent result id', async () => {
     const historical = task({ status: 'completed', result: { graph_id: 'historical-actual-id' } })
     const unrelated = task({ task_id: 'inference', kind: 'inference' })

@@ -29,6 +29,7 @@ from kgtracevis.service.candidate_conditions import (
     delete_condition,
 )
 from kgtracevis.service.kg_materials import (
+    MaterialConflictError,
     get_kg_material,
     save_kg_material_upload,
 )
@@ -97,6 +98,8 @@ def call(action):
         return action()
     except (TwoLoopStorageError, WorkingGraphStorageError, DriverError, Neo4jError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except MaterialConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -165,32 +168,24 @@ def retry_task(task_id: str):
 
 @router.post("/tasks/material-parse", status_code=202)
 def parse_materials(request: ParseRequest):
-    def submit():
-        for identity in request.material_ids:
-            get_kg_material(identity)
-        return public_task(
+    return call(
+        lambda: public_task(
             task_manager().submit(
                 "material_parse", request.model_dump(mode="json"), title="解析原始资料"
             )
         )
-
-    return call(submit)
+    )
 
 
 @router.post("/tasks/material-build", status_code=202)
 def build_materials(request: BuildRequest):
-    def submit():
-        for identity in request.material_ids:
-            material = get_kg_material(identity).material
-            if material.scenario not in {request.dataset, "shared"}:
-                raise ValueError("选中的资料包含其它场景，请分开制作工作图。")
-        return public_task(
+    return call(
+        lambda: public_task(
             task_manager().submit(
                 "material_build", request.model_dump(mode="json"), title=request.title
             )
         )
-
-    return call(submit)
+    )
 
 
 @router.post("/kg/working-graphs/{graph_id}/enable")

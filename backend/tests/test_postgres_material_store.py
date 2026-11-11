@@ -43,6 +43,7 @@ class FakeConnection:
     def __init__(self) -> None:
         self.executions: list[tuple[str, Any]] = []
         self.material_row = _material_row()
+        self.archive_column = False
         self.chunk_rows: list[dict[str, Any]] = []
 
     def __enter__(self) -> FakeConnection:
@@ -56,10 +57,19 @@ class FakeConnection:
 
     def execute(self, sql: str, params: Any = None) -> FakeResult:
         self.executions.append((sql, params))
+        if "FROM pg_attribute" in sql:
+            return FakeResult(one={"ready": self.archive_column})
+        if "ADD COLUMN IF NOT EXISTS archived_at" in sql:
+            self.archive_column = True
+            return FakeResult()
+        if "UPDATE source_materials SET archived_at" in sql:
+            self.material_row["archived_at"] = params[0]
+            return FakeResult(one=self.material_row)
         if "WHERE material_id = %s" in sql and "FROM source_materials" in sql:
             return FakeResult(one=self.material_row)
         if "FROM source_materials" in sql:
-            return FakeResult(rows=[self.material_row])
+            archived = self.material_row.get("archived_at") is not None
+            return FakeResult(rows=[self.material_row] if params[0] in {None, archived} else [])
         if "FROM source_material_chunks" in sql:
             return FakeResult(rows=self.chunk_rows)
         if "RETURNING extraction_run_id::text" in sql:
@@ -179,6 +189,43 @@ def test_postgres_material_store_lists_and_gets_material_records() -> None:
     assert fetched.material_id == "tep_manual_001"
     assert fetched.metadata == {"source": "manual"}
     assert fetched.registered_at == "2026-05-15T00:00:00+00:00"
+
+
+def test_postgres_archive_updates_only_archive_timestamp() -> None:
+    connection = FakeConnection()
+    store = PostgresMaterialStore(
+        PostgresConfig(dsn="postgresql://unit-test"),
+        connection_factory=lambda: connection,
+    )
+    identity = "tep_manual_001"
+    original = store.get_material_record(identity)
+    timestamp = "2026-11-11T04:00:00+00:00"
+
+    archived = store.set_material_archived_at(identity, timestamp)
+    assert archived == original.model_copy(update={"archived_at": timestamp})
+    assert store.list_material_records(archived=False) == []
+    assert store.list_material_records(archived=True) == [archived]
+    assert store.get_material_record(identity) == archived
+    assert store.set_material_archived_at(identity, None) == original
+
+    writes = [(sql, params) for sql, params in connection.executions if sql.startswith("UPDATE")]
+    assert [params for _sql, params in writes] == [(timestamp, identity), (None, identity)]
+    assert all("SET archived_at = %s WHERE material_id = %s" in sql for sql, _ in writes)
+    assert not any("DELETE" in sql for sql, _ in connection.executions)
+
+
+def test_postgres_archive_schema_upgrade_keeps_existing_rows() -> None:
+    connection = FakeConnection()
+    store = PostgresMaterialStore(
+        PostgresConfig(dsn="postgresql://archive-schema-unit-test"),
+        connection_factory=lambda: connection,
+    )
+    store._ensure_archive_schema(connection)
+    assert connection.archive_column
+    migrations = [sql for sql, _ in connection.executions if "ALTER TABLE" in sql]
+    assert len(migrations) == 1
+    assert "ADD COLUMN IF NOT EXISTS archived_at timestamptz" in migrations[0]
+    assert store.get_material_record("tep_manual_001").archived_at is None
 
 
 def test_postgres_material_store_replaces_and_lists_source_chunks() -> None:

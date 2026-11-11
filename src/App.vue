@@ -44,6 +44,8 @@ const navItems: NavItem[] = [
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
+const isSavedAnalysis = computed(() => route.name === 'saved-analysis')
+const siderCollapsed = computed(() => isSavedAnalysis.value || collapsed.value)
 const backendConfigModalVisible = ref(false)
 const backendConfigForm = reactive({
   host: '127.0.0.1',
@@ -58,6 +60,7 @@ const sourceModeOptions = [
 ] as const
 
 const activeMenuKey = computed(() => {
+  if (isSavedAnalysis.value) return 'evidence'
   const matched = navItems.find((item) => item.name === route.name)
   return matched?.name ?? 'evidence'
 })
@@ -67,6 +70,7 @@ const currentPageLabel = computed(() => {
 })
 
 const currentContextLabel = computed(() => {
+  if (isSavedAnalysis.value) return '保存运行'
   return [workbenchState.value.selectedRunId, workbenchState.value.selectedCaseId].filter(Boolean).join(' / ') || '未选择上下文'
 })
 
@@ -189,14 +193,14 @@ function handleBackendConfigSave() {
           class="app-sider-menu"
           :width="220"
           :collapsed-width="56"
-          :collapsed="collapsed"
+          :collapsed="siderCollapsed"
           hide-trigger
           breakpoint="xl"
         >
           <a-menu
             class="app-sider-menu__menu"
             :selected-keys="[activeMenuKey]"
-            :collapse="collapsed"
+            :collapse="siderCollapsed"
             @menu-item-click="handleNavigate"
           >
             <a-menu-item v-for="item in navItems" :key="item.name">
@@ -208,6 +212,7 @@ function handleBackendConfigSave() {
           </a-menu>
 
           <a-button
+            v-if="!isSavedAnalysis"
             type="text"
             shape="square"
             class="app-sider-menu__collapse-btn"
@@ -219,7 +224,7 @@ function handleBackendConfigSave() {
           </a-button>
         </a-layout-sider>
 
-        <a-layout-content class="ads-brain-workbench-layout__content">
+        <a-layout-content class="ads-brain-workbench-layout__content" :class="{ 'workbench-content--saved-analysis': isSavedAnalysis }">
           <RouterView />
         </a-layout-content>
       </a-layout>
@@ -284,3 +289,13 @@ function handleBackendConfigSave() {
     </div>
   </a-config-provider>
 </template>
+
+<style scoped>
+.workbench-content--saved-analysis {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+</style>
