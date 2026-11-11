@@ -2,398 +2,61 @@
   "schema_version": "rootlens-demo-manifest.v1",
   "title": "RootLens · 资料到知识、样本到解释的双闭环",
   "path_base": "backend",
-  "prepared_by": "scripts/prepare_two_loop_demo.py",
   "demos": [
     {
       "id": "bottle",
       "dataset": "mvtec",
-      "title": "玻璃边缘 · 原图到候选原因",
-      "purpose": "原厂家资料→LLM知识图→人工修改→PatchCore/ROI语义→可追溯候选",
+      "title": "玻璃瓶局部异常 · 几何证据",
+      "purpose": "Markdown 演示规则 → 可编辑工作图 → Bottle PatchCore / 几何 Evidence → 两个待排查解释",
       "capability_id": "visual-region-v2",
       "working_graph": {
-        "asset_id": "bottle-working-graph",
-        "title": "可编辑演示工作图",
-        "path": "data/demo/two_loop/knowledge/bottle-working-graph.v2.json",
+        "asset_id": "bottle-geometry-working-graph",
+        "title": "玻璃瓶局部异常 · 配套工作图",
+        "path": "data/demo/two_loop/mvtec/working-graph.v2.json",
         "media_type": "application/json",
-        "size_bytes": 28474,
-        "available": true,
         "source_url": null,
-        "redistribution": "derived_public_measurements",
-        "storage_scope": "repository"
+        "redistribution": "RootLens 演示图；来源与阈值边界见包内断言",
+        "storage_scope": "repository",
+        "size_bytes": 12149
       },
       "materials": [
         {
-          "asset_id": "bottle-manufacturer-pdf",
-          "title": "Emhart原厂缺陷指南 · PDF",
-          "path": "runs/two_loop_demo/materials/emhart-defect-guide.pdf",
-          "media_type": "application/pdf",
-          "size_bytes": 8070085,
-          "available": true,
-          "source_url": "https://www.emhartglass.com/sites/default/files/publications/2024-07/BEG_BR0060RevA-Defect_Guide-WEB.pdf",
-          "redistribution": "copyrighted_public_pdf_local_only",
-          "storage_scope": "local_runtime"
+          "asset_id": "bottle-geometry-source",
+          "title": "玻璃瓶局部异常：几何证据演示规则",
+          "path": "data/demo/two_loop/mvtec/material.md",
+          "media_type": "text/markdown",
+          "source_url": null,
+          "redistribution": "RootLens 自著非商业演示资料",
+          "storage_scope": "repository",
+          "size_bytes": 1800
         }
       ],
-      "material_options": {
-        "pages": [
-          13,
-          20
-        ],
-        "note": "选取Broken/Chipped Finish的原始PDF页；不是手写诊断规则。"
-      },
       "samples": [
         {
           "sample_id": "bottle-rim-break",
-          "title": "玻璃边缘缺损 · 本轮实测",
+          "title": "玻璃瓶局部异常 · 原图 006",
           "dataset": "mvtec",
           "input_mode": "image",
-          "expectation": "本轮真实PatchCore/ROI语义支持可见缺损；多个制造原因仍并列，不把外观当唯一根因。",
+          "expectation": "实测同一区域面积占比约 0.2284、长短边比约 1.1173，满足演示条件；两种待排查解释并列。",
           "raw_input": {
-            "asset_id": "bottle-sample_006-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/sample_006.png",
+            "asset_id": "bottle-006-original-png",
+            "title": "MVTec AD bottle 原图 006",
+            "path": "data/demo/two_loop/mvtec/sample_006.png",
             "media_type": "image/png",
-            "size_bytes": 523230,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/resolve/main/DS-MVTec/bottle/image/broken_large/006.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
+            "source_url": "https://huggingface.co/datasets/foersben/mvtec-ad/resolve/4e0e64896390500eb67720e1ceef16e160bb2a8d/bottle/test/broken_large/006.png",
+            "redistribution": "CC BY-NC-SA 4.0",
+            "storage_scope": "repository",
+            "size_bytes": 523230
           },
           "evidence": {
-            "asset_id": "bottle-rim-break-evidence",
-            "title": "本轮真实原图运行导出的EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-rim-break.json",
+            "asset_id": "bottle-006-geometry-evidence",
+            "title": "该原图运行导出的几何 Evidence",
+            "path": "data/demo/two_loop/mvtec/evidence.json",
             "media_type": "application/json",
-            "size_bytes": 6848,
-            "available": true,
             "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "object_name": "bottle",
-            "model_preset": "patchcore",
-            "semantic_mode": "vlm"
-          },
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "origin_run_id": "1d116c71-d461-4d9a-852f-eb7f243534c0",
-          "suitability_checks": {
-            "raw_run_ids": [
-              "bde29798-db9a-4eb6-aa6a-439125ac88d1",
-              "1d116c71-d461-4d9a-852f-eb7f243534c0"
-            ],
-            "result": "同一图两次真实模型均给出玻璃开裂/缺失外观；不是留出集或准确率估计。"
-          },
-          "recommended": true,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-rim-break-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-rim-break/image.png",
-              "media_type": "image/png",
-              "size_bytes": 523230,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            },
-            {
-              "asset_id": "bottle-rim-break-support-mask",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-rim-break/mask.json",
-              "media_type": "application/json",
-              "size_bytes": 444293,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "mask",
-              "kind": "json"
-            }
-          ]
-        },
-        {
-          "sample_id": "bottle-chipped",
-          "title": "局部缺损A · 本轮语义漏检",
-          "dataset": "mvtec",
-          "input_mode": "image",
-          "expectation": "本轮ROI把原生异常判正常，当前测量与中间Evidence均无匹配，保留真实感知失败。",
-          "raw_input": {
-            "asset_id": "bottle-sample_001-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/sample_001.png",
-            "media_type": "image/png",
-            "size_bytes": 525657,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/resolve/main/DS-MVTec/bottle/image/broken_large/001.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "bottle-chipped-evidence",
-            "title": "实际模型产出的冻结EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-chipped.json",
-            "media_type": "application/json",
-            "size_bytes": 6801,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "object_name": "bottle",
-            "model_preset": "patchcore",
-            "semantic_mode": "vlm"
-          },
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-chipped-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-chipped/image.png",
-              "media_type": "image/png",
-              "size_bytes": 525657,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            },
-            {
-              "asset_id": "bottle-chipped-support-mask",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-chipped/mask.json",
-              "media_type": "application/json",
-              "size_bytes": 447068,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "mask",
-              "kind": "json"
-            }
-          ]
-        },
-        {
-          "sample_id": "bottle-chipped-second",
-          "title": "局部缺损B · 本轮语义漏检",
-          "dataset": "mvtec",
-          "input_mode": "image",
-          "expectation": "本轮ROI判正常；不替换模型观测，不强配原因。",
-          "raw_input": {
-            "asset_id": "bottle-sample_002-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/sample_002.png",
-            "media_type": "image/png",
-            "size_bytes": 515614,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/resolve/main/DS-MVTec/bottle/image/broken_large/002.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "bottle-chipped-second-evidence",
-            "title": "实际模型产出的冻结EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-chipped-second.json",
-            "media_type": "application/json",
-            "size_bytes": 6812,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "object_name": "bottle",
-            "model_preset": "patchcore",
-            "semantic_mode": "vlm"
-          },
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-chipped-second-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-chipped-second/image.png",
-              "media_type": "image/png",
-              "size_bytes": 515614,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            },
-            {
-              "asset_id": "bottle-chipped-second-support-mask",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-chipped-second/mask.json",
-              "media_type": "application/json",
-              "size_bytes": 441374,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "mask",
-              "kind": "json"
-            }
-          ]
-        },
-        {
-          "sample_id": "bottle-normal",
-          "title": "正常玻璃图 · 阴性对照",
-          "dataset": "mvtec",
-          "input_mode": "image",
-          "expectation": "异常门控不成立，无支持候选。",
-          "raw_input": {
-            "asset_id": "bottle-normal_001-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/normal_001.png",
-            "media_type": "image/png",
-            "size_bytes": 533399,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/foersben/mvtec-ad/resolve/main/bottle/test/good/000.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "bottle-normal-evidence",
-            "title": "实际模型产出的冻结EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-normal.json",
-            "media_type": "application/json",
-            "size_bytes": 2290,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "object_name": "bottle",
-            "model_preset": "patchcore",
-            "semantic_mode": "vlm"
-          },
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-normal-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-normal/image.png",
-              "media_type": "image/png",
-              "size_bytes": 533399,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            }
-          ]
-        },
-        {
-          "sample_id": "bottle-semantic-miss",
-          "title": "语义漏检 · 真实失败",
-          "dataset": "mvtec",
-          "input_mode": "image",
-          "expectation": "原生异常图曾被ROI模型判正常，冻结结果无匹配；保留该失败。",
-          "raw_input": {
-            "asset_id": "bottle-sample_003-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/sample_003.png",
-            "media_type": "image/png",
-            "size_bytes": 488569,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/resolve/main/DS-MVTec/bottle/image/broken_large/003.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "bottle-semantic-miss-evidence",
-            "title": "实际模型产出的冻结EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-semantic-miss.json",
-            "media_type": "application/json",
-            "size_bytes": 6811,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
-          },
-          "raw_options": {
-            "object_name": "bottle",
-            "model_preset": "patchcore",
-            "semantic_mode": "vlm"
-          },
-          "reasoner_ids": [
-            "unified_abduction"
-          ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-semantic-miss-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-semantic-miss/image.png",
-              "media_type": "image/png",
-              "size_bytes": 488569,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            },
-            {
-              "asset_id": "bottle-semantic-miss-support-mask",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-semantic-miss/mask.json",
-              "media_type": "application/json",
-              "size_bytes": 432286,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "mask",
-              "kind": "json"
-            }
-          ]
-        },
-        {
-          "sample_id": "bottle-geometry-only",
-          "title": "关闭ROI语义 · 证据不足对照",
-          "dataset": "mvtec",
-          "input_mode": "image",
-          "expectation": "只运行真实PatchCore定位和几何，不提供外观语义；缺失不是正常，应显示证据不足。",
-          "raw_input": {
-            "asset_id": "bottle-sample_000-raw",
-            "title": "公开原始玻璃边缘图像",
-            "path": "runs/two_loop_demo/raw/bottle/sample_000.png",
-            "media_type": "image/png",
-            "size_bytes": 526002,
-            "available": true,
-            "source_url": "https://huggingface.co/datasets/foersben/mvtec-ad/resolve/main/bottle/test/broken_large/000.png",
-            "redistribution": "MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-            "storage_scope": "local_runtime"
-          },
-          "evidence": {
-            "asset_id": "bottle-geometry-only-evidence",
-            "title": "关闭语义后由真实adapter生成的EvidenceFrame",
-            "path": "data/demo/two_loop/evidence/bottle-geometry-only.json",
-            "media_type": "application/json",
-            "size_bytes": 6664,
-            "available": true,
-            "source_url": null,
-            "redistribution": "derived_public_measurements",
-            "storage_scope": "repository"
+            "redistribution": "实际派生测量；沿用 MVTec AD 非商业分发条件",
+            "storage_scope": "repository",
+            "size_bytes": 7842
           },
           "raw_options": {
             "object_name": "bottle",
@@ -403,55 +66,28 @@
           "reasoner_ids": [
             "unified_abduction"
           ],
-          "recommended": false,
-          "supporting_assets": [
-            {
-              "asset_id": "bottle-geometry-only-support-image",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-geometry-only/image.png",
-              "media_type": "image/png",
-              "size_bytes": 526002,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "image",
-              "kind": "image"
-            },
-            {
-              "asset_id": "bottle-geometry-only-support-mask",
-              "title": "原始测量配套资产",
-              "path": "runs/two_loop_demo/frozen/bottle-geometry-only/mask.json",
-              "media_type": "application/json",
-              "size_bytes": 446751,
-              "available": true,
-              "source_url": null,
-              "redistribution": "derived_public_measurements_local_assets",
-              "storage_scope": "local_runtime",
-              "frame_asset_id": "mask",
-              "kind": "json"
-            }
-          ]
+          "recommended": true,
+          "origin_run_id": "e3092c7e-f2e4-43d8-9a72-40a402afb19e"
         }
       ],
       "models": [
         {
-          "asset_id": "bottle-patchcore",
-          "title": "Bottle PatchCore",
-          "path": "runs/refactor_m2_m6/public/bottle_patchcore.ckpt",
-          "media_type": "text/plain",
+          "title": "Bottle PatchCore · 可选原图权重",
+          "required_for": "raw",
+          "repository": "micguida1/mvtec-anomaly-checkpoints",
+          "revision": "17e6b9b9bbb42f2f0ccda588bd088724520b8348",
+          "source_url": "https://huggingface.co/micguida1/mvtec-anomaly-checkpoints/resolve/17e6b9b9bbb42f2f0ccda588bd088724520b8348/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt",
+          "local_path": "runs/two_loop_demo/models/bottle_patchcore_17e6b9b.ckpt",
           "size_bytes": 231213159,
-          "available": true,
-          "source_url": "https://huggingface.co/micguida1/mvtec-anomaly-checkpoints/resolve/main/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt",
-          "redistribution": "model_card_missing_local_only",
-          "storage_scope": "local_runtime"
+          "sha256": "30c62a17d9f9232058b5948ce6fb3f8f585b365daed22e5515cc7afb286a53a1",
+          "redistribution": "上游权重仓库未声明许可；按需从原仓下载到本机，不随 RootLens 分发"
         }
       ],
       "sources": [
         {
-          "title": "MVTec AD许可",
+          "title": "MVTec AD 数据集与许可",
           "url": "https://www.mvtec.com/research-teaching/datasets/mvtec-ad",
-          "license": "CC BY-NC-SA 4.0；非商业。镜像标签不覆盖原始数据许可。"
+          "license": "CC BY-NC-SA 4.0；非商业，原图未改。"
         }
       ]
     },
@@ -1127,6 +763,5 @@
       ]
     }
   ],
-  "interpretation": "expectation是演示对照说明，不输入模型/adapter/推理；原生标签不冒充测量。原始LLM产物和演示适配分别保存。",
-  "preparation_errors": []
+  "interpretation": "expectation 只供解释，不输入模型、adapter 或推理。MVTec 默认仅当前几何版；历史研究对照不经当前清单分发。"
 }

@@ -4,7 +4,7 @@
 
 RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后端在同一仓库维护：
 
-- 前端 `src/`：保留原三个一级入口、Demo／Backend、成品回放和有向力导向图。两条后端闭环仍从原入口发起；Backend 分开呈现运行列表、保存详情和登记工作图，见 §1.8–1.10。
+- 前端 `src/`：保留原三个一级入口、Demo／Backend、成品回放和有向力导向图。两条后端闭环仍从原入口发起；Backend 分开呈现运行列表、保存详情和登记工作图，见 §1.9–1.11。
 - 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、统一推理和 TEP RootKGD、任务及完整分析持久化。
 - 前后端通过 API 协作；**后端代码放在同仓，不等于浏览器执行后端算法**。
 - RootLens **不再**在浏览器端执行图谱构建、Evidence 临时组装或 RCA 本地推理。
@@ -23,7 +23,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 ### 1.2 历史：迁移验证摘要（2026-11-10）
 
-§1.2–1.8 保留各阶段的结果与入口背景；当前前端以 §1.9–1.10、§2–3 为准。
+§1.2–1.8 保留各阶段的结果与入口背景；当前前端以 §1.9–1.11、§2–3 为准。
 
 本节仅保留集成边界所需摘要；过程与证据见[完整核验记录](../../backend/docs/rootlens-monorepo-migration.md)及当时的机器报告路径 `.rootlens-cache/backend-migration-verification.json`（Git 忽略，当前工作树未提供）。以下结果限定于本次迁移，不代表未来每次启动状态：
 
@@ -147,6 +147,12 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 **真实验收（5186／8012 隔离栈）**：从目录打开登记 Wafer 图，确认图案候选和有向关系。另导入一张公开 MVTec v2 独立副本，实体名称与别名保存后从完整包及 Neo4j 回读，其他知识逐字段不变；换图标识被本地阻止，后端拒绝错误期待引用（422）时保留草稿，导出与保存包一致。取消启用无写入，确认后携精确图提交一次公开 Evidence，得到[保存分析](http://127.0.0.1:5186/evidence/runs/5790443c-dffa-4d51-9b91-5bb42482b286)与相同的工作图快照。结论为候选并列，不是已确认根因。仅验收副本在结束后停用，原历史与样例配套图不变；没有新模型调用。请求及截图见 `backend/runs/graph_workbench_acceptance/verification.json`（Git 忽略）。
 
 提交范围的前端快照通过原生 Vitest **36 文件／196 项**、类型与生产构建；保留已有的主包大小提示。后端源码未更改。
+
+### 1.11 当前：从新公开资料到同图原图／Frame 复算
+
+当前可完整演示的主线是 MVTec Bottle 006。一次真实上传并提取 RootLens 自著公开 Markdown，1 次文本 LLM（0 次修复）编译新图；在任务结果打开的确切图上编辑对象名称／别名、保存并确认启用。相同图随后分析实际公开原图：本机 CPU Bottle PatchCore、外部 ROI 语义关闭。再下载该 Run 的实际原生 Evidence 并普通上传，同图、同解释器、同 `top_k` 的图快照、完整 Frame 和结果逐字段一致。两个假设并列，不从几何推出工艺归因；可以从面积观测追到真条件和保存源边，再定位原图 ROI。
+
+实跑的图、任务、Run、几何值与可复算证据见 [MVTec 公开主链验收](../../backend/docs/mvtec-public-demo-acceptance.md)，可发布文件和新部署准备以 [演示手册](../../backend/docs/two-loop-demo.md) 为准。TEP／Wafer 研究与历史保存能力不因当前主演示选择而被删除。
 
 ## 2. 当前输入与分析入口
 

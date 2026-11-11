@@ -23,6 +23,7 @@ def write(path, value):
 
 class DemoClient:
     def __init__(self, base_url, output, *, resume=False):
+        base_url = base_url.rstrip("/")
         self.output = output
         output.mkdir(parents=True, exist_ok=resume)
         self.client = httpx.Client(base_url=base_url, timeout=120)
@@ -32,6 +33,9 @@ class DemoClient:
             if resume and path.exists()
             else {"base_url": base_url, "graphs": {}, "tasks": {}, "analyses": {}, "failures": []}
         )
+        if self.state["base_url"].rstrip("/") != base_url:
+            self.client.close()
+            raise ValueError("恢复记录的后端地址不同，请使用原地址或新的输出目录。")
 
     def save(self):
         write(self.output / "state.json", self.state)
@@ -57,7 +61,13 @@ class DemoClient:
         deadline = time.monotonic() + 1200
         previous_stage = None
         while time.monotonic() < deadline:
-            task = self.request("GET", f"/api/tasks/{task_id}")
+            status_url = f"/api/tasks/{task_id}"
+            try:
+                task = self.request("GET", status_url)
+            except httpx.TransportError:
+                # Retry the read once; the recorded task ID is never resubmitted.
+                time.sleep(2)
+                task = self.request("GET", status_url)
             write(self.output / f"{label}.task.json", task)
             if task["stage"] != previous_stage:
                 print(
@@ -88,16 +98,22 @@ class DemoClient:
             identity = demo["id"]
             if identity in self.state["graphs"]:
                 continue
-            url = demo["working_graph"]["download_url"]
-            package = self.request("GET", url)
-            package["title"] += " · 双闭环实跑"
-            record = self.request("POST", "/api/kg/working-graphs/import", json=package)
-            graph_id = record["graph_id"]
-            self.request(
-                "POST", f"/api/kg/working-graphs/{graph_id}/enable", json={"enabled": True}
-            )
+            reference = demo["graph_ref"]
+            state = reference["state"]
+            if state == "missing":
+                package = self.request("GET", demo["working_graph"]["download_url"])
+                record = self.request("POST", "/api/kg/working-graphs/import", json=package)
+                graph_id = record["graph_id"]
+                write(self.output / f"{identity}.imported-graph.json", record)
+            elif state in {"ready", "disabled"} and reference["graph_id"]:
+                graph_id = reference["graph_id"]
+            else:
+                raise ValueError(f"{demo['title']}：{reference['note']}")
+            if state != "ready":
+                self.request(
+                    "POST", f"/api/kg/working-graphs/{graph_id}/enable", json={"enabled": True}
+                )
             self.state["graphs"][identity] = graph_id
-            write(self.output / f"{identity}.imported-graph.json", record)
             self.save()
 
     def build_bottle(self):
@@ -109,7 +125,7 @@ class DemoClient:
             {
                 "material_ids": [m["material_id"] for m in registered["materials"]],
                 "dataset": "mvtec",
-                "title": "原厂PDF → 真实LLM · 双闭环玻璃缺损知识",
+                "title": "几何演示规则 → 真实 LLM · 玻璃瓶局部异常",
                 "capability_id": "visual-region-v2",
                 "enable_when_ready": False,
             },
@@ -229,21 +245,32 @@ def main():
     client = DemoClient(args.base_url, args.output_dir, resume=args.resume)
     library = client.request("GET", "/api/demo-library")
     write(args.output_dir / "library.json", library)
+    selected = set(args.sample or [])
+    known = {sample["sample_id"] for sample in library["samples"]}
+    if selected - known:
+        p.error("未在当前清单找到样本：" + ", ".join(sorted(selected - known)))
+    demos = [
+        {
+            **demo,
+            "samples": [
+                sample
+                for sample in demo["samples"]
+                if args.all
+                or (sample["sample_id"] in selected if selected else sample["recommended"])
+            ],
+        }
+        for demo in library["demos"]
+    ]
+    demos = [demo for demo in demos if demo["samples"]]
     if args.graph_id is None and not args.build_only:
-        client.import_graphs(library["demos"])
+        client.import_graphs([d for d in demos if not (d["id"] == "bottle" and args.build_bottle)])
     if args.build_bottle:
         client.build_bottle()
     if args.build_only:
         print(json.dumps(client.state, ensure_ascii=False), flush=True)
-        return
-    selected = set(
-        args.sample
-        or ([] if args.all else ["bottle-rim-break", "tep-sequence-04", "wafer-nearfull"])
-    )
-    for demo in library["demos"]:
+        return int(bool(client.state["failures"]))
+    for demo in demos:
         for sample in demo["samples"]:
-            if not args.all and sample["sample_id"] not in selected:
-                continue
             graph_id = args.graph_id or client.state["graphs"].get(
                 "bottle-source-built"
                 if demo["id"] == "bottle" and args.build_bottle
@@ -274,7 +301,8 @@ def main():
         ),
         flush=True,
     )
+    return int(bool(client.state["failures"]))
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

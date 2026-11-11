@@ -1,13 +1,145 @@
 """Demo clients preserve authoring budgets and truthful insufficient outcomes."""
 
+import hashlib
+import io
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from kgtracevis.source_kg_compiler import llm, material_parser, unified
 from scripts import prepare_two_loop_demo as prepare
+from scripts import prepare_two_loop_demo_api as api_demo
 from scripts.prepare_two_loop_demo_api import DemoClient
+
+
+def test_shipped_mvtec_catalog_is_independent_of_runtime_archives(tmp_path, monkeypatch):
+    old = (
+        tmp_path
+        / "runs/two_loop_demo/api-e2e-002/bottle-chipped-raw-unified_abduction.analysis.json"
+    )
+    old.parent.mkdir(parents=True)
+    old.write_text('{"cases": [{"evidence_frames": [{"must_not_be_reused": true}]}]}')
+    monkeypatch.setattr(prepare, "RUNTIME", tmp_path / "runs/two_loop_demo")
+    manifest_path = prepare.SMALL / "manifest.json"
+    manifest_bytes = manifest_path.read_bytes()
+    catalog = prepare.prepare(dataset="mvtec")
+    (demo,) = catalog["demos"]
+    (sample,) = demo["samples"]
+    assert demo["id"] == "bottle"
+    assert sample["sample_id"] == "bottle-rim-break" and sample["recommended"]
+    assert sample["raw_options"] == {
+        "object_name": "bottle",
+        "model_preset": "patchcore",
+        "semantic_mode": "disabled",
+    }
+    assert "normal_reference" not in sample
+    assert all("asset_id" not in model and "path" not in model for model in demo["models"])
+    for asset in demo["materials"] + [
+        demo["working_graph"],
+        sample["raw_input"],
+        sample["evidence"],
+    ]:
+        assert asset["path"].startswith("data/demo/two_loop/mvtec/")
+        assert (prepare.ROOT / asset["path"]).is_file()
+    # The distributed export is the native envelope, not a copied bare frame from an old run.
+    assert "frames" in json.loads((prepare.ROOT / sample["evidence"]["path"]).read_text())
+    report = prepare.check(catalog)
+    assert report["missing_assets"] == []
+    assert report["validated"][0]["frames"] == 1
+    assert manifest_path.read_bytes() == manifest_bytes
+
+
+@pytest.mark.parametrize("payload,valid", [(b"exact-checkpoint", True), (b"partial", False)])
+def test_bottle_checkpoint_publish_is_atomic(tmp_path, monkeypatch, payload, valid):
+    monkeypatch.setattr(prepare, "ROOT", tmp_path)
+    monkeypatch.setattr(prepare.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(payload))
+    expected = b"exact-checkpoint"
+    model = {
+        "local_path": "runs/two_loop_demo/models/bottle.ckpt",
+        "source_url": "https://unused.invalid/fixed/model.ckpt",
+        "size_bytes": len(expected),
+        "sha256": hashlib.sha256(expected).hexdigest(),
+    }
+    if valid:
+        prepare.prepare_bottle_checkpoint({"models": [model]})
+        assert (tmp_path / model["local_path"]).read_bytes() == expected
+        registry = json.loads((tmp_path / prepare.MVTEC_MODEL_MANIFEST).read_text())
+        assert registry["objects"]["bottle"]["patchcore"] == {"checkpoint": model["local_path"]}
+    else:
+        with pytest.raises(ValueError, match="不符合固定发布版本"):
+            prepare.prepare_bottle_checkpoint({"models": [model]})
+        assert not (tmp_path / prepare.MVTEC_MODEL_MANIFEST).exists()
+        assert not (tmp_path / model["local_path"]).exists()
+    assert not list((tmp_path / Path(model["local_path"]).parent).glob("*.part"))
+
+
+def test_api_demo_graph_reuses_exact_enabled_pair_or_only_installs_missing(tmp_path, monkeypatch):
+    client = DemoClient("http://unused.invalid", tmp_path / "client")
+    calls = []
+
+    def request(method, path, **kwargs):
+        calls.append((method, path))
+        if method == "GET":
+            return {"title": "unchanged paired package"}
+        if path.endswith("/import"):
+            assert kwargs["json"] == {"title": "unchanged paired package"}
+            return {"graph_id": "new-graph"}
+        assert kwargs["json"] == {"enabled": True}
+
+    monkeypatch.setattr(client, "request", request)
+    try:
+        client.import_graphs(
+            [
+                {"id": "existing", "graph_ref": {"state": "ready", "graph_id": "exact-id"}},
+                {
+                    "id": "bottle",
+                    "working_graph": {"download_url": "/api/demo-library/assets/pair"},
+                    "graph_ref": {"state": "missing", "graph_id": None},
+                },
+            ]
+        )
+        assert client.state["graphs"] == {"existing": "exact-id", "bottle": "new-graph"}
+        assert calls == [
+            ("GET", "/api/demo-library/assets/pair"),
+            ("POST", "/api/kg/working-graphs/import"),
+            ("POST", "/api/kg/working-graphs/new-graph/enable"),
+        ]
+    finally:
+        client.client.close()
+
+
+def test_api_demo_retries_status_read_without_resubmitting_task(tmp_path, monkeypatch):
+    client = DemoClient("http://unused.invalid", tmp_path / "client")
+    responses = iter(
+        [
+            {"task_id": "run-once"},
+            httpx.ReadError("connection reset"),
+            {"task_id": "run-once", "stage": "completed", "status": "completed"},
+        ]
+    )
+    calls = []
+
+    def request(method, path, **kwargs):
+        calls.append((method, path))
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.setattr(client, "request", request)
+    monkeypatch.setattr(api_demo.time, "sleep", lambda _: None)
+    try:
+        assert client.task("raw", "/api/tasks/inference/demo", {})["status"] == "completed"
+        assert calls == [
+            ("POST", "/api/tasks/inference/demo"),
+            ("GET", "/api/tasks/run-once"),
+            ("GET", "/api/tasks/run-once"),
+        ]
+    finally:
+        client.client.close()
 
 
 @pytest.mark.parametrize(
@@ -137,7 +269,7 @@ def test_api_build_uses_server_budget_and_does_not_fallback_after_failure(tmp_pa
         assert captured[0][2] == {
             "material_ids": ["test-public-source"],
             "dataset": "mvtec",
-            "title": "原厂PDF → 真实LLM · 双闭环玻璃缺损知识",
+            "title": "几何演示规则 → 真实 LLM · 玻璃瓶局部异常",
             "capability_id": "visual-region-v2",
             "enable_when_ready": False,
         }

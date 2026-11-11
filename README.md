@@ -9,23 +9,17 @@ RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。�
 
 页面顶部可切换 **Demo / Backend**；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。当前操作见下文，前一阶段验收见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)。
 
-## 演示数据与后端复演
+## 演示：用 MVTec 原图 006 贯通三页
 
-完整步骤、实际正负结果、许可与恢复命令见 [双闭环演示手册](backend/docs/two-loop-demo.md)。受管清单是 `backend/data/demo/two_loop/manifest.json`，由后端 `/api/demo-library` 提供。
+[公开演示包](backend/data/demo/two_loop/mvtec/README.md)随仓库提供短 Markdown、MVTec AD `bottle` 原图 006、已编辑 v2 图包和该次原图运行导出的原生 Evidence。此例只用掩膜几何，不调用外部视觉模型。两种候选解释同一几何现象；没有工位证据，不能确定实际工艺原因。
 
-推荐场景为玻璃边缘缺损、TEP 冷却回路和晶圆近全片失效。原始入口真实运行模型；中间入口重新执行推理。玻璃原图拍摄部位未确认，不能称为已确认瓶口；Emhart Finish 指南是演示迁移的知识来源，制造原因仍是待区分的候选。
+完成下文的安装和新库初始化后，运行 `npm run dev:all`，在 `http://localhost:5174` 选 **Backend**：
 
-Demo 模式读取原有成品快照。要真实复演，在 Backend 的“新建分析”中选择受管公开样本和原始／中间入口，再点击“开始分析”。配套图只填入隐式默认；明确携带或手选的图保留，切换需用户确认。缺配套图时说明状态，不按最新同场景图猜测，也不自动导图。图像原始样例如使用外部ROI模型会明示；手动图像上传默认关闭外部ROI语义。
+1. **根因与图谱** → **导入 / 导出 → 导入工作图包**，打开 `backend/data/demo/two_loop/mvtec/working-graph.v2.json`，然后启用。
+2. 点 **用这张图分析**，选 **中间 Evidence**，上传同目录 `evidence.json`，使用 **统一条件溯因**。此路线无需服务密钥或模型权重；后端从真实观测重新推理。
+3. 要看完整来源和真实原图模型，先在 **素材与构图** 上传 `material.md`，提取并制作新图；在图谱页修改、启用后，用同一张图跑 `sample_006.png`，最后在 **运行与证据** 下载并重传本次 Evidence。文本制作需要已配置的付费文本服务；原图测量只需要本地固定的 Bottle PatchCore。
 
-```bash
-cd backend
-# 优先复用本机已有资产，不连接数据库或调用模型
-uv run --no-sync python scripts/prepare_two_loop_demo.py
-# 缺失公开原始文件或权重时才加 --download
-uv run --no-sync python scripts/prepare_two_loop_demo.py --download
-```
-
-小型知识包、真实 Frame 和来源说明随仓库提供；原始数据、完整受版权约束资料和大权重放在被 Git 忽略的 `backend/runs/two_loop_demo/`，已有模型优先复用原路径。精确大小和分发条件以 manifest 为准。
+[现场手册](backend/docs/two-loop-demo.md)给出三个入口的精确步骤、固定权重准备、API 复跑及许可。`backend/data/demo/two_loop/manifest.json` 是 `/api/demo-library` 的唯一受管清单；MVTec 只列 `bottle-rim-break`，TEP 和晶圆仍可独立复演。Demo 和成品 Replay 继续显示已有快照，不在浏览器推理。
 
 ## 首次安装
 

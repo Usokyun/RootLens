@@ -1,0 +1,188 @@
+{
+  "schema_version": "rootlens-public-mvtec-demo-verification.v1",
+  "verified_date": "2026-11-11",
+  "verification_scope": "One live public sample and one authored work graph; not a benchmark of cause accuracy.",
+  "assets": {
+    "material.md": {
+      "size_bytes": 1800
+    },
+    "sample_006.png": {
+      "size_bytes": 523230
+    },
+    "working-graph.v2.json": {
+      "size_bytes": 12149
+    },
+    "evidence.json": {
+      "size_bytes": 7842
+    }
+  },
+  "image_provenance": {
+    "dataset": "MVTec AD",
+    "upstream_path": "bottle/test/broken_large/006.png",
+    "official_dataset_url": "https://www.mvtec.com/research-teaching/datasets/mvtec-ad",
+    "license": "CC-BY-NC-SA-4.0",
+    "mirror_revision": "4e0e64896390500eb67720e1ceef16e160bb2a8d",
+    "historic_mydrive_category_download_status": 404,
+    "byte_identical_to_prior_ds_mvtec_sample": true,
+    "change": "renamed only"
+  },
+  "authoring": {
+    "material_id": "demo_mvtec_bottle_006_public_source_20261111",
+    "parse_task_id": "task_6a0191c386854e55b8230bf4cc3b84dc",
+    "source_unit_ids": [
+      "su_ad521dbfdd4da79e"
+    ],
+    "build_task_id": "task_5773d5820a55463eb4f9be35d5766c35",
+    "build_status": "completed",
+    "build_stages": [
+      "parsing",
+      "parsing",
+      "llm",
+      "validation",
+      "compilation",
+      "graph_ready",
+      "completed"
+    ],
+    "llm_calls": 1,
+    "llm_tokens": 5899,
+    "repairs": 0,
+    "graph_id": "graph_bc3893b9ae3d4a65bc3c75835ccc57a4",
+    "nodes": 18,
+    "edges": 21,
+    "source_assertions": 5,
+    "edit": {
+      "entity_id": "entity:industrial.object:bottle",
+      "old_label": "bottle",
+      "new_label": "玻璃瓶 · Bottle",
+      "aliases": [
+        "玻璃容器",
+        "MVTec Bottle"
+      ],
+      "canonical_change_only_selected_row": true,
+      "studio_edge_ids_unchanged": true
+    },
+    "enabled_by_confirmation": true,
+    "exported_v2_exact_bytes": true
+  },
+  "inference": {
+    "graph_id": "graph_bc3893b9ae3d4a65bc3c75835ccc57a4",
+    "reasoner_id": "unified_abduction",
+    "scoring_method": "unified_constraint_abduction_v0",
+    "top_k": 8,
+    "raw_task_id": "task_7a7b338eddd74dab82fd0deb61331723",
+    "raw_run_id": "e3092c7e-f2e4-43d8-9a72-40a402afb19e",
+    "raw_backbone": {
+      "object_name": "bottle",
+      "model_preset": "patchcore",
+      "semantic_mode": "disabled",
+      "visual_evidence": [
+        "image",
+        "mask",
+        "heatmap"
+      ]
+    },
+    "frame_id": "mvtec_bottle_test_unknown_sample_006/query/1",
+    "native_evidence_exact_bytes": true,
+    "replay_task_id": "task_739990f204c14baf917b0b8f0f061abc",
+    "replay_run_id": "140d1748-ef44-48fb-ac31-3b628e4705d8",
+    "replay_backbone_rerun": false,
+    "graph_snapshot_and_complete_frame_results_equal": true,
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+        "candidate_name": "本工位取放接触扰动",
+        "rank": 1,
+        "score": -0.25,
+        "objective_cost": 0.25,
+        "paths": 3
+      },
+      {
+        "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+        "candidate_name": "进入工位前已有局部表面损伤",
+        "rank": 1,
+        "score": -0.25,
+        "objective_cost": 0.25,
+        "paths": 3
+      }
+    ],
+    "explanation_paths": 6,
+    "distinct_saved_source_edges": 11,
+    "roi": {
+      "scope_id": "scope:1",
+      "subject_id": "roi:1",
+      "image_shape_hw": [
+        900,
+        900
+      ],
+      "bbox_xyxy": [
+        98.4375,
+        73.828125,
+        734.765625,
+        643.359375
+      ]
+    },
+    "geometric_observations": [
+      {
+        "obs_id": "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.area_ratio",
+        "feature_id": "geometry.area_ratio",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 0.2284393310546875
+        }
+      },
+      {
+        "obs_id": "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.aspect_ratio",
+        "feature_id": "geometry.aspect_ratio",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 1.117283950617284
+        }
+      }
+    ],
+    "geometric_facts": [
+      {
+        "fact_id": "fact:signature:large_nonslender_local_anomaly:condition:0",
+        "predicate_id": "signature:large_nonslender_local_anomaly:condition:0",
+        "truth": true,
+        "predicate_check": {
+          "op": "gte",
+          "operand": {
+            "kind": "number",
+            "unit": "1",
+            "number": 0.1
+          },
+          "feature_id": "geometry.area_ratio"
+        },
+        "source_obs_ids": [
+          "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.area_ratio"
+        ]
+      },
+      {
+        "fact_id": "fact:signature:large_nonslender_local_anomaly:condition:1",
+        "predicate_id": "signature:large_nonslender_local_anomaly:condition:1",
+        "truth": true,
+        "predicate_check": {
+          "op": "lte",
+          "operand": {
+            "kind": "number",
+            "unit": "1",
+            "number": 2
+          },
+          "feature_id": "geometry.aspect_ratio"
+        },
+        "source_obs_ids": [
+          "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.aspect_ratio"
+        ]
+      }
+    ],
+    "example_exact_path_link": {
+      "fact_id": "fact:signature:large_nonslender_local_anomaly:condition:0",
+      "obs_id": "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.area_ratio",
+      "source_edge_id": "signature:large_nonslender_local_anomaly:definition::gate::1::input::signature:large_nonslender_local_anomaly:condition:0",
+      "same_original_roi": true
+    }
+  }
+}

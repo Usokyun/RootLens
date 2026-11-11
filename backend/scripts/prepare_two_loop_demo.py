@@ -1,18 +1,20 @@
-"""Prepare the three public-data demos without touching databases or model outputs.
+"""Check the shipped demo catalog and prepare optional local assets.
 
-Run from backend/: uv run --offline --no-sync python scripts/prepare_two_loop_demo.py
-Existing source assets are reused; --download retrieves missing public files only.
+From backend/: uv run --no-sync python scripts/prepare_two_loop_demo.py --dataset mvtec
+Add --download to fetch the pinned Bottle PatchCore checkpoint for raw input.
+This command never regenerates the catalog, graph packages, or exported Evidence.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
-import mimetypes
 import shutil
 import urllib.request
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 ROOT = Path(__file__).resolve().parents[1]
 SMALL = ROOT / "data/demo/two_loop"
@@ -20,14 +22,17 @@ RUNTIME = ROOT / "runs/two_loop_demo"
 EARLIER = ROOT / "runs/unified_reasoning"
 PUBLIC = ROOT / "runs/refactor_m2_m6/public"
 
-EMHART = (
-    "https://www.emhartglass.com/sites/default/files/publications/2024-07/"
-    "BEG_BR0060RevA-Defect_Guide-WEB.pdf"
-)
 TEP_BASE = "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/"
-DS_BASE = "https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/resolve/main/"
-HF_BOTTLE = "https://huggingface.co/datasets/foersben/mvtec-ad/resolve/main/"
 PREPARATION_ERRORS: list[dict] = []
+MVTEC_MODEL_MANIFEST = "runs/two_loop_demo/mvtec-demo-models.json"
+WAFER_INPUT_URL = (
+    "https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/main/test.pkl"
+)
+WAFER_SAMPLE_IDS = {
+    "wafer-nearfull": "248536",
+    "wafer-normal": "5",
+    "wafer-pattern-disagreement": "31707",
+}
 
 
 def write_json(path: Path, value: object) -> None:
@@ -56,58 +61,6 @@ def stage(source: Path, destination: Path, *, url: str | None, download: bool) -
             )
         finally:
             temporary.unlink(missing_ok=True)
-    return destination
-
-
-def asset(
-    asset_id: str,
-    path: Path,
-    title: str,
-    *,
-    url: str | None = None,
-    redistribution: str = "derived_public_measurements",
-    media_type: str | None = None,
-) -> dict:
-    return {
-        "asset_id": asset_id,
-        "title": title,
-        "path": path.relative_to(ROOT).as_posix(),
-        "media_type": media_type or mimetypes.guess_type(path.name)[0] or "text/plain",
-        "size_bytes": path.stat().st_size if path.is_file() else None,
-        "available": path.is_file(),
-        "source_url": url,
-        "redistribution": redistribution,
-        "storage_scope": "repository" if path.is_relative_to(SMALL) else "local_runtime",
-    }
-
-
-def frozen(index: int, name: str) -> Path:
-    source = EARLIER / f"u5_frozen/{index:03d}-evidence.json"
-    destination = SMALL / f"evidence/{name}.json"
-    # Keep the prior generation in history; defaults come from this round's raw runs.
-    if source.exists():
-        write_json(SMALL / f"history/u5-{name}.json", json.loads(source.read_text()))
-    current = {
-        0: ("bottle-insufficient", 0),
-        1: ("bottle-normal", 0),
-        2: ("bottle-chipped", 0),
-        3: ("bottle-chipped-second", 0),
-        4: ("bottle-semantic-miss", 0),
-        5: ("tep-normal-window", 0),
-        6: ("tep-sequence-04", 1),
-        9: ("tep-sequence-01", 1),
-        12: ("tep-sequence-05", 1),
-        17: ("wafer-nearfull", 0),
-        23: ("wafer-normal", 0),
-        20: ("wafer-pattern-disagreement", 0),
-    }
-    if index in current:
-        sample_id, case_index = current[index]
-        batch = "api-final" if sample_id.startswith("wafer-") else "api-e2e-002"
-        run = RUNTIME / f"{batch}/{sample_id}-raw-unified_abduction.analysis.json"
-        if run.is_file():
-            payload = json.loads(run.read_text())
-            write_json(destination, payload["cases"][case_index]["evidence_frames"][0])
     return destination
 
 
@@ -195,613 +148,221 @@ def hydrate_process_support(frame: dict, sample: dict) -> None:
     )
 
 
-def prepare(download: bool = False) -> dict:
-    PREPARATION_ERRORS.clear()
-    SMALL.mkdir(parents=True, exist_ok=True)
-    RUNTIME.mkdir(parents=True, exist_ok=True)
-    bottle_model_url = "https://huggingface.co/micguida1/mvtec-anomaly-checkpoints/resolve/main/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt"
-    wafer_model_url = "https://huggingface.co/radai-agent/radai-wm811k-defect-detection/resolve/main/best_radai_resnet.pt"
-    bottle_model = PUBLIC / "bottle_patchcore.ckpt"
-    if not bottle_model.is_file():
-        bottle_model = stage(
-            bottle_model,
-            RUNTIME / "models/bottle_patchcore.ckpt",
-            url=bottle_model_url,
+def read_manifest(dataset: str | None = None) -> dict:
+    manifest = json.loads((SMALL / "manifest.json").read_text())
+    if dataset is not None:
+        manifest["demos"] = [demo for demo in manifest["demos"] if demo["dataset"] == dataset]
+    return manifest
+
+
+def frames_from_asset(asset: dict) -> list:
+    from kgtracevis.schema.unified_evidence import EvidenceFrame
+
+    payload = json.loads((ROOT / asset["path"]).read_text())
+    frames = payload.get("frames", [payload]) if isinstance(payload, dict) else payload
+    if not isinstance(frames, list) or not frames:
+        raise ValueError(f"没有可复算的 EvidenceFrame：{asset['path']}")
+    return [EvidenceFrame.model_validate(frame) for frame in frames]
+
+
+def verified_checkpoint(path: Path, model: dict) -> None:
+    # A third-party binary is executable model input: verify the published LFS digest,
+    # not only the filename, before making it selectable by the backend.
+    if path.stat().st_size == model["size_bytes"]:
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+        if digest.hexdigest() == model["sha256"]:
+            return
+    raise ValueError(f"PatchCore 权重不符合固定发布版本：{path}；未覆盖现有文件。")
+
+
+def prepare_bottle_checkpoint(demo: dict) -> None:
+    (model,) = demo["models"]
+    checkpoint = ROOT / model["local_path"]
+    registry = ROOT / MVTEC_MODEL_MANIFEST
+    config = {
+        "schema_version": "rootlens-mvtec-models.v1",
+        "objects": {"bottle": {"patchcore": {"checkpoint": model["local_path"]}}},
+    }
+    if registry.exists() and json.loads(registry.read_text()) != config:
+        raise ValueError(f"演示模型登记已存在且内容不同：{registry}；未覆盖现有登记。")
+    if checkpoint.is_file():
+        verified_checkpoint(checkpoint, model)
+    else:
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        # Publish atomically only after integrity validation; partial downloads are never usable.
+        with NamedTemporaryFile(dir=checkpoint.parent, suffix=".part", delete=False) as stream:
+            temporary = Path(stream.name)
+        try:
+            with urllib.request.urlopen(model["source_url"], timeout=120) as response:
+                with temporary.open("wb") as out:
+                    shutil.copyfileobj(response, out)
+            verified_checkpoint(temporary, model)
+            temporary.replace(checkpoint)
+        finally:
+            temporary.unlink(missing_ok=True)
+    if not registry.exists():
+        write_json(registry, config)
+
+
+def prepare_tep(demo: dict, *, download: bool) -> None:
+    for material in demo["materials"]:
+        original = material["source_url"].rsplit("/", 1)[-1]
+        stage(
+            EARLIER / "public" / original,
+            ROOT / material["path"],
+            url=material["source_url"],
             download=download,
         )
-    wafer_model = PUBLIC / "wm811k_resnet.pt"
-    if not wafer_model.is_file():
-        wafer_model = stage(
-            wafer_model, RUNTIME / "models/wm811k_resnet.pt", url=wafer_model_url, download=download
-        )
-    graph_assets = {}
-    for name in ("bottle", "tep", "wafer"):
-        source = ROOT / f"data/kg/unified/{name}-working-graph.v2.json"
-        destination = SMALL / f"knowledge/{name}-working-graph.v2.json"
-        if not destination.exists():
-            package = json.loads(source.read_text())
-            package["title"] = {
-                "bottle": "玻璃边缘缺损 · 厂家资料候选图",
-                "tep": "TEP 过程异常 · 程序来源候选图",
-                "wafer": "晶圆失效空间图案 · 联合特征图",
-            }[name]
-            write_json(destination, package)
-        graph_assets[name] = asset(f"{name}-working-graph", destination, "可编辑演示工作图")
+    for sample in demo["samples"]:
+        for asset in (sample["raw_input"], sample["normal_reference"]):
+            original = asset["source_url"].rsplit("/", 1)[-1]
+            source = PUBLIC / f"tep_{original}"
+            if not source.is_file():
+                source = EARLIER / "public" / f"tep_{original}"
+            stage(source, ROOT / asset["path"], url=asset["source_url"], download=download)
+        for frame in frames_from_asset(sample["evidence"]):
+            hydrate_process_support(frame.model_dump(mode="json"), sample)
 
-    pdf = stage(
-        EARLIER / "public/emhart-defect-guide.pdf",
-        RUNTIME / "materials/emhart-defect-guide.pdf",
-        url=EMHART,
-        download=download,
-    )
-    bottle_images = {}
-    for name, original, url in (
-        (
-            "sample_001",
-            EARLIER / "public/bottle-additional/001.png",
-            DS_BASE + "DS-MVTec/bottle/image/broken_large/001.png",
-        ),
-        (
-            "sample_002",
-            EARLIER / "public/bottle-additional/002.png",
-            DS_BASE + "DS-MVTec/bottle/image/broken_large/002.png",
-        ),
-        (
-            "sample_003",
-            EARLIER / "public/bottle-additional/003.png",
-            DS_BASE + "DS-MVTec/bottle/image/broken_large/003.png",
-        ),
-        (
-            "sample_006",
-            RUNTIME / "candidate-images/broken_large-006.png",
-            DS_BASE + "DS-MVTec/bottle/image/broken_large/006.png",
-        ),
-        ("normal_001", PUBLIC / "bottle/input_1.png", HF_BOTTLE + "bottle/test/good/000.png"),
-        (
-            "sample_000",
-            PUBLIC / "bottle/input_0.png",
-            HF_BOTTLE + "bottle/test/broken_large/000.png",
-        ),
-    ):
-        destination = stage(
-            original, RUNTIME / f"raw/bottle/{name}.png", url=url, download=download
-        )
-        bottle_images[name] = asset(
-            f"bottle-{name}-raw",
+
+def prepare_wafer(demo: dict, *, download: bool) -> None:
+    for model in demo["models"]:
+        destination = ROOT / model["path"]
+        stage(
+            PUBLIC / destination.name,
             destination,
-            "公开原始玻璃边缘图像",
-            url=url,
-            redistribution="MVTec_AD_CC_BY_NC_SA_4.0_local_only",
-        )
-    bottle_samples = []
-    for sample_id, title, image, index, expected in (
-        (
-            "bottle-chipped",
-            "局部缺损A · 本轮语义漏检",
-            "sample_001",
-            2,
-            "本轮ROI把原生异常判正常，当前测量与中间Evidence均无匹配，保留真实感知失败。",
-        ),
-        (
-            "bottle-chipped-second",
-            "局部缺损B · 本轮语义漏检",
-            "sample_002",
-            3,
-            "本轮ROI判正常；不替换模型观测，不强配原因。",
-        ),
-        ("bottle-normal", "正常玻璃图 · 阴性对照", "normal_001", 1, "异常门控不成立，无支持候选。"),
-        (
-            "bottle-semantic-miss",
-            "语义漏检 · 真实失败",
-            "sample_003",
-            4,
-            "原生异常图曾被ROI模型判正常，冻结结果无匹配；保留该失败。",
-        ),
-    ):
-        frame = frozen(index, sample_id)
-        bottle_samples.append(
-            {
-                "sample_id": sample_id,
-                "title": title,
-                "dataset": "mvtec",
-                "input_mode": "image",
-                "expectation": expected,
-                "raw_input": bottle_images[image],
-                "evidence": asset(
-                    f"{sample_id}-evidence", frame, "实际模型产出的冻结EvidenceFrame"
-                ),
-                "raw_options": {
-                    "object_name": "bottle",
-                    "model_preset": "patchcore",
-                    "semantic_mode": "vlm",
-                },
-                "reasoner_ids": ["unified_abduction"],
-            }
-        )
-    current_frame = SMALL / "evidence/bottle-rim-break.json"
-    if current_frame.is_file():
-        bottle_samples.insert(
-            0,
-            {
-                "sample_id": "bottle-rim-break",
-                "title": "玻璃边缘缺损 · 本轮实测",
-                "dataset": "mvtec",
-                "input_mode": "image",
-                "expectation": (
-                    "本轮真实PatchCore/ROI语义支持可见缺损；"
-                    "多个制造原因仍并列，不把外观当唯一根因。"
-                ),
-                "raw_input": bottle_images["sample_006"],
-                "evidence": asset(
-                    "bottle-rim-break-evidence",
-                    current_frame,
-                    "本轮真实原图运行导出的EvidenceFrame",
-                ),
-                "raw_options": {
-                    "object_name": "bottle",
-                    "model_preset": "patchcore",
-                    "semantic_mode": "vlm",
-                },
-                "reasoner_ids": ["unified_abduction"],
-                "origin_run_id": "1d116c71-d461-4d9a-852f-eb7f243534c0",
-                "suitability_checks": {
-                    "raw_run_ids": [
-                        "bde29798-db9a-4eb6-aa6a-439125ac88d1",
-                        "1d116c71-d461-4d9a-852f-eb7f243534c0",
-                    ],
-                    "result": "同一图两次真实模型均给出玻璃开裂/缺失外观；不是留出集或准确率估计。",
-                },
-            },
-        )
-    bottle_samples.append(
-        {
-            "sample_id": "bottle-geometry-only",
-            "title": "关闭ROI语义 · 证据不足对照",
-            "dataset": "mvtec",
-            "input_mode": "image",
-            "expectation": (
-                "只运行真实PatchCore定位和几何，不提供外观语义；缺失不是正常，应显示证据不足。"
-            ),
-            "raw_input": bottle_images["sample_000"],
-            "evidence": asset(
-                "bottle-geometry-only-evidence",
-                SMALL / "evidence/bottle-geometry-only.json",
-                "关闭语义后由真实adapter生成的EvidenceFrame",
-            ),
-            "raw_options": {
-                "object_name": "bottle",
-                "model_preset": "patchcore",
-                "semantic_mode": "disabled",
-            },
-            "reasoner_ids": ["unified_abduction"],
-        }
-    )
-
-    normal = stage(
-        PUBLIC / "tep_d00.dat",
-        RUNTIME / "raw/tep/normal_reference.dat",
-        url=TEP_BASE + "d00.dat",
-        download=download,
-    )
-    normal_asset = asset(
-        "tep-normal-reference",
-        normal,
-        "正常参考 · 500行/52通道",
-        url=TEP_BASE + "d00.dat",
-        redistribution="Illinois_NCSA_style_license",
-    )
-    tep_samples = []
-    for serial, original, index, title in (
-        ("04", PUBLIC / "tep_d04_te.dat", 6, "过程序列A · 冷却扰动对照"),
-        ("01", EARLIER / "public/tep_d01_te.dat", 9, "过程序列B · 进料扰动对照"),
-        ("05", EARLIER / "public/tep_d05_te.dat", 12, "过程序列C · 另一冷却边界对照"),
-    ):
-        raw = stage(
-            original,
-            RUNTIME / f"raw/tep/sequence_{serial}.dat",
-            url=TEP_BASE + f"d{serial}_te.dat",
+            url=model["source_url"],
             download=download,
         )
-        sample_id = f"tep-sequence-{serial}"
-        tep_samples.append(
-            {
-                "sample_id": sample_id,
-                "title": title,
-                "dataset": "tep",
-                "input_mode": "process",
-                "expectation": (
-                    "原始52通道经正常scaler/PCA；比较正常与异常窗口、两引擎及图中可达通道。"
-                    "原图统一内核首位曾错误。"
-                ),
-                "raw_input": asset(
-                    f"{sample_id}-raw",
-                    raw,
-                    "公开52通道过程序列",
-                    url=TEP_BASE + f"d{serial}_te.dat",
-                    redistribution="Illinois_NCSA_style_license",
-                ),
-                "normal_reference": normal_asset,
-                "evidence": asset(
-                    f"{sample_id}-evidence",
-                    frozen(index, sample_id),
-                    "实际窗口161–260的完整EvidenceFrame",
-                ),
-                "raw_options": {
-                    "windows": [[1, 100], [161, 260], [261, 360]],
-                    "sampling_seconds": 180,
-                },
-                "reasoner_ids": ["unified_abduction", "tep_rootkgd"],
-            }
-        )
-    tep_samples.append(
-        {
-            "sample_id": "tep-normal-window",
-            "title": "过程正常窗口 · 阴性对照",
-            "dataset": "tep",
-            "input_mode": "process",
-            "expectation": "同一序列1–100窗口正常门控不成立。",
-            "raw_input": tep_samples[0]["raw_input"],
-            "normal_reference": normal_asset,
-            "evidence": asset(
-                "tep-normal-evidence", frozen(5, "tep-normal-window"), "实际正常窗口EvidenceFrame"
-            ),
-            "raw_options": {"windows": [[1, 100]], "sampling_seconds": 180},
-            "reasoner_ids": ["unified_abduction", "tep_rootkgd"],
-        }
-    )
-    tep_materials = []
-    for file, title in (
-        ("teprob.f", "TEP原始过程方程与通道定义"),
-        ("temain_mod.f", "TEP闭环控制示例"),
-    ):
-        path = stage(
-            EARLIER / f"public/{file}",
-            RUNTIME / f"materials/{file}.txt",
-            url=TEP_BASE + file,
-            download=download,
-        )
-        tep_materials.append(
-            asset(
-                f"tep-material-{file}",
-                path,
-                title,
-                url=TEP_BASE + file,
-                redistribution="Illinois_NCSA_style_license",
-            )
-        )
-
-    wafer_samples = []
-    source_wafer = PUBLIC / "wafer_samples.jsonl"
-    rows = (
-        [json.loads(line) for line in source_wafer.read_text().splitlines()]
-        if source_wafer.exists()
-        else []
-    )
-    if not rows and download:
-        from scripts.prepare_public_wafer_demo import DataOnlyUnpickler
-
-        table = stage(
-            PUBLIC / "wm811k_test.pkl",
-            RUNTIME / "sources/wm811k_test.pkl",
-            url="https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/main/test.pkl",
-            download=True,
-        )
-        if table.is_file():
-            with table.open("rb") as handle:
-                dataframe = DataOnlyUnpickler(handle).load()
-            # Original source row IDs identify the examples; no label is passed on.
-            for index, row in dataframe.iterrows():
-                if str(index) in {"248536", "5", "31707"}:
-                    rows.append({"wafer_id": str(index), "waferMap": row["waferMap"].tolist()})
-    for wafer_id, index, sample_id, title, expectation in (
-        (
-            "248536",
-            17,
-            "wafer-nearfull",
-            "近全片失效 · 空间联合条件",
-            "独立ResNet分类与实际高失效率共同支持近全片图案；不把图案当成制造原因。",
-        ),
-        (
-            "5",
-            23,
-            "wafer-normal",
-            "正常晶圆 · 阴性对照",
-            "原生None仍可能有少量失败die；八类分类器没有正常类，须结合实际空间统计，不把分类输出直接当诊断。",
-        ),
-        (
-            "31707",
-            20,
-            "wafer-pattern-disagreement",
-            "图案分歧 · 真实失败",
-            "原生Donut和模型Edge-Ring分歧；原生标签不进入分类器。",
-        ),
-    ):
-        row = next((r for r in rows if str(r["wafer_id"]) == wafer_id), None)
-        path = RUNTIME / f"raw/wafer/{sample_id}-{wafer_id}.jsonl"
-        if row and not path.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-            # Only cells and identity enter the model. Native labels remain in the original source.
-            clean = {
-                "wafer_id": wafer_id,
-                "case_id": f"wm811k_{wafer_id}",
-                "waferMap": row["waferMap"],
-            }
-            path.write_text(json.dumps(clean) + "\n")
-        wafer_samples.append(
-            {
-                "sample_id": sample_id,
-                "title": title,
-                "dataset": "wafer",
-                "input_mode": "wafer",
-                "expectation": expectation,
-                "raw_input": asset(
-                    f"{sample_id}-raw",
-                    path,
-                    "无原生标签的公开晶圆网格",
-                    url="https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-                    redistribution="upstream_dataset_license_unspecified_local_only",
-                    media_type="application/x-ndjson",
-                ),
-                "evidence": asset(
-                    f"{sample_id}-evidence",
-                    frozen(index, sample_id),
-                    "实际独立分类与空间测量EvidenceFrame",
-                ),
-                "raw_options": {},
-                "reasoner_ids": ["unified_abduction"],
-            }
-        )
-    wafer_card = stage(
+    excerpt, model_card = demo["materials"]
+    stage(
         PUBLIC / "wafer_model_card.md",
-        RUNTIME / "materials/wafer-model-card.md",
-        url="https://huggingface.co/radai-agent/radai-wm811k-defect-detection/raw/main/README.md",
+        ROOT / model_card["path"],
+        url=model_card["source_url"] + "/raw/main/README.md",
         download=download,
     )
-    wafer_paper_excerpt = stage(
+    excerpt_path = stage(
         EARLIER / "public/wm811k-paper-p3-p4.txt",
-        RUNTIME / "materials/wm811k-paper-p3-p4.txt",
+        ROOT / excerpt["path"],
         url=None,
         download=False,
     )
-    if download and not wafer_paper_excerpt.is_file():
+    if download and not excerpt_path.is_file():
         from kgtracevis.source_kg_compiler.material_parser import parse_material
 
         paper = stage(
             EARLIER / "public/wm811k-original.pdf",
             RUNTIME / "materials/wm811k-original.pdf",
-            url="https://outlook.stpi.niar.org.tw/pdfview/tdop/1601",
+            url=excerpt["source_url"],
             download=True,
         )
         if paper.is_file():
             parsed = parse_material(paper, source_id="wm811k-original-paper", scenario="wafer")
             selected = [u.content_text for u in parsed.units if u.source_span.get("page") in (3, 4)]
             if selected:
-                wafer_paper_excerpt.write_text("\n\n".join(selected))
-    manifest = {
-        "schema_version": "rootlens-demo-manifest.v1",
-        "title": "RootLens · 资料到知识、样本到解释的双闭环",
-        "path_base": "backend",
-        "prepared_by": "scripts/prepare_two_loop_demo.py",
-        "demos": [
-            {
-                "id": "bottle",
-                "dataset": "mvtec",
-                "title": "玻璃边缘 · 原图到候选原因",
-                "purpose": "原厂家资料→LLM知识图→人工修改→PatchCore/ROI语义→可追溯候选",
-                "capability_id": "visual-region-v2",
-                "working_graph": graph_assets["bottle"],
-                "materials": [
-                    asset(
-                        "bottle-manufacturer-pdf",
-                        pdf,
-                        "Emhart原厂缺陷指南 · PDF",
-                        url=EMHART,
-                        redistribution="copyrighted_public_pdf_local_only",
-                    ),
-                ],
-                "material_options": {
-                    "pages": [13, 20],
-                    "note": "选取Broken/Chipped Finish的原始PDF页；不是手写诊断规则。",
-                },
-                "samples": bottle_samples,
-                "models": [
-                    asset(
-                        "bottle-patchcore",
-                        bottle_model,
-                        "Bottle PatchCore",
-                        url=bottle_model_url,
-                        redistribution="model_card_missing_local_only",
-                    )
-                ],
-                "sources": [
+                excerpt_path.write_text("\n\n".join(selected))
+
+    needs_raw = [s for s in demo["samples"] if not (ROOT / s["raw_input"]["path"]).is_file()]
+    source = PUBLIC / "wafer_samples.jsonl"
+    rows = {}
+    if needs_raw and source.is_file():
+        with source.open() as stream:
+            rows = {str(row["wafer_id"]): row["waferMap"] for row in map(json.loads, stream)}
+    wanted = {WAFER_SAMPLE_IDS[s["sample_id"]] for s in needs_raw}
+    if wanted - rows.keys() and download:
+        from scripts.prepare_public_wafer_demo import DataOnlyUnpickler
+
+        table = stage(
+            PUBLIC / "wm811k_test.pkl",
+            RUNTIME / "sources/wm811k_test.pkl",
+            url=WAFER_INPUT_URL,
+            download=True,
+        )
+        if table.is_file():
+            with table.open("rb") as handle:
+                dataframe = DataOnlyUnpickler(handle).load()
+            for index, row in dataframe.iterrows():
+                if str(index) in wanted:
+                    rows[str(index)] = row["waferMap"].tolist()
+    for sample in demo["samples"]:
+        sample_id = sample["sample_id"]
+        wafer_id = WAFER_SAMPLE_IDS[sample_id]
+        raw = ROOT / sample["raw_input"]["path"]
+        if not raw.is_file() and wafer_id in rows:
+            raw.parent.mkdir(parents=True, exist_ok=True)
+            # Original labels stay in the source table, never in model input.
+            raw.write_text(
+                json.dumps(
                     {
-                        "title": "MVTec AD许可",
-                        "url": "https://www.mvtec.com/research-teaching/datasets/mvtec-ad",
-                        "license": "CC BY-NC-SA 4.0；非商业。镜像标签不覆盖原始数据许可。",
+                        "wafer_id": wafer_id,
+                        "case_id": f"wm811k_{wafer_id}",
+                        "waferMap": rows[wafer_id],
                     }
-                ],
-            },
-            {
-                "id": "tep",
-                "dataset": "tep",
-                "title": "TEP过程 · 全通道与双引擎",
-                "purpose": "原过程/控制程序→可编辑通道知识→正常参考/PCA→统一约束与RootKGD图传播",
-                "capability_id": "process-window-v2",
-                "working_graph": graph_assets["tep"],
-                "materials": tep_materials,
-                "samples": tep_samples,
-                "models": [],
-                "sources": [
-                    {
-                        "title": "Braatz TEP原程序与参考数据",
-                        "url": "https://github.com/camaramm/tennessee-eastman-profBraatz",
-                        "license": "Illinois/Braatz permissive notice；保留版权和免责声明。",
-                    }
-                ],
-            },
-            {
-                "id": "wafer",
-                "dataset": "wafer",
-                "title": "晶圆网格 · 空间图案解释",
-                "purpose": "原始网格→独立ResNet+空间统计→图案联合条件与原始die对应",
-                "capability_id": "spatial-grid-v2",
-                "working_graph": graph_assets["wafer"],
-                "materials": [
-                    asset(
-                        "wafer-original-paper-excerpt",
-                        wafer_paper_excerpt,
-                        "WM-811K原论文 · 第3–4页定位正文（非完整PDF）",
-                        url="https://outlook.stpi.niar.org.tw/pdfview/tdop/1601",
-                        redistribution="copyrighted_paper_excerpt_local_only",
-                    ),
-                    asset(
-                        "wafer-model-card",
-                        wafer_card,
-                        "RadAI模型作者原始模型卡",
-                        url="https://huggingface.co/radai-agent/radai-wm811k-defect-detection",
-                        redistribution="MIT_model_card",
-                    ),
-                ],
-                "samples": wafer_samples,
-                "models": [
-                    asset(
-                        "wafer-resnet",
-                        wafer_model,
-                        "WM811K ResNet34",
-                        url=wafer_model_url,
-                        redistribution="MIT_model",
-                    )
-                ],
-                "sources": [
-                    {
-                        "title": "WM-811K数据镜像",
-                        "url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection",
-                        "license": (
-                            "数据镜像未明示许可；原网格仅本机使用、不随仓库分发。"
-                            "模型MIT不自动覆盖数据。"
-                        ),
-                    },
-                    {
-                        "title": "WM-811K原论文",
-                        "url": "https://ieeexplore.ieee.org/document/6932449/",
-                    },
-                ],
-            },
-        ],
-        "interpretation": (
-            "expectation是演示对照说明，不输入模型/adapter/推理；原生标签不冒充测量。"
-            "原始LLM产物和演示适配分别保存。"
-        ),
-        "preparation_errors": list(PREPARATION_ERRORS),
-    }
-    for demo in manifest["demos"]:
-        for sample in demo["samples"]:
-            sample["recommended"] = sample["sample_id"] in {
-                "bottle-rim-break",
-                "tep-sequence-04",
-                "wafer-nearfull",
-            }
-            frame_path = ROOT / sample["evidence"]["path"]
-            if not frame_path.is_file():
-                continue
-            frame = json.loads(frame_path.read_text())
-            hydrate_process_support(frame, sample)
-            supporting = []
-            uri_rewrites = {}
-            for item in frame["assets"]:
-                source = Path(item["uri"])
-                source = source if source.is_absolute() else ROOT / source
-                if item["asset_id"] == "image" and not source.is_file():
-                    source = ROOT / sample["raw_input"]["path"]
-                if (
-                    sample["dataset"] == "wafer"
-                    and item["asset_id"] == "grid"
-                    and not source.is_file()
-                ):
-                    raw_path = ROOT / sample["raw_input"]["path"]
-                    if raw_path.is_file():
-                        raw = json.loads(raw_path.read_text())
-                        grid = raw.get("waferMap", raw.get("wafer_map"))
-                        if grid is not None:
-                            source = RUNTIME / f"frozen/{sample['sample_id']}/grid.json"
-                            write_json(source, grid)
-                if not source.is_file():
-                    continue
-                safe_id = item["asset_id"].replace(":", "_").replace("/", "_")
-                destination = RUNTIME / f"frozen/{sample['sample_id']}/{safe_id}{source.suffix}"
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                if source.resolve() != destination.resolve():
-                    # Derived support copies track the current Frame. Original raw outputs remain.
-                    shutil.copy2(source, destination)
-                uri_rewrites[item["uri"]] = destination.relative_to(ROOT).as_posix()
-                item["uri"] = destination.relative_to(ROOT).as_posix()
-                support = asset(
-                    f"{sample['sample_id']}-support-{safe_id}",
-                    destination,
-                    {
-                        "window": "完整52通道原始窗口",
-                        "normal": "匹配正常参考矩阵",
-                        "scaler": "正常scaler/PCA参数",
-                    }.get(item["asset_id"], "原始测量配套资产"),
-                    redistribution="derived_public_measurements_local_assets",
                 )
-                support["frame_asset_id"] = item["asset_id"]
-                support["kind"] = item["kind"]
-                supporting.append(support)
-            for item in frame["assets"]:
-                base, separator, fragment = item["uri"].partition("#")
-                if base in uri_rewrites:
-                    item["uri"] = uri_rewrites[base] + (separator + fragment if separator else "")
-            write_json(frame_path, frame)
-            sample["evidence"]["size_bytes"] = frame_path.stat().st_size
-            sample["supporting_assets"] = supporting
-    write_json(
-        RUNTIME / "mvtec-models.json",
-        {
-            "schema_version": "rootlens-mvtec-models.v1",
-            "objects": {
-                "bottle": {
-                    "patchcore": {
-                        "checkpoint": str(bottle_model.relative_to(ROOT)),
-                        "normal_reference": bottle_images["normal_001"]["path"],
-                    }
-                }
-            },
-        },
-    )
-    write_json(SMALL / "manifest.json", manifest)
+                + "\n"
+            )
+        (support,) = sample["supporting_assets"]
+        grid_path = ROOT / support["path"]
+        if not grid_path.is_file() and raw.is_file():
+            payload = json.loads(raw.read_text())
+            grid = payload.get("waferMap", payload.get("wafer_map"))
+            if grid is not None:
+                write_json(grid_path, grid)
+
+
+def prepare(download: bool = False, dataset: str | None = None) -> dict:
+    PREPARATION_ERRORS.clear()
+    manifest = read_manifest(dataset)
+    for demo in manifest["demos"]:
+        if demo["dataset"] == "mvtec" and download:
+            prepare_bottle_checkpoint(demo)
+        elif demo["dataset"] == "tep":
+            prepare_tep(demo, download=download)
+        elif demo["dataset"] == "wafer":
+            prepare_wafer(demo, download=download)
     return manifest
 
 
 def check(manifest: dict) -> dict:
     from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
-    from kgtracevis.schema.unified_evidence import EvidenceFrame
 
-    checked, missing = [], []
+    checked, missing, raw_models = [], [], []
     for demo in manifest["demos"]:
-        for item in demo["materials"] + demo["models"]:
+        for item in demo["materials"]:
             if not (ROOT / item["path"]).is_file():
                 missing.append(item["path"])
+        for model in demo["models"]:
+            path = model.get("local_path") or model["path"]
+            raw_models.append({"path": path, "available": (ROOT / path).is_file()})
         graph = ROOT / demo["working_graph"]["path"]
         package = UnifiedWorkingGraphPackage.model_validate_json(graph.read_text())
         for sample in demo["samples"]:
-            evidence = ROOT / sample["evidence"]["path"]
-            if evidence.exists():
-                frame = EvidenceFrame.model_validate_json(evidence.read_text())
+            frame_asset = sample["evidence"]
+            if (ROOT / frame_asset["path"]).is_file():
+                frames = frames_from_asset(frame_asset)
                 checked.append(
                     {
                         "sample_id": sample["sample_id"],
-                        "observations": len(frame.observations),
+                        "frames": len(frames),
+                        "observations": sum(len(frame.observations) for frame in frames),
                         "graph_nodes": len(package.nodes),
                         "graph_edges": len(package.edges),
                     }
                 )
             else:
-                missing.append(str(evidence.relative_to(ROOT)))
-            for key in ("raw_input", "normal_reference"):
-                if key in sample and not (ROOT / sample[key]["path"]).is_file():
-                    missing.append(sample[key]["path"])
-    return {"validated": checked, "missing_assets": sorted(set(missing))}
+                missing.append(frame_asset["path"])
+            inputs = [sample[k] for k in ("raw_input", "normal_reference") if k in sample]
+            for item in inputs + sample.get("supporting_assets", []):
+                if not (ROOT / item["path"]).is_file():
+                    missing.append(item["path"])
+    return {
+        "validated": checked,
+        "missing_assets": sorted(set(missing)),
+        "optional_raw_models": raw_models,
+        "preparation_errors": list(PREPARATION_ERRORS),
+    }
 
 
 def build_knowledge(dataset: str, output: Path) -> dict:
@@ -819,13 +380,13 @@ def build_knowledge(dataset: str, output: Path) -> dict:
     capability = capability_manifest(capability_id)
     scenario = "mvtec" if dataset == "bottle" else dataset
     if dataset == "bottle":
-        parsed = parse_material(
-            RUNTIME / "materials/emhart-defect-guide.pdf",
-            source_id="emhart-glass-defects-2024",
+        (source,) = read_manifest("mvtec")["demos"][0]["materials"]
+        units = parse_material(
+            ROOT / source["path"],
+            source_id=source["asset_id"],
             scenario=scenario,
-            original_uri=EMHART,
-        )
-        units = [u for u in parsed.units if u.source_span.get("page") in (13, 20)]
+            original_uri=source["source_url"],
+        ).units
     elif dataset == "tep":
         units = []
         for file in ("teprob.f", "temain_mod.f"):
@@ -894,7 +455,6 @@ def recompute(manifest: dict, output: Path) -> list[dict]:
     from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
     from kgtracevis.core.unified_reasoner import UnifiedReasoner
     from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
-    from kgtracevis.schema.unified_evidence import EvidenceFrame
 
     output.mkdir(parents=True, exist_ok=False)
     rows = []
@@ -903,26 +463,28 @@ def recompute(manifest: dict, output: Path) -> list[dict]:
             (ROOT / demo["working_graph"]["path"]).read_text()
         )
         for sample in demo["samples"]:
-            frame = EvidenceFrame.model_validate_json(
-                (ROOT / sample["evidence"]["path"]).read_text()
-            )
+            frames = frames_from_asset(sample["evidence"])
             for reasoner_id in sample["reasoner_ids"]:
                 reasoner = RootKGDReasoner if reasoner_id == "tep_rootkgd" else UnifiedReasoner
-                result = reasoner(package.knowledge).analyze(frame, top_k=8)
-                filename = f"{sample['sample_id']}-{reasoner_id}.json"
-                write_json(output / filename, result)
-                row = {
-                    "sample_id": sample["sample_id"],
-                    "reasoner_id": reasoner_id,
-                    "outcome": result["outcome"],
-                    "result": filename,
-                    "path_count": len(result.get("top_k_paths", [])),
-                    "candidates": [
-                        {k: r[k] for k in ("candidate_id", "rank", "score")}
-                        for r in result["ranked_root_causes"]
-                    ],
-                }
-                rows.append(row)
+                engine = reasoner(package.knowledge)
+                for index, frame in enumerate(frames, start=1):
+                    result = engine.analyze(frame, top_k=8)
+                    suffix = f"-frame-{index}" if len(frames) > 1 else ""
+                    filename = f"{sample['sample_id']}-{reasoner_id}{suffix}.json"
+                    write_json(output / filename, result)
+                    rows.append(
+                        {
+                            "sample_id": sample["sample_id"],
+                            "reasoner_id": reasoner_id,
+                            "outcome": result["outcome"],
+                            "result": filename,
+                            "path_count": len(result.get("top_k_paths", [])),
+                            "candidates": [
+                                {k: r[k] for k in ("candidate_id", "rank", "score")}
+                                for r in result["ranked_root_causes"]
+                            ],
+                        }
+                    )
     write_json(output / "summary.json", {"cases": rows})
     return rows
 
@@ -1078,6 +640,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--download", action="store_true", help="fetch missing public assets only")
     parser.add_argument(
+        "--dataset", choices=("mvtec", "tep", "wafer"), help="prepare one scene only"
+    )
+    parser.add_argument(
         "--build",
         choices=("bottle", "tep", "wafer"),
         help="actually call configured LLM with original public material",
@@ -1092,7 +657,7 @@ def main() -> None:
     )
     parser.add_argument("--refine-tep", type=Path, help="source-only LLM build directory to curate")
     args = parser.parse_args()
-    manifest = prepare(download=args.download)
+    manifest = prepare(download=args.download, dataset=args.dataset)
     report = check(manifest)
     write_json(RUNTIME / "preparation-report.json", report)
     print(json.dumps({"manifest": str(SMALL / "manifest.json"), **report}, ensure_ascii=False))
