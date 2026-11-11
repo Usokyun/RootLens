@@ -12,6 +12,7 @@ from pathlib import Path
 from kgtracevis.adapters.batch import evidence_from_records, load_records
 from kgtracevis.adapters.unified import evidence_frames
 from kgtracevis.core.candidate_discriminability import analyze_candidate_discriminability
+from kgtracevis.core.graded_reasoner import GradedReasoner
 from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
@@ -38,12 +39,24 @@ REASONERS = [
         "description": "共同类型契约、联合条件与 U/C/A/J 代价；跨场景使用同一内核。",
     },
     {
+        "reasoner_id": "graded_abduction",
+        "title": "分级解释溯因",
+        "datasets": ["mvtec", "tep", "wafer"],
+        "requires_graded_policy": True,
+        "description": "按共同测量预算计算联合分支的连续支持、反证与覆盖；保留硬约束。",
+    },
+    {
         "reasoner_id": "tep_rootkgd",
         "title": "RootKGD 图传播",
         "datasets": ["tep"],
         "description": "TEP 专用：有向关系衰减传播与完整52通道残差贡献向量结构比较。",
     },
 ]
+REASONER_IMPLEMENTATIONS = {
+    "unified_abduction": UnifiedReasoner,
+    "graded_abduction": GradedReasoner,
+    "tep_rootkgd": RootKGDReasoner,
+}
 
 
 def enable_graph(graph_id, enabled):
@@ -139,11 +152,7 @@ def infer(context, request):
     root.mkdir(parents=True, exist_ok=True)
     context.progress("upload", "已保存输入与所选工作图快照", completed=1, total=1, unit="份输入")
     groups, records = prepare_inputs(context, request, package, root)
-    reasoner = (
-        UnifiedReasoner(package.knowledge)
-        if request["reasoner_id"] == "unified_abduction"
-        else RootKGDReasoner(package.knowledge)
-    )
+    reasoner = REASONER_IMPLEMENTATIONS[request["reasoner_id"]](package.knowledge)
     total = sum(len(g["frames"]) for g in groups)
     context.progress("reasoning", completed=0, total=total, unit="查询")
     cases, completed = [], 0
@@ -501,14 +510,22 @@ def explain_result(result, frame, package):
         ]
     for row in result.get("candidate_evaluations", []):
         row["candidate_name"] = labels.get(row["candidate_id"], row.get("candidate_name"))
-    for row in result.get("ranked_root_causes", []):
+    path_rows = result.get("graded_candidates", result.get("ranked_root_causes", []))
+    for row in path_rows:
         for path in row.get("explanation_paths", []):
+            graded = path.get("path_kind") == "graded_contribution"
+            if graded:
+                path["source_edges"] = [
+                    program.edges[v["edge_id"]] for v in path["source_edge_views"]
+                ]
             path["node_names"] = [labels.get(i, i) for i in path["nodes"]]
             path["observation_locations"] = [
-                locations[i] for i in path["support_obs_ids"] if i in locations
+                locations[i]
+                for i in path.get("observation_ids", path["support_obs_ids"])
+                if i in locations
             ]
-            assertion_ids = path.get("source_assertion_ids", [])
-            if not assertion_ids:
+            assertion_ids = list(path.get("source_assertion_ids", []))
+            if not assertion_ids or graded:
                 identities = set(path["nodes"])
                 for collection in (
                     package.knowledge.observable_definitions,

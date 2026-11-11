@@ -9,11 +9,12 @@ import SavedRunEvidence from '@/components/saved-analysis/SavedRunEvidence.vue'
 import SavedRunReasoning from '@/components/saved-analysis/SavedRunReasoning.vue'
 import SavedRunGraph from '@/components/saved-analysis/SavedRunGraph.vue'
 import { chooseSavedPath, datasetLabel, detailTab, detailTabs, factOnPath, getPathObs, inputLabel, pathForFact, reasonerLabel, savedCandidateRanks, stageForTab, strings, text, type DetailTab, type PathFocus } from '@/components/saved-analysis/presentation'
+import { gradedPathFocus, gradedUnranked } from '@/components/saved-analysis/graded-presentation'
 import { savedAnalysisRoute } from '@/services/analysis-entry'
 import { useAppPreferences } from '@/services/app-preferences'
 import { getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
 import { readSavedAnalysis, type SavedAnalysis } from '@/services/saved-analysis-reader'
-import { savedTentativeCandidates, traceRows } from '@/services/unified-reasoning-display'
+import { isSavedGradedResult, savedGradedCandidates, savedTentativeCandidates, traceRows } from '@/services/unified-reasoning-display'
 
 const route = useRoute(), router = useRouter()
 const { preferences, updatePreferences } = useAppPreferences()
@@ -34,8 +35,12 @@ const frame = computed(() => frameIntent.value ? saved.value?.framesById.get(fra
 const run = computed(() => saved.value?.run ?? null)
 const isReady = computed(() => !!run.value && !!frame.value)
 const selected = ref(emptyFocus())
-const candidateId = computed(() => selected.value.candidateId || (frame.value ? text(savedCandidateRanks(frame.value)[0]?.candidate_id) : ''))
-const candidate = computed(() => frame.value?.candidatesById.get(candidateId.value) ?? null)
+const gradedChoices = computed(() => [...savedGradedCandidates(frame.value?.result), ...gradedUnranked(frame.value?.result)])
+const candidateId = computed(() => selected.value.candidateId || (frame.value
+  ? text(gradedChoices.value[0]?.candidate_id ?? savedCandidateRanks(frame.value)[0]?.candidate_id) : ''))
+const candidate = computed(() => isSavedGradedResult(frame.value?.result)
+  ? gradedChoices.value.find(row => row.candidate_id === candidateId.value) ?? null
+  : frame.value?.candidatesById.get(candidateId.value) ?? null)
 let revision = 0
 
 function emptyFocus() {
@@ -136,7 +141,8 @@ function onTabKey(event: KeyboardEvent) {
   void nextTick(() => document.getElementById(`saved-analysis-tab-${item.id}`)?.focus())
 }
 function selectCandidate(id: string) {
-  if (frame.value?.candidatesById.has(id) && (id !== candidateId.value || selected.value.tentativeCandidateId)) selected.value = { ...emptyFocus(), candidateId: id }
+  const valid = isSavedGradedResult(frame.value?.result) ? gradedChoices.value.some(row => row.candidate_id === id) : frame.value?.candidatesById.has(id)
+  if (valid && (id !== candidateId.value || selected.value.tentativeCandidateId)) selected.value = { ...emptyFocus(), candidateId: id }
 }
 function selectPath(focus: PathFocus, to?: DetailTab, nodeId = focus.nodeId ?? '') {
   const active = frame.value, path = active?.pathsById.get(focus.pathId)
@@ -162,7 +168,7 @@ function selectObservation(id: string, toEvidence = false, explicitGraph = false
   const path = chooseSavedPath(paths, selected.value.pathId, candidateId.value)
   if (path) {
     const fact = factOnPath(active, path, id)
-    const link = fact ? pathForFact(active, text(path.target_entity_id), fact) : null
+    const link = gradedPathFocus(active, path, id) ?? (fact ? pathForFact(active, text(path.target_entity_id), fact) : null)
     const edgeId = link?.pathId === path.path_id && link.obsId === id ? link.edgeId : undefined
     selectPath({ pathId: path.path_id, obsId: id, edgeId })
   } else selected.value = { ...emptyFocus(), candidateId: candidateId.value, obsId: id }
@@ -267,7 +273,7 @@ function toList() { void router.push({ name: 'evidence' }) }
             <SavedRunOverview v-if="tab === 'overview'" :analysis="saved" :frame="frame" :candidate="candidate" @tab="showTab" @observation="id => selectObservation(id, true)" />
             <SavedRunProducts v-else-if="tab === 'input' || tab === 'backbone'" :tab="tab" :analysis="saved" :frame="frame" @tab="showTab" />
             <SavedRunEvidence v-else-if="tab === 'evidence'" :analysis="saved" :frame="frame" :candidate="selected.tentativeCandidateId ? null : candidate" :observation-id="selected.obsId" @observation="selectObservation" @graph="graphForObservation" @reasoning="showTab('reasoning')" />
-            <SavedRunReasoning v-else-if="tab === 'reasoning'" :analysis="saved" :frame="frame" :candidate="candidate" :fact-id="selected.factId" :path-id="selected.pathId"
+            <SavedRunReasoning v-else-if="tab === 'reasoning'" :analysis="saved" :frame="frame" :candidate="candidate" :fact-id="selected.factId" :path-id="selected.pathId" :observation-id="selected.obsId"
               :tentative-candidate-id="selected.tentativeCandidateId" @candidate="selectCandidate" @observation="observeFromReason" @tentative-observation="observeTentative" @graph="graphFocus" @tab="showTab" />
             <SavedRunGraph v-else :analysis="saved" :frame="frame" :candidate="candidate" :path-id="selected.pathId" :edge-id="selected.edgeId" :node-id="selected.nodeId" :observation-id="selected.obsId"
               @select="onGraphSelect" @path="selectPath" @observation="observeFromGraph" @reasoning="reasonFromGraph" />

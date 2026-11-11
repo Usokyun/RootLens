@@ -2,22 +2,28 @@
 import { IconInfoCircle, IconList, IconPushpin, IconRelation } from '@arco-design/web-vue/es/icon'
 import { computed, nextTick, ref, watch } from 'vue'
 import type { SavedAnalysis, SavedAnalysisFrame } from '@/services/saved-analysis-reader'
-import { savedTentativeCandidates, traceOutcome, traceRecord, traceRows, traceValue, type TraceRecord } from '@/services/unified-reasoning-display'
+import { isSavedGradedResult, savedGradedCandidates, savedTentativeCandidates, traceOutcome, traceRecord, traceRows, traceValue, type TraceRecord } from '@/services/unified-reasoning-display'
 import { channelLabel, getPathObs, isRootPropagation, nativePath, savedCandidateRanks, savedProofGroups, strings, text, truthColor, truthLabel, valueLabel, type DetailTab, type PathFocus } from './presentation'
+import { gradedUnranked } from './graded-presentation'
 import SavedRunPanel from './SavedRunPanel.vue'
+import SavedRunGraded from './SavedRunGraded.vue'
 import SavedRunProofExpr from './SavedRunProofExpr.vue'
 import SavedRunTentative from './SavedRunTentative.vue'
 
-const props = defineProps<{ analysis: SavedAnalysis; frame: SavedAnalysisFrame; candidate: TraceRecord | null; factId: string; pathId: string; tentativeCandidateId?: string }>()
+const props = defineProps<{ analysis: SavedAnalysis; frame: SavedAnalysisFrame; candidate: TraceRecord | null; factId: string; pathId: string; observationId: string; tentativeCandidateId?: string }>()
 const emit = defineEmits<{ tab: [tab: DetailTab]; candidate: [id: string]; graph: [focus: PathFocus]; observation: [id: string, focus?: PathFocus]; 'tentative-observation': [candidateId: string, id: string] }>()
 const isRoot = computed(() => props.analysis.run.reasoner_id === 'tep_rootkgd' || isRootPropagation(props.frame.result))
+const isGraded = computed(() => isSavedGradedResult(props.frame.result))
+const hasGradedTrace = computed(() => savedGradedCandidates(props.frame.result).length > 0 || gradedUnranked(props.frame.result).length > 0)
+const isNormal = computed(() => props.frame.result?.reason === 'normal_reference_gate_is_false'
+  || (isGraded.value && props.frame.result?.reason === 'anomaly_gate_is_false'))
 const candidateId = computed(() => text(props.candidate?.candidate_id))
 const ranks = computed(() => savedCandidateRanks(props.frame))
 const rank = computed(() => ranks.value.find(item => item.candidate_id === candidateId.value))
-const tentative = computed(() => isRoot.value ? [] : savedTentativeCandidates(props.frame.result))
-const unranked = computed(() => traceRows(props.frame.result?.candidate_evaluations).filter(item => !ranks.value.some(rank => rank.candidate_id === item.candidate_id)
+const tentative = computed(() => isRoot.value || isGraded.value ? [] : savedTentativeCandidates(props.frame.result))
+const unranked = computed(() => isGraded.value ? [] : traceRows(props.frame.result?.candidate_evaluations).filter(item => !ranks.value.some(rank => rank.candidate_id === item.candidate_id)
   && !tentative.value.some(row => row.candidate_id === item.candidate_id)))
-const proof = computed(() => props.candidate && !isRoot.value ? savedProofGroups(props.analysis.run.working_graph_snapshot, props.frame, props.candidate) : [])
+const proof = computed(() => props.candidate && !isRoot.value && !isGraded.value ? savedProofGroups(props.analysis.run.working_graph_snapshot, props.frame, props.candidate) : [])
 const paths = computed(() => (props.frame.pathsByCandidateId.get(candidateId.value) ?? []).map(path => {
   const native = nativePath(props.frame, path.path_id)
   const obsIds = getPathObs(props.frame, path)
@@ -46,19 +52,21 @@ const selectedScore = computed(() => rank.value?.score ?? props.candidate?.score
 const outcomeNote = computed(() => {
   const result = props.frame.result
   if (!result) return '此 Frame 未保存解释器结果；可以查看同一 Frame 的已有观测。'
-  if (result.reason === 'normal_reference_gate_is_false') return '本窗口未越过异常门，未启动候选排名。'
+  if (isNormal.value) return isGraded.value ? '本次未越过异常门，未启动候选排名。' : '本窗口未越过异常门，未启动候选排名。'
   if (tentative.value.length) return '没有候选获得完整支持。可展开下方待验证分支，查看实测支持与反证。'
   return `${traceOutcome(result.outcome)}。本次没有入排名候选。`
 })
 </script>
 
 <template>
-  <div class="saved-run-grid saved-run-reasoning-grid">
+  <SavedRunGraded v-if="hasGradedTrace" :frame="frame" :candidate="candidate" :path-id="pathId" :observation-id="observationId"
+    @candidate="id => emit('candidate', id)" @graph="focus => emit('graph', focus)" @observation="(id, focus) => emit('observation', id, focus)" @tab="tab => emit('tab', tab)" />
+  <div v-else class="saved-run-grid saved-run-reasoning-grid">
     <div ref="evidencePanel" class="saved-run-stack">
       <SavedRunPanel :title="isRoot ? '保存的结构传播轨迹' : '选中候选的保存解释'" :icon="IconRelation">
         <template v-if="frame.pathGraph.edge_count" #actions><a-button size="mini" type="text" @click="emit('tab', 'graph')">打开图谱</a-button></template>
         <div v-if="!candidate" class="saved-run-stack">
-          <div class="saved-run-notice" :class="{ 'saved-run-notice--normal': frame.result?.reason === 'normal_reference_gate_is_false' }"><IconInfoCircle />{{ outcomeNote }}</div>
+          <div class="saved-run-notice" :class="{ 'saved-run-notice--normal': isNormal }"><IconInfoCircle />{{ outcomeNote }}</div>
           <div><a-button size="small" type="outline" @click="emit('tab', 'evidence')">查看本次观测</a-button></div>
         </div>
         <div v-else class="saved-run-stack">

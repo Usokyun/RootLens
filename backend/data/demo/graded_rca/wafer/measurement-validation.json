@@ -1,0 +1,188 @@
+{
+  "schema_version": "rootlens-wafer-sector-measurement-check.v1",
+  "purpose": "Measure original public grids without calling the classifier again; category here is from the earlier saved Frame, never the native label. No graph is fitted.",
+  "measurement": {
+    "n_sectors": 12,
+    "min_valid_die_per_sector": 5,
+    "min_eligible_sectors": 8,
+    "radius_lower_bound": 0.8,
+    "scope": "edge",
+    "definition": "sum(density)^2 / (k * sum(density^2))"
+  },
+  "cases": [
+    {
+      "row_id": "248536",
+      "grid_shape": [
+        38,
+        38
+      ],
+      "raw_input_fields": [
+        "case_id",
+        "waferMap",
+        "wafer_id"
+      ],
+      "prior_saved_classifier_output": "nearfull",
+      "sector_measurement": {
+        "valid": [
+          39,
+          37,
+          39,
+          36,
+          36,
+          35,
+          35,
+          37,
+          38,
+          40,
+          40,
+          39
+        ],
+        "failed": [
+          37,
+          21,
+          32,
+          24,
+          21,
+          33,
+          35,
+          37,
+          38,
+          40,
+          40,
+          39
+        ],
+        "eligible": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "participation": 0.9655484866756422
+      },
+      "radial": {
+        "valid_die_count": 1139,
+        "failed_die_count": 986,
+        "center_density": 0.9069767441860465,
+        "middle_density": 0.8391472868217055,
+        "edge_density": 0.8802660753880266,
+        "largest_component_ratio": 0.9989858012170385,
+        "component_count": 2
+      },
+      "fixed_grid_quarter_turns": [
+        0.9655484866756422,
+        0.9655484866756425,
+        0.9655484866756422,
+        0.9655484866756422
+      ]
+    },
+    {
+      "row_id": "31707",
+      "grid_shape": [
+        63,
+        62
+      ],
+      "raw_input_fields": [
+        "case_id",
+        "waferMap",
+        "wafer_id"
+      ],
+      "prior_saved_classifier_output": "edge_ring",
+      "sector_measurement": {
+        "valid": [
+          104,
+          97,
+          93,
+          93,
+          95,
+          95,
+          102,
+          94,
+          90,
+          90,
+          95,
+          96
+        ],
+        "failed": [
+          26,
+          26,
+          34,
+          42,
+          29,
+          25,
+          37,
+          31,
+          26,
+          23,
+          25,
+          23
+        ],
+        "eligible": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "participation": 0.9617714916560494
+      },
+      "radial": {
+        "valid_die_count": 3036,
+        "failed_die_count": 912,
+        "center_density": 0.4852941176470588,
+        "middle_density": 0.23587570621468926,
+        "edge_density": 0.30332167832167833,
+        "largest_component_ratio": 0.5328947368421053,
+        "component_count": 53
+      },
+      "fixed_grid_quarter_turns": [
+        0.9617714916560494,
+        0.9617714916560497,
+        0.9617714916560497,
+        0.9617714916560499
+      ]
+    }
+  ],
+  "synthetic_density_matched_controls": [
+    {
+      "kind": "broad-edge-across-12-sectors",
+      "edge_density": 0.13186813186813187,
+      "edge_valid": 1820,
+      "edge_failed": 240,
+      "participation": 0.9994066637329447,
+      "fixed_grid_quarter_turns": [
+        0.9994066637329447,
+        0.9994066637329447,
+        0.9994066637329447,
+        0.9994066637329447
+      ]
+    },
+    {
+      "kind": "localized-edge-3-adjacent-sectors",
+      "edge_density": 0.13186813186813187,
+      "edge_valid": 1820,
+      "edge_failed": 240,
+      "participation": 0.2498516659332362,
+      "fixed_grid_quarter_turns": [
+        0.2498516659332362,
+        0.2498516659332362,
+        0.24985166593323627,
+        0.2498516659332362
+      ]
+    }
+  ]
+}

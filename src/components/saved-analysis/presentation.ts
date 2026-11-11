@@ -16,7 +16,7 @@ export const text = (value: unknown) => typeof value === 'string' && value.lengt
 export const strings = (value: unknown) => Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.length > 0) : []
 export const number = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null
 export function datasetLabel(value: unknown) { return ({ mvtec: 'MVTec', tep: 'TEP', wafer: 'WM-811K' } as Record<string, string>)[text(value)] ?? (text(value) || '未保存场景') }
-export function reasonerLabel(value: unknown) { return ({ unified_abduction: '统一条件溯因', tep_rootkgd: 'RootKGD' } as Record<string, string>)[text(value)] ?? (text(value) || '未保存解释器') }
+export function reasonerLabel(value: unknown) { return ({ unified_abduction: '统一条件溯因', tep_rootkgd: 'RootKGD', graded_abduction: '分级解释溯因' } as Record<string, string>)[text(value)] ?? (text(value) || '未保存解释器') }
 export function inputLabel(mode: unknown) { return mode === 'evidence' ? '中间 Evidence' : mode === 'records' ? '中间测量记录' : ['image', 'process', 'wafer'].includes(text(mode)) ? '原始样本' : (text(mode) || '未保存输入类型') }
 export function scopeLabel(scope: unknown, fallback = '未保存范围') {
   const row = traceRecord(scope)
@@ -36,6 +36,7 @@ const featureNames: Record<string, string> = {
   'series.raw_values': '保存的通道曲线',
   'spatial.failure_density': '失效 die 密度', 'spatial.valid_die_count': '有效 die 数', 'spatial.failed_die_count': '失效 die 数',
   'spatial.component_count': '失效连通分量数', 'spatial.largest_component_ratio': '最大失效连通占比', 'spatial.linearity': '失效分布线性度',
+  'spatial.edge_sector_participation': '边缘扇区参与度',
   'classifier.pattern': 'ResNet 图案类别', 'spatial.grid': '保存的晶圆网格',
 }
 const categoryNames: Record<string, string> = {
@@ -44,7 +45,7 @@ const categoryNames: Record<string, string> = {
   nearfull: '近全片失效', edge_ring: '边缘环状失效', edge_loc: '边缘局部失效', center: '中心失效',
   donut: '环形失效', loc: '局部失效', random: '随机失效', scratch: '划痕',
 }
-const ops: Record<string, string> = { bool_eq: '=', eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', abs_gte: '绝对值 ≥', in: '属于', candidate_contains: '包含' }
+const ops: Record<string, string> = { bool_eq: '=', eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', abs_gte: '绝对值 ≥', between: '介于', in: '属于', candidate_contains: '包含' }
 export function featureLabel(value: unknown) { return featureNames[text(value)] ?? (text(value) || '未命名观测') }
 export function valueLabel(value: unknown): string {
   if (value === null || value === undefined) return '未记录'
@@ -77,7 +78,7 @@ export function factReason(value: unknown) {
 }
 export function procedureLabel(procedure: unknown) {
   const row = traceRecord(procedure), id = text(row.procedure_id)
-  return ({ detector: '检测记录', geometry: '几何测量', semantics: 'ROI 外观语义', 'normal-statistics': '正常参考窗口统计', 'spatial-statistics': '原网格空间统计', classifier: 'ResNet 图案分类' } as Record<string, string>)[id] ?? (id || '未保存')
+  return ({ detector: '检测记录', geometry: '几何测量', semantics: 'ROI 外观语义', 'normal-statistics': '正常参考窗口统计', 'spatial-statistics': '原网格空间统计', 'edge-sector-statistics': '边缘角向统计', classifier: 'ResNet 图案分类' } as Record<string, string>)[id] ?? (id || '未保存')
 }
 export function channelLabel(value: unknown) {
   const id = text(value), match = /^(xmeas|xmv)_(\d+)$/.exec(id)

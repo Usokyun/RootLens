@@ -11,7 +11,7 @@
 - `POST /api/kg/working-graphs/import`：导入新图，默认未启用。
 - `PUT /api/kg/working-graphs/{graph_id}/package`：修改同一图，保存前自动备份；历史 run 不重算。
 - `POST /api/kg/working-graphs/{graph_id}/enable`，JSON `{ "enabled": true }`：启用／停用。
-- `GET /api/reasoners`：`{reasoners:[{reasoner_id,title,datasets,description}]}`；ID 固定 `unified_abduction`、`tep_rootkgd`。
+- `GET /api/reasoners`：`{reasoners:[{reasoner_id,title,datasets,description,requires_graded_policy?}]}`。`unified_abduction` 和 `graded_abduction` 用于三场景；后者要求所选 v2 图声明 `knowledge.graded_policy`，缺失时提交返回 400，不回退旧引擎。`tep_rootkgd` 仅支持 TEP。
 
 ### 制作能力与词汇绑定
 
@@ -147,6 +147,16 @@ RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution
 统一引擎可在新结果中保存 `tentative_candidates[]` 和 `tentative_diagnostic_context`。入选者未获完整支持，必要条件成立，且同一可连接的分支上有明确、成立的异常门和至少两项不同的实测诊断量支持。没有完整候选但有此类分支时，`outcome` 为 `insufficient_evidence`；原 `candidate_evaluations`、完整榜、证明和源路径不变。RootKGD 不生成待验证分支。
 
 `condition_checks[]` 指向保存的真／假／未知观测与来源，`scoring_details` 使用共用的已判定诊断量为分母（`shared_observed_diagnostics_v1`）：同一特征、主体和范围只计一次，先计算各依赖组未覆盖和反证比例，再分别平均得 U 和 C。缺测不作反证；待验证 J 不与完整榜代价混排。结果未保存这两项时不从旧未入榜行补算。
+
+### 分级解释溯因（可选）
+
+`GET /api/reasoners` 列出 `graded_abduction`（`requires_graded_policy=true`）。原始、普通 Frame 或公开样例均可显式选择；图无配置则拒绝提交，不转用旧引擎。旧 `unified_abduction` 和 `tep_rootkgd` 的分数、证明和历史 Run 保持原合同。LLM 源构图仍只编译条件、结构与来源；数值曲线和权重由审阅者在完整工作图包里保存。
+
+- 数值谓词的 `grade` 是有限曲线：`direction=lower/higher/interval/absolute_higher`、`pivot` 或 `lower/upper`、正的 `support_width/conflict_width`、可选非负 `neutral_support/neutral_conflict`、`unit/basis/source_assertion_ids`。方向、阈值及单位必须与 `lte/gte/between/abs_gte` 的原离散比较一致。`between` 使用 `{kind:"interval",lower,upper,unit}`，两端包含。`basis` 要有相符的实际来源断言；演示宽度不当工艺规格。
+- `knowledge.graded_policy.groups[]` 声明 `{group_id,weight,slots:[{slot_id,weight,predicate_ids}]}`；`anchor_predicate_ids[]` 指向这些槽内的判别条件。先按适用候选固定预算，再在组间、组内归一。槽以特征、选择器、范围及参考为同一测量；同一实际测量或 `dependency_group` 跨槽／名义组冲突时拒绝评分（`graded_budget_source_overlap`），缺项不重新分权重。异常门及上下文不计票。
+- 选定合法联合分支后，先算每个唯一槽的支持 `p` 与反证 `c`，再求 `P=Σw·p`、`C=Σw·c`、`S=P−C`；同槽的多个必要／预期条件取最低支持、最大反证。可能规则不以不出现扣分。`V` 是所选分支声明槽可核验的权重比例。未知不成反证；必要反证排除分支，未核验必要条件阻止标为有支持。至少两项不同槽有实测净支持，才有「有支持／待核验」条目；入有支持还要硬条件、锚点实测净支持且 `S>0`。两组各自按同一个 S 排序、同分保留；不使用假设先验。
+- 新结果标 `scoring_method=graded_joint_abduction_v1`。`graded_comparison` 保存共享预算；`graded_candidates[]` 保存两组候选、`scoring_details={support,conflict,score,coverage}`、选中 `expectation_checks`、逐项 `graded_conditions` 以及汇总 `graded_slots`。同槽重复引用的原始度数可见，实际 `support_credit/conflict_credit/score_contribution` 仅记一次。`ranked_root_causes` 仅镜像有支持组，不能当完整布尔证明。
+- `top_k_paths[]` 与候选 `explanation_paths[]` 的 `path_kind=graded_contribution`，`contribution_kind` 区分支持、反证、前置。`observation_ids`、选中 `rule_id/predicate_id`、真实 `source_edges` 和反向视图随 Run 保存；`joint_proof_id=null`。图上实际节点／边可追到同窗、同 ROI 或同网格实测，不把软证据写成完整证明。
 
 ### 本次知识可分辨性与观测覆盖
 

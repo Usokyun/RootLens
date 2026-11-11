@@ -4,8 +4,9 @@ import { computed, ref } from 'vue'
 import KnowledgeForceGraph from '@/components/graphs/KnowledgeForceGraph.vue'
 import { buildPathSubgraphDataset } from '@/services/graph-curation'
 import type { SavedAnalysis, SavedAnalysisFrame } from '@/services/saved-analysis-reader'
-import { traceRows, type TraceRecord } from '@/services/unified-reasoning-display'
+import { isSavedGradedResult, traceRows, type TraceRecord } from '@/services/unified-reasoning-display'
 import { channelLabel, factOnPath, featureLabel, getPathObs, isRootPropagation, nativePath, pathForFact, sourceLocator, text, type PathFocus } from './presentation'
+import { gradedPathFocus, signedContribution } from './graded-presentation'
 import SavedRunPanel from './SavedRunPanel.vue'
 
 const props = defineProps<{ analysis: SavedAnalysis; frame: SavedAnalysisFrame; candidate: TraceRecord | null; pathId: string; edgeId: string; nodeId: string; observationId: string }>()
@@ -17,6 +18,7 @@ const dataset = computed(() => {
   return { ...graph, id: `saved-${props.analysis.run.run_id}-${props.frame.id}`.replace(/[^a-zA-Z0-9_-]/g, '-') }
 })
 const path = computed(() => props.frame.pathsById.get(props.pathId))
+const activeNative = computed(() => path.value ? nativePath(props.frame, path.value.path_id) : null)
 const node = computed(() => dataset.value?.nodes.find(item => item.id === props.nodeId))
 const edge = computed(() => dataset.value?.edges.find(item => item.id === props.edgeId))
 const labels = computed(() => new Map(dataset.value?.nodes.map(item => [item.id, item.name]) ?? []))
@@ -28,16 +30,25 @@ const obsIds = computed(() => path.value ? getPathObs(props.frame, path.value) :
 const activeObs = computed(() => obsIds.value.includes(props.observationId) ? props.observationId : obsIds.value[0])
 const exactObservation = computed(() => {
   if (!path.value || !edge.value || !activeObs.value) return false
+  const grade = gradedPathFocus(props.frame, path.value, activeObs.value)
+  if (grade) return grade.edgeId === edge.value.id
   const fact = factOnPath(props.frame, path.value, activeObs.value, edge.value.id)
   const linked = fact ? pathForFact(props.frame, text(path.value.target_entity_id), fact) : null
   return linked?.edgeId === edge.value.id && linked.obsId === activeObs.value
 })
-const assertions = computed(() => path.value ? traceRows(nativePath(props.frame, path.value.path_id)?.source_assertions) : [])
+const assertions = computed(() => traceRows(activeNative.value?.source_assertions))
 const isRoot = computed(() => props.analysis.run.reasoner_id === 'tep_rootkgd' || isRootPropagation(props.frame.result))
+const isGraded = computed(() => isSavedGradedResult(props.frame.result))
+const normalGate = computed(() => props.frame.result?.reason === 'normal_reference_gate_is_false'
+  || (isGraded.value && props.frame.result?.reason === 'anomaly_gate_is_false'))
+const kindLabels: Record<string, string> = { support: '正证贡献', conflict: '反证贡献', prerequisite: '前置路径 · 不计分' }
 function pathLabel(pathId: string, index: number) {
   const native = nativePath(props.frame, pathId)
   const selected = props.frame.pathsById.get(pathId)
   const candidate = props.frame.candidatesById.get(text(selected?.target_entity_id))
+  if (native?.path_kind === 'graded_contribution') return [
+    labels.value.get(text(selected?.target_entity_id)), labels.value.get(text(native.predicate_id)), kindLabels[text(native.contribution_kind)],
+  ].filter(Boolean).join(' · ') || `贡献路径 ${index + 1}`
   return [text(candidate?.candidate_name) || labels.value.get(text(selected?.target_entity_id)), channelLabel(native?.channel) || `路径 ${index + 1}`].filter(Boolean).join(' · ')
 }
 function changePath(value: unknown) {
@@ -48,7 +59,9 @@ function changePath(value: unknown) {
 <template>
   <SavedRunPanel v-if="!dataset" title="本次保存的源图子图" :icon="IconRelation">
     <div class="saved-run-stack">
-      <div class="saved-run-notice" :class="{ 'saved-run-notice--normal': frame.result?.reason === 'normal_reference_gate_is_false' }"><IconInfoCircle /> <span>{{ frame.result?.reason === 'normal_reference_gate_is_false' ? '本窗口未越过异常门，没有保存候选或路径。' : frame.result ? '此 Frame 没有保存可绘制的源边。' : '此 Frame 未保存推理结果。' }}</span></div>
+      <div class="saved-run-notice" :class="{ 'saved-run-notice--normal': normalGate }"><IconInfoCircle /> <span>{{ normalGate
+        ? isGraded ? '本次未越过异常门，没有保存候选或路径。' : '本窗口未越过异常门，没有保存候选或路径。'
+        : frame.result ? '此 Frame 没有保存可绘制的源边。' : '此 Frame 未保存推理结果。' }}</span></div>
       <div><a-button size="small" type="outline" @click="emit('reasoning')">查看保存结论</a-button></div>
     </div>
   </SavedRunPanel>
@@ -63,12 +76,13 @@ function changePath(value: unknown) {
           :selected-node-id="nodeId || null" :selected-edge-id="edgeId || null" @select="item => emit('select', item ? { type: item.type, id: item.item.id } : null)" />
         <span class="saved-run-graph-tip">滚轮缩放 · 拖动节点 · 点选源边</span>
       </div>
-      <template #footer>保存路径中的实际方向边；同一 ID 的节点和边只显示一次。</template>
+      <template #footer>{{ isGraded ? '本次分级贡献与前置路径中的实际方向边。' : '保存路径中的实际方向边；同一 ID 的节点和边只显示一次。' }}</template>
     </SavedRunPanel>
     <aside class="saved-run-stack">
       <SavedRunPanel title="当前定位" :icon="IconPushpin">
         <div class="saved-run-stack" :data-selected-source-edge-id="edge?.id" :data-selected-source-node-id="node?.id" :data-selected-saved-path-id="path?.path_id">
           <div><a-tag v-if="edge" size="small" color="blue">选中的保存源边</a-tag><a-tag v-else-if="node" size="small" color="blue">选中的保存节点</a-tag><a-tag v-else size="small">当前候选</a-tag></div>
+          <p v-if="activeNative?.path_kind === 'graded_contribution'" class="saved-run-note">{{ kindLabels[text(activeNative.contribution_kind)] }}<template v-if="activeNative.contribution_kind !== 'prerequisite'"> · ΔS {{ signedContribution(activeNative.score_contribution) }}</template></p>
           <dl v-if="edge" class="saved-run-kv saved-run-kv--compact">
             <div><dt>起点</dt><dd>{{ labels.get(edge.source) ?? edge.source }}</dd></div>
             <div><dt>终点</dt><dd>{{ labels.get(edge.target) ?? edge.target }}</dd></div>
@@ -95,8 +109,10 @@ function changePath(value: unknown) {
           </div>
         </div>
       </SavedRunPanel>
-      <SavedRunPanel :title="isRoot ? '与传播轨迹的关系' : '与推理树的关系'" :icon="IconInfoCircle">
-        <p>{{ isRoot ? '所选路径由实际通道和源边组成；图谱不执行阈值条件。' : '图是本次保存路径的并集，树只展开当前候选。选中的源边与树中引用的是同一 ID。' }}</p>
+      <SavedRunPanel :title="isRoot ? '与传播轨迹的关系' : isGraded ? '与分级贡献的关系' : '与推理树的关系'" :icon="IconInfoCircle">
+        <p>{{ isRoot ? '所选路径由实际通道和源边组成；图谱不执行阈值条件。' : isGraded
+          ? '每条路径连接本次实测、候选和实际源边；正反贡献路径不是完整布尔证明。'
+          : '图是本次保存路径的并集，树只展开当前候选。选中的源边与树中引用的是同一 ID。' }}</p>
         <a-button size="mini" type="text" class="saved-run-compact-action" @click="emit('reasoning')">返回保存解释</a-button>
       </SavedRunPanel>
     </aside>

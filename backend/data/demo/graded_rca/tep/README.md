@@ -1,0 +1,21 @@
+# TEP：同一张图比较反应器补偿与冷凝侧负荷响应
+
+用独立正常参考量化同窗实测。序列 d04 的后两窗支持反应器冷却补偿，d05 的对照窗支持冷凝及分离侧负荷响应；两组分别仍有两个原因候选并列。分级相容分可以量化一条解释的正证、反证和覆盖，不能把未测的工艺原因排成唯一答案。
+
+| 文件 | 用法 |
+| --- | --- |
+| [working-graph.v2.json](working-graph.v2.json) | 导入完整包、检查并启用。图来自本轮真实资料构图和显式人工修订，导入不会覆盖既有登记图。 |
+| [evidence.json](evidence.json) | d04 的三个真实窗口。选「中间 Evidence」普通上传，指定同一图、分级解释溯因、Top K = 8；也可用 RootKGD 比较 52 维结构。 |
+| [evidence-d05.json](evidence-d05.json) | d05 的真实 161–260 窗，使用同一张图和分级解释器。它保留自己的正常参考拟合实例，不与 d04 拼窗。 |
+| [material.md](material.md)／[expert-refinement.md](expert-refinement.md) | 自著源材料和实际人工改图依据。前者可上传制作初版；后者说明 OR、曲线及共同预算，未再次调用模型。 |
+| [verification.json](verification.json) | 实际任务、数值、图与路径、同 Frame 对照及原始／重传核验。 |
+
+## 先看三个有效区别
+
+- **正常门未越过**：d04 的 1–100 窗不排序。两个异常窗是 XMV10 明显上移且 XMEAS9 近正常，选择补偿分支；XMEAS21 没有达到暖出口阈值，不被当作第二条必现现象。两候选均 **S = 1/3**。
+- **冷凝侧三量共同支持**：d05 的 XMV11 均值偏移 **+1.403320**、XMEAS22 **+1.804141**、XMEAS11 窗内波动 **7.044734**，两个冷凝解释各 **S = 0.411940**。旧图换成分级公式也不出推荐；变化来自本轮新增的知识。d05 实际 XMV10 **−0.335815** 给反应器分支一小项反证，只有一个支持槽，因此不入任何榜。
+- **RootKGD 是结构对照**：同 d04 Frame 的后两窗都用全部 52 维残差贡献，仍无法区分共享传播结构的反应器两原因。其结构分不是分级相容分，也不执行新曲线。
+
+若要从原始数据开始，从固定版本取 [`d04_te.dat`](https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d04_te.dat)、[`d05_te.dat`](https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d05_te.dat) 和独立 [`d00.dat`](https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d00.dat)。各序列 960 × 52，参考 52 × 500 转置使用；采样间隔 180 秒。原始入口分别用 d04 的 `1–100,161–260,261–360` 或 d05 的 `161–260`，一基且两端包含。程序、版权声明和数据见[固定上游版本](https://github.com/camaramm/tennessee-eastman-profBraatz/tree/0643318858ce7c87292bd59820b459e12a13d009)；原始 DAT 和数组不随仓库再分发。
+
+只传原生 Frame 不需要模型或密钥；新实例若未关联原始附件，曲线不可定位，但同图可复算数值。完整现场步骤、归因边界与对照见 [TEP 验收](../../../../docs/tep-graded-demo-acceptance.md)。

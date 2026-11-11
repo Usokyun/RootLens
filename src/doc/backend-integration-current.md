@@ -4,8 +4,8 @@
 
 RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后端在同一仓库维护：
 
-- 前端 `src/`：保留原三个一级入口、Demo／Backend、成品回放和有向力导向图。两条后端闭环仍从原入口发起；Backend 分开呈现运行列表、保存详情和登记工作图，见 §1.9–1.11。
-- 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、统一推理和 TEP RootKGD、任务及完整分析持久化。
+- 前端 `src/`：保留原三个一级入口、Demo／Backend、成品回放和有向力导向图。两条后端闭环仍从原入口发起；Backend 分开呈现运行列表、保存详情和登记工作图，见 §1.9–1.12。
+- 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、通用分级与统一条件推理、TEP RootKGD、任务及完整分析持久化。
 - 前后端通过 API 协作；**后端代码放在同仓，不等于浏览器执行后端算法**。
 - RootLens **不再**在浏览器端执行图谱构建、Evidence 临时组装或 RCA 本地推理。
 
@@ -153,6 +153,12 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 MVTec 006、TEP d04 三窗口和 WM811K 248536 都从自著短资料实际提取并制作，再保存编辑并启用对应新图；同一已启用图接收真实原始输入，下载本次 Evidence 后普通上传复算。MVTec 使用同一 ROI 的三项几何、不调用 VLM；TEP 保留正常参考、带符号统计和完整 52 通道贡献；Wafer 用真实分类和分区／连通性共同检验图案，不把原生标签或图案当制造根因。
 
 每场景只在 `/api/demo-library` 推荐这一条完整链。Git 包内的图和原生 Frame 可在新库无密钥复演；缺本机原始数据／附件时不阻止 Evidence，展示明确的附件状态。TEP 窗口附件按精确 Frame ID 绑定；Wafer 只高亮已保存网格对应区，计算仍在后端。初始 TEP 严格条件的未匹配结果保留，人工串级控制补充与实际 LLM 原图分开记录。操作与实际 Run、固定原始准备和许可边界见[现场手册](../../backend/docs/two-loop-demo.md)及[资产索引](rootlens-two-loop-demo-assets.md)。
+
+### 1.12 当前：用同一内核比较三场景的分级解释
+
+- `graded_abduction` 复用类型化绑定和合法联合分支，以 `S=支持−反证` 比较实际使用的唯一测量，另报已核验覆盖。曲线、预算和判别锚点由工作图声明、校验和持久化；LLM 生成规则初稿后再编辑这些设置，Evidence 不含规则或原因分数。
+- 保存详情分开呈现「有支持／待核验」，列出每项的实测值、带符号贡献、缺测及实际源边，可以回到对应 ROI、曲线或晶圆区域。贡献路径不是旧引擎的完整证明。旧 `unified_abduction`、TEP `tep_rootkgd`、默认演示与保存的历史快照照常可用。
+- 新版公开包在 `backend/data/demo/graded_rca/`，导入已复核图和实际导出的 Evidence 即可无密钥重算；原始输入再按场景准备本机资产。三图的原始输入、构图和复跑记录见[新版复演手册](../../backend/docs/graded-rca-demo.md)。
 
 ## 2. 当前输入与分析入口
 

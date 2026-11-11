@@ -153,6 +153,11 @@ def validate_proposal(proposal, units, capabilities):
         )
     if package.execution_policy != ExecutionPolicy():
         raise ValueError("source builds use the shared default execution policy, not LLM weights")
+    if package.graded_policy is not None or any(p.grade for p in package.observable_definitions):
+        raise ValueError(
+            "source builds cannot assign graded curves or budgets; "
+            "review them on the compiled graph"
+        )
     actual_units = {unit.unit_id: unit for unit in units}
     features = {f.feature_id: f for f in capabilities.features}
     for feature in package.feature_registry:

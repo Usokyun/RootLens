@@ -85,4 +85,14 @@ describe('original samples and native Frame submission', () => {
     Object.assign(draft, reconcileAnalysisSelection(draft, catalog()))
     expect(analysisSubmission(draft, catalog())).toMatchObject({ input: { input_mode: 'wafer', reasoner_id: 'unified_abduction' } })
   })
+  it('requires an explicit eligible work graph for graded runs, without changing the old default', () => {
+    const loaded = catalog()
+    loaded.reasoners.push({ reasoner_id: 'graded_abduction', title: '分级', datasets: ['wafer'], description: '', requires_graded_policy: true })
+    loaded.graphs.push({ ...graph('graded', 'wafer'), knowledge: { schema_version: 'rootlens-knowledge-package.v2', graded_policy: { groups: [{}] } } })
+    const draft = { ...createAnalysisDraft({ dataset: 'wafer', graphId: 'wafer', reasonerId: 'graded_abduction' }), file: new File(['actual'], 'wafer.jsonl') }
+    expect(() => analysisSubmission(draft, loaded)).toThrow('兼容的推理器')
+    draft.graphId = 'graded'
+    expect(analysisSubmission(draft, loaded)).toMatchObject({ input: { graph_id: 'graded', reasoner_id: 'graded_abduction' } })
+    expect(reconcileAnalysisSelection({ ...draft, reasonerId: 'unified_abduction' }, loaded).reasonerId).toBe('unified_abduction')
+  })
 })

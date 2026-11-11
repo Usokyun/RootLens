@@ -97,7 +97,7 @@ def analyze_candidate_discriminability(
     absent structural inputs never fall back to logical groups. Existing checks
     are copied, not reinterpreted; a search budget failure remains explicit.
     """
-    if reasoner_id not in {"unified_abduction", "tep_rootkgd"}:
+    if reasoner_id not in {"unified_abduction", "graded_abduction", "tep_rootkgd"}:
         raise ValueError(f"unsupported diagnostic reasoner: {reasoner_id}")
     program = KnowledgeProgram(knowledge)
     evidence = EvidenceFrame.model_validate(
@@ -108,7 +108,8 @@ def analyze_candidate_discriminability(
     if result.get("case_id") != evidence.case_id:
         raise ValueError("diagnostics require the inference's EvidenceFrame")
 
-    unified = reasoner_id == "unified_abduction"
+    graded = reasoner_id == "graded_abduction"
+    unified = reasoner_id != "tep_rootkgd"
     rows = {r["candidate_id"]: r for r in result.get("candidate_evaluations", [])}
     unassessed = {r["candidate_id"]: r for r in result.get("unassessed_candidates", [])}
     identities = sorted(set(result.get("candidate_pool", [])) | rows.keys() | unassessed.keys())
@@ -137,9 +138,10 @@ def analyze_candidate_discriminability(
             groups[signature].append(identity)
         basis = "reachable_expectation_conditions"
         status = "incomplete" if incomplete else "available"
-        note = (
-            "同组候选拥有相同的可达条件与期待模式，当前知识不能用观测区分它们。"
-            "必要、预期、可能及 OR 分支沿用本次推理；假设成本只是成本先验。"
+        note = "同组候选拥有相同的可达条件与期待模式，当前知识不能用观测区分它们。" + (
+            "分级相容分不使用假设先验，组内候选共享已声明的曲线和测量预算。"
+            if graded
+            else "必要、预期、可能及 OR 分支沿用本次推理；假设成本只是成本先验。"
         )
     else:
         unavailable = []
@@ -175,7 +177,9 @@ def analyze_candidate_discriminability(
                 ]
                 if unified
                 else [],
-                cost_priors=[_cost_prior(program, i) for i in members] if unified else [],
+                cost_priors=[_cost_prior(program, i) for i in members]
+                if unified and not graded
+                else [],
                 evidence_distinguishes=False,
             )
         )
@@ -204,7 +208,7 @@ def analyze_candidate_discriminability(
         )
     predicates = set().union(*footprints.values())
     referenced_features = {program.observables[p].feature_id for p in predicates}
-    usage = _evidence_usage(evidence, result, referenced_features, incomplete, unified)
+    usage = _evidence_usage(evidence, result, referenced_features, incomplete, unified, graded)
     return DiscriminabilityReport(
         schema_version="rootlens-candidate-discriminability.v1",
         reasoner_id=reasoner_id,
@@ -277,7 +281,7 @@ def _feature_counts(observations):
     ]
 
 
-def _evidence_usage(frame, result, referenced_features, incomplete, unified):
+def _evidence_usage(frame, result, referenced_features, incomplete, unified, graded):
     observations = {o.obs_id: o for o in frame.observations}
     facts = result.get("grounded_facts", [])
     grounded = {
@@ -287,6 +291,10 @@ def _evidence_usage(frame, result, referenced_features, incomplete, unified):
         score_status, scoring = "unavailable", set()
     elif not result.get("candidate_evaluations"):
         score_status, scoring = "not_ranked", set()
+    elif graded:
+        inputs = result.get("graded_comparison", {}).get("scoring_input_obs_ids")
+        score_status = "available" if inputs else "not_ranked"
+        scoring = set(inputs or []) & observations.keys()
     elif unified:
         score_status = "available"
         scoring = {

@@ -1,0 +1,1624 @@
+{
+  "status": "actual-producer-controls-and-counterfactual-v1",
+  "actual_model": "bottle PatchCore CPU (Anomalib Engine, no VLM)",
+  "counterfactual_note": "One field on the prior frozen 006 Frame changes; not new detector outputs.",
+  "counterfactual": [
+    {
+      "eccentricity": 0.7969506925604166,
+      "actual": true,
+      "original_strict": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "score": -0.25,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "score": -0.25,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "original_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": 1.0,
+            "scoring_details": {
+              "support": 1.0,
+              "conflict": 0.0,
+              "score": 1.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "supported",
+            "score": 1.0,
+            "scoring_details": {
+              "support": 1.0,
+              "conflict": 0.0,
+              "score": 1.0,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "supported",
+            "score": 1.0
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "supported",
+            "score": 1.0
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "score": 1.0,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "score": 1.0,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "insufficient_evidence",
+            "score": 0.0,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.3333333333333333,
+              "score": 0.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "insufficient_evidence",
+            "score": 0.0,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.3333333333333333,
+              "score": 0.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": 1.0,
+            "scoring_details": {
+              "support": 1.0,
+              "conflict": 0.0,
+              "score": 1.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "supported",
+            "score": 1.0,
+            "scoring_details": {
+              "support": 1.0,
+              "conflict": 0.0,
+              "score": 1.0,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 1.0
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "supported",
+            "score": 1.0
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "score": 1.0,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "score": 1.0,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      }
+    },
+    {
+      "eccentricity": 0.899,
+      "actual": false,
+      "original_strict": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "score": -0.25,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "score": -0.25,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "original_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": 0.6708333333333333,
+            "scoring_details": {
+              "support": 0.6708333333333333,
+              "conflict": 0.0,
+              "score": 0.6708333333333333,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "supported",
+            "score": 0.6708333333333333,
+            "scoring_details": {
+              "support": 0.6708333333333333,
+              "conflict": 0.0,
+              "score": 0.6708333333333333,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6708333333333333
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6708333333333333
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "score": 0.6708333333333333,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "score": 0.6708333333333333,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "insufficient_evidence",
+            "score": 0.32916666666666666,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.00416666666666667,
+              "score": 0.32916666666666666,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "insufficient_evidence",
+            "score": 0.32916666666666666,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.00416666666666667,
+              "score": 0.32916666666666666,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": 0.6708333333333333,
+            "scoring_details": {
+              "support": 0.6708333333333333,
+              "conflict": 0.0,
+              "score": 0.6708333333333333,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "supported",
+            "score": 0.6708333333333333,
+            "scoring_details": {
+              "support": 0.6708333333333333,
+              "conflict": 0.0,
+              "score": 0.6708333333333333,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6708333333333333
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6708333333333333
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "score": 0.6708333333333333,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "score": 0.6708333333333333,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      }
+    },
+    {
+      "eccentricity": 0.9,
+      "actual": false,
+      "original_strict": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "supported",
+            "score": -0.25,
+            "scoring_details": {
+              "unexplained_loss": 0.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 0.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 4,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 0
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "score": -0.25,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "score": -0.25,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "original_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 6
+      },
+      "reviewed_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "insufficient_evidence",
+            "score": 0.3333333333333333,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.0,
+              "score": 0.3333333333333333,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "insufficient_evidence",
+            "score": 0.3333333333333333,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.0,
+              "score": 0.3333333333333333,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 6
+      }
+    },
+    {
+      "eccentricity": 0.901,
+      "actual": false,
+      "original_strict": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [],
+        "strict_tentative": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station"
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage"
+          }
+        ],
+        "path_count": 0
+      },
+      "original_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6625,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.00416666666666667,
+              "score": 0.6625,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6625,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.00416666666666667,
+              "score": 0.6625,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6625
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6625
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "supported",
+            "score": 0.33749999999999997,
+            "scoring_details": {
+              "support": 0.33749999999999997,
+              "conflict": 0.0,
+              "score": 0.33749999999999997,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "supported",
+            "score": 0.33749999999999997,
+            "scoring_details": {
+              "support": 0.33749999999999997,
+              "conflict": 0.0,
+              "score": 0.33749999999999997,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6625,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.00416666666666667,
+              "score": 0.6625,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6625,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.00416666666666667,
+              "score": 0.6625,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.33749999999999997
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.33749999999999997
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6625
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6625
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "score": 0.33749999999999997,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "score": 0.33749999999999997,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 14
+      }
+    },
+    {
+      "eccentricity": 0.94,
+      "actual": false,
+      "original_strict": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [],
+        "strict_tentative": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station"
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage"
+          }
+        ],
+        "path_count": 0
+      },
+      "original_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.5000000000000002,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.16666666666666635,
+              "score": 0.5000000000000002,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.5000000000000002,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.16666666666666635,
+              "score": 0.5000000000000002,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.5000000000000002
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.5000000000000002
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "supported",
+            "score": 0.49999999999999967,
+            "scoring_details": {
+              "support": 0.49999999999999967,
+              "conflict": 0.0,
+              "score": 0.49999999999999967,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "supported",
+            "score": 0.49999999999999967,
+            "scoring_details": {
+              "support": 0.49999999999999967,
+              "conflict": 0.0,
+              "score": 0.49999999999999967,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.5000000000000002,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.16666666666666635,
+              "score": 0.5000000000000002,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.5000000000000002,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.16666666666666635,
+              "score": 0.5000000000000002,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.49999999999999967
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.49999999999999967
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.5000000000000002
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.5000000000000002
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "score": 0.49999999999999967,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "score": 0.49999999999999967,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 14
+      }
+    },
+    {
+      "eccentricity": 0.98,
+      "actual": false,
+      "original_strict": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "no_match",
+            "score": -1.75,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.25,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.75,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 4,
+                  "positive_fact_count": 3,
+                  "conflict_count": 1,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [],
+        "strict_tentative": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station"
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage"
+          }
+        ],
+        "path_count": 0
+      },
+      "original_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.3333333333333335,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.33333333333333315,
+              "score": 0.3333333333333335,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.3333333333333335,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.33333333333333315,
+              "score": 0.3333333333333335,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.3333333333333335
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.3333333333333335
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 8
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "supported",
+            "score": 0.6666666666666665,
+            "scoring_details": {
+              "support": 0.6666666666666665,
+              "conflict": 0.0,
+              "score": 0.6666666666666665,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "supported",
+            "score": 0.6666666666666665,
+            "scoring_details": {
+              "support": 0.6666666666666665,
+              "conflict": 0.0,
+              "score": 0.6666666666666665,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.3333333333333335,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.33333333333333315,
+              "score": 0.3333333333333335,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.3333333333333335,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.33333333333333315,
+              "score": 0.3333333333333335,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6666666666666665
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6666666666666665
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.3333333333333335
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.3333333333333335
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "score": 0.6666666666666665,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "score": 0.6666666666666665,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 14
+      }
+    },
+    {
+      "eccentricity": null,
+      "actual": false,
+      "original_strict": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "insufficient_evidence",
+            "score": -1.25,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 3,
+                  "positive_fact_count": 3,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "insufficient_evidence",
+            "score": -1.25,
+            "scoring_details": {
+              "unexplained_loss": 1.0,
+              "conflict_loss": 0.0,
+              "assumption_cost": 1.0,
+              "conflict_weight": 2.0,
+              "assumption_weight": 0.25,
+              "total_cost": 1.25,
+              "groups": [
+                {
+                  "group_id": "image/roi:1",
+                  "observed_fact_count": 3,
+                  "positive_fact_count": 3,
+                  "conflict_count": 0,
+                  "uncovered_positive_count": 3
+                }
+              ],
+              "denominator_policy": "fixed_for_all_context_candidates"
+            }
+          }
+        ],
+        "selected": [],
+        "strict_main": [],
+        "strict_tentative": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station"
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage"
+          }
+        ],
+        "path_count": 0
+      },
+      "original_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 0.6666666666666666
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "candidate_name": "进入工位前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 0.6666666666666666
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance_at_station",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_existing_local_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 6
+      },
+      "reviewed_graph_graded": {
+        "outcome": "insufficient_evidence",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "insufficient_evidence",
+            "score": 0.3333333333333333,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.0,
+              "score": 0.3333333333333333,
+              "coverage": 0.5
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "insufficient_evidence",
+            "score": 0.3333333333333333,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.0,
+              "score": 0.3333333333333333,
+              "coverage": 0.5
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 0.6666666666666666
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "pending",
+            "score": 0.6666666666666666,
+            "scoring_details": {
+              "support": 0.6666666666666666,
+              "conflict": 0.0,
+              "score": 0.6666666666666666,
+              "coverage": 0.6666666666666666
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "pending",
+            "score": 0.6666666666666666
+          }
+        ],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 6
+      }
+    }
+  ],
+  "real_public_controls": {
+    "normal": {
+      "input": "control_normal.png",
+      "case_id": "mvtec_bottle_test_unknown_control_normal/query/1",
+      "detector_boolean": false,
+      "detector_score": 0.352474570274353,
+      "roi_count": 0,
+      "frame_roi": [],
+      "geometry": {},
+      "reviewed_graph_graded": {
+        "outcome": "no_match",
+        "reason": "anomaly_gate_is_false",
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "ruled_out",
+            "score": null
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "ruled_out",
+            "score": null
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "ruled_out",
+            "score": null
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "ruled_out",
+            "score": null
+          }
+        ],
+        "selected": [],
+        "strict_main": [],
+        "strict_tentative": [],
+        "path_count": 0
+      }
+    },
+    "surface": {
+      "input": "control_surface.png",
+      "case_id": "mvtec_bottle_test_unknown_control_surface/query/1",
+      "detector_boolean": true,
+      "detector_score": 0.8510147333145142,
+      "roi_count": 1,
+      "frame_roi": [
+        {
+          "scope_id": "scope:1",
+          "kind": "image_region",
+          "subject_id": "roi:1",
+          "asset_id": "image",
+          "image_shape_hw": [
+            900,
+            900
+          ],
+          "coordinate_space": "original_image_pixels",
+          "bbox_xyxy": [
+            256.640625,
+            260.15625,
+            608.203125,
+            587.109375
+          ]
+        }
+      ],
+      "geometry": {
+        "geometry.area_ratio": {
+          "kind": "number",
+          "number": 0.1019287109375,
+          "unit": "1"
+        },
+        "geometry.aspect_ratio": {
+          "kind": "number",
+          "number": 1.075268817204301,
+          "unit": "1"
+        },
+        "geometry.eccentricity": {
+          "kind": "number",
+          "number": 0.7125467848101271,
+          "unit": "1"
+        },
+        "geometry.component_count": {
+          "kind": "number",
+          "number": 1.0,
+          "unit": "1"
+        },
+        "geometry.morphology": {
+          "kind": "category",
+          "category": "spot"
+        },
+        "geometry.location": {
+          "kind": "category",
+          "category": "surface"
+        }
+      },
+      "reviewed_graph_graded": {
+        "outcome": "ambiguous",
+        "reason": null,
+        "candidates": [
+          {
+            "candidate_id": "hypothesis:bottle:directional_imaging_contrast_change",
+            "candidate_name": "方向性成像对比变化",
+            "status": "insufficient_evidence",
+            "score": 0.0,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.3333333333333333,
+              "score": 0.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:directional_surface_disturbance",
+            "candidate_name": "方向性表面扰动",
+            "status": "insufficient_evidence",
+            "score": 0.0,
+            "scoring_details": {
+              "support": 0.3333333333333333,
+              "conflict": 0.3333333333333333,
+              "score": 0.0,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "candidate_name": "本工位取放接触扰动",
+            "status": "supported",
+            "score": 0.6795247395833333,
+            "scoring_details": {
+              "support": 0.6795247395833333,
+              "conflict": 0.0,
+              "score": 0.6795247395833333,
+              "coverage": 1.0
+            }
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "candidate_name": "进站前已有局部表面损伤",
+            "status": "supported",
+            "score": 0.6795247395833333,
+            "scoring_details": {
+              "support": 0.6795247395833333,
+              "conflict": 0.0,
+              "score": 0.6795247395833333,
+              "coverage": 1.0
+            }
+          }
+        ],
+        "selected": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6795247395833333
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "rank": 1,
+            "status": "supported",
+            "score": 0.6795247395833333
+          }
+        ],
+        "strict_main": [
+          {
+            "candidate_id": "hypothesis:bottle:handling_contact_disturbance",
+            "score": 0.6795247395833333,
+            "rank": 1
+          },
+          {
+            "candidate_id": "hypothesis:bottle:pre_station_surface_damage",
+            "score": 0.6795247395833333,
+            "rank": 1
+          }
+        ],
+        "strict_tentative": [],
+        "path_count": 8
+      }
+    }
+  }
+}

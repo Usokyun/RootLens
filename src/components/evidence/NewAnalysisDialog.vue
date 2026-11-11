@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { ApiError, createApiClient } from '@/api/client'
 import { backendResourceUrl, createTwoLoopClient, type Dataset, type InputVariant, type ReasonerId, type WorkTask } from '@/api/two-loop'
 import {
-  analysisSubmission, createAnalysisDraft, currentDemoSample, datasetNames, demoGraphReference, demoGraphUnavailableNote,
+  analysisReasoners, analysisSubmission, createAnalysisDraft, currentDemoSample, datasetNames, demoGraphReference, demoGraphUnavailableNote,
   demoInputAvailable, enabledAnalysisGraphs, isAnalysisDataset, modeForDraft, readyDemoGraph, reconcileAnalysisSelection,
   sampleIdentity, type AnalysisCatalog, type AnalysisDraftSeed,
 } from '@/services/analysis-draft'
@@ -28,7 +28,7 @@ const sample = computed(() => catalog.value ? currentDemoSample(draft.value, cat
 const availableGraphs = computed(() => enabledAnalysisGraphs(catalog.value?.graphs ?? [], draft.value.dataset))
 const graphUsable = computed(() => availableGraphs.value.some((graph) => graph.graph_id === draft.value.graphId))
 const chosenGraph = computed(() => catalog.value?.graphs.find((graph) => graph.graph_id === draft.value.graphId))
-const compatibleReasoners = computed(() => catalog.value?.reasoners.filter((reasoner) => reasoner.datasets.includes(draft.value.dataset)) ?? [])
+const compatibleReasoners = computed(() => catalog.value ? analysisReasoners(catalog.value, draft.value.dataset, draft.value.graphId) : [])
 const chosenReasoner = computed(() => compatibleReasoners.value.find((reasoner) => reasoner.reasoner_id === draft.value.reasonerId))
 const pairedReference = computed(() => demoGraphReference(sample.value, catalog.value?.demos ?? null))
 const pairedGraph = computed(() => readyDemoGraph(pairedReference.value, catalog.value?.graphs ?? [], draft.value.dataset))
@@ -98,6 +98,7 @@ function chooseGraph(value: unknown) {
   if (typeof value !== 'string' || !availableGraphs.value.some((graph) => graph.graph_id === value)) return
   draft.value.graphId = value
   draft.value.graphOrigin = 'explicit'
+  reconcileSelection()
   submitError.value = ''
 }
 function chooseReasoner(value: unknown) {

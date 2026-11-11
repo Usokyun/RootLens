@@ -385,24 +385,9 @@ class UnifiedReasoner:
                 for fact in grounding.valid(predicate):
                     if fact.fact_id not in option.covered:
                         continue
-                    nodes, edges = self.program.observation_path(
-                        predicate, expectation.pattern_id, option.branch
+                    nodes, views = self.program.diagnostic_path(
+                        predicate, expectation, option.branch, row["candidate_id"], world[1]
                     )
-                    views = [{"edge_id": identity, "reverse": False} for identity in edges]
-                    nodes += [expectation.rule_id, expectation.from_id]
-                    views += [
-                        {"edge_id": expectation.rule_id + "::to", "reverse": True},
-                        {"edge_id": expectation.rule_id + "::from", "reverse": True},
-                    ]
-                    current = expectation.from_id
-                    while current != row["candidate_id"]:
-                        effect = world[1][current]
-                        nodes += [effect.rule_id, effect.from_id]
-                        views += [
-                            {"edge_id": effect.rule_id + "::to", "reverse": True},
-                            {"edge_id": effect.rule_id + "::from", "reverse": True},
-                        ]
-                        current = effect.from_id
                     paths.append(
                         {
                             "path_id": (

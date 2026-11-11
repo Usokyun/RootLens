@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
+from test_graded_reasoner import ECC, graded_public, observation
 from test_two_loop_tasks import MemoryStore, finish
 
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
@@ -80,6 +81,71 @@ def test_inference_requires_enabled_graph_and_compatible_engine(client_runtime):
     response = client.post("/api/tasks/inference", **args)
     assert response.status_code == 400
     assert "TEP" in response.json()["detail"]
+
+
+def test_graded_engine_requires_config_and_saves_the_same_native_analysis_on_reupload(
+    client_runtime, monkeypatch
+):
+    client, manager, record = client_runtime
+    row = next(
+        r
+        for r in client.get("/api/reasoners").json()["reasoners"]
+        if r["reasoner_id"] == "graded_abduction"
+    )
+    assert row["requires_graded_policy"] is True
+    args = {"graph_id": "g", "input_mode": "evidence", "reasoner_id": "graded_abduction"}
+    wrong = client.post(
+        "/api/tasks/inference",
+        data=args,
+        files={"file": ("unread.json", b"{}", "application/json")},
+    )
+    assert wrong.status_code == 400 and "graded_policy" in wrong.json()["detail"]
+    assert not manager.store.tasks
+
+    payload, frames = graded_public("mvtec")
+    package = UnifiedWorkingGraphPackage.model_validate(payload)
+    record.knowledge = package.knowledge
+    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    frame = frames[0]
+    eccentricity = observation(frame, ECC)
+    eccentricity["value"]["number"] = 0.94
+
+    def run(content):
+        response = client.post(
+            "/api/tasks/inference",
+            data=args,
+            files={"file": ("frame.json", content, "application/json")},
+        )
+        assert response.status_code == 202, response.text
+        task = finish(manager, response.json())
+        assert task["status"] == "completed", task["error"]
+        return client.get("/api/analyses/" + task["result"]["run_id"]).json()
+
+    saved = run(json.dumps(frame).encode())
+    assert saved["reasoner_id"] == "graded_abduction"
+    assert saved["working_graph_snapshot"]["knowledge"]["graded_policy"]
+    result = saved["cases"][0]["results"][0]
+    assert result["scoring_method"] == "graded_joint_abduction_v1"
+    assert not result["ranked_root_causes"]
+    pending = result["graded_candidates"]
+    assert [r["score"] for r in pending] == pytest.approx([0.5, 0.5])
+    (counter,) = [
+        p for p in pending[0]["explanation_paths"] if p["contribution_kind"] == "conflict"
+    ]
+    assert counter["observation_locations"][0]["obs_id"] == eccentricity["obs_id"]
+    assert counter["source_assertions"] and counter["joint_proof_id"] is None
+    assert [e["edge_id"] for e in counter["source_edges"]] == [
+        v["edge_id"] for v in counter["source_edge_views"]
+    ]
+    assert all(e["relation"] for e in counter["source_edges"])
+    report = result["authoring_diagnostics"]
+    assert report["evidence_usage"]["score_input_observation_count"] == 3
+    assert report["equivalence_groups"][0]["cost_priors"] == []
+    exported = client.get(saved["evidence_download_url"])
+    assert exported.status_code == 200
+    repeated = run(exported.content)
+    assert repeated["working_graph_snapshot"] == saved["working_graph_snapshot"]
+    assert repeated["cases"] == saved["cases"]
 
 
 def test_history_without_diagnostics_is_not_enriched_from_current_graph(

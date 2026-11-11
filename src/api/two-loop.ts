@@ -2,7 +2,7 @@ import { buildUrl, jsonInit, requestJson } from '@/api/client'
 import type { WorkingGraphSummary } from '@/api/contracts'
 
 export type Dataset = WorkingGraphSummary['dataset']
-export type ReasonerId = 'unified_abduction' | 'tep_rootkgd'
+export type ReasonerId = 'unified_abduction' | 'tep_rootkgd' | 'graded_abduction'
 export type InputMode = 'evidence' | 'records' | 'image' | 'process' | 'wafer'
 export type InputVariant = 'raw' | 'evidence'
 export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'interrupted'
@@ -37,6 +37,7 @@ export interface Reasoner {
   title: string
   datasets: Dataset[]
   description: string
+  requires_graded_policy?: boolean
 }
 export interface AuthoringCapability {
   capability_id: string

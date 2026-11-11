@@ -56,7 +56,7 @@ const resultId = computed(() => completedAnalysisId(task.value))
 const missingResult = computed(() => task.value?.status === 'completed' && !resultId.value)
 const creationBlocked = computed(() => taskIsActive(task.value) || retrying.value)
 const datasetLabels: Record<string, string> = { mvtec: 'MVTec', tep: 'TEP', wafer: 'Wafer' }
-const reasonerLabels: Record<string, string> = { unified_abduction: '统一条件溯因', tep_rootkgd: 'RootKGD' }
+const reasonerLabels: Record<string, string> = { unified_abduction: '统一条件溯因', tep_rootkgd: 'RootKGD', graded_abduction: '分级解释溯因' }
 const inputLabels: Record<string, string> = { image: '原始样本', process: '原始样本', wafer: '原始样本', evidence: '中间 Evidence', records: '测量记录' }
 const date = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
 function createdAt(value: string) {

@@ -17,6 +17,18 @@ export function savedTentativeCandidates(result: unknown) {
   )
 }
 
+export type SavedGradedCandidate = TraceRecord & { candidate_id: string; status: 'supported' | 'pending' }
+
+export function isSavedGradedResult(result: unknown) {
+  return traceRecord(result).scoring_method === 'graded_joint_abduction_v1'
+}
+
+export function savedGradedCandidates(result: unknown): SavedGradedCandidate[] {
+  if (!isSavedGradedResult(result)) return []
+  return traceRows(traceRecord(result).graded_candidates).filter((row): row is SavedGradedCandidate =>
+    typeof row.candidate_id === 'string' && !!row.candidate_id && (row.status === 'supported' || row.status === 'pending'))
+}
+
 export function unifiedQueries(metadata: unknown) {
   const data = traceRecord(metadata)
   const frames = Array.isArray(data.evidence_frames) ? data.evidence_frames : []

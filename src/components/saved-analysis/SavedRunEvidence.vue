@@ -2,13 +2,14 @@
 import { IconInfoCircle, IconList, IconPushpin, IconRelation, IconSearch } from '@arco-design/web-vue/es/icon'
 import { computed, nextTick, ref, watch } from 'vue'
 import type { SavedAnalysis, SavedAnalysisFrame } from '@/services/saved-analysis-reader'
-import { traceRecord, traceRows, traceValue, type TraceRecord } from '@/services/unified-reasoning-display'
+import { isSavedGradedResult, traceRecord, traceRows, traceValue, type TraceRecord } from '@/services/unified-reasoning-display'
 import { channelLabel, featureLabel, isRootPropagation, observationChannel, observationScope, observationStatus, observationUsage, predicateLabel, procedureLabel, savedFacts, scopeLabel, strings, text, truthColor, truthLabel, valueKind, valueLabel } from './presentation'
 import SavedRunPanel from './SavedRunPanel.vue'
 import SavedRunMedia from './SavedRunMedia.vue'
 import SavedRunTrend from './SavedRunTrend.vue'
 import SavedRunWafer from './SavedRunWafer.vue'
 import { savedWaferZone } from './wafer-zone'
+import { gradedObservationUsage } from './graded-presentation'
 
 const props = defineProps<{ analysis: SavedAnalysis; frame: SavedAnalysisFrame; candidate: TraceRecord | null; observationId: string }>()
 const emit = defineEmits<{ observation: [id: string]; graph: [id: string]; reasoning: [] }>()
@@ -35,6 +36,9 @@ const usage = computed(() => observationUsage(props.frame, props.candidate))
 const observedCount = computed(() => new Set([...usage.value.condition, ...usage.value.structural, ...usage.value.support].filter(id => props.frame.observationsById.has(id))).size)
 const unused = computed(() => new Set(traceRows(props.frame.result?.unused_observations).map(row => text(row.obs_id))))
 const isRoot = computed(() => isRootPropagation(props.frame.result))
+const isGraded = computed(() => isSavedGradedResult(props.frame.result))
+const gradeUsage = computed(() => gradedObservationUsage(props.candidate))
+const gradeInput = computed(() => new Set(strings(traceRecord(props.frame.result?.graded_comparison).scoring_input_obs_ids)))
 const media = computed(() => props.frame.media.filter(item => {
   if (scope.value?.kind !== 'image_region') return false
   const meta = traceRecord(item.metadata)
@@ -51,6 +55,13 @@ const mediaName: Record<string, string> = { image_path: '原图', source_path: '
 
 function useLabel(id: string) {
   if (usage.value.structural.has(id)) return { label: '结构评分', color: 'blue', used: true }
+  if (isGraded.value) {
+    const support = gradeUsage.value.support.has(id), conflict = gradeUsage.value.conflict.has(id)
+    if (support && conflict) return { label: '正反贡献', color: 'purple', used: true }
+    if (conflict) return { label: '候选反证', color: 'red', used: true }
+    if (support) return { label: '候选正证', color: 'green', used: true }
+    if (gradeInput.value.has(id)) return { label: '分级评分输入', color: 'blue', used: true }
+  }
   if (usage.value.support.has(id)) return { label: '候选支持', color: 'blue', used: true }
   if (usage.value.condition.has(id)) return { label: '条件核验', color: 'gray', used: true }
   return { label: unused.value.has(id) ? '未使用' : '未标为使用', color: 'gray', used: false }
@@ -85,7 +96,8 @@ watch(() => props.observationId, async (id) => {
     <div class="saved-run-grid saved-run-evidence-grid">
       <SavedRunPanel title="类型化观测" :icon="IconList" flat>
         <template #heading><a-tag color="blue" size="small">{{ observations.length }} 条</a-tag></template>
-        <template #actions><span class="saved-run-muted">{{ isRoot ? `条件核验 ${usage.condition.size} · 结构评分 ${usage.structural.size}` : `${observedCount} 条用于条件核验或候选支持` }}</span></template>
+        <template #actions><span class="saved-run-muted">{{ isRoot ? `条件核验 ${usage.condition.size} · 结构评分 ${usage.structural.size}`
+          : isGraded ? `分级评分输入 ${gradeInput.size} 条` : `${observedCount} 条用于条件核验或候选支持` }}</span></template>
         <div class="saved-run-filters">
           <a-input v-model="query" size="small" placeholder="特征或通道" :input-attrs="{ 'aria-label': '搜索观测' }" allow-clear><template #prefix><IconSearch /></template></a-input>
           <a-select v-model="usedFilter" v-control-label="'观测使用筛选'" size="small" aria-label="观测使用筛选"><a-option value="all">全部观测</a-option><a-option value="used">已使用</a-option><a-option value="unused">未标为使用</a-option></a-select>
@@ -124,7 +136,7 @@ watch(() => props.observationId, async (id) => {
             <SavedRunTrend v-else-if="chosenTrend" :trend="chosenTrend" :scope="scope" :inherited="analysis.backbone.state === 'skipped'" compact />
             <SavedRunWafer v-else-if="(scope?.kind === 'spatial_grid' || waferZone) && frame.waferGrid" :grid="frame.waferGrid" :zone="waferZone" :inherited="analysis.backbone.state === 'skipped'" />
             <p v-else-if="scope?.kind === 'image_region' || selectedChannel && scope?.kind === 'time_window' || scope?.kind === 'spatial_grid' || waferZone" class="saved-run-muted">此观测没有关联可预览的附件。</p>
-            <details v-if="appliedFacts.length" class="saved-run-disclosure">
+            <details v-if="!isGraded && appliedFacts.length" class="saved-run-disclosure">
               <summary>{{ isRoot ? '作者条件（非结构评分输入）' : '关联的保存条件' }}（{{ appliedFacts.length }}）</summary>
               <ul class="saved-run-detail-list"><li v-for="fact in appliedFacts" :key="text(fact.fact_id)"><strong>{{ predicateLabel(fact.predicate_check, text(fact.display_name)) }}</strong><a-tag size="small" :color="truthColor(fact.value)">{{ truthLabel(fact.value) }}</a-tag></li></ul>
             </details>

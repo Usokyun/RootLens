@@ -1,0 +1,221 @@
+{
+  "schema_version": "rootlens-mvtec-graded-verification.v1",
+  "material": {
+    "id": "demo_mvtec_bottle_graded_rca_20261111",
+    "source_bytes": 4218,
+    "retained_bytes_exact": true,
+    "parse_task": "task_04564fc05865469a91ae0202f6b4d4e7",
+    "source_units": [
+      {
+        "chunk_id": "su_16c0a92315b80d96",
+        "source_locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 1929, \"start_line\": 1, \"end_line\": 27}"
+      }
+    ]
+  },
+  "build": {
+    "task_id": "task_2160300bc16b4b70ad82e440e35555e7",
+    "status": "completed",
+    "model": "deepseek-flash",
+    "calls": 1,
+    "tokens": 8119,
+    "repairs": [],
+    "stages": [
+      "parsing",
+      "parsing",
+      "llm",
+      "validation",
+      "compilation",
+      "graph_ready",
+      "completed"
+    ],
+    "graph_id": "graph_d1666b3b6f064b9190ee11b4eb18f692",
+    "enabled_initially": false,
+    "exact_ui_handoff": true
+  },
+  "review": {
+    "before": {
+      "nodes": 62,
+      "edges": 79,
+      "candidates": 6
+    },
+    "after": {
+      "nodes": 46,
+      "edges": 57,
+      "candidates": 4
+    },
+    "edits": {
+      "or_added_predicate": "signature:elongated_response:condition:2",
+      "non_scoring_checks": [
+        "check:bottle:outline",
+        "check:bottle:surface-optics"
+      ],
+      "removed_proxy_patterns": [
+        "signature:surface_or_optical_contrast_pending",
+        "signature:visible_outline_chip_pending"
+      ],
+      "expected_shape_rules": [
+        "expectation:mechanism:bottle:local_contrast_change:signature:large_blocky_response",
+        "expectation:mechanism:bottle:directional_contrast_change:signature:elongated_response"
+      ],
+      "graded_policy": {
+        "groups": [
+          {
+            "group_id": "bottle-patchcore-mask-geometry",
+            "weight": 1,
+            "slots": [
+              {
+                "slot_id": "mask-area",
+                "weight": 1,
+                "predicate_ids": [
+                  "signature:large_blocky_response:condition:0",
+                  "signature:elongated_response:condition:0"
+                ]
+              },
+              {
+                "slot_id": "bbox-axis-ratio",
+                "weight": 1,
+                "predicate_ids": [
+                  "signature:large_blocky_response:condition:1",
+                  "signature:elongated_response:condition:1"
+                ]
+              },
+              {
+                "slot_id": "mask-eccentricity",
+                "weight": 1,
+                "predicate_ids": [
+                  "signature:large_blocky_response:condition:2",
+                  "signature:elongated_response:condition:2"
+                ]
+              }
+            ]
+          }
+        ],
+        "anchor_predicate_ids": [
+          "signature:large_blocky_response:condition:1",
+          "signature:elongated_response:condition:1",
+          "signature:large_blocky_response:condition:2",
+          "signature:elongated_response:condition:2"
+        ]
+      },
+      "three_manual_assertions": [
+        "source:mvtec-graded-human-review:or-repair",
+        "source:mvtec-graded-human-review:shape-expectation",
+        "source:mvtec-graded-human-review:shape-budget"
+      ]
+    },
+    "exact_gui_export": true,
+    "enabled": true
+  },
+  "raw": {
+    "task_id": "task_810ec0af643549eda5081ca53b2cb858",
+    "run_id": "db943d30-e8f3-4613-aad7-7bccb49f8077",
+    "source": "MVTec AD bottle/test/broken_large/006.png",
+    "model": "Bottle PatchCore CPU",
+    "semantic_mode": "disabled",
+    "scoring_method": "graded_joint_abduction_v1",
+    "outcome": "ambiguous",
+    "ranked": [
+      {
+        "id": "hypothesis:bottle:handling_contact_disturbance",
+        "rank": 1,
+        "status": "supported",
+        "score": 1,
+        "support": 1,
+        "conflict": 0,
+        "coverage": 1
+      },
+      {
+        "id": "hypothesis:bottle:pre_station_surface_damage",
+        "rank": 1,
+        "status": "supported",
+        "score": 1,
+        "support": 1,
+        "conflict": 0,
+        "coverage": 1
+      }
+    ],
+    "actual_media": [
+      "image",
+      "mask",
+      "heatmap"
+    ],
+    "original_bytes_exact": true,
+    "roi": {
+      "kind": "image_region",
+      "asset_id": "image",
+      "scope_id": "scope:1",
+      "bbox_xyxy": [
+        98.4375,
+        73.828125,
+        734.765625,
+        643.359375
+      ],
+      "subject_id": "roi:1",
+      "image_shape_hw": [
+        900,
+        900
+      ],
+      "coordinate_space": "original_image_pixels"
+    },
+    "frame_id": "mvtec_bottle_test_unknown_sample_006/query/1",
+    "trace_count": 8
+  },
+  "ordinary_reupload": {
+    "task_id": "task_6da0d79a9aab4b63ade42df3271abd28",
+    "run_id": "aa13c65c-11a4-4e54-bdd7-d7d8905e38af",
+    "top_k": 8,
+    "reasoner_id": "graded_abduction",
+    "frame_exact": true,
+    "graph_snapshot_exact": true,
+    "complete_results_exact": true,
+    "backbone_skipped": true,
+    "available_media": [
+      "image"
+    ]
+  },
+  "localized_trace": {
+    "frameId": "mvtec_bottle_test_unknown_sample_006/query/1",
+    "candidateId": "hypothesis:bottle:handling_contact_disturbance",
+    "obsId": "obs:mvtec_bottle_test_unknown_sample_006:region_1:geometry.eccentricity",
+    "value": {
+      "kind": "number",
+      "unit": "1",
+      "number": 0.7969506925604166
+    },
+    "pathId": "path:graded:mvtec_bottle_test_unknown_sample_006/query/1:hypothesis:bottle:handling_contact_disturbance:expectation:mechanism:bottle:local_contrast_change:signature:large_blocky_response:signature:large_blocky_response:condition:2",
+    "sourceEdgeId": "signature:large_blocky_response:definition::gate::1::input::signature:large_blocky_response:condition:2",
+    "sourceAssertionIds": [
+      "source:cause:0:0",
+      "source:cause:0:1",
+      "source:condition:0:2",
+      "source:mvtec-graded-human-review:shape-budget",
+      "source:mvtec-graded-human-review:shape-expectation",
+      "source:signature:0",
+      "source:signature:1",
+      "source:signature:2",
+      "source:signature:3"
+    ],
+    "roi": {
+      "kind": "image_region",
+      "asset_id": "image",
+      "scope_id": "scope:1",
+      "bbox_xyxy": [
+        98.4375,
+        73.828125,
+        734.765625,
+        643.359375
+      ],
+      "subject_id": "roi:1",
+      "image_shape_hw": [
+        900,
+        900
+      ],
+      "coordinate_space": "original_image_pixels"
+    }
+  },
+  "saved_ui": {
+    "exact_score": true,
+    "exact_candidate_and_condition": true,
+    "same_actual_roi": true
+  }
+}

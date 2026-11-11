@@ -1,0 +1,1359 @@
+{
+  "schema_version": "rootlens-working-graph.v2",
+  "graph_id": "graph_c1cea800587c43c3a2739ec8b812104b",
+  "title": "WM811K · 四种晶圆图案的分级比较",
+  "dataset": "wafer",
+  "build_id": "task_204fb1c9765940c4b202d546aebae0cd",
+  "knowledge": {
+    "schema_version": "rootlens-knowledge-package.v2",
+    "example_kind": null,
+    "graph_id": "graph_c1cea800587c43c3a2739ec8b812104b",
+    "semantics_version": "conjunctive-explanation-v0",
+    "title": "晶圆图案家族空间判别蓝图（演示规则）",
+    "entities": [
+      {
+        "entity_id": "entity:industrial.object:wafer",
+        "label": "wafer",
+        "kind": "Object",
+        "aliases": []
+      }
+    ],
+    "relations": [],
+    "subject_bindings": [
+      {
+        "namespace": "industrial.object",
+        "external_id": "wafer",
+        "target_id": "entity:industrial.object:wafer"
+      }
+    ],
+    "value_bindings": [],
+    "feature_registry": [
+      {
+        "feature_id": "detection.anomaly_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "当前范围的显式异常布尔量，不含原因信息。图像为检测器实际输出；过程为匹配正常参考的PCA残差能量门控；晶圆为非空有效网格中存在失效die。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "presence_gate"
+      },
+      {
+        "feature_id": "spatial.failure_density",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "指定区域失效die数／有效die数；区域为空时缺失。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.valid_die_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "编码为1或2的有效die数。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "context"
+      },
+      {
+        "feature_id": "spatial.failed_die_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "编码为2的失效die数。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.component_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "失效die的八邻域连通分量数。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.largest_component_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "最大八邻域连通分量大小／失效die数；无失效时缺失。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.linearity",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "1-坐标协方差最小／最大特征值；失效die少于3时缺失。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.edge_sector_participation",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "边缘有效die的扇区参与度：以12个30°扇区、每扇区至少5个有效die、至少8个可用扇区且总失效密度非零为前提；各扇区失效密度归一为p，计算1/(k·Σp²)。越高表示失效分布于越多扇区，不是失效比例或概率。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "classifier.pattern",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "独立ResNet模型的八类图案输出，不读取数据集原生标签。",
+        "requires_reference": false,
+        "allowed_values": [
+          "center",
+          "donut",
+          "edge_loc",
+          "edge_ring",
+          "loc",
+          "random",
+          "scratch",
+          "nearfull"
+        ],
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "spatial.grid",
+        "value_kind": "array_ref",
+        "unit": null,
+        "definition": "真实晶圆网格：0背景、1正常、2失效。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "context"
+      }
+    ],
+    "observable_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3"
+        ],
+        "predicate_id": "signature:pattern_nearfull:anomaly",
+        "label": "显式异常前置条件",
+        "feature_id": "detection.anomaly_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:0"
+        ],
+        "predicate_id": "signature:pattern_nearfull:condition:0",
+        "label": "中心区失效密度高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.6,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "center",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:0",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.6,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:1"
+        ],
+        "predicate_id": "signature:pattern_nearfull:condition:1",
+        "label": "中间区失效密度高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.6,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "middle",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:1",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.6,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:2"
+        ],
+        "predicate_id": "signature:pattern_nearfull:condition:2",
+        "label": "边缘区失效密度高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.6,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:2",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.6,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:3"
+        ],
+        "predicate_id": "signature:pattern_nearfull:condition:3",
+        "label": "最大失效连通占比高",
+        "feature_id": "spatial.largest_component_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.7,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:3",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.7,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:4"
+        ],
+        "predicate_id": "signature:pattern_nearfull:condition:4",
+        "label": "分类器输出近全片类别（低权重辅证）",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "nearfull"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:0"
+        ],
+        "predicate_id": "signature:pattern_edge_ring:condition:0",
+        "label": "边缘区失效密度高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.45,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:0",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.45,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:1",
+          "source:condition:2:1",
+          "source:condition:3:1"
+        ],
+        "predicate_id": "signature:pattern_edge_ring:condition:1",
+        "label": "中心区失效密度低",
+        "feature_id": "spatial.failure_density",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.35,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "center",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:1",
+            "source:condition:2:1",
+            "source:condition:3:1",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "lower",
+          "pivot": 0.35,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:2",
+          "source:condition:3:2"
+        ],
+        "predicate_id": "signature:pattern_edge_ring:condition:2",
+        "label": "中间区失效密度低",
+        "feature_id": "spatial.failure_density",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.35,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "middle",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:2",
+            "source:condition:3:2",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "lower",
+          "pivot": 0.35,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:3"
+        ],
+        "predicate_id": "signature:pattern_edge_ring:condition:3",
+        "label": "边缘扇区参与度高",
+        "feature_id": "spatial.edge_sector_participation",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.65,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:3",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.65,
+          "support_width": 0.2,
+          "conflict_width": 0.2,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:4"
+        ],
+        "predicate_id": "signature:pattern_edge_ring:condition:4",
+        "label": "分类器输出边缘环类别（低权重辅证）",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "edge_ring"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:0"
+        ],
+        "predicate_id": "signature:pattern_donut:condition:0",
+        "label": "中间区失效密度高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.45,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "middle",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:2:0",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.45,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:2"
+        ],
+        "predicate_id": "signature:pattern_donut:condition:2",
+        "label": "边缘区失效密度低",
+        "feature_id": "spatial.failure_density",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.35,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:2:2",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "lower",
+          "pivot": 0.35,
+          "support_width": 0.25,
+          "conflict_width": 0.25,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:3"
+        ],
+        "predicate_id": "signature:pattern_donut:condition:3",
+        "label": "分类器输出中间环类别（低权重辅证）",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "donut"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:0"
+        ],
+        "predicate_id": "signature:pattern_edge_loc:condition:0",
+        "label": "边缘区失效密度偏高",
+        "feature_id": "spatial.failure_density",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.12,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:3:0",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "higher",
+          "pivot": 0.12,
+          "support_width": 0.18,
+          "conflict_width": 0.18,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:3"
+        ],
+        "predicate_id": "signature:pattern_edge_loc:condition:3",
+        "label": "边缘扇区参与度低",
+        "feature_id": "spatial.edge_sector_participation",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.45,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "edge",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:3:3",
+            "source:author:wafer:graded-parameters"
+          ],
+          "direction": "lower",
+          "pivot": 0.45,
+          "support_width": 0.2,
+          "conflict_width": 0.2,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:4"
+        ],
+        "predicate_id": "signature:pattern_edge_loc:condition:4",
+        "label": "分类器输出边缘局部类别（低权重辅证）",
+        "feature_id": "classifier.pattern",
+        "op": "eq",
+        "operand": {
+          "kind": "category",
+          "category": "edge_loc"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "spatial_zone",
+          "zone": "all_valid",
+          "parent": "task_scope"
+        },
+        "reference_requirement": null
+      }
+    ],
+    "pattern_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3"
+        ],
+        "definition_id": "signature:pattern_nearfull:definition",
+        "pattern_id": "signature:pattern_nearfull",
+        "label": "近全片失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_nearfull:anomaly",
+            {
+              "all": [
+                "signature:pattern_nearfull:condition:0",
+                "signature:pattern_nearfull:condition:1",
+                "signature:pattern_nearfull:condition:2",
+                "signature:pattern_nearfull:condition:3"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:1"
+        ],
+        "definition_id": "signature:pattern_edge_ring:definition",
+        "pattern_id": "signature:pattern_edge_ring",
+        "label": "边缘环状失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_nearfull:anomaly",
+            {
+              "all": [
+                "signature:pattern_edge_ring:condition:0",
+                "signature:pattern_edge_ring:condition:1",
+                "signature:pattern_edge_ring:condition:2",
+                "signature:pattern_edge_ring:condition:3"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:2"
+        ],
+        "definition_id": "signature:pattern_donut:definition",
+        "pattern_id": "signature:pattern_donut",
+        "label": "中间环状失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_nearfull:anomaly",
+            {
+              "all": [
+                "signature:pattern_donut:condition:0",
+                "signature:pattern_edge_ring:condition:1",
+                "signature:pattern_donut:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:3"
+        ],
+        "definition_id": "signature:pattern_edge_loc:definition",
+        "pattern_id": "signature:pattern_edge_loc",
+        "label": "边缘局部失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_nearfull:anomaly",
+            {
+              "all": [
+                "signature:pattern_edge_loc:condition:0",
+                "signature:pattern_edge_ring:condition:1",
+                "signature:pattern_edge_ring:condition:2",
+                "signature:pattern_edge_loc:condition:3"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "definition_id": "signature:pattern_nearfull:classifier-advice:definition",
+        "pattern_id": "signature:pattern_nearfull:classifier-advice",
+        "label": "分类辅证：近全片失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_nearfull:condition:4"
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "definition_id": "signature:pattern_edge_ring:classifier-advice:definition",
+        "pattern_id": "signature:pattern_edge_ring:classifier-advice",
+        "label": "分类辅证：边缘环状失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_edge_ring:condition:4"
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:3",
+          "source:author:wafer:graded-parameters"
+        ],
+        "definition_id": "signature:pattern_donut:classifier-advice:definition",
+        "pattern_id": "signature:pattern_donut:classifier-advice",
+        "label": "分类辅证：中间环状失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_donut:condition:3"
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "definition_id": "signature:pattern_edge_loc:classifier-advice:definition",
+        "pattern_id": "signature:pattern_edge_loc:classifier-advice",
+        "label": "分类辅证：边缘局部失效图案",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:pattern_edge_loc:condition:4"
+          ]
+        },
+        "scope_join": "same_subject_parent_scope"
+      }
+    ],
+    "mechanisms": [
+      {
+        "mechanism_id": "mechanism:wafer:spatial_state_nearfull",
+        "label": "全片广布且连成大片的失效空间状态"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_state_edge_ring",
+        "label": "外带富集且沿多方向分布的失效空间状态"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_state_donut",
+        "label": "中带富集而内外侧较低的失效空间状态"
+      },
+      {
+        "mechanism_id": "mechanism:wafer:spatial_state_edge_loc",
+        "label": "外带失效集中于少数方向的失效空间状态"
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_family_nearfull",
+        "label": "近全片失效图案家族",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_family_edge_ring",
+        "label": "边缘环状失效图案家族",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_family_donut",
+        "label": "中间环状失效图案家族",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:wafer:pattern_family_edge_loc",
+        "label": "边缘局部失效图案家族",
+        "target_role": "pattern_family",
+        "applies_to_class_id": "entity:industrial.object:wafer",
+        "assumption_cost": 1
+      }
+    ],
+    "effect_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_family_nearfull:mechanism:wafer:spatial_state_nearfull",
+        "from_id": "hypothesis:wafer:pattern_family_nearfull",
+        "to_id": "mechanism:wafer:spatial_state_nearfull"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_family_edge_ring:mechanism:wafer:spatial_state_edge_ring",
+        "from_id": "hypothesis:wafer:pattern_family_edge_ring",
+        "to_id": "mechanism:wafer:spatial_state_edge_ring"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:2:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_family_donut:mechanism:wafer:spatial_state_donut",
+        "from_id": "hypothesis:wafer:pattern_family_donut",
+        "to_id": "mechanism:wafer:spatial_state_donut"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:3:0"
+        ],
+        "rule_id": "effect:hypothesis:wafer:pattern_family_edge_loc:mechanism:wafer:spatial_state_edge_loc",
+        "from_id": "hypothesis:wafer:pattern_family_edge_loc",
+        "to_id": "mechanism:wafer:spatial_state_edge_loc"
+      }
+    ],
+    "expectation_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_nearfull:signature:pattern_nearfull",
+        "from_id": "mechanism:wafer:spatial_state_nearfull",
+        "pattern_id": "signature:pattern_nearfull",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_edge_ring:signature:pattern_edge_ring",
+        "from_id": "mechanism:wafer:spatial_state_edge_ring",
+        "pattern_id": "signature:pattern_edge_ring",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:2:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_donut:signature:pattern_donut",
+        "from_id": "mechanism:wafer:spatial_state_donut",
+        "pattern_id": "signature:pattern_donut",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:3:0"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_edge_loc:signature:pattern_edge_loc",
+        "from_id": "mechanism:wafer:spatial_state_edge_loc",
+        "pattern_id": "signature:pattern_edge_loc",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_nearfull:signature:pattern_nearfull:classifier-advice",
+        "from_id": "mechanism:wafer:spatial_state_nearfull",
+        "pattern_id": "signature:pattern_nearfull:classifier-advice",
+        "mode": "possible"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_edge_ring:signature:pattern_edge_ring:classifier-advice",
+        "from_id": "mechanism:wafer:spatial_state_edge_ring",
+        "pattern_id": "signature:pattern_edge_ring:classifier-advice",
+        "mode": "possible"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:2:3",
+          "source:author:wafer:graded-parameters"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_donut:signature:pattern_donut:classifier-advice",
+        "from_id": "mechanism:wafer:spatial_state_donut",
+        "pattern_id": "signature:pattern_donut:classifier-advice",
+        "mode": "possible"
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:3:4",
+          "source:author:wafer:graded-parameters"
+        ],
+        "rule_id": "expectation:mechanism:wafer:spatial_state_edge_loc:signature:pattern_edge_loc:classifier-advice",
+        "from_id": "mechanism:wafer:spatial_state_edge_loc",
+        "pattern_id": "signature:pattern_edge_loc:classifier-advice",
+        "mode": "possible"
+      }
+    ],
+    "execution_policy": {
+      "conflict_weight": 2,
+      "assumption_weight": 0.25,
+      "score_mapping": "negative_explanation_cost",
+      "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+      "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+      "positive_coverage": "complete_joint_pattern_only",
+      "group_aggregation": "equal_budget_normalized_mean",
+      "primitive_comparison": "discrete_boolean_v0",
+      "missing": "unknown_not_negative",
+      "tie_epsilon": 1e-9
+    },
+    "graded_policy": {
+      "groups": [
+        {
+          "group_id": "grid",
+          "weight": 1,
+          "slots": [
+            {
+              "slot_id": "classifier_pattern",
+              "weight": 0.5,
+              "predicate_ids": [
+                "signature:pattern_donut:condition:3",
+                "signature:pattern_edge_loc:condition:4",
+                "signature:pattern_edge_ring:condition:4",
+                "signature:pattern_nearfull:condition:4"
+              ]
+            },
+            {
+              "slot_id": "density.center",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:pattern_edge_ring:condition:1",
+                "signature:pattern_nearfull:condition:0"
+              ]
+            },
+            {
+              "slot_id": "density.edge",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:pattern_donut:condition:2",
+                "signature:pattern_edge_loc:condition:0",
+                "signature:pattern_edge_ring:condition:0",
+                "signature:pattern_nearfull:condition:2"
+              ]
+            },
+            {
+              "slot_id": "density.middle",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:pattern_donut:condition:0",
+                "signature:pattern_edge_ring:condition:2",
+                "signature:pattern_nearfull:condition:1"
+              ]
+            },
+            {
+              "slot_id": "edge_sector_participation",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:pattern_edge_loc:condition:3",
+                "signature:pattern_edge_ring:condition:3"
+              ]
+            },
+            {
+              "slot_id": "largest_component",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:pattern_nearfull:condition:3"
+              ]
+            }
+          ]
+        }
+      ],
+      "anchor_predicate_ids": [
+        "signature:pattern_donut:condition:0",
+        "signature:pattern_donut:condition:2",
+        "signature:pattern_edge_loc:condition:0",
+        "signature:pattern_edge_loc:condition:3",
+        "signature:pattern_edge_ring:condition:0",
+        "signature:pattern_edge_ring:condition:1",
+        "signature:pattern_edge_ring:condition:2",
+        "signature:pattern_edge_ring:condition:3",
+        "signature:pattern_nearfull:condition:0",
+        "signature:pattern_nearfull:condition:1",
+        "signature:pattern_nearfull:condition:2",
+        "signature:pattern_nearfull:condition:3"
+      ]
+    },
+    "source_assertions": [
+      {
+        "assertion_id": "source:signature:0",
+        "origin": "source_explicit",
+        "text": "近全片图案由三区高密度与高连通占比共同刻画。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:0",
+        "origin": "declared_demo_heuristic",
+        "text": "近全片图案要求中心区失效密度高于0.60。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:1",
+        "origin": "declared_demo_heuristic",
+        "text": "近全片图案要求中间区失效密度高于0.60。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:2",
+        "origin": "declared_demo_heuristic",
+        "text": "近全片图案要求边缘区失效密度高于0.60。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:3",
+        "origin": "declared_demo_heuristic",
+        "text": "近全片图案要求全片最大失效连通分量占比高于0.70，即广布且连成大片。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:4",
+        "origin": "source_explicit",
+        "text": "分类器输出nearfull仅作低权重possible辅证，不替代空间条件。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:0",
+        "origin": "source_explicit",
+        "text": "近全片图案表现为中心、中间、边缘三区密度均高且失效连成大片。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:1",
+        "origin": "source_explicit",
+        "text": "边缘环图案由边缘高密度、中心与中间低密度及高扇区参与度共同刻画。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:0",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘环图案要求边缘区失效密度高于0.45。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:1",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘环图案要求中心区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:2",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘环图案要求中间区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:3",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘环图案要求边缘扇区参与度高于0.65，即失效沿多个方向分布。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:4",
+        "origin": "source_explicit",
+        "text": "分类器输出edge_ring仅作低权重possible辅证。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:0",
+        "origin": "source_explicit",
+        "text": "边缘区失效密度较高，中心与中间较低，外带失效分布于多个方向。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:2",
+        "origin": "source_explicit",
+        "text": "中间环图案由中间高密度与中心、边缘低密度共同刻画。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:0",
+        "origin": "declared_demo_heuristic",
+        "text": "中间环图案要求中间区失效密度高于0.45。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:1",
+        "origin": "declared_demo_heuristic",
+        "text": "中间环图案要求中心区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:2",
+        "origin": "declared_demo_heuristic",
+        "text": "中间环图案要求边缘区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:2:3",
+        "origin": "source_explicit",
+        "text": "分类器输出donut仅作低权重possible辅证。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:2:0",
+        "origin": "source_explicit",
+        "text": "中间环图案表现为中带富集而中心与边缘较低。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:3",
+        "origin": "source_explicit",
+        "text": "边缘局部图案由边缘偏高密度、中心与中间低密度及低扇区参与度共同刻画。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:0",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘局部图案要求边缘区失效密度高于0.12。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:1",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘局部图案要求中心区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:2",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘局部图案要求中间区失效密度低于0.35。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:3",
+        "origin": "declared_demo_heuristic",
+        "text": "边缘局部图案要求边缘扇区参与度低于0.45，即失效集中在少数方向。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:3:4",
+        "origin": "source_explicit",
+        "text": "分类器输出edge_loc仅作低权重possible辅证。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:3:0",
+        "origin": "source_explicit",
+        "text": "边缘局部图案表现为有外带失效但集中在少数方向。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"char_end\": 1972, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:author:wafer:graded-parameters",
+        "origin": "declared_demo_heuristic",
+        "text": "人工编辑：按公开自著材料设置密度及连通宽度0.25、边缘局部边缘密度0.18、扇区宽度0.20，均无中性带。同一原网格的一组预算内，三区密度、连通性和扇区各一个名义权重为1的槽，分类辅证权重为0.5；异常前置不计分，实际图案候选需所选空间锚点均得到净支持。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_wafer_graded_public_source_20261111",
+        "source_unit_id": "su_acc2a5d1adec0bcb",
+        "locator": "{\"type\": \"text\", \"start_line\": 23, \"end_line\": 23}"
+      }
+    ]
+  }
+}

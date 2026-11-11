@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import combinations, product
 
 from kgtracevis.schema.unified_knowledge import (
@@ -35,6 +35,9 @@ class ProofBranch:
     predicates: frozenset[str]
     # Each definition retains its own join even after nested expressions expand.
     joins: tuple[tuple[str, frozenset[str]], ...] = ()
+    # Logically identical branches still deduplicate by predicates/joins. This
+    # witness pins their surviving actual edges instead of searching another OR arm.
+    edge_ids: frozenset[str] = field(default=frozenset(), compare=False, repr=False)
 
 
 class KnowledgeProgram:
@@ -117,41 +120,75 @@ class KnowledgeProgram:
             # A circular definition supplies no finite proof of its own truth.
             return []
         definition = self.patterns[pattern_id]
+        identity = definition.definition_id
         return [
-            ProofBranch(b.predicates, b.joins + ((definition.definition_id, b.predicates),))
-            for b in self._expression_branches(definition.body, seen | {pattern_id})
+            ProofBranch(
+                b.predicates,
+                b.joins + ((identity, b.predicates),),
+                b.edge_ids | {identity + "::head"},
+            )
+            for b in self._expression_branches(
+                definition.body, seen | {pattern_id}, identity, identity
+            )
         ]
 
-    def _expression_branches(self, expression, seen):
+    def _expression_branches(self, expression, seen, definition, target, location=""):
         if isinstance(expression, str):
+            edge = target + "::input::" + expression
             if expression in self.observables:
-                return [ProofBranch(frozenset({expression}))]
-            return self._pattern_branches(expression, seen)
+                return [ProofBranch(frozenset({expression}), edge_ids=frozenset({edge}))]
+            return [
+                ProofBranch(b.predicates, b.joins, b.edge_ids | {edge})
+                for b in self._pattern_branches(expression, seen)
+            ]
         if isinstance(expression, AllExpression):
-            groups = [expression.all]
+            children = expression.all
+            groups = [range(len(children))]
         elif isinstance(expression, AnyExpression):
-            groups = [[x] for x in expression.any]
+            children = expression.any
+            groups = [(i,) for i in range(len(children))]
         elif isinstance(expression, AtLeastExpression):
-            groups = combinations(expression.at_least.of, expression.at_least.count)
+            children = expression.at_least.of
+            groups = combinations(range(len(children)), expression.at_least.count)
         else:
             raise TypeError("unknown expression")
         result = {}
         expanded = 0
         for group in groups:
-            options = [self._expression_branches(x, seen) for x in group]
+            options = []
+            for index in group:
+                child = children[index]
+                if isinstance(child, str):
+                    options.append(
+                        self._expression_branches(child, seen, definition, target, location)
+                    )
+                else:
+                    gate = f"{definition}::gate::{location}{index}"
+                    options.append(
+                        [
+                            ProofBranch(b.predicates, b.joins, b.edge_ids | {gate + "::parent"})
+                            for b in self._expression_branches(
+                                child, seen, definition, gate, f"{location}{index}."
+                            )
+                        ]
+                    )
             for parts in product(*options):
                 expanded += 1
                 if expanded > self.limits.combinations:
                     raise SearchIncomplete("expression-combination limit exceeded")
                 predicates = frozenset().union(*(p.predicates for p in parts))
                 joins = tuple(dict.fromkeys(j for p in parts for j in p.joins))
-                branch = ProofBranch(predicates, joins)
+                branch = ProofBranch(
+                    predicates, joins, frozenset().union(*(p.edge_ids for p in parts))
+                )
                 result[(predicates, joins)] = branch
                 if len(result) > self.limits.branches:
                     raise SearchIncomplete("proof-branch limit exceeded")
         return sorted(result.values(), key=lambda b: (sorted(b.predicates), repr(b.joins)))
 
-    def observation_path(self, predicate_id: str, pattern_id: str, branch: ProofBranch):
+    def observation_path(
+        self, predicate_id: str, pattern_id: str, branch: ProofBranch, *, exact=False
+    ):
         """Use only actual input/definition edges of the selected proof."""
         allowed = {d for d, _ in branch.joins}
         queue = [(predicate_id, [predicate_id], [])]
@@ -164,6 +201,8 @@ class KnowledgeProgram:
                 continue
             seen.add(current)
             for edge in sorted(self.edges.values(), key=lambda e: e["edge_id"]):
+                if exact and edge["edge_id"] not in branch.edge_ids:
+                    continue
                 if edge["head"] != current or edge["relation"] not in {"INPUT_OF", "DEFINES"}:
                     continue
                 target = edge["tail"]
@@ -173,6 +212,29 @@ class KnowledgeProgram:
                     continue
                 queue.append((target, nodes + [target], edges + [edge["edge_id"]]))
         raise ValueError("selected proof has no actual graph path")
+
+    def diagnostic_path(
+        self, predicate_id, expectation, branch, candidate_id, parents, *, exact=False
+    ):
+        nodes, edge_ids = self.observation_path(
+            predicate_id, expectation.pattern_id, branch, exact=exact
+        )
+        views = [{"edge_id": identity, "reverse": False} for identity in edge_ids]
+        nodes += [expectation.rule_id, expectation.from_id]
+        views.extend(
+            {"edge_id": expectation.rule_id + suffix, "reverse": True}
+            for suffix in ("::to", "::from")
+        )
+        current = expectation.from_id
+        while current != candidate_id:
+            effect = parents[current]
+            nodes += [effect.rule_id, effect.from_id]
+            views.extend(
+                {"edge_id": effect.rule_id + suffix, "reverse": True}
+                for suffix in ("::to", "::from")
+            )
+            current = effect.from_id
+        return nodes, views
 
 
 def project_knowledge(package: KnowledgePackage) -> dict:

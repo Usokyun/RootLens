@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from math import sqrt
 from typing import Any
 
@@ -186,25 +187,72 @@ def _failed_positions(rows: Sequence[Sequence[Any]]) -> set[tuple[int, int]]:
     return positions
 
 
+def _encoded_grid(wafer_map):
+    import numpy as np
+
+    grid = np.asarray(wafer_map)
+    if grid.ndim != 2 or not grid.size or not np.isin(grid, [0, 1, 2]).all():
+        raise ValueError("WM811K map must be a nonempty 0/1/2 grid")
+    return grid
+
+
+def _radial_coordinates(valid):
+    """Shared valid-bbox normalization for the radial and angular measurements."""
+    import numpy as np
+
+    vy, vx = np.where(valid)
+    if not vx.size:
+        return np.zeros(valid.shape), np.zeros(valid.shape), np.ones(valid.shape)
+    y, x = np.indices(valid.shape)
+    cx, cy = (vx.max() + vx.min()) / 2, (vy.max() + vy.min()) / 2
+    nx = (x - cx) / max((vx.max() - vx.min()) / 2, 1)
+    ny = (y - cy) / max((vy.max() - vy.min()) / 2, 1)
+    return nx, ny, np.sqrt(nx**2 + ny**2)
+
+
+@dataclass(frozen=True)
+class EdgeSectorMeasurement:
+    """Twelve ordered sectors; angle zero is rightward and increases clockwise."""
+
+    valid: tuple[int, ...]
+    failed: tuple[int, ...]
+    eligible: tuple[bool, ...]
+    participation: float | None
+
+
+def measure_edge_sectors(wafer_map) -> EdgeSectorMeasurement:
+    """Effective participating fraction of eligible edge sectors, not a class score."""
+    import numpy as np
+
+    grid = _encoded_grid(wafer_map)
+    valid = grid > 0
+    nx, ny, radius = _radial_coordinates(valid)
+    edge = valid & (radius >= 0.8)
+    angles = np.mod(np.arctan2(ny[edge], nx[edge]), 2 * np.pi)
+    # The upper bound guards rounding at the wrap into the first direction.
+    sectors = np.minimum((angles * (12 / (2 * np.pi))).astype(int), 11)
+    totals = np.bincount(sectors, minlength=12)
+    failures = np.bincount(sectors[grid[edge] == 2], minlength=12)
+    eligible = totals >= 5
+    count = int(eligible.sum())
+    value = None
+    if count >= 8 and failures[eligible].sum() > 0:
+        density = failures[eligible] / totals[eligible]
+        value = min(1.0, float(density.sum() ** 2 / (count * np.dot(density, density))))
+    return EdgeSectorMeasurement(
+        tuple(map(int, totals)), tuple(map(int, failures)), tuple(map(bool, eligible)), value
+    )
+
+
 def measure_wafer_map(wafer_map):
     """Measure valid die, radial densities and shape without using a predicted pattern."""
     import numpy as np
 
     from kgtracevis.schema.measured_reasoning import WaferMeasurements
 
-    a = np.asarray(wafer_map)
-    if a.ndim != 2 or not a.size or not np.isin(a, [0, 1, 2]).all():
-        raise ValueError("WM811K map must be a nonempty 0/1/2 grid")
+    a = _encoded_grid(wafer_map)
     valid, failed = a > 0, a == 2
-    y, x = np.indices(a.shape)
-    vy, vx = np.where(valid)
-    radius = np.ones(a.shape)
-    if vx.size:
-        cx, cy = (vx.max() + vx.min()) / 2, (vy.max() + vy.min()) / 2
-        radius = np.sqrt(
-            ((x - cx) / max((vx.max() - vx.min()) / 2, 1)) ** 2
-            + ((y - cy) / max((vy.max() - vy.min()) / 2, 1)) ** 2
-        )
+    _, _, radius = _radial_coordinates(valid)
 
     def density(zone):
         count = int((valid & zone).sum())

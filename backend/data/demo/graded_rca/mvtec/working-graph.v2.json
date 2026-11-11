@@ -1,0 +1,759 @@
+{
+  "schema_version": "rootlens-working-graph.v2",
+  "graph_id": "graph_d1666b3b6f064b9190ee11b4eb18f692",
+  "title": "MVTec Bottle · 块状与细长响应",
+  "dataset": "mvtec",
+  "build_id": "task_2160300bc16b4b70ad82e440e35555e7",
+  "knowledge": {
+    "schema_version": "rootlens-knowledge-package.v2",
+    "example_kind": null,
+    "graph_id": "graph_d1666b3b6f064b9190ee11b4eb18f692",
+    "semantics_version": "conjunctive-explanation-v0",
+    "title": "玻璃瓶局部异常响应形态与待核验机理知识蓝图",
+    "entities": [
+      {
+        "entity_id": "entity:industrial.object:bottle",
+        "label": "玻璃瓶 · Bottle",
+        "kind": "Object",
+        "aliases": [
+          "玻璃容器",
+          "MVTec Bottle（检测对象）"
+        ]
+      },
+      {
+        "entity_id": "check:bottle:outline",
+        "label": "待核验 · 可见外轮廓缺口",
+        "kind": "InspectionCheck",
+        "aliases": []
+      },
+      {
+        "entity_id": "check:bottle:surface-optics",
+        "label": "待核验 · 表面／光路对比变化",
+        "kind": "InspectionCheck",
+        "aliases": []
+      }
+    ],
+    "relations": [
+      {
+        "source_assertion_ids": [
+          "source:signature:2",
+          "source:cause:2:0"
+        ],
+        "relation_id": "relation:bottle:review-outline",
+        "head": "entity:industrial.object:bottle",
+        "relation": "NEEDS_VERIFICATION",
+        "tail": "check:bottle:outline"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:3",
+          "source:cause:3:0"
+        ],
+        "relation_id": "relation:bottle:review-surface-optics",
+        "head": "entity:industrial.object:bottle",
+        "relation": "NEEDS_VERIFICATION",
+        "tail": "check:bottle:surface-optics"
+      }
+    ],
+    "subject_bindings": [
+      {
+        "namespace": "industrial.object",
+        "external_id": "bottle",
+        "target_id": "entity:industrial.object:bottle"
+      }
+    ],
+    "value_bindings": [],
+    "feature_registry": [
+      {
+        "feature_id": "detection.anomaly_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "当前范围的显式异常布尔量，不含原因信息。图像为检测器实际输出；过程为匹配正常参考的PCA残差能量门控；晶圆为非空有效网格中存在失效die。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "presence_gate"
+      },
+      {
+        "feature_id": "geometry.area_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "区域连通分量像素数／检测网格总像素数。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "geometry.aspect_ratio",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "轴对齐包围框长边／短边。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "geometry.eccentricity",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "由连通分量坐标协方差特征值计算的离心率，范围[0,1]。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "geometry.component_count",
+        "value_kind": "number",
+        "unit": "1",
+        "definition": "本区域保留的连通分量数。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "geometry.morphology",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "掩膜粗形态，不是缺陷类别。原始单ROI：长宽比>=3或离心率>=.95为linear，否则spot。外部聚合几何依次检查：离心率>=.8或长宽比>=3为linear；分量>=4为scattered；面积占比>=.35为dense；其余正面积为spot。外部术语需明确等价绑定，不自动猜测。",
+        "requires_reference": false,
+        "allowed_values": [
+          "linear",
+          "spot",
+          "scattered",
+          "dense"
+        ],
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "geometry.location",
+        "value_kind": "category",
+        "unit": null,
+        "definition": "图像网格质心：任一归一化坐标<=.2或>=.8为edge，否则surface。不是瓶口等解剖部位；外部术语需明确等价绑定。",
+        "requires_reference": false,
+        "allowed_values": [
+          "edge",
+          "surface"
+        ],
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "appearance.semantic_candidates",
+        "value_kind": "candidate_set",
+        "unit": null,
+        "definition": "ROI视觉语言模型的开放外观候选，不设有限枚举。规则以candidate_contains匹配；缺少某词仍为未知。粗粒度玻璃破损描述不能补出具体瓶口或缺损部位。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "diagnostic"
+      },
+      {
+        "feature_id": "appearance.defect_present",
+        "value_kind": "boolean",
+        "unit": null,
+        "definition": "视觉语言模型显式判断正常／缺陷；不确定时缺失。",
+        "requires_reference": false,
+        "allowed_values": null,
+        "semantic_role": "presence_gate"
+      }
+    ],
+    "observable_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3"
+        ],
+        "predicate_id": "signature:large_blocky_response:anomaly",
+        "label": "显式异常前置条件",
+        "feature_id": "detection.anomaly_present",
+        "op": "bool_eq",
+        "operand": {
+          "kind": "boolean",
+          "boolean": true
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:0"
+        ],
+        "predicate_id": "signature:large_blocky_response:condition:0",
+        "label": "面积占比不低于0.10",
+        "feature_id": "geometry.area_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.1,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:0",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "higher",
+          "pivot": 0.1,
+          "support_width": 0.05,
+          "conflict_width": 0.05,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:1"
+        ],
+        "predicate_id": "signature:large_blocky_response:condition:1",
+        "label": "长短比不大于2.0",
+        "feature_id": "geometry.aspect_ratio",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:1",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "lower",
+          "pivot": 2,
+          "support_width": 0.5,
+          "conflict_width": 0.5,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:0:2"
+        ],
+        "predicate_id": "signature:large_blocky_response:condition:2",
+        "label": "离心率不大于0.90",
+        "feature_id": "geometry.eccentricity",
+        "op": "lte",
+        "operand": {
+          "kind": "number",
+          "number": 0.9,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:0:2",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "lower",
+          "pivot": 0.9,
+          "support_width": 0.08,
+          "conflict_width": 0.08,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:0"
+        ],
+        "predicate_id": "signature:elongated_response:condition:0",
+        "label": "面积占比不低于0.01",
+        "feature_id": "geometry.area_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.01,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:0",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "higher",
+          "pivot": 0.01,
+          "support_width": 0.01,
+          "conflict_width": 0.01,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:1"
+        ],
+        "predicate_id": "signature:elongated_response:condition:1",
+        "label": "轴对齐长短比不低于 2.0",
+        "feature_id": "geometry.aspect_ratio",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 2,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:1",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "higher",
+          "pivot": 2,
+          "support_width": 0.5,
+          "conflict_width": 0.5,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      },
+      {
+        "source_assertion_ids": [
+          "source:condition:1:1",
+          "source:mvtec-graded-human-review:or-repair"
+        ],
+        "predicate_id": "signature:elongated_response:condition:2",
+        "label": "主轴离心率不低于 0.90",
+        "feature_id": "geometry.eccentricity",
+        "op": "gte",
+        "operand": {
+          "kind": "number",
+          "number": 0.9,
+          "unit": "1"
+        },
+        "subject_selector": {
+          "kind": "focus"
+        },
+        "scope_selector": {
+          "kind": "task_scope"
+        },
+        "reference_requirement": null,
+        "grade": {
+          "source_assertion_ids": [
+            "source:condition:1:1",
+            "source:mvtec-graded-human-review:or-repair",
+            "source:mvtec-graded-human-review:shape-budget"
+          ],
+          "direction": "higher",
+          "pivot": 0.9,
+          "support_width": 0.08,
+          "conflict_width": 0.08,
+          "neutral_support": 0,
+          "neutral_conflict": 0,
+          "unit": "1",
+          "basis": "declared_demo_heuristic"
+        }
+      }
+    ],
+    "pattern_definitions": [
+      {
+        "source_assertion_ids": [
+          "source:signature:0",
+          "source:signature:1",
+          "source:signature:2",
+          "source:signature:3"
+        ],
+        "definition_id": "signature:large_blocky_response:definition",
+        "pattern_id": "signature:large_blocky_response",
+        "label": "较大块状异常响应",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:large_blocky_response:anomaly",
+            {
+              "all": [
+                "signature:large_blocky_response:condition:0",
+                "signature:large_blocky_response:condition:1",
+                "signature:large_blocky_response:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_same_scope"
+      },
+      {
+        "source_assertion_ids": [
+          "source:signature:1",
+          "source:mvtec-graded-human-review:or-repair"
+        ],
+        "definition_id": "signature:elongated_response:definition",
+        "pattern_id": "signature:elongated_response",
+        "label": "细长异常响应（包围框或主轴拉伸任一成立）",
+        "semantics": "iff",
+        "body": {
+          "all": [
+            "signature:large_blocky_response:anomaly",
+            "signature:elongated_response:condition:0",
+            {
+              "any": [
+                "signature:elongated_response:condition:1",
+                "signature:elongated_response:condition:2"
+              ]
+            }
+          ]
+        },
+        "scope_join": "same_subject_same_scope"
+      }
+    ],
+    "mechanisms": [
+      {
+        "mechanism_id": "mechanism:bottle:local_contrast_change",
+        "label": "局部对比改变"
+      },
+      {
+        "mechanism_id": "mechanism:bottle:directional_contrast_change",
+        "label": "方向性表面扰动或方向性成像对比变化"
+      }
+    ],
+    "hypotheses": [
+      {
+        "hypothesis_id": "hypothesis:bottle:handling_contact_disturbance",
+        "label": "本工位取放接触扰动",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:pre_station_surface_damage",
+        "label": "进站前已有局部表面损伤",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:directional_surface_disturbance",
+        "label": "方向性表面扰动",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1
+      },
+      {
+        "hypothesis_id": "hypothesis:bottle:directional_imaging_contrast_change",
+        "label": "方向性成像对比变化",
+        "target_role": "mechanism",
+        "applies_to_class_id": "entity:industrial.object:bottle",
+        "assumption_cost": 1
+      }
+    ],
+    "effect_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0"
+        ],
+        "rule_id": "effect:hypothesis:bottle:handling_contact_disturbance:mechanism:bottle:local_contrast_change",
+        "from_id": "hypothesis:bottle:handling_contact_disturbance",
+        "to_id": "mechanism:bottle:local_contrast_change"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:0:1"
+        ],
+        "rule_id": "effect:hypothesis:bottle:pre_station_surface_damage:mechanism:bottle:local_contrast_change",
+        "from_id": "hypothesis:bottle:pre_station_surface_damage",
+        "to_id": "mechanism:bottle:local_contrast_change"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0"
+        ],
+        "rule_id": "effect:hypothesis:bottle:directional_surface_disturbance:mechanism:bottle:directional_contrast_change",
+        "from_id": "hypothesis:bottle:directional_surface_disturbance",
+        "to_id": "mechanism:bottle:directional_contrast_change"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:1"
+        ],
+        "rule_id": "effect:hypothesis:bottle:directional_imaging_contrast_change:mechanism:bottle:directional_contrast_change",
+        "from_id": "hypothesis:bottle:directional_imaging_contrast_change",
+        "to_id": "mechanism:bottle:directional_contrast_change"
+      }
+    ],
+    "expectation_rules": [
+      {
+        "source_assertion_ids": [
+          "source:cause:0:0",
+          "source:cause:0:1",
+          "source:mvtec-graded-human-review:shape-expectation"
+        ],
+        "rule_id": "expectation:mechanism:bottle:local_contrast_change:signature:large_blocky_response",
+        "from_id": "mechanism:bottle:local_contrast_change",
+        "pattern_id": "signature:large_blocky_response",
+        "mode": "expected"
+      },
+      {
+        "source_assertion_ids": [
+          "source:cause:1:0",
+          "source:cause:1:1",
+          "source:mvtec-graded-human-review:shape-expectation"
+        ],
+        "rule_id": "expectation:mechanism:bottle:directional_contrast_change:signature:elongated_response",
+        "from_id": "mechanism:bottle:directional_contrast_change",
+        "pattern_id": "signature:elongated_response",
+        "mode": "expected"
+      }
+    ],
+    "execution_policy": {
+      "conflict_weight": 2,
+      "assumption_weight": 0.25,
+      "score_mapping": "negative_explanation_cost",
+      "candidate_recall": "applicable_class_and_target_role_and_observed_feature_footprint",
+      "evaluation_universe": "union_of_context_candidate_atomic_predicates",
+      "positive_coverage": "complete_joint_pattern_only",
+      "group_aggregation": "equal_budget_normalized_mean",
+      "primitive_comparison": "discrete_boolean_v0",
+      "missing": "unknown_not_negative",
+      "tie_epsilon": 1e-9
+    },
+    "graded_policy": {
+      "groups": [
+        {
+          "group_id": "bottle-patchcore-mask-geometry",
+          "weight": 1,
+          "slots": [
+            {
+              "slot_id": "mask-area",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:large_blocky_response:condition:0",
+                "signature:elongated_response:condition:0"
+              ]
+            },
+            {
+              "slot_id": "bbox-axis-ratio",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:large_blocky_response:condition:1",
+                "signature:elongated_response:condition:1"
+              ]
+            },
+            {
+              "slot_id": "mask-eccentricity",
+              "weight": 1,
+              "predicate_ids": [
+                "signature:large_blocky_response:condition:2",
+                "signature:elongated_response:condition:2"
+              ]
+            }
+          ]
+        }
+      ],
+      "anchor_predicate_ids": [
+        "signature:large_blocky_response:condition:1",
+        "signature:elongated_response:condition:1",
+        "signature:large_blocky_response:condition:2",
+        "signature:elongated_response:condition:2"
+      ]
+    },
+    "source_assertions": [
+      {
+        "assertion_id": "source:signature:0",
+        "origin": "source_explicit",
+        "text": "较大块状响应由面积占比、长短比与离心率三项形态条件共同界定，对应两个并列待排查解释。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:0",
+        "origin": "declared_demo_heuristic",
+        "text": "较大块状响应分支要求面积占比≥0.10（演示启发式阈值）。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:1",
+        "origin": "declared_demo_heuristic",
+        "text": "较大块状响应分支要求轴对齐包围框长短比≤2.0（演示启发式阈值）。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:0:2",
+        "origin": "declared_demo_heuristic",
+        "text": "较大块状响应分支要求主轴离心率≤0.90（演示启发式阈值）。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:0",
+        "origin": "source_explicit",
+        "text": "本工位取放接触扰动是较大块状响应的待排查解释之一，经局部对比改变机理产生相同可观测预期，不区分发生时点。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:0:1",
+        "origin": "source_explicit",
+        "text": "进站前已有局部表面损伤是较大块状响应的另一待排查解释，与接触扰动经同一局部对比改变机理产生相同可观测预期。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:1",
+        "origin": "source_explicit",
+        "text": "细长响应以面积下限加任一拉伸条件界定，两种拉伸量为替代分支，复用同一假设与机理。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:0",
+        "origin": "declared_demo_heuristic",
+        "text": "细长响应分支要求面积占比≥0.01（演示启发式阈值）。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:condition:1:1",
+        "origin": "declared_demo_heuristic",
+        "text": "细长响应的拉伸条件可由轴对齐包围框长短比≥2.0或主轴离心率≥0.90任一满足，二者为替代分支。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:0",
+        "origin": "source_explicit",
+        "text": "细长分支只提示方向性表面扰动，不能靠掩膜形态判定先后。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:1:1",
+        "origin": "source_explicit",
+        "text": "细长分支同样兼容方向性成像对比变化，与方向性表面扰动不可由形态区分。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:2",
+        "origin": "source_explicit",
+        "text": "结构缺口是并列待测检查之一，当前观测接口没有经核验的结构缺口或材料有无。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:2:0",
+        "origin": "source_explicit",
+        "text": "可见外轮廓缺口需用同型正常件匹配位姿、多视角背光复拍检验同一位置是否持续缺失；仅有局部响应或图像质心不能成立此项。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:signature:3",
+        "origin": "source_explicit",
+        "text": "表面或光路对比变化是并列待测检查之一，当前接口没有表面沉积或工序时点观测。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:cause:3:0",
+        "origin": "source_explicit",
+        "text": "表面或光路对比变化需改光或视角复查轮廓稳定性与内部反差，并对照表面清洁与进站前后图像；完整外轮廓也不能排除内部裂纹。",
+        "parameter_origin": "source_explicit",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:mvtec-graded-human-review:or-repair",
+        "origin": "declared_demo_heuristic",
+        "text": "人工补回源资料的主轴拉伸替代支：离心率 ≥ 0.90，与长短比 ≥ 2.0 取 OR，任何一支都与同 ROI 面积 ≥ 0.01 联合。原编译稿只执行长短比分支。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:mvtec-graded-human-review:shape-expectation",
+        "origin": "declared_demo_heuristic",
+        "text": "原稿 possible 保留在编译记录。人工将模式设为 expected 只比较作者定义的可执行形态解释，使形态不符计入该解释的反证；不表示工位成因已获确认，也不以阈值做物理禁区。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      },
+      {
+        "assertion_id": "source:mvtec-graded-human-review:shape-budget",
+        "origin": "declared_demo_heuristic",
+        "text": "按同一源资料的过渡宽度表，面积、长短比、离心率为同一掩膜的三个等权槽，比较同量不叠票；块状取两形态锚、细长取实际替代支的拉伸锚。中性宽度为零。",
+        "parameter_origin": "declared_demo_heuristic",
+        "source_id": "demo_mvtec_bottle_graded_rca_20261111",
+        "source_unit_id": "su_16c0a92315b80d96",
+        "locator": "{\"char_end\": 1929, \"char_start\": 0, \"end_line\": 27, \"start_line\": 1, \"type\": \"text\"}"
+      }
+    ]
+  }
+}

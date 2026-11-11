@@ -1,0 +1,506 @@
+{
+  "outer_silhouette": {
+    "scope": "screen whether one outer-silhouette quantity separates the fixed public images, not a calibrated production test",
+    "test_image": "sample_006.png",
+    "reference_paths": [
+      "bottle/train/good/000.png",
+      "bottle/train/good/001.png",
+      "bottle/train/good/002.png"
+    ],
+    "controls": [
+      "bottle/test/good/001.png",
+      "bottle/test/contamination/000.png"
+    ],
+    "comparison_roi_xyxy_pixels": [
+      98.4375,
+      73.828125,
+      734.765625,
+      643.359375
+    ],
+    "control_roi_note": "The same fixed comparison region, not a detector output on the controls.",
+    "frozen_parameters": {
+      "luminance_thresholds": [
+        0.8,
+        0.86,
+        0.92
+      ],
+      "radius_ratio": [
+        0.9,
+        1.1
+      ],
+      "roi_pad_radii": 0.025,
+      "minimum_arc_fraction": 0.05,
+      "maximum_fit_q95_radii": 0.06,
+      "minimum_profile_coverage": 0.95,
+      "required_separation_radii": 0.02,
+      "angular_samples": 720
+    },
+    "measurements": [
+      {
+        "threshold": 0.8,
+        "reference_fit_errors_q95_radius": [
+          0.012953016508450429,
+          0.005807018398139972,
+          0.008562391753767716
+        ],
+        "reference_leave_one_out": [
+          {
+            "center_xy": [
+              450.2166148836051,
+              446.35963172935766
+            ],
+            "radius_pixels": 405.20601350772,
+            "scale_vs_reference": 1.0,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.012953016508450429,
+            "roi_edge_arc_fraction": 0.2111111111111111,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.014534606290070718,
+            "rotation_sensitivity_q90_radius": [
+              0.016528496689982276,
+              0.015300511315512088,
+              0.014534606290070718,
+              0.014619215302327626,
+              0.013443280079214448
+            ]
+          },
+          {
+            "center_xy": [
+              450.5974105194776,
+              446.98435264140693
+            ],
+            "radius_pixels": 403.0748454063238,
+            "scale_vs_reference": 0.994740531901421,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.005807018398139972,
+            "roi_edge_arc_fraction": 0.22083333333333333,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.005492557390667387,
+            "rotation_sensitivity_q90_radius": [
+              0.006663155706895533,
+              0.006277406144598109,
+              0.005492557390667387,
+              0.004202672823716958,
+              0.0035025795262378042
+            ]
+          },
+          {
+            "center_xy": [
+              451.31088419746794,
+              450.93687898879034
+            ],
+            "radius_pixels": 405.82997229903197,
+            "scale_vs_reference": 1.0015398557042887,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.008562391753767716,
+            "roi_edge_arc_fraction": 0.21805555555555556,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.002752336880278007,
+            "rotation_sensitivity_q90_radius": [
+              0.0013800146310189998,
+              0.0014113754883283039,
+              0.002752336880278007,
+              0.003862047603402675,
+              0.0040951302269842
+            ]
+          }
+        ],
+        "cases": {
+          "sample_006.png": {
+            "center_xy": [
+              451.2635014569838,
+              450.80737527665076
+            ],
+            "radius_pixels": 405.07516315299836,
+            "scale_vs_reference": 0.9996770769673704,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.01740966174559287,
+            "roi_edge_arc_fraction": 0.22777777777777777,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.01646481048715983,
+            "rotation_sensitivity_q90_radius": [
+              0.01679631607293446,
+              0.015638568405494428,
+              0.01646481048715983,
+              0.017482508130441887,
+              0.016898496368585182
+            ]
+          },
+          "control_normal.png": {
+            "center_xy": [
+              451.4961672239283,
+              450.1749941589315
+            ],
+            "radius_pixels": 404.02671729855194,
+            "scale_vs_reference": 0.9970896379376029,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.007001786244848658,
+            "roi_edge_arc_fraction": 0.22777777777777777,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.0064934990239955874,
+            "rotation_sensitivity_q90_radius": [
+              0.008761632734430981,
+              0.00665036854155682,
+              0.0064934990239955874,
+              0.007775078557122683,
+              0.008449300466763225
+            ]
+          },
+          "control_surface.png": {
+            "center_xy": [
+              448.9401051565733,
+              451.5700756114581
+            ],
+            "radius_pixels": 404.5393718459253,
+            "scale_vs_reference": 0.9983548080739872,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.008641214756349894,
+            "roi_edge_arc_fraction": 0.22083333333333333,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.006988422455913558,
+            "rotation_sensitivity_q90_radius": [
+              0.006206271927476939,
+              0.00748509670688795,
+              0.006988422455913558,
+              0.006778175310082225,
+              0.0043911127796837385
+            ]
+          }
+        }
+      },
+      {
+        "threshold": 0.86,
+        "reference_fit_errors_q95_radius": [
+          0.012620734488779841,
+          0.005517602845972666,
+          0.008782021106087399
+        ],
+        "reference_leave_one_out": [
+          {
+            "center_xy": [
+              450.2892495381785,
+              446.251246970852
+            ],
+            "radius_pixels": 406.66939515807627,
+            "scale_vs_reference": 1.0,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.012620734488779841,
+            "roi_edge_arc_fraction": 0.20416666666666666,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.013994337413123727,
+            "rotation_sensitivity_q90_radius": [
+              0.01649860751051253,
+              0.01537681895743155,
+              0.013994337413123727,
+              0.014312907725962453,
+              0.012993529497811874
+            ]
+          },
+          {
+            "center_xy": [
+              450.6575577216829,
+              446.9070957260858
+            ],
+            "radius_pixels": 404.4019120931015,
+            "scale_vs_reference": 0.9944242593812761,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.005517602845972666,
+            "roi_edge_arc_fraction": 0.2152777777777778,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.004810773331795648,
+            "rotation_sensitivity_q90_radius": [
+              0.006255200400502203,
+              0.005849670903413795,
+              0.004810773331795648,
+              0.0041800539982177025,
+              0.0031799940973395555
+            ]
+          },
+          {
+            "center_xy": [
+              451.29453648714207,
+              450.92843153711124
+            ],
+            "radius_pixels": 407.1563531038553,
+            "scale_vs_reference": 1.0011974295375479,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.008782021106087399,
+            "roi_edge_arc_fraction": 0.2111111111111111,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.0019868561087494577,
+            "rotation_sensitivity_q90_radius": [
+              0.0009974705262504777,
+              0.0018340040094524173,
+              0.0019868561087494577,
+              0.0034027204670708747,
+              0.003862471845220572
+            ]
+          }
+        ],
+        "cases": {
+          "sample_006.png": {
+            "center_xy": [
+              451.75964738761604,
+              450.4239555930509
+            ],
+            "radius_pixels": 406.4311691948494,
+            "scale_vs_reference": 0.9994142023814351,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.01638814500248158,
+            "roi_edge_arc_fraction": 0.21944444444444444,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.016292166896927175,
+            "rotation_sensitivity_q90_radius": [
+              0.018171418545263485,
+              0.016547446946432943,
+              0.016292166896927175,
+              0.017537965171665938,
+              0.017574489874917724
+            ]
+          },
+          "control_normal.png": {
+            "center_xy": [
+              451.4088226041065,
+              450.11845493383066
+            ],
+            "radius_pixels": 405.2521421731605,
+            "scale_vs_reference": 0.9965149750588808,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.006835987446617064,
+            "roi_edge_arc_fraction": 0.2222222222222222,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.0066241768094310585,
+            "rotation_sensitivity_q90_radius": [
+              0.008419579029731214,
+              0.006480451539998843,
+              0.0066241768094310585,
+              0.007271582344411309,
+              0.007885562734743067
+            ]
+          },
+          "control_surface.png": {
+            "center_xy": [
+              448.76356148861686,
+              451.3388978723775
+            ],
+            "radius_pixels": 405.7321877069016,
+            "scale_vs_reference": 0.997695406975953,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.007613462379188423,
+            "roi_edge_arc_fraction": 0.21388888888888888,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.006968361698029036,
+            "rotation_sensitivity_q90_radius": [
+              0.0062550945591134085,
+              0.006866475378616,
+              0.006968361698029036,
+              0.006348485062143705,
+              0.004616274830137236
+            ]
+          }
+        }
+      },
+      {
+        "threshold": 0.92,
+        "reference_fit_errors_q95_radius": [
+          0.012247899113967016,
+          0.005250122185628185,
+          0.008577585027471118
+        ],
+        "reference_leave_one_out": [
+          {
+            "center_xy": [
+              450.17068210173886,
+              446.19120886142656
+            ],
+            "radius_pixels": 408.04856898926516,
+            "scale_vs_reference": 1.0,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.012247899113967016,
+            "roi_edge_arc_fraction": 0.19722222222222222,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.013800963132465828,
+            "rotation_sensitivity_q90_radius": [
+              0.01586671243206797,
+              0.014558979706365728,
+              0.013800963132465828,
+              0.013121190167656683,
+              0.012863778090510748
+            ]
+          },
+          {
+            "center_xy": [
+              450.7771420363467,
+              446.73135314582277
+            ],
+            "radius_pixels": 405.75115551911836,
+            "scale_vs_reference": 0.9943697548656095,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.005250122185628185,
+            "roi_edge_arc_fraction": 0.20972222222222223,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.004670314300548761,
+            "rotation_sensitivity_q90_radius": [
+              0.0061133928954716366,
+              0.005896775181871594,
+              0.004670314300548761,
+              0.003988531676954565,
+              0.0031830004426292025
+            ]
+          },
+          {
+            "center_xy": [
+              451.372544963867,
+              450.9199633317463
+            ],
+            "radius_pixels": 408.5915292301161,
+            "scale_vs_reference": 1.0013306265040847,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.008577585027471118,
+            "roi_edge_arc_fraction": 0.20555555555555555,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.0015736334817935634,
+            "rotation_sensitivity_q90_radius": [
+              0.0014707697616005776,
+              0.0012978442574767672,
+              0.0015736334817935634,
+              0.003690590660694206,
+              0.003955115500285877
+            ]
+          }
+        ],
+        "cases": {
+          "sample_006.png": {
+            "center_xy": [
+              452.2447185445608,
+              450.01104671040457
+            ],
+            "radius_pixels": 407.81202998679424,
+            "scale_vs_reference": 0.9994203165494323,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.015542934389462287,
+            "roi_edge_arc_fraction": 0.21388888888888888,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.01624596164049711,
+            "rotation_sensitivity_q90_radius": [
+              0.01834617711778041,
+              0.0161089768630449,
+              0.01624596164049711,
+              0.017945335566879085,
+              0.017897956008489514
+            ]
+          },
+          "control_normal.png": {
+            "center_xy": [
+              451.4271224853115,
+              450.0502159585007
+            ],
+            "radius_pixels": 406.4936630647208,
+            "scale_vs_reference": 0.9961894096862149,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.006502213471095601,
+            "roi_edge_arc_fraction": 0.21805555555555556,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.006390199577797873,
+            "rotation_sensitivity_q90_radius": [
+              0.008179597494199099,
+              0.006145892074362159,
+              0.006390199577797873,
+              0.0072267363303308635,
+              0.008028296731821573
+            ]
+          },
+          "control_surface.png": {
+            "center_xy": [
+              448.53793421650016,
+              450.9979218000667
+            ],
+            "radius_pixels": 406.86057800142595,
+            "scale_vs_reference": 0.9970886039601073,
+            "edge_profile_coverage": 1.0,
+            "fit_error_q95_radius": 0.007014243744943937,
+            "roi_edge_arc_fraction": 0.20972222222222223,
+            "registration_usable": true,
+            "inward_roi_q90_radius": 0.007131923591936484,
+            "rotation_sensitivity_q90_radius": [
+              0.006000537840530007,
+              0.007277764028311928,
+              0.007131923591936484,
+              0.006643508617983018,
+              0.004875215471886074
+            ]
+          }
+        }
+      }
+    ],
+    "006_minus_max_controls_inward_q90_radius": [
+      0.009476388031246272,
+      0.009323805198898139,
+      0.009114038048560626
+    ],
+    "usable_for_discrimination": false
+  },
+  "camera_relative_annulus": {
+    "meaning": "actual PatchCore largest component fraction in a camera-relative radial band; no anatomical or defect labels",
+    "reference": "train/good/000.png, train/good/001.png, train/good/002.png",
+    "fit_luminance_threshold": 0.86,
+    "frozen_parameters": {
+      "largest_positive_derivative_search": [
+        0.45,
+        0.8
+      ],
+      "gaussian_sigma_radius": 0.01,
+      "maximum_reference_edge_spread_radius": 0.03,
+      "outer_radius": 0.98,
+      "inner_radius_sensitivity": [
+        -0.03,
+        0,
+        0.03
+      ],
+      "maximum_outside_mask_fraction": 0.1,
+      "minimum_separation": 0.25
+    },
+    "reference_radii": [
+      0.755,
+      0.75,
+      0.745
+    ],
+    "reference_valid": true,
+    "band_inner_radius": 0.755,
+    "cases": {
+      "sample_006.png": {
+        "status": "measured",
+        "component_index": 1,
+        "component_count": 1,
+        "mask_pixels": 14971,
+        "outside_fraction": 0.0,
+        "fraction_by_inner_radius_delta": [
+          0.32689867076347606,
+          0.262106739696747,
+          0.2011889653329771
+        ]
+      },
+      "control_normal.png": {
+        "status": "detector_gate_false"
+      },
+      "control_surface.png": {
+        "status": "measured",
+        "component_index": 1,
+        "component_count": 1,
+        "mask_pixels": 6680,
+        "outside_fraction": 0.0,
+        "fraction_by_inner_radius_delta": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "006_minus_surface_annular_fraction": [
+      0.32689867076347606,
+      0.262106739696747,
+      0.2011889653329771
+    ],
+    "eligible_as_discriminating_placement_only": false
+  }
+}

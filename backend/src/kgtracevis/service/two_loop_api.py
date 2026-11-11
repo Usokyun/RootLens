@@ -88,7 +88,9 @@ class EnableRequest(Request):
 class DemoInferenceRequest(Request):
     sample_id: str
     graph_id: str
-    reasoner_id: Literal["unified_abduction", "tep_rootkgd"] = "unified_abduction"
+    reasoner_id: Literal["unified_abduction", "graded_abduction", "tep_rootkgd"] = (
+        "unified_abduction"
+    )
     input_variant: Literal["raw", "evidence"] = "raw"
     top_k: int = Field(default=5, ge=1, le=100)
 
@@ -198,7 +200,7 @@ def inference_request(graph_id, reasoner_id, **options):
     if record.status != "ready" or not record.enabled or record.knowledge is None:
         raise ValueError("请先在知识图谱页启用一张 v2 工作图。")
     if reasoner_id not in {r["reasoner_id"] for r in REASONERS}:
-        raise ValueError("请选择统一条件溯因或 RootKGD 图传播。")
+        raise ValueError("请选择已登记的解释器。")
     if reasoner_id == "tep_rootkgd" and record.dataset != "tep":
         raise ValueError("RootKGD 图传播仅适用于 TEP 过程场景。")
     mode = options["input_mode"]
@@ -212,6 +214,8 @@ def inference_request(graph_id, reasoner_id, **options):
     if options.get("semantic_mode") == "vlm" and mode != "image":
         raise ValueError("ROI 语义仅用于图像原始输入。")
     package = export_working_graph(graph_id)
+    if reasoner_id == "graded_abduction" and package.knowledge.graded_policy is None:
+        raise ValueError("分级解释溯因需要工作图声明 graded_policy 比较预算和判别锚点。")
     return {
         "graph_id": graph_id,
         "graph_snapshot": package.model_dump(mode="json"),

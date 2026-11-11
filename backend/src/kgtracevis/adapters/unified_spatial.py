@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from kgtracevis.mask.wafer_map_features import measure_wafer_map
+from kgtracevis.mask.wafer_map_features import measure_edge_sectors, measure_wafer_map
 from kgtracevis.schema.measured_reasoning import WaferMeasurements
 from kgtracevis.schema.unified_evidence import EvidenceFrame
 
@@ -95,6 +95,16 @@ def spatial_frames(evidence):
             "model_id": measured.classifier_source or "unavailable",
             "definition": "Independent producer classification, no native labels supplied.",
         },
+        {
+            "procedure_id": "edge-sector-statistics",
+            "kind": "measurement",
+            "input_asset_ids": ["grid"],
+            "version": "wafer-edge-sector-participation.v1",
+            "definition": "在原网格有效 die 的边缘区 r≥0.8 分 12 个 30° 扇区，"
+            "从右方起顺时针。各区至少有 5 个有效 die 才参加；至少 8 区可用且有失效，"
+            "以各区失效密度 d 计算 (Σd)²/(k·Σd²)，表示环向覆盖程度，不是概率。"
+            "原网格未附、可用扇区不足或无可用扇区失效时为缺测。",
+        },
     ]
     observations = []
 
@@ -135,6 +145,12 @@ def spatial_frames(evidence):
         ("edge", measured.edge_density),
     ):
         add("spatial.failure_density", number(value), zone)
+    add(
+        "spatial.edge_sector_participation",
+        number(measure_edge_sectors(grid).participation) if grid is not None else None,
+        zone="edge",
+        procedure="edge-sector-statistics",
+    )
     add("spatial.grid", {"kind": "array_ref", "asset_id": "grid"})
     add(
         "classifier.pattern",

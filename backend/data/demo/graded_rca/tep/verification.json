@@ -1,0 +1,580 @@
+{
+  "schema_version": "rootlens-graded-tep-public-verification.v1",
+  "input_sources": {
+    "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+    "d00": {
+      "url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d00.dat",
+      "bytes": 416049,
+      "source_shape": [
+        52,
+        500
+      ],
+      "fit_shape": [
+        500,
+        52
+      ]
+    },
+    "d04": {
+      "url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d04_te.dat",
+      "bytes": 799680,
+      "shape": [
+        960,
+        52
+      ]
+    },
+    "d05": {
+      "url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d05_te.dat",
+      "bytes": 799680,
+      "shape": [
+        960,
+        52
+      ]
+    },
+    "raw_and_reference_retained_exactly": true
+  },
+  "material_to_graph": {
+    "material_id": "demo_tep_graded_source_20261111",
+    "source_units": [
+      {
+        "chunk_id": "su_9df3cbf8e23e6ddb",
+        "source_locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 2182, \"start_line\": 1, \"end_line\": 22}"
+      }
+    ],
+    "parse_task_id": "task_c2843e650c624a90bcaaab65b5aad1d1",
+    "build_task_id": "task_f681d68789dc472c8935d829a3aa88ad",
+    "build_stages": [
+      "parsing",
+      "parsing",
+      "llm",
+      "validation",
+      "compilation",
+      "graph_ready",
+      "completed"
+    ],
+    "llm_model": "deepseek-flash",
+    "llm_tokens": 8252,
+    "llm_calls": 1,
+    "repairs": 0,
+    "graph_id": "graph_c5d48f1204984c4fb213d47df95796ae",
+    "original_size": [
+      100,
+      70
+    ],
+    "saved_size": [
+      104,
+      74
+    ],
+    "actual_neo4j_readback": true,
+    "actual_gui_export_exact": true,
+    "explicit_enable": true,
+    "expert_material_id": "demo_tep_graded_expert_20261111",
+    "expert_parse_task_id": "task_45ec0b8bead2403c97a486aee105699b",
+    "expert_source_units": [
+      {
+        "chunk_id": "su_9a760cefadeb6fd4",
+        "source_locator": "{\"type\": \"text\", \"char_start\": 0, \"char_end\": 1161, \"start_line\": 1, \"end_line\": 20}"
+      }
+    ],
+    "preserved_pattern_ids": [
+      "signature:reactor_cooling_effort_up_with_warmer_outlet",
+      "signature:reactor_cooling_effort_up_with_temperature_near_reference",
+      "signature:condenser_separator_heat_balance_response"
+    ],
+    "replacement_expectation": {
+      "rule_id": "expectation:mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance:signature:graded_reactor_alternative_responses",
+      "from_id": "mechanism:Tennessee Eastman Process:reactor_cooling_heat_balance",
+      "pattern_id": "signature:graded_reactor_alternative_responses",
+      "mode": "expected",
+      "source_assertion_ids": [
+        "source:cause:0:0",
+        "source:cause:0:1",
+        "source:cause:1:0",
+        "source:cause:1:1",
+        "source:tep-graded:alternatives"
+      ]
+    },
+    "edited_node": "entity:tep_braatz.channel:xmv_10",
+    "edited_node_label": "反应器冷却水调节量 · XMV10"
+  },
+  "normal_reference_calibration": {
+    "source": "fixed d00.dat only; do not use evaluation windows",
+    "rows": 500,
+    "channels": 52,
+    "normal_scale_ddof": 1,
+    "window_std_ddof": 0,
+    "values": [
+      {
+        "window": [
+          1,
+          100
+        ],
+        "xmv_11_mean_z": 0.17745173718096288,
+        "xmeas_22_mean_z": 0.10496751168384771,
+        "xmeas_11_std_z": 0.915877359203469
+      },
+      {
+        "window": [
+          101,
+          200
+        ],
+        "xmv_11_mean_z": 0.005778011028949761,
+        "xmeas_22_mean_z": -0.15051003630377863,
+        "xmeas_11_std_z": 0.7266178243792503
+      },
+      {
+        "window": [
+          201,
+          300
+        ],
+        "xmv_11_mean_z": -0.026210047237846673,
+        "xmeas_22_mean_z": 0.07909382081031517,
+        "xmeas_11_std_z": 0.9619185953336694
+      },
+      {
+        "window": [
+          301,
+          400
+        ],
+        "xmv_11_mean_z": -0.15049306185678227,
+        "xmeas_22_mean_z": -0.0460897753134055,
+        "xmeas_11_std_z": 1.0616855311236533
+      },
+      {
+        "window": [
+          401,
+          500
+        ],
+        "xmv_11_mean_z": -0.006526639115273829,
+        "xmeas_22_mean_z": 0.012538479123196184,
+        "xmeas_11_std_z": 1.1669858248098128
+      }
+    ],
+    "extrema": {
+      "xmv_11_mean_z": [
+        -0.15049306185678227,
+        0.17745173718096288
+      ],
+      "xmeas_22_mean_z": [
+        -0.15051003630377863,
+        0.10496751168384771
+      ],
+      "xmeas_11_std_z": [
+        0.7266178243792503,
+        1.1669858248098128
+      ]
+    }
+  },
+  "raw_to_frame": {
+    "d04": {
+      "raw_task_id": "task_cc4193c226ab46e6b1ad86316a69a450",
+      "raw_run_id": "5b722359-8a61-4daf-9ec4-d761421f89fb",
+      "frame_task_id": "task_7e7801704efb43fcb4efbcd75440ed2a",
+      "frame_run_id": "b735f37e-27a6-4c95-a15f-21967e2a4ee0",
+      "frame_count": 3,
+      "exact_frames_graph_and_complete_results": true,
+      "exact_curves": true,
+      "curves_per_window": 52,
+      "points_per_curve": 100,
+      "raw_input_exact": true,
+      "normal_reference_exact": true,
+      "backbone_skipped_on_replay": true,
+      "sampling_seconds": 180,
+      "top_k": 8,
+      "windows": [
+        {
+          "frame_id": "process_window_1_100/query/window",
+          "window": [
+            1,
+            100
+          ],
+          "reference_id": "normal-fit:8b7ef9841f474a6494c778adbebd582f",
+          "outcome": "no_match",
+          "reason": "anomaly_gate_is_false",
+          "candidates": [],
+          "paths": 0
+        },
+        {
+          "frame_id": "process_window_161_260/query/window",
+          "window": [
+            161,
+            260
+          ],
+          "reference_id": "normal-fit:8b7ef9841f474a6494c778adbebd582f",
+          "outcome": "ambiguous",
+          "reason": null,
+          "candidates": [
+            {
+              "id": "hypothesis:Tennessee Eastman Process:reactor_cooling_water_inlet_warmer",
+              "name": "反应器供冷侧入口冷却水偏暖",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.3333333333333333,
+              "support": 0.3333333333333333,
+              "conflict": 0,
+              "coverage": 1
+            },
+            {
+              "id": "hypothesis:Tennessee Eastman Process:reactor_process_heat_load_increase",
+              "name": "反应器过程侧放热负荷增加",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.3333333333333333,
+              "support": 0.3333333333333333,
+              "conflict": 0,
+              "coverage": 1
+            }
+          ],
+          "paths": 6
+        },
+        {
+          "frame_id": "process_window_261_360/query/window",
+          "window": [
+            261,
+            360
+          ],
+          "reference_id": "normal-fit:8b7ef9841f474a6494c778adbebd582f",
+          "outcome": "ambiguous",
+          "reason": null,
+          "candidates": [
+            {
+              "id": "hypothesis:Tennessee Eastman Process:reactor_cooling_water_inlet_warmer",
+              "name": "反应器供冷侧入口冷却水偏暖",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.3333333333333333,
+              "support": 0.3333333333333333,
+              "conflict": 0,
+              "coverage": 1
+            },
+            {
+              "id": "hypothesis:Tennessee Eastman Process:reactor_process_heat_load_increase",
+              "name": "反应器过程侧放热负荷增加",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.3333333333333333,
+              "support": 0.3333333333333333,
+              "conflict": 0,
+              "coverage": 1
+            }
+          ],
+          "paths": 6
+        }
+      ],
+      "source_paths": [
+        {
+          "frame_id": "process_window_1_100/query/window",
+          "paths": 0,
+          "steps": 0,
+          "unique_source_edges": 0
+        },
+        {
+          "frame_id": "process_window_161_260/query/window",
+          "paths": 6,
+          "steps": 52,
+          "unique_source_edges": 13
+        },
+        {
+          "frame_id": "process_window_261_360/query/window",
+          "paths": 6,
+          "steps": 52,
+          "unique_source_edges": 13
+        }
+      ]
+    },
+    "d05": {
+      "raw_task_id": "task_eaeab60ddbe44322aae5b316d4ac611a",
+      "raw_run_id": "2c95491d-dc32-4c6f-929a-669d74dc9bec",
+      "frame_task_id": "task_8f4b304cfc724a209e9f1c65488c2b66",
+      "frame_run_id": "92379183-f7b9-49de-bd1c-f7383dea9557",
+      "frame_count": 1,
+      "exact_frames_graph_and_complete_results": true,
+      "exact_curves": true,
+      "curves_per_window": 52,
+      "points_per_curve": 100,
+      "raw_input_exact": true,
+      "normal_reference_exact": true,
+      "backbone_skipped_on_replay": true,
+      "sampling_seconds": 180,
+      "top_k": 8,
+      "windows": [
+        {
+          "frame_id": "process_window_161_260/query/window",
+          "window": [
+            161,
+            260
+          ],
+          "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+          "outcome": "ambiguous",
+          "reason": null,
+          "candidates": [
+            {
+              "id": "hypothesis:Tennessee Eastman Process:condenser_cooling_capacity_change",
+              "name": "冷凝侧供冷能力变化",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.41194009156189165,
+              "support": 0.41194009156189165,
+              "conflict": 0,
+              "coverage": 1
+            },
+            {
+              "id": "hypothesis:Tennessee Eastman Process:condenser_separator_heat_load_increase",
+              "name": "冷凝及分离侧热负荷增加",
+              "rank": 1,
+              "status": "supported",
+              "score": 0.41194009156189165,
+              "support": 0.41194009156189165,
+              "conflict": 0,
+              "coverage": 1
+            }
+          ],
+          "paths": 8
+        }
+      ],
+      "source_paths": [
+        {
+          "frame_id": "process_window_161_260/query/window",
+          "paths": 8,
+          "steps": 54,
+          "unique_source_edges": 12
+        }
+      ]
+    }
+  },
+  "d05_same_frame_method_vs_knowledge": {
+    "source_run_id": "2c95491d-dc32-4c6f-929a-669d74dc9bec",
+    "readings": [
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_9:statistics.mean_z",
+        "feature_id": "statistics.mean_z",
+        "subject_id": "variable:xmeas_9",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": -0.08791545550239968
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      },
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:statistics.std_z",
+        "feature_id": "statistics.std_z",
+        "subject_id": "variable:xmeas_11",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 7.044734384800531
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      },
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_21:statistics.mean_z",
+        "feature_id": "statistics.mean_z",
+        "subject_id": "variable:xmeas_21",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 0.7202527938085597
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      },
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_22:statistics.mean_z",
+        "feature_id": "statistics.mean_z",
+        "subject_id": "variable:xmeas_22",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 1.8041406757844876
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      },
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:statistics.mean_z",
+        "feature_id": "statistics.mean_z",
+        "subject_id": "variable:xmv_10",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": -0.33581480628707205
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      },
+      {
+        "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_11:statistics.mean_z",
+        "feature_id": "statistics.mean_z",
+        "subject_id": "variable:xmv_11",
+        "value": {
+          "kind": "number",
+          "unit": "1",
+          "number": 1.4033201482725377
+        },
+        "reference_id": "normal-fit:67ee17731cb44772b511185debade4fc",
+        "scope_id": "scope:window"
+      }
+    ],
+    "scores_not_compared_across_topologies": true,
+    "states": {
+      "old_strict": {
+        "outcome": "no_match",
+        "recommended": []
+      },
+      "old_topology_graded_stage_a": {
+        "outcome": "insufficient_evidence",
+        "recommended": []
+      },
+      "new_graph_strict": {
+        "outcome": "ambiguous",
+        "recommended": [
+          {
+            "name": "冷凝侧供冷能力变化",
+            "rank": 1,
+            "status": "complete"
+          },
+          {
+            "name": "冷凝及分离侧热负荷增加",
+            "rank": 1,
+            "status": "complete"
+          }
+        ]
+      },
+      "new_graph_graded": {
+        "outcome": "ambiguous",
+        "recommended": [
+          {
+            "name": "冷凝侧供冷能力变化",
+            "rank": 1,
+            "status": "supported"
+          },
+          {
+            "name": "冷凝及分离侧热负荷增加",
+            "rank": 1,
+            "status": "supported"
+          }
+        ]
+      }
+    }
+  },
+  "rootkgd_same_d04_frame": {
+    "task_id": "task_d703c4b690b54ab99ede13d2ddbb5495",
+    "run_id": "c3e61701-a503-451e-b29b-864f45a17bb1",
+    "same_frame_and_graph": true,
+    "backbone_skipped": true,
+    "outcomes": [
+      "no_match",
+      "ambiguous",
+      "ambiguous"
+    ],
+    "windows": [
+      {
+        "frame_id": "process_window_1_100/query/window",
+        "outcome": "no_match",
+        "reason": "normal_reference_gate_is_false",
+        "actual_scoring_input_count": 0,
+        "projection_version": "rootkgd-host-channel.v2",
+        "paths": {
+          "frame_id": "process_window_1_100/query/window",
+          "paths": 0,
+          "steps": 0,
+          "unique_source_edges": 0
+        },
+        "ranking": []
+      },
+      {
+        "frame_id": "process_window_161_260/query/window",
+        "outcome": "ambiguous",
+        "reason": null,
+        "actual_scoring_input_count": 52,
+        "projection_version": "rootkgd-host-channel.v2",
+        "paths": {
+          "frame_id": "process_window_161_260/query/window",
+          "paths": 12,
+          "steps": 108,
+          "unique_source_edges": 33
+        },
+        "ranking": [
+          {
+            "candidate_name": "反应器供冷侧入口冷却水偏暖",
+            "rank": 1,
+            "score": 0.5854474293642782
+          },
+          {
+            "candidate_name": "反应器过程侧放热负荷增加",
+            "rank": 1,
+            "score": 0.5854474293642782
+          },
+          {
+            "candidate_name": "冷凝侧供冷能力变化",
+            "rank": 2,
+            "score": -0.0042646130594414
+          },
+          {
+            "candidate_name": "冷凝及分离侧热负荷增加",
+            "rank": 2,
+            "score": -0.0042646130594414
+          }
+        ]
+      },
+      {
+        "frame_id": "process_window_261_360/query/window",
+        "outcome": "ambiguous",
+        "reason": null,
+        "actual_scoring_input_count": 52,
+        "projection_version": "rootkgd-host-channel.v2",
+        "paths": {
+          "frame_id": "process_window_261_360/query/window",
+          "paths": 12,
+          "steps": 108,
+          "unique_source_edges": 33
+        },
+        "ranking": [
+          {
+            "candidate_name": "反应器供冷侧入口冷却水偏暖",
+            "rank": 1,
+            "score": 0.5756327858768212
+          },
+          {
+            "candidate_name": "反应器过程侧放热负荷增加",
+            "rank": 1,
+            "score": 0.5756327858768212
+          },
+          {
+            "candidate_name": "冷凝侧供冷能力变化",
+            "rank": 2,
+            "score": -0.002707908857269719
+          },
+          {
+            "candidate_name": "冷凝及分离侧热负荷增加",
+            "rank": 2,
+            "score": -0.002707908857269719
+          }
+        ]
+      }
+    ]
+  },
+  "actual_path_and_observation": {
+    "positive": {
+      "frame_id": "process_window_161_260/query/window",
+      "path_id": "path:graded:process_window_161_260/query/window:hypothesis:Tennessee Eastman Process:condenser_cooling_capacity_change:expectation:mechanism:Tennessee Eastman Process:condenser_separator_heat_balance:signature:condenser_separator_heat_balance_response:signature:condenser_separator_heat_balance_response:condition:2",
+      "edge_id": "signature:condenser_separator_heat_balance_response:definition::gate::1::input::signature:condenser_separator_heat_balance_response:condition:2",
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmeas_11:statistics.std_z",
+      "steps": 7,
+      "points": 100,
+      "actualSameWindow": true,
+      "actualCanvasEdges": 12
+    },
+    "opposing_observation": {
+      "candidate_id": "hypothesis:Tennessee Eastman Process:reactor_cooling_water_inlet_warmer",
+      "predicate_id": "signature:reactor_cooling_effort_up_with_warmer_outlet:condition:0",
+      "obs_id": "obs_process_window_161_260_process_window_完整多变量窗口与正常参考:variable:xmv_10:statistics.mean_z",
+      "delta": -0.009534978476341313,
+      "case_id": "process_window_161_260/query/window",
+      "noForgedPath": true,
+      "actualLocated": true
+    }
+  }
+}

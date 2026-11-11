@@ -69,6 +69,12 @@ export function currentDemoSample(draft: AnalysisDraft, catalog: AnalysisCatalog
   return catalog.demos?.samples.find((sample) => sampleIdentity(sample) === draft.sampleId) ?? null
 }
 
+export function analysisReasoners(catalog: AnalysisCatalog, dataset: Dataset, graphId: string) {
+  const graph = enabledAnalysisGraphs(catalog.graphs, dataset).find(item => item.graph_id === graphId)
+  return catalog.reasoners.filter(reasoner => reasoner.datasets.includes(dataset)
+    && (reasoner.requires_graded_policy !== true || !!graph?.knowledge?.graded_policy))
+}
+
 /** Re-reading metadata changes only the implicit choice; inputs and explicit IDs survive. */
 export function reconcileAnalysisSelection(draft: AnalysisDraft, catalog: AnalysisCatalog) {
   const enabled = enabledAnalysisGraphs(catalog.graphs, draft.dataset)
@@ -76,7 +82,7 @@ export function reconcileAnalysisSelection(draft: AnalysisDraft, catalog: Analys
   const paired = readyDemoGraph(demoGraphReference(sample, catalog.demos), catalog.graphs, draft.dataset)
   const graphId = draft.graphOrigin === 'explicit' ? draft.graphId : draft.sampleId ? paired?.graph_id ?? ''
     : enabled.find((graph) => graph.graph_id === draft.graphId)?.graph_id ?? enabled[0]?.graph_id ?? ''
-  const compatible = catalog.reasoners.filter((reasoner) => reasoner.datasets.includes(draft.dataset))
+  const compatible = analysisReasoners(catalog, draft.dataset, graphId)
   return { graphId, reasonerId: compatible.some((reasoner) => reasoner.reasoner_id === draft.reasonerId)
     ? draft.reasonerId : compatible[0]?.reasoner_id ?? '' }
 }
@@ -105,8 +111,8 @@ export function analysisSubmission(draft: AnalysisDraft, catalog: AnalysisCatalo
   if (!enabledAnalysisGraphs(catalog.graphs, draft.dataset).some((graph) => graph.graph_id === draft.graphId)) {
     throw new Error('请选择当前场景已启用的 v2 工作图。')
   }
-  const reasoner = catalog.reasoners.find((item) => item.reasoner_id === draft.reasonerId && item.datasets.includes(draft.dataset))
-  if (!reasoner) throw new Error('请选择与当前场景兼容的推理器。')
+  const reasoner = analysisReasoners(catalog, draft.dataset, draft.graphId).find((item) => item.reasoner_id === draft.reasonerId)
+  if (!reasoner) throw new Error('请选择与当前场景和工作图兼容的推理器。')
   if (!Number.isInteger(draft.topK) || draft.topK < 1 || draft.topK > 100) throw new Error('结果条数须为 1–100 的整数。')
   const options = { graph_id: draft.graphId, reasoner_id: reasoner.reasoner_id, top_k: draft.topK }
   if (draft.sampleId) {

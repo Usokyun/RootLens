@@ -80,7 +80,7 @@ class Grounding:
         ]
         return aliases[0] if len(aliases) == 1 else None
 
-    def ground(self, predicate_ids: set[str]):
+    def ground(self, predicate_ids: set[str], *, individual_observations=False):
         for predicate in sorted(predicate_ids):
             definition = self.program.observables[predicate]
             rows = {}
@@ -102,6 +102,8 @@ class Grounding:
                     value,
                     status,
                 )
+                if individual_observations:
+                    key += (observation.obs_id,)
                 if key not in rows:
                     rows[key] = GroundedFact(
                         predicate,
@@ -130,6 +132,7 @@ class Grounding:
                     f.scope_id or "",
                     f.dependency_group or "",
                     f.status,
+                    f.obs_ids[0] if individual_observations else "",
                 ),
             )
             if not values:
@@ -149,7 +152,9 @@ class Grounding:
                 # Canonical sorting keeps trace IDs and values stable under input reorder.
                 fact.actual_values.sort(key=repr)
                 fact.fact_id = "fact:" + predicate
-                if len(values) > 1:
+                if individual_observations and fact.obs_ids:
+                    fact.fact_id += "@" + fact.obs_ids[0]
+                elif len(values) > 1:
                     fact.fact_id += (
                         f"@{fact.subject_id}@{fact.scope_id}@{fact.dependency_group}@{fact.status}"
                     )
@@ -213,6 +218,8 @@ class Grounding:
             result = value.number <= operand.number
         elif op == "abs_gte":
             result = abs(value.number) >= operand.number
+        elif op == "between":
+            result = operand.lower <= value.number <= operand.upper
         elif op in {"eq", "bool_eq"}:
             attribute = {"number": "number", "boolean": "boolean", "category": "category"}[
                 value.kind
@@ -236,11 +243,13 @@ class Grounding:
     def valid(self, predicate_id: str) -> list[GroundedFact]:
         return [f for f in self.facts[predicate_id] if f.value is not None]
 
-    def joint_scope_valid(self, branch) -> bool:
+    def joint_scope_valid(self, branch, *, selected=None) -> bool:
         definitions = {p.definition_id: p for p in self.program.patterns.values()}
         for definition_id, predicates in branch.joins:
             definition = definitions[definition_id]
-            facts = [f for p in predicates for f in self.valid(p)]
+            facts = [
+                f for p in predicates for f in (self.valid(p) if selected is None else selected[p])
+            ]
             if not facts:
                 continue
             if definition.scope_join == "same_subject_same_scope":

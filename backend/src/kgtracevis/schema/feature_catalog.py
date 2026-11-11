@@ -162,6 +162,14 @@ _FEATURES = [
         "1",
     ),
     _feature(
+        "spatial.edge_sector_participation",
+        "number",
+        "边缘有效die的扇区参与度：以12个30°扇区、每扇区至少5个有效die、"
+        "至少8个可用扇区且总失效密度非零为前提；各扇区失效密度归一为p，"
+        "计算1/(k·Σp²)。越高表示失效分布于越多扇区，不是失效比例或概率。",
+        "1",
+    ),
+    _feature(
         "classifier.pattern",
         "category",
         "独立ResNet模型的八类图案输出，不读取数据集原生标签。",
@@ -199,6 +207,7 @@ SPATIAL_FEATURE_IDS = (
     "spatial.component_count",
     "spatial.largest_component_ratio",
     "spatial.linearity",
+    "spatial.edge_sector_participation",
     "classifier.pattern",
     "spatial.grid",
 )

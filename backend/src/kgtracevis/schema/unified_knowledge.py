@@ -10,6 +10,7 @@ from kgtracevis.schema.unified_evidence import (
     CategoryValue,
     FiniteNumber,
     Identifier,
+    IntervalValue,
     NumberValue,
     ObservationValue,
     UnifiedModel,
@@ -106,15 +107,108 @@ class ZoneScopeSelector(UnifiedModel):
 ScopeSelector = Annotated[TaskScopeSelector | ZoneScopeSelector, Field(discriminator="kind")]
 
 
+ParameterOrigin = Literal["source_explicit", "normal_reference_estimate", "declared_demo_heuristic"]
+PositiveWidth = Annotated[FiniteNumber, Field(gt=0)]
+NonnegativeWidth = Annotated[FiniteNumber, Field(ge=0)]
+
+
+class NumericGrade(Sourced):
+    direction: Literal["lower", "higher", "interval", "absolute_higher"]
+    pivot: FiniteNumber | None = Field(default=None, exclude_if=lambda value: value is None)
+    lower: FiniteNumber | None = Field(default=None, exclude_if=lambda value: value is None)
+    upper: FiniteNumber | None = Field(default=None, exclude_if=lambda value: value is None)
+    support_width: PositiveWidth
+    conflict_width: PositiveWidth
+    neutral_support: NonnegativeWidth = 0.0
+    neutral_conflict: NonnegativeWidth = 0.0
+    unit: Identifier
+    basis: ParameterOrigin
+
+    @model_validator(mode="after")
+    def ordered_parameters(self):
+        if self.direction == "interval":
+            if (
+                self.pivot is not None
+                or self.lower is None
+                or self.upper is None
+                or self.lower >= self.upper
+            ):
+                raise ValueError("interval grade needs lower < upper and no pivot")
+        elif self.pivot is None or self.lower is not None or self.upper is not None:
+            raise ValueError("directional grade needs one pivot and no interval bounds")
+        elif self.direction == "absolute_higher" and self.pivot < 0:
+            raise ValueError("absolute grade needs a nonnegative pivot")
+        if len(set(self.source_assertion_ids)) != len(self.source_assertion_ids):
+            raise ValueError("grade source assertions must be unique")
+        return self
+
+    def validate_projection(self, observable):
+        op = {"lower": "lte", "higher": "gte", "interval": "between", "absolute_higher": "abs_gte"}
+        operand = observable.operand
+        if (
+            observable.op != op[self.direction]
+            or getattr(operand, "unit", None) != self.unit
+            or (
+                (getattr(operand, "lower", None), getattr(operand, "upper", None))
+                != (self.lower, self.upper)
+                if self.direction == "interval"
+                else getattr(operand, "number", None) != self.pivot
+            )
+        ):
+            raise ValueError(
+                f"grade must project to the same typed comparison: {observable.predicate_id}"
+            )
+
+
 class ObservableDefinition(Sourced):
     predicate_id: Identifier
     label: Identifier
     feature_id: Identifier
-    op: Literal["gte", "lte", "abs_gte", "eq", "in", "intersects", "candidate_contains", "bool_eq"]
+    op: Literal[
+        "gte",
+        "lte",
+        "abs_gte",
+        "between",
+        "eq",
+        "in",
+        "intersects",
+        "candidate_contains",
+        "bool_eq",
+    ]
     operand: ObservationValue
     subject_selector: SubjectSelector
     scope_selector: ScopeSelector
     reference_requirement: Literal["same_as_task"] | None = None
+    grade: NumericGrade | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
+class GradedSlot(UnifiedModel):
+    slot_id: Identifier
+    weight: PositiveWidth = 1.0
+    predicate_ids: list[Identifier] = Field(min_length=1)
+
+
+class GradedGroup(UnifiedModel):
+    group_id: Identifier
+    weight: PositiveWidth = 1.0
+    slots: list[GradedSlot] = Field(min_length=1)
+
+
+class GradedPolicy(UnifiedModel):
+    groups: list[GradedGroup] = Field(min_length=1)
+    anchor_predicate_ids: list[Identifier] = Field(min_length=1)
+
+
+def measurement_selector(observable: ObservableDefinition, feature: FeatureDefinition) -> tuple:
+    """Same declaration even when the historical and current zone type names differ."""
+    subject, scope = observable.subject_selector, observable.scope_selector
+    return (
+        feature.feature_id,
+        subject.kind,
+        getattr(subject, "entity_id", None),
+        getattr(scope, "zone", None),
+        feature.requires_reference or observable.reference_requirement is not None,
+    )
 
 
 class AllExpression(UnifiedModel):
@@ -212,11 +306,7 @@ class SourceAssertion(UnifiedModel):
         "declared_demo_heuristic",
     ]
     text: Identifier
-    parameter_origin: Literal[
-        "source_explicit",
-        "normal_reference_estimate",
-        "declared_demo_heuristic",
-    ] = "source_explicit"
+    parameter_origin: ParameterOrigin = "source_explicit"
     source_id: Identifier | None = None
     source_unit_id: Identifier | None = None
     locator: str | None = None
@@ -263,6 +353,7 @@ class KnowledgePackage(UnifiedModel):
     effect_rules: list[EffectRule] = Field(default_factory=list)
     expectation_rules: list[ExpectationRule]
     execution_policy: ExecutionPolicy = Field(default_factory=ExecutionPolicy)
+    graded_policy: GradedPolicy | None = Field(default=None, exclude_if=lambda value: value is None)
     source_assertions: list[SourceAssertion]
 
     @model_validator(mode="after")
@@ -337,6 +428,12 @@ class KnowledgePackage(UnifiedModel):
                 raise ValueError("numeric comparison requires a numeric feature and operand")
             if numeric and observable.operand.unit != feature.unit:
                 raise ValueError("observable and feature units differ")
+            if observable.op == "between" and (
+                feature.value_kind != "number"
+                or not isinstance(observable.operand, IntervalValue)
+                or observable.operand.unit != feature.unit
+            ):
+                raise ValueError("between requires a numeric feature and interval in its unit")
             if observable.op == "candidate_contains" and (
                 feature.value_kind != "candidate_set"
                 or not isinstance(observable.operand, CategoryValue)
@@ -366,6 +463,17 @@ class KnowledgePackage(UnifiedModel):
                 raise ValueError("in requires a category feature")
             if observable.op == "intersects" and feature.value_kind != "candidate_set":
                 raise ValueError("intersects requires a candidate_set feature")
+            if observable.grade is not None:
+                grade = observable.grade
+                grade.validate_projection(observable)
+                if not set(grade.source_assertion_ids) <= sources.keys():
+                    raise ValueError(f"unknown grade source assertion: {observable.predicate_id}")
+                if not any(
+                    sources[i].parameter_origin == grade.basis for i in grade.source_assertion_ids
+                ):
+                    raise ValueError(
+                        f"grade basis needs a matching source: {observable.predicate_id}"
+                    )
         for pattern in self.pattern_definitions:
             unknown = expression_refs(pattern.body) - (set(predicates) | set(patterns))
             if unknown:
@@ -389,4 +497,41 @@ class KnowledgePackage(UnifiedModel):
         ]:
             if not set(row.source_assertion_ids) <= sources.keys():
                 raise ValueError("unknown source assertion reference")
+        if self.graded_policy is not None:
+            self._validate_graded_policy(features, predicates)
         return self
+
+    def _validate_graded_policy(self, features, predicates):
+        from kgtracevis.schema.feature_catalog import authoring_feature_role
+
+        policy = self.graded_policy
+        indexed(policy.groups, "group_id")
+        indexed([slot for group in policy.groups for slot in group.slots], "slot_id")
+        slots, seen = {}, set()
+        for group in policy.groups:
+            for slot in group.slots:
+                keys = set()
+                for identity in slot.predicate_ids:
+                    predicate = predicates.get(identity)
+                    if predicate is None:
+                        raise ValueError(f"unknown graded predicate: {identity}")
+                    feature = features[predicate.feature_id]
+                    if authoring_feature_role(feature) != "diagnostic":
+                        raise ValueError(
+                            f"presence and context cannot spend a graded slot: {identity}"
+                        )
+                    if identity in seen:
+                        raise ValueError(f"graded predicate listed more than once: {identity}")
+                    seen.add(identity)
+                    keys.add(measurement_selector(predicate, feature))
+                if len(keys) != 1:
+                    raise ValueError(f"graded slot must describe one measurement: {slot.slot_id}")
+                key = keys.pop()
+                if key in slots:
+                    raise ValueError(
+                        f"same measurement cannot spend two slots: {slots[key]}, {slot.slot_id}"
+                    )
+                slots[key] = slot.slot_id
+        anchors = policy.anchor_predicate_ids
+        if len(set(anchors)) != len(anchors) or not set(anchors) <= seen:
+            raise ValueError("graded anchors must be unique predicates in the scored slots")

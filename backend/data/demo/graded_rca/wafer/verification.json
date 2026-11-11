@@ -1,0 +1,266 @@
+{
+  "schema_version": "rootlens-public-graded-wafer-acceptance.v1",
+  "graph_id": "graph_c1cea800587c43c3a2739ec8b812104b",
+  "material_id": "demo_wafer_graded_public_source_20261111",
+  "parse_task_id": "task_234bd326ba2d4582870dc010f19f40b7",
+  "build": {
+    "task_id": "task_204fb1c9765940c4b202d546aebae0cd",
+    "model": "deepseek-flash",
+    "actual_calls": 1,
+    "tokens": 9065,
+    "repairs": 0
+  },
+  "working_graph": {
+    "unedited_llm_result": {
+      "node_count": 73,
+      "edge_count": 89
+    },
+    "human_edited": {
+      "node_count": 86,
+      "edge_count": 117,
+      "candidate_count": 4,
+      "anchor_count": 12,
+      "measurement_slots": 6
+    },
+    "save_and_reopen_exact": true,
+    "export_exact": true,
+    "explicit_enable": true
+  },
+  "reasoner_id": "graded_abduction",
+  "scoring_method": "graded_joint_abduction_v1",
+  "top_k": 8,
+  "raw": {
+    "task_id": "task_bd3a5cc677c941e2b65eadf7f2f765a2",
+    "run_id": "35d5f058-4aa8-4f72-81be-c397c31a00db",
+    "backbone": "RadAI ResNet34 CPU",
+    "native_labels_used": false,
+    "cases": [
+      {
+        "sample_id": "wm811k_248536",
+        "frame_id": "wm811k_248536/query/grid",
+        "outcome": "supported",
+        "ranked": [
+          {
+            "name": "近全片失效图案家族",
+            "status": "supported",
+            "rank": 1,
+            "score": 0.8102889358703314,
+            "support": 0.8102889358703314,
+            "conflict": 0,
+            "coverage": 1
+          },
+          {
+            "name": "边缘环状失效图案家族",
+            "status": "pending",
+            "rank": 1,
+            "score": 0,
+            "support": 0.36363636363636365,
+            "conflict": 0.36363636363636365,
+            "coverage": 1
+          }
+        ],
+        "unique_source_edges": 26
+      },
+      {
+        "sample_id": "wm811k_31707",
+        "frame_id": "wm811k_31707/query/grid",
+        "outcome": "insufficient_evidence",
+        "ranked": [
+          {
+            "name": "边缘环状失效图案家族",
+            "status": "pending",
+            "rank": 1,
+            "score": 0.1506558941526765,
+            "support": 0.35572675911658963,
+            "conflict": 0.20507086496391314,
+            "coverage": 1
+          },
+          {
+            "name": "边缘局部失效图案家族",
+            "status": "pending",
+            "rank": 2,
+            "score": -0.015396235535816816,
+            "support": 0.26481766820749875,
+            "conflict": 0.28021390374331556,
+            "coverage": 1
+          }
+        ],
+        "unique_source_edges": 26
+      }
+    ]
+  },
+  "native_evidence": {
+    "task_id": "task_d1f94cc0c33e493e873442b14d7203e0",
+    "run_id": "65c616fb-6d49-4f48-80c7-cd157692e523",
+    "frame_count": 2,
+    "canonical_graph_equal": true,
+    "frames_equal": true,
+    "complete_results_equal": true,
+    "original_grid_attachments_equal": true,
+    "model_reexecuted": false
+  },
+  "read_only_ui": {
+    "run_id": "65c616fb-6d49-4f48-80c7-cd157692e523",
+    "sameSavedPositiveNegativeObservations": [
+      {
+        "polarity": "conflict",
+        "obsId": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:center:spatial.failure_density",
+        "pathId": "path:graded:wm811k_31707/query/grid:hypothesis:wafer:pattern_family_edge_ring:expectation:mechanism:wafer:spatial_state_edge_ring:signature:pattern_edge_ring:signature:pattern_edge_ring:condition:1",
+        "edgeId": "signature:pattern_edge_ring:definition::gate::1::input::signature:pattern_edge_ring:condition:1",
+        "scope": "scope:center",
+        "value": 0.4852941176470588,
+        "contribution": -0.09839572192513371,
+        "overlayValid": 476,
+        "overlayFailed": 231
+      },
+      {
+        "polarity": "support",
+        "obsId": "obs_wm811k_31707_wafer_measurements_有效_die_与空间分布:edge:spatial.edge_sector_participation",
+        "pathId": "path:graded:wm811k_31707/query/grid:hypothesis:wafer:pattern_family_edge_ring:expectation:mechanism:wafer:spatial_state_edge_ring:signature:pattern_edge_ring:signature:pattern_edge_ring:condition:3",
+        "edgeId": "signature:pattern_edge_ring:definition::gate::1::input::signature:pattern_edge_ring:condition:3",
+        "scope": "scope:edge",
+        "value": 0.9617714916560494,
+        "contribution": 0.18181818181818182,
+        "overlayValid": 1144,
+        "overlayFailed": 347
+      }
+    ],
+    "originalGridOverlayCountsExact": true,
+    "sourceEdgesContiguousExact": true,
+    "noPageHorizontalOverflowAt1280": true
+  },
+  "frozen_frame_controls": {
+    "note": "Both use untouched real saved Frames. The graph ablation omits two angular clauses and their slot; hence remaining weights renormalize, and numeric S is not directly comparable across graphs.",
+    "rows": [
+      {
+        "frame_id": "wm811k_248536/query/grid",
+        "same_graph_discrete": {
+          "outcome": "supported",
+          "supported": [
+            "近全片失效图案家族"
+          ],
+          "graded": [],
+          "booleans": [
+            {
+              "candidate": "近全片失效图案家族",
+              "rank": 1,
+              "cost": 0.65
+            }
+          ]
+        },
+        "graded_full": {
+          "outcome": "supported",
+          "supported": [
+            "近全片失效图案家族"
+          ],
+          "graded": [
+            {
+              "candidate": "近全片失效图案家族",
+              "rank": 1,
+              "status": "supported",
+              "support": 0.8102889358703314,
+              "conflict": 0.0,
+              "score": 0.8102889358703314,
+              "coverage": 1.0
+            },
+            {
+              "candidate": "边缘环状失效图案家族",
+              "rank": 1,
+              "status": "pending",
+              "support": 0.36363636363636365,
+              "conflict": 0.36363636363636365,
+              "score": 0.0,
+              "coverage": 1.0
+            }
+          ],
+          "booleans": []
+        },
+        "graded_angular_clause_ablation": {
+          "outcome": "supported",
+          "supported": [
+            "近全片失效图案家族"
+          ],
+          "graded": [
+            {
+              "candidate": "近全片失效图案家族",
+              "rank": 1,
+              "status": "supported",
+              "support": 0.990353143841516,
+              "conflict": 0.0,
+              "score": 0.990353143841516,
+              "coverage": 1.0
+            }
+          ],
+          "booleans": []
+        }
+      },
+      {
+        "frame_id": "wm811k_31707/query/grid",
+        "same_graph_discrete": {
+          "outcome": "supported",
+          "supported": [
+            "边缘环状失效图案家族"
+          ],
+          "graded": [],
+          "booleans": [
+            {
+              "candidate": "边缘环状失效图案家族",
+              "rank": 1,
+              "cost": 1.3186274509803921
+            }
+          ]
+        },
+        "graded_full": {
+          "outcome": "insufficient_evidence",
+          "supported": [],
+          "graded": [
+            {
+              "candidate": "边缘环状失效图案家族",
+              "rank": 1,
+              "status": "pending",
+              "support": 0.35572675911658963,
+              "conflict": 0.20507086496391314,
+              "score": 0.1506558941526765,
+              "coverage": 1.0
+            },
+            {
+              "candidate": "边缘局部失效图案家族",
+              "rank": 2,
+              "status": "pending",
+              "support": 0.26481766820749875,
+              "conflict": 0.28021390374331556,
+              "score": -0.015396235535816816,
+              "coverage": 1.0
+            }
+          ],
+          "booleans": []
+        },
+        "graded_angular_clause_ablation": {
+          "outcome": "insufficient_evidence",
+          "supported": [],
+          "graded": [
+            {
+              "candidate": "边缘局部失效图案家族",
+              "rank": 1,
+              "status": "pending",
+              "support": 0.3236660389202762,
+              "conflict": 0.12026143790849675,
+              "score": 0.20340460101177943,
+              "coverage": 1.0
+            },
+            {
+              "candidate": "边缘环状失效图案家族",
+              "rank": 2,
+              "status": "pending",
+              "support": 0.21255492780916507,
+              "conflict": 0.25064216828922714,
+              "score": -0.03808724048006207,
+              "coverage": 1.0
+            }
+          ],
+          "booleans": []
+        }
+      }
+    ]
+  }
+}

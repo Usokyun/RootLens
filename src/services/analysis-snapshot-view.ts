@@ -52,7 +52,7 @@ function savedPath(path: Row, result: Row): PathGraphPath {
   return {
     path_id:text(path.path_id), target_key:text(path.path_id), target_entity_id:target,
     source_entity_id:sourceId, score:numeric(path.score), confidence:numeric(path.confidence),
-    supporting_evidence:strings(path.support_obs_ids),
+    supporting_evidence:strings(path.path_kind === 'graded_contribution' ? path.observation_ids : path.support_obs_ids),
     nodes:ids.map((id,index) => ({node_id:id,label:labels[index] ?? text(names[id],id),role:id===target?'target':id===sourceId?'source':'intermediate'})),
     edges,
   }
