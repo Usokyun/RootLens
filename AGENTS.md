@@ -14,10 +14,10 @@
 - 当前仓库同时维护 Vue 前端 `src/` 和 Python 后端 `backend/`。后端来自 `/Users/macintosh/TrivalWork/KGTraceVis` 的当前工作树复制，保留包名 `kgtracevis` 与 `backend/src/kgtracevis/`，以及 scripts、configs、小型 data 种子与 examples、tests、docs、`pyproject.toml` 和 `uv.lock`。
 - 日常后端开发、安装、测试与运行以本仓库 `backend/` 为准；原 KGTraceVis 目录先留作来源备份，不默认继续在原目录运行或修改。
 - 旧 `web/`、`web_legacy/`、论文、实验输出、Git 与 agent 历史不迁入。RootLens 前端 `src/` 保持原位，保留未提交 UI 改动，不以旧 React 前端覆盖。
-- backend-first 边界不变：真实建图、Evidence 处理与 RCA 在 Python 后端完成；同仓不等于浏览器执行推理，不恢复前端本地建图、runtime 组装或 what-if 重算。Demo / Replay 继续只消费快照或成品回放。
+- backend-first：建图、Evidence 处理和 RCA 都在 Python 后端执行。演示只使用 `backend/data/demo/graded_rca/manifest.json` 登记的真实输入和当前任务 API，不恢复旧浏览器 Demo／Replay、本地建图或 what-if 重算。
 - 可复用后端逻辑放在 `backend/src/kgtracevis/`；scripts 与服务处理器作为客户端，不重复核心算法。统一 schema、来源与 review 语义以相关后端文档和实现为准，不臆造工业因果关系，不把候选原因写成已验证根因。
 - 来源备份中的旧目录约束、Web / Streamlit 说明及 agent 历史不覆盖当前 RootLens 边界；`backend/docs/` 中复制的旧路径需按当前目录解读。
-- 本次核验摘要见 `src/doc/backend-integration-current.md` §1.2，详情见[完整核验记录](backend/docs/rootlens-monorepo-migration.md)与[本机机器报告](.rootlens-cache/backend-migration-verification.json)（Git 忽略）：既有数据保留、新写入隔离、前后端启停 / 重启、editable 安装与离线 wheel 构建已核验。前端 build 及 17 文件 / 71 项测试通过；后端 pytest 与来源基线失败一致、无新增失败，**不是全通过**。Docker 仅静态配置检查，未实跑容器，不将本次核验扩写为全部模型或完整构图发布验收。
+- 原始迁移的核验范围与记录见[迁移验收](backend/docs/rootlens-monorepo-migration.md)。当前演示与接口以 `src/doc/backend-integration-current.md` 为准，不沿用迁移阶段的测试数或服务状态。
 
 ## 安装、运行与数据安全
 
@@ -41,7 +41,7 @@
 ## Doc Map
 
 - `src/doc/backend-integration-current.md`
-  - **当前真值文档**：同仓后端、backend-first 边界、本次实际迁移核验摘要与范围限制、Demo / Backend / Replay 三种模式、三大页面职责、运行与数据保留边界、已下线的前端能力。
+  - **当前真值文档**：同仓后端、三页职责、两条闭环、当前公开演示、已退役的入口、运行与数据保留边界。
 - `src/doc/source-projects.md`
   - 当前仓库与内置后端路径、来源备份、上游研究资产、迁入 / 未迁入范围、推荐阅读顺序。
 - 根 `README.md`

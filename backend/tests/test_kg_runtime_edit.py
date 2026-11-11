@@ -3,18 +3,12 @@
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
 
 from kgtracevis.kg.graph import KGEdge, KGNode
-from kgtracevis.service import api as service_api
-from kgtracevis.service.api import app
 from kgtracevis.service.kg_runtime_edit import (
-    RuntimeKGDeleteResponse,
     RuntimeKGEdgeConfidenceRequest,
     RuntimeKGEdgeRequest,
-    RuntimeKGEdgeResponse,
     RuntimeKGNodeRequest,
-    RuntimeKGNodeResponse,
     delete_runtime_kg_edge,
     delete_runtime_kg_node,
     update_runtime_kg_edge_confidence,
@@ -162,83 +156,6 @@ def test_update_edge_confidence_and_delete_helpers() -> None:
     assert deleted_edge.deleted_count == 1
     with pytest.raises(ValueError, match="unknown KG edge"):
         delete_runtime_kg_edge(str(edge["edge_id"]), repository=repository)
-
-
-def test_runtime_kg_api_routes_delegate_to_service(monkeypatch: pytest.MonkeyPatch) -> None:
-    """FastAPI should expose backend-only runtime KG edit endpoints."""
-    client = TestClient(app)
-
-    monkeypatch.setattr(
-        service_api,
-        "upsert_runtime_kg_node",
-        lambda request: RuntimeKGNodeResponse(
-            status="upserted",
-            node={
-                "id": request.id,
-                "name": request.name,
-                "label": request.label,
-                "scenario": request.scenario,
-                "aliases": request.aliases,
-                "description": request.description,
-            },
-        ),
-    )
-    monkeypatch.setattr(
-        service_api,
-        "update_runtime_kg_edge_confidence",
-        lambda edge_id, request: RuntimeKGEdgeResponse(
-            status="updated",
-            edge={
-                "edge_id": edge_id,
-                "head": "ManualConcept",
-                "relation": "RELATED_TO",
-                "tail": "ManualTarget",
-                "scenario": "mvtec",
-                "source": "manual_api",
-                "evidence": "operator supplied relation",
-                "confidence": request.confidence,
-                "weight": round(1.0 - request.confidence, 6),
-                "review_status": "reviewed",
-                "feedback_count": 0,
-                "accepted_count": 0,
-                "rejected_count": 0,
-            },
-        ),
-    )
-    monkeypatch.setattr(
-        service_api,
-        "delete_runtime_kg_edge",
-        lambda edge_id: RuntimeKGDeleteResponse(
-            status="deleted",
-            target_type="edge",
-            target_id=edge_id,
-            deleted_count=1,
-        ),
-    )
-
-    node_response = client.post(
-        "/api/kg/runtime/nodes",
-        json={
-            "id": "ManualConcept",
-            "name": "Manual concept",
-            "label": "Concept",
-            "scenario": "shared",
-        },
-    )
-    confidence_response = client.patch(
-        "/api/kg/runtime/edges/ManualConcept|RELATED_TO|ManualTarget|mvtec/confidence",
-        json={"confidence": 0.64},
-    )
-    delete_response = client.delete(
-        "/api/kg/runtime/edges/ManualConcept|RELATED_TO|ManualTarget|mvtec"
-    )
-
-    assert node_response.status_code == 200
-    assert node_response.json()["node"]["id"] == "ManualConcept"
-    assert confidence_response.status_code == 200
-    assert confidence_response.json()["edge"]["weight"] == 0.36
-    assert delete_response.status_code == 200
-    assert delete_response.json()["deleted_count"] == 1
 
 
 class FakeRuntimeKGRepositoryWithNode(FakeRuntimeKGRepository):

@@ -8,30 +8,13 @@ import uuid
 from pathlib import Path
 from typing import Annotated, Any, cast
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from neo4j.exceptions import DriverError, Neo4jError
 from pydantic import BaseModel, ConfigDict
 
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
-from kgtracevis.kg.working_graph_package import WorkingGraphPackage
 from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
-from kgtracevis.schema.unified_evidence import EvidenceFrame
-from kgtracevis.service.dashboard import dashboard_bootstrap
-from kgtracevis.service.handlers import (
-    AnalyzeRequest,
-    FeedbackRequest,
-    FeedbackTargetType,
-    ReviewLedgerListRequest,
-    WhatIfRequest,
-    analyze_request,
-    get_case_detail,
-    list_cases,
-    list_feedback,
-    record_feedback,
-    what_if_request,
-)
 from kgtracevis.service.kg_materials import (
     KGMaterialRegisterRequest,
     MaterialConflictError,
@@ -46,28 +29,11 @@ from kgtracevis.service.kg_materials import (
     save_kg_material_upload,
     set_kg_material_archived,
 )
-from kgtracevis.service.kg_runtime_edit import (
-    RuntimeKGEdgeConfidenceRequest,
-    RuntimeKGEdgeRequest,
-    RuntimeKGNodeRequest,
-    delete_runtime_kg_edge,
-    delete_runtime_kg_node,
-    update_runtime_kg_edge_confidence,
-    upsert_runtime_kg_edge,
-    upsert_runtime_kg_node,
-)
 from kgtracevis.service.kg_studio import KGStudioRuntimeError, kg_studio_payload
-from kgtracevis.service.runs import (
-    get_run_artifact_path,
-    get_run_detail,
-    list_runs,
-)
 from kgtracevis.service.two_loop_store import TwoLoopStorageError
 from kgtracevis.service.working_graph_editor import (
-    WorkingGraphMutation,
-    export_working_graph,
+    export_v2_working_graph,
     import_working_graph,
-    mutate_working_graph,
     save_working_graph,
 )
 from kgtracevis.service.working_graphs import (
@@ -115,63 +81,22 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.get("/api/dashboard/bootstrap")
-    def dashboard_bootstrap_route() -> dict[str, object]:
-        return dashboard_bootstrap().model_dump(mode="json")
-
-    @app.get("/api/cases")
-    def cases() -> list[dict[str, object]]:
-        return [case.model_dump(mode="json") for case in list_cases()]
-
-    @app.get("/api/cases/{case_id}")
-    def case_detail(case_id: str, top_k: int = 5) -> dict[str, object]:
-        try:
-            return get_case_detail(case_id, top_k=top_k)
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get("/api/runs")
-    def runs() -> list[dict[str, object]]:
-        return [run.model_dump(mode="json") for run in list_runs()]
-
-    @app.get("/api/runs/{run_id}")
-    def run_detail(run_id: str) -> dict[str, object]:
-        try:
-            return get_run_detail(run_id).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get("/api/runs/{run_id}/artifacts/{artifact_name}")
-    def run_artifact(run_id: str, artifact_name: str) -> FileResponse:
-        try:
-            return FileResponse(get_run_artifact_path(run_id, artifact_name))
-        except ValueError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get("/api/runs/{run_id}/replay")
-    def run_replay(run_id: str):
-        from kgtracevis.service.replay_export import export_run_replay
-
-        try:
-            return export_run_replay(run_id)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
     @app.get("/api/kg/studio")
-    def kg_studio(graph_id: str | None = None) -> dict[str, object]:
+    def kg_studio(graph_id: str) -> dict[str, object]:
         try:
-            if graph_id is not None:
-                record = working_graph_store().get(graph_id)
-                if record.status != "ready":
-                    raise ValueError(f"working graph is not ready: {record.status}")
+            record = working_graph_store().get(graph_id)
+            if record.status != "ready" or record.knowledge is None:
+                raise ValueError("仅可查看已就绪的 v2 工作图。")
+            try:
                 repository = WorkingGraphRepository.connect(graph_id)
-                try:
-                    payload = kg_studio_payload(repository=repository).model_dump(mode="json")
-                    payload["graph_id"] = graph_id
-                    return payload
-                finally:
-                    repository.close()
-            return kg_studio_payload().model_dump(mode="json")
+            except (DriverError, Neo4jError, OSError, ValueError) as exc:
+                raise KGStudioRuntimeError("无法连接工作图 Neo4j 存储。") from exc
+            try:
+                payload = kg_studio_payload(repository=repository).model_dump(mode="json")
+                payload["graph_id"] = graph_id
+                return payload
+            finally:
+                repository.close()
         except KGStudioRuntimeError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         except WorkingGraphStorageError as exc:
@@ -186,7 +111,9 @@ def create_app() -> FastAPI:
         try:
             return {
                 "graphs": [
-                    record.model_dump(mode="json") for record in working_graph_store().list_ready()
+                    record.model_dump(mode="json")
+                    for record in working_graph_store().list_ready()
+                    if record.knowledge is not None
                 ]
             }
         except WorkingGraphStorageError as exc:
@@ -202,79 +129,15 @@ def create_app() -> FastAPI:
 
     @app.get("/api/kg/working-graphs/{graph_id}/package")
     def export_graph_package(graph_id: str):
-        return graph_action(lambda: export_working_graph(graph_id))
+        return graph_action(lambda: export_v2_working_graph(graph_id))
 
     @app.post("/api/kg/working-graphs/import")
-    def import_graph_package(package: WorkingGraphPackage | UnifiedWorkingGraphPackage):
+    def import_graph_package(package: UnifiedWorkingGraphPackage):
         return graph_action(lambda: import_working_graph(package))
 
     @app.put("/api/kg/working-graphs/{graph_id}/package")
-    def save_graph_package(
-        graph_id: str, package: WorkingGraphPackage | UnifiedWorkingGraphPackage
-    ):
+    def save_graph_package(graph_id: str, package: UnifiedWorkingGraphPackage):
         return graph_action(lambda: save_working_graph(graph_id, package))
-
-    @app.patch("/api/kg/working-graphs/{graph_id}")
-    def mutate_graph(graph_id: str, request: WorkingGraphMutation):
-        return graph_action(lambda: mutate_working_graph(graph_id, request))
-
-    @app.post("/api/reasoning/{graph_id}/analyze")
-    def analyze_typed_evidence(
-        graph_id: str, frame: EvidenceFrame, top_k: Annotated[int, Query(ge=1)] = 5
-    ):
-        from kgtracevis.core.unified_reasoner import UnifiedReasoner
-        from kgtracevis.service.working_graphs import load_working_graph
-
-        try:
-            record, _ = load_working_graph(graph_id)
-            if record.knowledge is None:
-                raise ValueError("typed evidence requires a v2 working knowledge package")
-            return UnifiedReasoner(record.knowledge).analyze(frame, top_k=top_k)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except (WorkingGraphStorageError, DriverError, Neo4jError) as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-    @app.post("/api/kg/runtime/nodes")
-    def kg_runtime_node_upsert(request: RuntimeKGNodeRequest) -> dict[str, object]:
-        try:
-            return upsert_runtime_kg_node(request).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.delete("/api/kg/runtime/nodes/{node_id}")
-    def kg_runtime_node_delete(node_id: str) -> dict[str, object]:
-        try:
-            return delete_runtime_kg_node(node_id).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown KG node" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.post("/api/kg/runtime/edges")
-    def kg_runtime_edge_upsert(request: RuntimeKGEdgeRequest) -> dict[str, object]:
-        try:
-            return upsert_runtime_kg_edge(request).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.patch("/api/kg/runtime/edges/{edge_id}/confidence")
-    def kg_runtime_edge_confidence_update(
-        edge_id: str,
-        request: RuntimeKGEdgeConfidenceRequest,
-    ) -> dict[str, object]:
-        try:
-            return update_runtime_kg_edge_confidence(edge_id, request).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown KG edge" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
-
-    @app.delete("/api/kg/runtime/edges/{edge_id}")
-    def kg_runtime_edge_delete(edge_id: str) -> dict[str, object]:
-        try:
-            return delete_runtime_kg_edge(edge_id).model_dump(mode="json")
-        except ValueError as exc:
-            status_code = 404 if "unknown KG edge" in str(exc) else 400
-            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
     @app.get("/api/kg/materials")
     def kg_materials(archived: bool = False) -> dict[str, object]:
@@ -430,54 +293,6 @@ def create_app() -> FastAPI:
             }
         except MaterialConflictError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/analyze")
-    def analyze(request: AnalyzeRequest) -> dict[str, object]:
-        try:
-            return analyze_request(request)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except WorkingGraphStorageError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except (DriverError, Neo4jError) as exc:
-            raise HTTPException(status_code=503, detail="Neo4j 运行图不可用。") from exc
-
-    @app.post("/api/what-if")
-    def what_if(request: WhatIfRequest) -> dict[str, object]:
-        try:
-            return what_if_request(request)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.get("/api/feedback")
-    def feedback_list(
-        run_id: str | None = None,
-        case_id: str | None = None,
-        target_type: FeedbackTargetType | None = None,
-        target_id: str | None = None,
-        offset: Annotated[int, Query(ge=0)] = 0,
-        limit: Annotated[int, Query(ge=1, le=500)] = 50,
-    ) -> dict[str, object]:
-        try:
-            return list_feedback(
-                ReviewLedgerListRequest(
-                    run_id=run_id,
-                    case_id=case_id,
-                    target_type=target_type,
-                    target_id=target_id,
-                    offset=offset,
-                    limit=limit,
-                )
-            ).model_dump(mode="json")
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    @app.post("/api/feedback")
-    def feedback(request: FeedbackRequest) -> dict[str, object]:
-        try:
-            return record_feedback(request)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -1,91 +1,23 @@
-"""Compare the new method on frozen public topology and actual typed Frames."""
+"""Exercise graded comparisons on the current public topology and scoped contrasts."""
 
 import copy
-import json
-from collections import defaultdict
-from pathlib import Path
 
 import pytest
+from graded_fixtures import compact_bottle, public_release, without_grades
 from pydantic import ValidationError
 
 from kgtracevis.adapters.unified_capabilities import visual_capabilities
 from kgtracevis.core.graded_reasoner import GradedReasoner
 from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
-from kgtracevis.kg.unified_compiler import KnowledgeProgram, SearchLimits
-from kgtracevis.schema.unified_knowledge import KnowledgePackage, measurement_selector
+from kgtracevis.kg.unified_compiler import SearchLimits
+from kgtracevis.schema.unified_knowledge import KnowledgePackage
 from kgtracevis.source_kg_compiler.unified import CompiledProposal, validate_proposal
 
-DEMO = Path(__file__).resolve().parents[1] / "data/demo/two_loop"
 ECC = "geometry.eccentricity"
 AREA = "geometry.area_ratio"
 ASPECT = "geometry.aspect_ratio"
 GATE = "detection.anomaly_present"
-
-
-def frozen_public(dataset):
-    directory = DEMO / dataset
-    package = json.loads((directory / "working-graph.v2.json").read_bytes())
-    frames = json.loads((directory / "evidence.json").read_bytes())["frames"]
-    return package, frames
-
-
-def graded_public(dataset, *, width_scale=1.0):
-    package, frames = frozen_public(dataset)
-    knowledge = package["knowledge"]
-    program = KnowledgeProgram(knowledge)
-    widths = {
-        AREA: 0.1,
-        ASPECT: 0.5,
-        ECC: 0.08,
-        "statistics.mean_z": 1.0,
-        "spatial.failure_density": 0.08,
-        "spatial.largest_component_ratio": 0.15,
-    }
-    groups = defaultdict(list)
-    anchors = []
-    for row in knowledge["observable_definitions"]:
-        p, feature = row["predicate_id"], row["feature_id"]
-        if feature == GATE:
-            continue
-        if row["op"] in {"gte", "lte"}:
-            set_curve(row, widths[feature] * width_scale)
-        key = measurement_selector(program.observables[p], program.features[feature])
-        groups[key].append(p)
-        if (
-            feature == ECC
-            or row["subject_selector"].get("entity_id", "").endswith(":xmv_10")
-            or (
-                feature == "spatial.largest_component_ratio"
-                or (feature == "spatial.failure_density" and row["op"] == "lte")
-            )
-        ):
-            anchors.append(p)
-    slots = [
-        {
-            "slot_id": f"frozen:{i}",
-            "weight": 0.25 if key[0] == "classifier.pattern" else 1.0,
-            "predicate_ids": members,
-        }
-        for i, (key, members) in enumerate(groups.items())
-    ]
-    knowledge["graded_policy"] = {
-        "groups": [{"group_id": "one-source-budget", "slots": slots}],
-        "anchor_predicate_ids": anchors,
-    }
-    return package, frames
-
-
-def set_curve(predicate, width):
-    predicate["grade"] = {
-        "direction": {"gte": "higher", "lte": "lower"}[predicate["op"]],
-        "pivot": predicate["operand"]["number"],
-        "unit": predicate["operand"]["unit"],
-        "support_width": width,
-        "conflict_width": width,
-        "basis": "declared_demo_heuristic",
-        "source_assertion_ids": predicate["source_assertion_ids"],
-    }
 
 
 def observation(frame, feature, subject=None):
@@ -151,7 +83,7 @@ def add_expectation(knowledge, cue, mode):
 def test_frozen_006_continuous_sweep_preserves_indistinguishable_candidates(
     number, expected, state, coverage
 ):
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     frame = frames[0]
     ecc = observation(frame, ECC)
     if number is None:
@@ -186,8 +118,8 @@ def test_frozen_006_continuous_sweep_preserves_indistinguishable_candidates(
 
 @pytest.mark.parametrize("dataset", ["mvtec", "tep", "wafer"])
 def test_three_public_topologies_same_old_results_and_bounded_new_method(dataset):
-    previous, frames = frozen_public(dataset)
-    new, _ = graded_public(dataset)
+    new, frames = public_release(dataset)
+    previous = {"knowledge": without_grades(new["knowledge"])}
     strict_old, strict_new = (
         UnifiedReasoner(previous["knowledge"]),
         UnifiedReasoner(new["knowledge"]),
@@ -226,7 +158,7 @@ def test_three_public_topologies_same_old_results_and_bounded_new_method(dataset
 
 @pytest.mark.parametrize("scale", [0.75, 1.25])
 def test_predeclared_curve_width_perturbation_does_not_break_geometry_tie(scale):
-    pkg, frames = graded_public("mvtec", width_scale=scale)
+    pkg, frames = compact_bottle(width_scale=scale)
     rows = GradedReasoner(pkg["knowledge"]).analyze(frames[0])["graded_candidates"]
     assert len(rows) == 2
     assert rows[0]["score"] == rows[1]["score"] > 0
@@ -244,14 +176,14 @@ def test_predeclared_curve_width_perturbation_does_not_break_geometry_tie(scale)
     ],
 )
 def test_grade_rejects_inconsistent_units_direction_or_provenance(field, value):
-    pkg, _ = graded_public("mvtec")
+    pkg, _ = compact_bottle()
     pkg["knowledge"]["observable_definitions"][-1]["grade"][field] = value
     with pytest.raises(ValidationError):
         KnowledgePackage.model_validate(pkg["knowledge"])
 
 
 def test_one_measurement_and_one_actual_dependency_group_have_one_budget():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge = pkg["knowledge"]
     groups = knowledge["graded_policy"]["groups"]
     slots = groups[0]["slots"]
@@ -277,7 +209,7 @@ def test_one_measurement_and_one_actual_dependency_group_have_one_budget():
 
 
 def test_repeated_values_and_conditions_do_not_add_score_or_support_slots():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge, frame = pkg["knowledge"], frames[0]
     baseline = GradedReasoner(knowledge).analyze(frame)
     dup_pred = copy.deepcopy(knowledge["observable_definitions"][1])
@@ -317,7 +249,7 @@ def test_repeated_values_and_conditions_do_not_add_score_or_support_slots():
     "state", ["gate_false", "gate_unknown", "required_false", "required_unknown"]
 )
 def test_hard_refutation_excludes_and_unknown_never_becomes_supported(state):
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge, frame = pkg["knowledge"], frames[0]
     if state.startswith("required"):
         add_expectation(knowledge, add_component_predicate(knowledge), "necessary")
@@ -342,7 +274,7 @@ def test_hard_refutation_excludes_and_unknown_never_becomes_supported(state):
 
 @pytest.mark.parametrize("mode,conflict", [("expected", 0.25), ("possible", 0.0)])
 def test_simultaneous_expected_cannot_drop_refutation_but_possible_never_penalizes(mode, conflict):
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge = pkg["knowledge"]
     extra = add_component_predicate(knowledge)
     knowledge["graded_policy"]["groups"][0]["slots"].append(
@@ -365,7 +297,7 @@ def test_simultaneous_expected_cannot_drop_refutation_but_possible_never_penaliz
 
 
 def test_or_cannot_join_two_half_branches_and_paths_follow_the_actual_selected_arm():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge, frame = pkg["knowledge"], frames[0]
     a, c, d, gate = [predicate(knowledge, feature) for feature in (AREA, ASPECT, ECC, GATE)]
     b = add_component_predicate(knowledge)
@@ -388,7 +320,7 @@ def test_or_cannot_join_two_half_branches_and_paths_follow_the_actual_selected_a
 
 
 def test_never_combine_a_different_roi_or_normal_reference():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     frame = frames[0]
     roi = next(s for s in frame["subjects"] if s["subject_id"] == "roi:1")
     frame["subjects"].append({**roi, "subject_id": "roi:2"})
@@ -396,7 +328,7 @@ def test_never_combine_a_different_roi_or_normal_reference():
     for feature in (ASPECT, ECC):
         observation(frame, feature).update(subject_id="roi:2", scope_id="scope:2")
     assert not GradedReasoner(pkg["knowledge"]).analyze(frame)["graded_candidates"]
-    pkg, frames = graded_public("tep")
+    pkg, frames = public_release("tep")
     frame = frames[1]
     altered = observation(frame, "statistics.mean_z", "variable:xmeas_9")
     frame["references"].append({**frame["references"][0], "reference_id": "other"})
@@ -409,7 +341,7 @@ def test_never_combine_a_different_roi_or_normal_reference():
 
 
 def test_time_window_is_not_a_bucket_for_other_windows():
-    package, frames = graded_public("tep")
+    package, frames = public_release("tep")
     frame = frames[1]
     window = next(s for s in frame["scopes"] if s["scope_id"] == frame["task"]["scope_id"])
     frame["scopes"].append(
@@ -429,13 +361,15 @@ def test_time_window_is_not_a_bucket_for_other_windows():
 
 @pytest.mark.parametrize("temperature", [0.0, 2.5, -2.5])
 def test_interval_and_two_numeric_bounds_spend_one_identical_measurement_slot(temperature):
-    package, frames = graded_public("tep")
+    package, frames = public_release("tep")
     frame = frames[1]
     observation(frame, "statistics.mean_z", "variable:xmeas_9")["value"]["number"] = temperature
     knowledge = package["knowledge"]
     dual = GradedReasoner(knowledge).analyze(frame)
     lower, upper = [
-        p for p in knowledge["observable_definitions"] if ":temperature_" in p["predicate_id"]
+        p
+        for p in knowledge["observable_definitions"]
+        if p["subject_selector"].get("entity_id", "").endswith(":xmeas_9")
     ]
     lo, hi = lower["predicate_id"], upper["predicate_id"]
     lower["op"] = "between"
@@ -475,7 +409,7 @@ def test_interval_and_two_numeric_bounds_spend_one_identical_measurement_slot(te
 
 
 def test_canonical_source_proposals_cannot_inject_a_grade_or_budget():
-    package, _ = graded_public("mvtec")
+    package, _ = compact_bottle()
     knowledge = package["knowledge"]
     for config in (knowledge, {**knowledge, "graded_policy": None}):
         proposal = CompiledProposal(knowledge=KnowledgePackage.model_validate(config))
@@ -486,7 +420,7 @@ def test_canonical_source_proposals_cannot_inject_a_grade_or_budget():
 
 
 def test_open_appearance_and_wrong_units_are_unknown_not_conflict():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     knowledge, frame = pkg["knowledge"], frames[0]
     source = next(p for p in knowledge["observable_definitions"] if p["feature_id"] == AREA)
     semantic = copy.deepcopy(source)
@@ -519,6 +453,6 @@ def test_open_appearance_and_wrong_units_are_unknown_not_conflict():
 
 
 def test_search_budget_exhaustion_remains_explicit():
-    pkg, frames = graded_public("mvtec")
+    pkg, frames = compact_bottle()
     result = GradedReasoner(pkg["knowledge"], limits=SearchLimits(candidates=1)).analyze(frames[0])
     assert result["outcome"] == "search_incomplete" and not result["graded_candidates"]

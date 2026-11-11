@@ -17,7 +17,6 @@ from PIL import Image
 
 from kgtracevis.core import KGTracePipeline
 from kgtracevis.producers.backends import AMAZON_PATCHCORE_BACKEND, ANOMALIB_ENGINE_BACKEND
-from kgtracevis.service import dashboard as service_dashboard
 from kgtracevis.service import handlers as service_handlers
 from kgtracevis.service import kg_construction as service_kg_construction
 from kgtracevis.service import runs as service_runs
@@ -29,6 +28,7 @@ from kgtracevis.service.handlers import (
     WhatIfRequest,
     get_case_detail,
     list_cases,
+    list_feedback,
     record_feedback,
     what_if_request,
 )
@@ -207,7 +207,6 @@ def test_legacy_run_list_and_detail_read_persisted_state(tmp_path: Path) -> None
         top_k=2,
         runs_dir=tmp_path / "run_artifacts",
     ).model_dump(mode="json")
-    client = TestClient(app)
     assert payload["run"]["mode"] == "records"
     assert payload["run"]["case_count"] == 2
     assert payload["workflow_steps"]
@@ -219,12 +218,8 @@ def test_legacy_run_list_and_detail_read_persisted_state(tmp_path: Path) -> None
     run_id = payload["run"]["run_id"]
     assert not (tmp_path / "run_artifacts" / run_id / "manifest.json").exists()
 
-    runs = client.get("/api/runs")
-    run_detail = client.get(f"/api/runs/{run_id}")
-    assert runs.status_code == 200
-    assert any(item["run_id"] == run_id for item in runs.json())
-    assert run_detail.status_code == 200
-    assert run_detail.json()["run"]["run_id"] == run_id
+    assert any(item.run_id == run_id for item in service_runs.list_runs())
+    assert service_runs.get_run_detail(run_id).run.run_id == run_id
     assert payload["evidence_summary"]
     assert "top_k_paths" in payload
     assert "source_edge_provenance" in payload
@@ -285,8 +280,6 @@ def test_legacy_run_artifacts_remain_readable(
 ) -> None:
     """Record uploads should expose browser-safe visual evidence previews."""
     monkeypatch.setattr(service_visual_evidence, "PROJECT_ROOT", tmp_path)
-    client = TestClient(app)
-
     generated = tmp_path / "runs/real_model_pipeline/assets/mvtec"
     image = generated / "input_root/capsule/test/crack/000.png"
     image.parent.mkdir(parents=True)
@@ -330,9 +323,7 @@ def test_legacy_run_artifacts_remain_readable(
         top_k=2,
         runs_dir=tmp_path / "run_artifacts",
     )
-    response = client.get(f"/api/runs/{detail.run.run_id}")
-    assert response.status_code == 200
-    payload = response.json()
+    payload = service_runs.get_run_detail(detail.run.run_id).model_dump(mode="json")
     visual_items = payload["visual_evidence"]
     kinds = {item["kind"] for item in visual_items if item["available"]}
     assert {"image", "mask", "heatmap", "wafer_map"} <= kinds
@@ -350,9 +341,9 @@ def test_legacy_run_artifacts_remain_readable(
     )
 
     first_url = next(item["url"] for item in visual_items if item["kind"] == "wafer_map")
-    artifact_response = client.get(first_url)
-    assert artifact_response.status_code == 200
-    assert artifact_response.headers["content-type"] == "image/png"
+    artifact = service_runs.get_run_artifact_path(detail.run.run_id, first_url.rsplit("/", 1)[-1])
+    with Image.open(artifact) as preview:
+        assert preview.format == "PNG"
 
 
 def test_default_run_store_reads_configured_store() -> None:
@@ -447,36 +438,6 @@ def test_mvtec_model_presets_reports_available_default(
     assert presets["auto"]["resolved_preset"] == expected
     for preset in ("patchcore", "efficientad", "stfpm"):
         assert presets[preset]["available"] == (preset in available)
-
-
-def test_dashboard_bootstrap_route_exposes_contract(monkeypatch) -> None:
-    """RootLens clients should get stable initialization metadata from one endpoint."""
-    monkeypatch.setattr(service_dashboard, "list_runs", lambda *args, **kwargs: [])
-    client = TestClient(app)
-
-    response = client.get("/api/dashboard/bootstrap")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["status"] == "ok"
-    assert payload["claim_boundary"].startswith("candidate/plausible explanation")
-    assert {item["mode"] for item in payload["upload_modes"]} == {
-        "evidence",
-        "records",
-        "image",
-    }
-    assert payload["supported_feedback_targets"] == [
-        "path",
-        "edge",
-        "entity_link",
-        "correction",
-        "root_cause_candidate",
-    ]
-    assert payload["reasoning_profile_options"]["mvtec"][0]["profile_id"] == (
-        "generic_graph_path_default"
-    )
-    assert payload["reasoning_profile_options"]["tep"][-1]["profile_id"] == ("tep_root_kgd_default")
-    assert "presets" in payload["mvtec_model_presets"]
 
 
 def test_mvtec_model_presets_detects_makefile_patchcore_asset(
@@ -716,27 +677,19 @@ def test_review_feedback_contract_accepts_dashboard_actions() -> None:
     assert saved["source"] == "rootlens-dashboard"
 
 
-def test_feedback_list_route_returns_review_ledger() -> None:
-    """Dashboard clients should be able to read review ledger history."""
-    client = TestClient(app)
-    post_response = client.post(
-        "/api/feedback",
-        json={
-            "case_id": "mvtec_0001",
-            "target_type": "root_cause_candidate",
-            "target_id": "rca_mvtec_0001_mechanicalcontact",
-            "action": "accept",
-            "source": "rootlens-dashboard",
-        },
+def test_offline_feedback_ledger_reads_persisted_review():
+    record_feedback(
+        FeedbackRequest(
+            case_id="mvtec_0001",
+            target_type="root_cause_candidate",
+            target_id="rca_mvtec_0001_mechanicalcontact",
+            action="accept",
+            source="rootlens-dashboard",
+        )
     )
-
-    response = client.get("/api/feedback?target_type=root_cause_candidate")
-
-    assert post_response.status_code == 200
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["total_count"] >= 1
-    assert payload["records"][0]["target_type"] == "root_cause_candidate"
+    response = list_feedback(ReviewLedgerListRequest(target_type="root_cause_candidate"))
+    assert response.total_count >= 1
+    assert response.records[0].target_type == "root_cause_candidate"
 
 
 def test_feedback_record_defaults_to_postgres_store(monkeypatch) -> None:
@@ -790,37 +743,10 @@ def test_feedback_record_requires_configured_postgres_store(monkeypatch) -> None
         )
 
 
-def test_fastapi_routes_are_wired() -> None:
-    """The API app should expose the documented local routes."""
-    client = TestClient(app)
-
-    health = client.get("/api/health")
-    bootstrap = client.get("/api/dashboard/bootstrap")
-    cases = client.get("/api/cases")
-    case = client.get("/api/cases/mvtec_0001")
-    analysis = client.post(
-        "/api/what-if",
-        json={
-            "case_id": "mvtec_0001",
-            "anomaly_type": "scratch",
-            "location": "surface",
-            "morphology": "linear",
-            "variables": [],
-            "log_events": [],
-            "top_k": 2,
-        },
-    )
-
-    assert health.status_code == 200
-    assert health.json()["status"] == "ok"
-    assert bootstrap.status_code == 200
-    assert bootstrap.json()["status"] == "ok"
-    assert cases.status_code == 200
-    assert any(item["case_id"] == "mvtec_0001" for item in cases.json())
-    assert case.status_code == 200
-    assert case.json()["case"]["case_id"] == "mvtec_0001"
-    assert analysis.status_code == 200
-    assert analysis.json()["analysis"]["case_id"] == "mvtec_0001"
+def test_api_health_is_wired():
+    response = TestClient(app).get("/api/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_evidence_upload_persists_summary_pipeline_reasoning_metadata(
@@ -845,7 +771,7 @@ def test_evidence_upload_persists_summary_pipeline_reasoning_metadata(
 
 
 def test_legacy_run_detail_keeps_explicit_reasoning_profile(tmp_path: Path) -> None:
-    """The read route retains an offline workflow's explicit profile selection."""
+    """Offline historical reads retain an explicit profile selection."""
     records = Path("data/examples/records/mvtec_records.jsonl")
     payload = service_runs.create_run_from_upload(
         records.name,
@@ -856,15 +782,12 @@ def test_legacy_run_detail_keeps_explicit_reasoning_profile(tmp_path: Path) -> N
         top_k=2,
         runs_dir=tmp_path / "rootlens_sessions",
     ).model_dump(mode="json")
-    client = TestClient(app)
     assert payload["summary"]["pipeline"]["reasoning_profile_id"] == "generic_graph_path_default"
     assert payload["summary"]["pipeline"]["selection_mode"] == "explicit"
     assert payload["cases"][0]["reasoning_metadata"]["selection_mode"] == "explicit"
 
     run_id = payload["run"]["run_id"]
-    detail_response = client.get(f"/api/runs/{run_id}")
-    assert detail_response.status_code == 200
-    detail_payload = detail_response.json()
+    detail_payload = service_runs.get_run_detail(run_id).model_dump(mode="json")
     assert detail_payload["summary"]["pipeline"]["reasoning_profile_id"] == (
         "generic_graph_path_default"
     )

@@ -12,7 +12,7 @@ import { newAnalysisRoute } from '@/services/analysis-entry'
 import { editableWorkingGraphNode } from '@/services/working-graph-edit'
 import type { WorkingGraphSelection } from '@/services/working-graph-view'
 import {
-  defaultWorkingGraph, graphArchiveRoute, graphRequest, graphScene, graphScenes, rememberedWorkingGraph,
+  defaultWorkingGraph, graphRequest, graphScene, graphScenes, isCurrentWorkingGraph, rememberedWorkingGraph,
   rememberWorkingGraph, workingGraphAccess, workingGraphLeaveGuardKey, workingGraphRoute,
 } from '@/services/working-graph-workspace'
 
@@ -49,7 +49,6 @@ const enableError = ref('')
 
 const request = computed(() => graphRequest(route.query))
 const graphId = computed(() => request.value.kind === 'exact' ? request.value.id : null)
-const unresolvedRunLink = computed(() => request.value.kind === 'default' && ('run_id' in route.query || 'source' in route.query))
 const registered = computed(() => catalog.value.find(row => row.graph_id === graphId.value) ?? null)
 const title = computed(() => graphPackage.value?.title || registered.value?.title || (graphId.value ? '工作图' : '知识图谱工作台'))
 const scene = computed(() => graphPackage.value?.dataset || registered.value?.dataset || null)
@@ -61,8 +60,7 @@ const visibleCatalog = computed(() => {
   const current = matches.find(row => row.graph_id === graphId.value)
   return current ? [current, ...matches.filter(row => row !== current)] : matches
 })
-const status = computed(() => registered.value ? registryStatus(registered.value)
-  : graphPackage.value?.schema_version === 'rootlens-working-graph.v1' ? { label: '旧版 · 只读', color: 'gray' } : null)
+const status = computed(() => registered.value ? registryStatus(registered.value) : null)
 
 let catalogRevision = 0
 let graphRevision = 0
@@ -72,7 +70,6 @@ let confirmation: Promise<boolean> | null = null
 function registryStatus(row: WorkingGraphSummary) {
   if (row.status === 'failed') return { label: '不可用', color: 'red' }
   if (row.status === 'loading') return { label: '准备中', color: 'arcoblue' }
-  if (!row.knowledge) return { label: '旧版 · 只读', color: 'gray' }
   if (row.enabled === true) return { label: '已启用', color: 'green' }
   if (row.enabled === false) return { label: '待启用', color: 'orange' }
   return { label: '状态未记录', color: 'gray' }
@@ -85,7 +82,7 @@ function isMissingGraph(error: unknown) {
 function isCurrent(id: string | null) { return alive && route.name === 'graphs' && graphId.value === id }
 
 function applyDefault() {
-  if (props.connectionChanged || !isCurrent(null) || request.value.kind !== 'default' || unresolvedRunLink.value) return
+  if (props.connectionChanged || !isCurrent(null) || request.value.kind !== 'default') return
   const row = defaultWorkingGraph(catalog.value, rememberedWorkingGraph(base))
   if (row) void router.replace(workingGraphRoute(row.graph_id))
 }
@@ -97,7 +94,7 @@ async function readCatalog() {
   try {
     const result = await service.listWorkingGraphs()
     if (!alive || version !== catalogRevision) return
-    catalog.value = result.graphs
+    catalog.value = result.graphs.filter(isCurrentWorkingGraph)
     applyDefault()
   } catch (error) {
     if (!alive || version !== catalogRevision) return
@@ -140,6 +137,12 @@ async function readGraph(id: string) {
   ])
   if (!isCurrent(id) || version !== graphRevision) return
   graphLoading.value = false
+  if (capsule.status === 'fulfilled' && capsule.value.schema_version !== 'rootlens-working-graph.v2') {
+    studio.value = null
+    graphPackage.value = null
+    graphError.value = '该链接未返回当前格式的工作图。请从图谱目录选择。'
+    return
+  }
   if (projection.status === 'fulfilled' && projection.value.graph_id === id) {
     studio.value = projection.value
     if (selection.value && !previewContains(selection.value)) selection.value = null
@@ -149,7 +152,7 @@ async function readGraph(id: string) {
       : isMissingGraph(projection.reason) ? '当前后端找不到这张工作图。'
         : textOf(projection.reason)
   }
-  if (capsule.status === 'fulfilled' && (!capsule.value.graph_id || capsule.value.graph_id === id)) {
+  if (capsule.status === 'fulfilled' && capsule.value.schema_version === 'rootlens-working-graph.v2' && capsule.value.graph_id === id) {
     graphPackage.value = capsule.value
   } else {
     graphPackage.value = null
@@ -158,7 +161,7 @@ async function readGraph(id: string) {
   if (studio.value && graphPackage.value) rememberWorkingGraph(base, id)
 }
 
-watch([() => route.name, graphId, unresolvedRunLink], ([name, id], previous) => {
+watch([() => route.name, graphId], ([name, id], previous) => {
   if (name !== 'graphs') return
   if (id !== previous?.[1]) {
     selection.value = null
@@ -205,7 +208,7 @@ function openEditor(mode: EditorMode, id: string | null = null) {
   if (writing.value || (mode !== 'import' && graphLoading.value)) return
   if (mode === 'node' && (!access.value.editable || !id || !editableWorkingGraphNode(graphPackage.value, id))) return
   if (mode === 'package' && !graphPackage.value) return
-  if (mode === 'package' && graphPackage.value?.schema_version === 'rootlens-working-graph.v2' && !access.value.editable) {
+  if (mode === 'package' && !access.value.editable) {
     Message.info('当前图还不能编辑。可先导出完整图包。')
     return
   }
@@ -350,13 +353,12 @@ function analyze() {
       <div class="graph-workbench__identity">
         <div class="graph-workbench__eyebrow">
           <span>当前工作图</span>
-          <a-button type="text" size="mini" @click="router.push(graphArchiveRoute())">旧运行档案</a-button>
         </div>
         <div class="graph-workbench__name">
           <h2>{{ title }}</h2>
           <a-tag v-if="status" :color="status.color">{{ status.label }}</a-tag>
         </div>
-        <p v-if="scene">{{ graphScene(scene) }}<template v-if="graphPackage?.schema_version === 'rootlens-working-graph.v1'"> · 仅查看历史图谱</template></p>
+        <p v-if="scene">{{ graphScene(scene) }}</p>
       </div>
       <div class="graph-workbench__actions">
         <a-button type="outline" :disabled="!!writing" @click="openPicker">切换图谱 <IconDown /></a-button>
@@ -365,7 +367,7 @@ function analyze() {
           <template #content>
             <a-doption value="import">导入工作图包</a-doption>
             <a-doption value="export" :disabled="!graphPackage">导出当前图包</a-doption>
-            <a-doption value="package" :disabled="!graphPackage || (graphPackage.schema_version === 'rootlens-working-graph.v2' && !access.editable)">查看工作图包</a-doption>
+            <a-doption value="package" :disabled="!access.editable">查看工作图包</a-doption>
           </template>
         </a-dropdown>
         <a-button v-if="access.canAnalyze" type="primary" :disabled="!!writing || graphLoading" @click="analyze">用这张图分析</a-button>
@@ -404,7 +406,6 @@ function analyze() {
         <a-button @click="refresh"><template #icon><IconRefresh /></template>重新读取</a-button>
       </template>
       <a-empty v-else-if="request.kind === 'invalid'" description="链接里的工作图编号无效。请明确选择一张图。" />
-      <a-empty v-else-if="unresolvedRunLink" description="此链接未指明运行来源。请从运行列表或旧运行档案打开。" />
       <a-empty v-else description="尚未选择可用工作图。可切换、导入，或从素材与构图生成。" />
     </div>
 

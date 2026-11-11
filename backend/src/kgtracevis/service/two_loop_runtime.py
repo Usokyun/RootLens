@@ -8,16 +8,18 @@ import re
 import shutil
 import uuid
 from pathlib import Path
+from typing import Literal
 
-from kgtracevis.adapters.batch import evidence_from_records, load_records
+from kgtracevis.adapters.batch import evidence_from_records
 from kgtracevis.adapters.unified import evidence_frames
 from kgtracevis.core.candidate_discriminability import analyze_candidate_discriminability
 from kgtracevis.core.graded_reasoner import GradedReasoner
 from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
-from kgtracevis.core.unified_reasoner import UnifiedReasoner
+from kgtracevis.kg.unified_compiler import KnowledgeProgram
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
-from kgtracevis.schema.evidence_schema import Evidence
+from kgtracevis.schema.feature_catalog import authoring_feature_role
 from kgtracevis.schema.unified_evidence import EvidenceFrame
+from kgtracevis.schema.unified_knowledge import GradedPolicy, measurement_selector
 from kgtracevis.service.kg_materials import (
     KGMaterialExtractionRunRequest,
     KGMaterialSelectedBuildRequest,
@@ -27,17 +29,15 @@ from kgtracevis.service.kg_materials import (
     require_active_material,
 )
 from kgtracevis.service.two_loop_tasks import utc_now
-from kgtracevis.service.working_graph_editor import import_working_graph
+from kgtracevis.service.working_graph_editor import import_working_graph, same_working_knowledge
 from kgtracevis.service.working_graphs import graph_operation_lock, working_graph_store
 
 TASK_ROOT = Path("runs/two_loop_tasks")
+ReasonerId = Literal["graded_abduction", "tep_rootkgd"]
+InferenceMode = Literal["evidence", "image", "process", "wafer"]
+DEFAULT_REASONER = "graded_abduction"
+RAW_MODE_DATASETS = {"image": "mvtec", "process": "tep", "wafer": "wafer"}
 REASONERS = [
-    {
-        "reasoner_id": "unified_abduction",
-        "title": "统一条件溯因",
-        "datasets": ["mvtec", "tep", "wafer"],
-        "description": "共同类型契约、联合条件与 U/C/A/J 代价；跨场景使用同一内核。",
-    },
     {
         "reasoner_id": "graded_abduction",
         "title": "分级解释溯因",
@@ -53,18 +53,25 @@ REASONERS = [
     },
 ]
 REASONER_IMPLEMENTATIONS = {
-    "unified_abduction": UnifiedReasoner,
     "graded_abduction": GradedReasoner,
     "tep_rootkgd": RootKGDReasoner,
 }
 
 
-def enable_graph(graph_id, enabled):
-    store = working_graph_store()
+class WorkingGraphContentChanged(ValueError):
+    """A managed install cannot enable a graph edited after the catalog read."""
+
+
+def enable_graph(graph_id, enabled, *, store=None, expected_package=None):
+    store = store or working_graph_store()
     with graph_operation_lock(graph_id, store):
         record = store.get(graph_id)
+        if expected_package is not None and not same_working_knowledge(record, expected_package):
+            raise WorkingGraphContentChanged("配套图在操作期间已改动，请重新读取演示目录。")
         if record.status != "ready" or record.knowledge is None:
             raise ValueError("仅可启用校验完成的 v2 工作图。")
+        if record.enabled == enabled:
+            return record
         updated = record.model_copy(update={"enabled": enabled})
         store.update(updated)
     return updated
@@ -84,6 +91,34 @@ def parse_materials(context, request):
             "parsing", f"已解析：{material.title}", completed=index, total=len(ids), unit="份资料"
         )
     return {"material_ids": ids}
+
+
+def source_draft_policy(knowledge) -> GradedPolicy:
+    """Give a compiled source draft an honest, equal single-source budget."""
+    program = KnowledgeProgram(knowledge)
+    patterns = {r.pattern_id for h in program.hypotheses for r in program.hypothesis_world(h)[3]}
+    predicates = set().union(*(program.footprint(p) for p in patterns))
+    quantities = {}
+    for identity in sorted(predicates):
+        predicate = program.observables[identity]
+        feature = program.features[predicate.feature_id]
+        if authoring_feature_role(feature) == "diagnostic":
+            quantities.setdefault(measurement_selector(predicate, feature), []).append(identity)
+    if not quantities:
+        raise ValueError("工作图没有可声明预算的诊断量。")
+    slots = [
+        {"slot_id": f"source-draft:{index}", "predicate_ids": ids}
+        for index, (_, ids) in enumerate(
+            sorted(quantities.items(), key=lambda row: repr(row[0])), 1
+        )
+    ]
+    return GradedPolicy.model_validate(
+        {
+            "groups": [{"group_id": "source-draft", "slots": slots}],
+            # No source-independent basis to declare one cue more decisive than another.
+            "anchor_predicate_ids": sorted(p for slot in slots for p in slot["predicate_ids"]),
+        }
+    )
 
 
 def build_materials(context, request):
@@ -131,7 +166,22 @@ def build_materials(context, request):
         max_repairs=request.get("max_repairs", 1),
         progress=context.progress,
     )
-    package = package.model_copy(update={"build_id": context.task["task_id"]})
+    payload = package.model_dump(mode="json")
+    policy = source_draft_policy(package.knowledge)
+    payload["knowledge"]["graded_policy"] = policy.model_dump(mode="json")
+    payload["build_id"] = context.task["task_id"]
+    package = UnifiedWorkingGraphPackage.model_validate(payload)
+    (output / "working-graph.v2.json").write_text(
+        package.model_dump_json(indent=2), encoding="utf-8"
+    )
+    (output / "knowledge-package.json").write_text(
+        package.knowledge.model_dump_json(indent=2), encoding="utf-8"
+    )
+    context.progress(
+        "compilation",
+        "为诊断量生成同源等权分级预算；未生成曲线",
+        slot_count=len(policy.groups[0].slots),
+    )
     context.progress("graph_ready", "保存 canonical 知识与隔离 Neo4j 投影")
     record = import_working_graph(package)
     if request.get("enable_when_ready"):
@@ -144,15 +194,38 @@ def build_materials(context, request):
     }
 
 
+def require_product_inference(reasoner_id, mode):
+    if reasoner_id not in REASONER_IMPLEMENTATIONS:
+        raise ValueError("该解释器不可用；请选择分级解释溯因或 TEP RootKGD。")
+    if mode != "evidence" and mode not in RAW_MODE_DATASETS:
+        raise ValueError("当前分析只接受原生 v2 Evidence 或图像、过程、晶圆原始输入。")
+
+
+def native_evidence_rows(payload):
+    rows = payload.get("frames", [payload]) if isinstance(payload, dict) else payload
+    if (
+        not isinstance(rows, list)
+        or not rows
+        or any(
+            not isinstance(row, dict) or row.get("schema_version") != "rootlens-evidence.v2"
+            for row in rows
+        )
+    ):
+        raise ValueError("仅接受非空原生 rootlens-evidence.v2 Frame、Frame 数组或 {frames:[...]}。")
+    return rows
+
+
 def infer(context, request):
+    reasoner_id = request["reasoner_id"]
+    require_product_inference(reasoner_id, request["input_mode"])
     package = UnifiedWorkingGraphPackage.model_validate(request["graph_snapshot"])
+    reasoner = REASONER_IMPLEMENTATIONS[reasoner_id](package.knowledge)
     input_path = Path(request["input_path"])
     run_id = str(uuid.uuid4())
     root = TASK_ROOT / context.task["task_id"] / "analysis"
     root.mkdir(parents=True, exist_ok=True)
     context.progress("upload", "已保存输入与所选工作图快照", completed=1, total=1, unit="份输入")
     groups, records = prepare_inputs(context, request, package, root)
-    reasoner = REASONER_IMPLEMENTATIONS[request["reasoner_id"]](package.knowledge)
     total = sum(len(g["frames"]) for g in groups)
     context.progress("reasoning", completed=0, total=total, unit="查询")
     cases, completed = [], 0
@@ -249,39 +322,28 @@ def infer(context, request):
 def prepare_inputs(context, request, package, root):
     path, mode = Path(request["input_path"]), request["input_mode"]
     context.progress("adapter", "读取原始输入与测量能力")
-    records, evidence_items = [], []
     if mode == "evidence":
-        payload = json.loads(path.read_text())
-        rows = payload.get("frames", [payload]) if isinstance(payload, dict) else payload
-        if not isinstance(rows, list) or not rows:
-            raise ValueError("Evidence JSON 需要非空 Frame、Frame 数组或 {frames:[...]}。")
-        groups = []
-        for index, row in enumerate(rows, 1):
-            if isinstance(row, dict) and row.get("schema_version") == "rootlens-evidence.v2":
-                frame = EvidenceFrame.model_validate(row)
-                groups.append(
-                    {
-                        "case_id": frame.case_id,
-                        "display_name": frame_display_name(frame, index),
-                        "frames": [frame],
-                    }
-                )
-            else:
-                evidence_items.append(Evidence.model_validate(row))
-        if groups and evidence_items:
-            raise ValueError("不能在同一上传中混用 Frame 与旧 Evidence。")
-        if groups:
-            context.progress(
-                "measurement",
-                "已校验保存的原生 Evidence，不调用模型",
-                completed=len(groups),
-                total=len(groups),
-                unit="Frame",
-            )
-            return groups, []
-    elif mode == "records":
-        records = load_records(path)
-        evidence_items = evidence_from_records(records, dataset=package.dataset)
+        frames = [
+            EvidenceFrame.model_validate(row)
+            for row in native_evidence_rows(json.loads(path.read_bytes()))
+        ]
+        if any(frame.source_dataset != package.dataset for frame in frames):
+            raise ValueError("Evidence 场景与所选工作图不一致。")
+        context.progress(
+            "measurement",
+            "已校验保存的原生 Evidence，不调用模型",
+            completed=len(frames),
+            total=len(frames),
+            unit="Frame",
+        )
+        return [
+            {
+                "case_id": frame.case_id,
+                "display_name": frame_display_name(frame, index),
+                "frames": [frame],
+            }
+            for index, frame in enumerate(frames, 1)
+        ], []
     elif mode == "process":
         from kgtracevis.producers.tep_records import build_tep_dat_records
 
@@ -484,8 +546,6 @@ def observation_location(frame, observation):
 
 
 def explain_result(result, frame, package):
-    from kgtracevis.kg.unified_compiler import KnowledgeProgram
-
     program = KnowledgeProgram(package.knowledge)
     labels = {r["node_id"]: r.get("label") or r["node_id"] for r in program.projection["nodes"]}
     fallback_names = {
@@ -575,8 +635,13 @@ def _resolve_media(context, request, groups, records, root):
         for frame in group["frames"]:
             for asset in frame.assets:
                 uri = asset.uri
-                base = uri.split("#", 1)[0]
-                path = registry.get(uri) or registry.get(base)
+                path = registry.get(uri)
+                if frame.source_dataset == "wafer" and asset.asset_id == "grid":
+                    # A saved grid identifies one case, never a row selected from a batch.
+                    if not path or Path(path).suffix != ".json":
+                        continue
+                else:
+                    path = path or registry.get(uri.split("#", 1)[0])
                 if path and Path(path).is_file():
                     attached[uri] = path
     # Preview-producing paths are registered only from this raw run's output tree.
@@ -619,30 +684,28 @@ def _visuals(records, groups, run_id, root, media_assets):
                                 "image_path": path,
                             }
                         )
-                    elif frame.source_dataset == "wafer" and asset.kind == "typed_array":
-                        p = Path(path)
-                        if p.suffix.lower() in {".jsonl", ".json"}:
-                            grid = json.loads(p.read_text()) if p.suffix == ".json" else None
-                            if not (isinstance(grid, list) and grid and isinstance(grid[0], list)):
-                                rows = load_records(p)
-                                grid = (
-                                    rows[0].get("waferMap", rows[0].get("wafer_map"))
-                                    if rows
-                                    else None
-                                )
-                            if grid is not None:
-                                records.append(
-                                    {
-                                        "case_id": group["case_id"],
-                                        "dataset": "wafer",
-                                        "wafer_map": grid,
-                                    }
-                                )
+                    elif frame.source_dataset == "wafer" and asset.asset_id == "grid":
+                        grid = _wafer_grid(Path(path))
+                        if grid is not None:
+                            records.append(
+                                {
+                                    "case_id": group["case_id"],
+                                    "dataset": "wafer",
+                                    "wafer_map": grid,
+                                }
+                            )
     items = build_visual_evidence_artifacts(records, run_id=run_id, run_dir=root)
     for item in items:
         if item.get("url"):
             item["url"] = item["url"].replace("/api/runs/", "/api/analyses/")
     return items
+
+
+def _wafer_grid(path):
+    grid = json.loads(path.read_bytes())
+    if isinstance(grid, list) and grid and isinstance(grid[0], list):
+        return grid
+    return None
 
 
 def _media_payload(frames, media_assets):
@@ -665,13 +728,7 @@ def _media_payload(frames, media_assets):
                     ]
         grid = assets.get("grid")
         if grid and grid["uri"] in media_assets:
-            path = Path(media_assets[grid["uri"]])
-            if path.suffix == ".json":
-                values = json.loads(path.read_text())
-                if isinstance(values, list) and values and isinstance(values[0], list):
-                    result["wafer_map"] = values
-            elif path.suffix == ".jsonl":
-                records = load_records(path)
-                if records:
-                    result["wafer_map"] = records[0].get("waferMap", records[0].get("wafer_map"))
+            values = _wafer_grid(Path(media_assets[grid["uri"]]))
+            if values is not None:
+                result["wafer_map"] = values
     return result

@@ -87,7 +87,7 @@ describe('read-only canonical knowledge', () => {
     },
   }
 
-  it('reads bindings and saved logic without rewriting, and refuses v1 or a different package', () => {
+  it('reads bindings and saved logic without rewriting, and refuses a different package', () => {
     const knowledge = readWorkingGraphKnowledge(packageV2, 'current')!
     expect(knowledge.valueBindings[0]).toBe(valueBinding)
     expect(knowledge.subjectBindings[0]?.target_id).toBe('channel:raw')
@@ -97,9 +97,6 @@ describe('read-only canonical knowledge', () => {
       .toBe('全部（P；至少 1 项（Q；任一（R；S）））')
     expect(graphSourceLocation(knowledge.sources[0]?.locator)).toBe('第 13 页')
     expect(readWorkingGraphKnowledge(packageV2, 'another')).toBeNull()
-    expect(readWorkingGraphKnowledge({
-      schema_version: 'rootlens-working-graph.v1', title: 'Old', build_id: 'o', dataset: 'tep', nodes: [], edges: [], profiles: {},
-    }, 'current')).toBeNull()
   })
 
   it('shows only provenance on the exact support or declared endpoints, never the reversed edge', () => {

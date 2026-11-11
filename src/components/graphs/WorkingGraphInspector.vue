@@ -208,8 +208,7 @@ watch(() => props.selection, (selected) => { if (selected) tab.value = 'details'
     </div>
 
     <div v-else :id="`${tabId}-rules`" class="inspector-body" role="tabpanel" :aria-labelledby="`${tabId}-rules-tab`">
-      <p v-if="!knowledge" class="inspector-note">{{ graphPackage?.schema_version === 'rootlens-working-graph.v1'
-        ? '旧版工作图只读，不含当前版本的规范观测条件或 Evidence 绑定。' : '未加载可读取的规范工作图包。' }}</p>
+      <p v-if="!knowledge" class="inspector-note">未加载可读取的规范工作图包。</p>
       <template v-else>
         <section>
           <h3>观测条件 <small>{{ knowledge.conditions.length }} 条</small></h3>

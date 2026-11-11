@@ -2,9 +2,9 @@
 
 import copy
 import json
-from pathlib import Path
 
 import pytest
+from graded_fixtures import compact_bottle, public_release, without_grades
 
 from kgtracevis.core.candidate_discriminability import analyze_candidate_discriminability
 from kgtracevis.core.rootkgd_reasoner import RootKGDReasoner
@@ -13,13 +13,10 @@ from kgtracevis.kg.unified_compiler import KnowledgeProgram, SearchIncomplete, S
 from kgtracevis.schema.unified_evidence import EvidenceFrame
 from kgtracevis.schema.unified_knowledge import KnowledgePackage
 
-DATA = Path(__file__).resolve().parents[1] / "data/demo/two_loop"
 
-
-def actual_inputs(dataset, sample):
-    package = json.loads((DATA / f"knowledge/{dataset}-working-graph.v2.json").read_text())
-    payload = json.loads((DATA / f"evidence/{sample}.json").read_text())
-    return package["knowledge"], payload.get("frames", [payload])[0]
+def actual_inputs(dataset, frame_index=0):
+    package, frames = public_release(dataset)
+    return without_grades(package["knowledge"]), frames[frame_index]
 
 
 def diagnose(knowledge, frame, reasoner_id="unified_abduction"):
@@ -30,21 +27,23 @@ def diagnose(knowledge, frame, reasoner_id="unified_abduction"):
 
 
 @pytest.mark.parametrize(
-    "dataset,sample,group_sizes,grounded_count",
+    "dataset,frame_index,group_sizes,grounded_count",
     [
-        ("bottle", "bottle-rim-break", [7], 3),
-        ("tep", "tep-sequence-04", [2, 2], 14),
-        ("wafer", "wafer-nearfull", [], 9),
+        ("mvtec", 0, [2, 2], 4),
+        ("tep", 1, [2, 2], 7),
+        ("wafer", 0, [], 7),
     ],
 )
-def test_actual_frames_reveal_same_condition_groups(dataset, sample, group_sizes, grounded_count):
-    knowledge, frame = actual_inputs(dataset, sample)
+def test_actual_frames_reveal_same_condition_groups(
+    dataset, frame_index, group_sizes, grounded_count
+):
+    knowledge, frame = actual_inputs(dataset, frame_index)
     result, report = diagnose(knowledge, frame)
     assert report["schema_version"] == "rootlens-candidate-discriminability.v1"
     assert report["grouping_basis"] == "reachable_expectation_conditions"
     assert report["grouping_status"] == "available"
     assert sorted(len(g["candidate_ids"]) for g in report["equivalence_groups"]) == group_sizes
-    assert report["candidate_count"] == 8
+    assert report["candidate_count"] == 4
     assert report["evidence_usage"]["condition_grounded_observation_count"] == grounded_count
     for group in report["equivalence_groups"]:
         assert group["evidence_distinguishes"] is False
@@ -61,12 +60,13 @@ def test_actual_frames_reveal_same_condition_groups(dataset, sample, group_sizes
 
 
 def test_cost_prior_can_change_rank_without_claiming_observation_discrimination():
-    knowledge, frame = actual_inputs("bottle", "bottle-rim-break")
+    package, frames = compact_bottle()
+    knowledge, frame = without_grades(package["knowledge"]), frames[0]
     selected = knowledge["hypotheses"][0]
     selected["assumption_cost"] = 4.0
     result, report = diagnose(knowledge, frame)
     group = report["equivalence_groups"][0]
-    assert len(group["candidate_ids"]) == 7
+    assert len(group["candidate_ids"]) == 2
     assert selected["hypothesis_id"] in group["candidate_ids"]
     assert group["evidence_distinguishes"] is False
     costs = {c["candidate_id"]: c["weighted_cost"] for c in group["cost_priors"]}
@@ -86,7 +86,7 @@ def test_cost_prior_can_change_rank_without_claiming_observation_discrimination(
     ],
 )
 def test_one_executable_candidate_specific_condition_splits_group(feature, unit, op):
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     selected = knowledge["hypotheses"][0]["hypothesis_id"]
     actual = next(
         o["value"]["number"]
@@ -97,7 +97,7 @@ def test_one_executable_candidate_specific_condition_splits_group(feature, unit,
         next(
             p
             for p in knowledge["observable_definitions"]
-            if p["predicate_id"].endswith("sig_reactor_cooling_circuit:condition:1")
+            if p["subject_selector"].get("entity_id", "").endswith(":xmv_10")
         )
     )
     # Test-only authoring change, not an assertion about industrial response.
@@ -144,7 +144,7 @@ def test_one_executable_candidate_specific_condition_splits_group(feature, unit,
 
 
 def test_expectation_mode_and_repeated_or_witnesses_are_not_merged():
-    knowledge, frame = actual_inputs("bottle", "bottle-rim-break")
+    knowledge, frame = actual_inputs("mvtec")
     candidate = knowledge["hypotheses"][0]["hypothesis_id"]
     pattern = knowledge["expectation_rules"][0]["pattern_id"]
     for mode in ("expected", "necessary", "possible"):
@@ -159,12 +159,12 @@ def test_expectation_mode_and_repeated_or_witnesses_are_not_merged():
             }
         )
         _, report = diagnose(altered, frame)
-        assert [len(g["candidate_ids"]) for g in report["equivalence_groups"]] == [6]
+        assert [len(g["candidate_ids"]) for g in report["equivalence_groups"]] == [2]
         assert candidate not in report["equivalence_groups"][0]["candidate_ids"]
 
 
 def test_rootkgd_groups_actual_structural_vectors_not_logical_conditions():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     result, report = diagnose(knowledge, frame, "tep_rootkgd")
     assert report["grouping_basis"] == "actual_structural_projection"
     assert report["grouping_status"] == "available"
@@ -174,7 +174,7 @@ def test_rootkgd_groups_actual_structural_vectors_not_logical_conditions():
         for g in report["equivalence_groups"]
     )
     usage = report["evidence_usage"]
-    assert usage["condition_grounded_observation_count"] == 14
+    assert usage["condition_grounded_observation_count"] == 7
     assert usage["score_input_observation_count"] == 52
     assert usage["score_input_feature_ids"] == ["residual.contribution"]
     assert "statistics.mean_z" in {f["feature_id"] for f in usage["not_scored_features"]}
@@ -195,7 +195,7 @@ def test_rootkgd_groups_actual_structural_vectors_not_logical_conditions():
 
 @pytest.mark.parametrize("partial", [False, True])
 def test_missing_structural_vectors_are_explicit_and_never_use_logical_groups(partial):
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     result = RootKGDReasoner(knowledge).analyze(frame, top_k=8)
     rows = result["candidate_evaluations"][:1] if partial else result["candidate_evaluations"]
     for row in rows:
@@ -212,7 +212,7 @@ def test_missing_structural_vectors_are_explicit_and_never_use_logical_groups(pa
 
 @pytest.mark.parametrize("reasoner_id", ["unified_abduction", "tep_rootkgd"])
 def test_normal_gate_keeps_original_outcome_and_reports_no_structural_ranking(reasoner_id):
-    knowledge, frame = actual_inputs("tep", "tep-normal-window")
+    knowledge, frame = actual_inputs("tep")
     result, report = diagnose(knowledge, frame, reasoner_id)
     assert result["outcome"] == "no_match"
     assert not result["ranked_root_causes"]
@@ -224,11 +224,11 @@ def test_normal_gate_keeps_original_outcome_and_reports_no_structural_ranking(re
 
 
 def test_insufficient_observations_preserve_missing_checks():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     frame["observations"] = []
     result, report = diagnose(knowledge, frame)
     assert result["outcome"] == "insufficient_evidence"
-    assert report["candidate_count"] == 8
+    assert report["candidate_count"] == 4
     assert report["evidence_usage"]["observed_observation_count"] == 0
     assert report["evidence_usage"]["condition_grounded_observation_count"] == 0
     assert all(
@@ -241,7 +241,7 @@ def test_insufficient_observations_preserve_missing_checks():
 
 
 def test_search_incomplete_never_becomes_no_knowledge_or_full_coverage():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     result = UnifiedReasoner(knowledge, limits=SearchLimits(candidates=1)).analyze(frame)
     report = analyze_candidate_discriminability(
         knowledge, frame, result, reasoner_id="unified_abduction"
@@ -255,7 +255,7 @@ def test_search_incomplete_never_becomes_no_knowledge_or_full_coverage():
 
 
 def test_diagnostic_expansion_budget_does_not_fail_completed_inference(monkeypatch):
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     result = UnifiedReasoner(knowledge).analyze(frame)
 
     def exhausted(self, identity):
@@ -266,14 +266,14 @@ def test_diagnostic_expansion_budget_does_not_fail_completed_inference(monkeypat
         knowledge, frame, result, reasoner_id="unified_abduction"
     )
     assert report["grouping_status"] == "incomplete"
-    assert len(report["issues"]) == 8
+    assert len(report["issues"]) == 4
     assert result["outcome"] == "ambiguous"
     assert report["evidence_usage"]["unreferenced_features"] == []
 
 
 @pytest.mark.parametrize("field", ["graph_id", "case_id"])
 def test_diagnostics_require_same_inference_snapshot(field):
-    knowledge, frame = actual_inputs("bottle", "bottle-rim-break")
+    knowledge, frame = actual_inputs("mvtec")
     result = UnifiedReasoner(knowledge).analyze(frame)
     result[field] = "different"
     with pytest.raises(ValueError, match="knowledge snapshot|EvidenceFrame"):
@@ -283,7 +283,7 @@ def test_diagnostics_require_same_inference_snapshot(field):
 
 
 def test_report_is_detached_json_and_accepts_typed_inputs():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     result = UnifiedReasoner(knowledge).analyze(frame)
     original = copy.deepcopy((knowledge, frame, result))
     report = analyze_candidate_discriminability(
@@ -298,19 +298,18 @@ def test_report_is_detached_json_and_accepts_typed_inputs():
     assert (knowledge, frame, result) == original
     usage = report["evidence_usage"]
     assert usage["total_observation_count"] == 263
-    assert usage["score_input_observation_count"] == 14
+    assert usage["score_input_observation_count"] == 7
     assert {f["feature_id"] for f in usage["unreferenced_features"]} == {
         "residual.contribution",
         "residual.energy",
         "residual.normal_limit",
         "series.raw_values",
         "statistics.slope_z",
-        "statistics.std_z",
     }
 
 
 def test_unrelated_task_has_no_applicable_candidate_groups():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     frame["task"]["target_role"] = "unrelated-role"
     result, report = diagnose(knowledge, frame)
     assert result["outcome"] == "not_applicable"
@@ -319,6 +318,6 @@ def test_unrelated_task_has_no_applicable_candidate_groups():
 
 
 def test_unregistered_reasoner_is_not_given_an_invented_basis():
-    knowledge, frame = actual_inputs("tep", "tep-sequence-04")
+    knowledge, frame = actual_inputs("tep", 1)
     with pytest.raises(ValueError, match="unsupported diagnostic reasoner"):
         analyze_candidate_discriminability(knowledge, frame, {}, reasoner_id="unknown")

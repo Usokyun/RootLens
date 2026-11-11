@@ -1,181 +1,53 @@
-# 双闭环 API 契约
+# RootLens 双闭环 API
 
-2026-11-11。本轮 UI 消费下列接口；推理只使用明确选择且已启用的 v2 工作图。
+所有创建操作走 Python 后端。目录读取不会隐式安装工作图、重算历史或调用模型。请求和状态使用下面的当前合同；旧运行、旧图包、旧 Evidence 和旧 Replay 路由不提供转换。
 
-## 图谱
+## 资料到工作图
 
-保留 `GET /api/kg/working-graphs` → `{graphs:[{graph_id,title,dataset,status,enabled,knowledge,...}]}`。
-`status=ready` 表示可执行包已校验并持久化；`enabled=true` 表示可供新分析选择。
+- `/api/kg/materials` 列活动素材，`?archived=true` 列已移出；`/upload` 接收文件，`/register-url` 登记网址。详情、提取片段、提取历史和产物按素材 ID 读取。`POST /api/kg/materials/{material_id}/archive` 或 `/restore` 只改选材状态；正在使用的素材不允许移出（409）。
+- `POST /api/tasks/material-parse`：`{"material_ids":["id"],"force":false}`。提取阶段实际读取并保留原文位置。
+- `GET /api/authoring/capabilities` 返回三个场景的能力目录。`features[]` 包含 `feature_id/value_kind/unit/definition/requires_reference/allowed_values/semantic_role`；`allowed_values=null` 不是空枚举。`diagnostic` 是诊断量，`presence_gate`、`context` 不能代替具体证据。图像位置是图像网格，不是物体部位。
+- `POST /api/tasks/material-build`：`{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","max_repairs":1}`。另两能力 ID 为 `visual-region-v2`、`spatial-grid-v2`。一次只选同场景及共享素材，文本模型最多生成加一次修复；实际调用和校验问题进入事件。可显式设 `candidate_limit`（视觉／过程上限 64，晶圆限声明的图案词汇）。默认新图未启用。
 
-- `GET /api/kg/working-graphs/{graph_id}/package`：完整 `rootlens-working-graph.v2` 包。
-- `POST /api/kg/working-graphs/import`：导入新图，默认未启用。
-- `PUT /api/kg/working-graphs/{graph_id}/package`：修改同一图，保存前自动备份；历史 run 不重算。
-- `POST /api/kg/working-graphs/{graph_id}/enable`，JSON `{ "enabled": true }`：启用／停用。
-- `GET /api/reasoners`：`{reasoners:[{reasoner_id,title,datasets,description,requires_graded_policy?}]}`。`unified_abduction` 和 `graded_abduction` 用于三场景；后者要求所选 v2 图声明 `knowledge.graded_policy`，缺失时提交返回 400，不回退旧引擎。`tep_rootkgd` 仅支持 TEP。
+LLM 生成实体、作用、可观测条件与来源，不设置评分曲线或预算。后端为新图生成确定性的初始观测预算；通过完整包编辑 `observable_definitions[].grade`、`knowledge.graded_policy` 或 `value_bindings`。别名仅在匹配的特征和可选模型内归一，不修改原 Evidence 值；等价来源、单位、范围和所有引用由编译器校验。预设条件和假设可能仍需按资料调整。
 
-### 制作能力与词汇绑定
+## 工作图
 
-`GET /api/authoring/capabilities` → `{capabilities:{mvtec:CapabilityManifest,tep:CapabilityManifest,wafer:CapabilityManifest}}`。
-与实际LLM构图使用同一目录；`features[]` 给出 `feature_id/value_kind/unit/definition/requires_reference/allowed_values/semantic_role`。
+- `GET /api/kg/working-graphs` 返回登记图；`GET /api/kg/studio?graph_id=…` 读取指定工作图的真实有向投影。
+- `POST /api/kg/working-graphs/import` 接受 `rootlens-working-graph.v2` 完整包，创建新的待启用图。
+- `GET`／`PUT /api/kg/working-graphs/{graph_id}/package` 交换该图的完整包。保存前备份；包的图 ID 不得指向另一张图。条件、绑定和预算随包一起保存，不从视图字段反构造。
+- `POST /api/kg/working-graphs/{graph_id}/enable`：`{"enabled":true}` 启用，或传 `false` 停用。只使用已启用的就绪图创建任务。
+- `GET /api/reasoners`：`{reasoners:[{reasoner_id,title,datasets,description,requires_graded_policy?}]}`。`graded_abduction` 是默认的三场景引擎，要求图有比较预算；`tep_rootkgd` 仅 TEP 可选。不自动换引擎。
 
-- `allowed_values=null`：开放词汇或非类别特征，不表示空集合。`appearance.semantic_candidates` 始终开放。
-- 有限值：`geometry.morphology=[linear,spot,scattered,dense]`，原始单ROI只产生前两种，外部聚合几何还可产生后两种；`geometry.location=[edge,surface]`，仅是图像网格位置；`classifier.pattern` 为独立模型的八类图案。
-- 新构图的有限类别operand及绑定canonical目标不在目录中时，validation明确报告feature、unknown值与allowed值，走已有一次有界修复，不静默替换或截断。旧包未声明`allowed_values`仍可读，不回写冻结图。
-- `semantic_role=diagnostic/presence_gate/context`区分具体诊断观测、通用存在门控与参考／背景。已知producer语义以共用目录为准，不能由LLM把generic字段改旗标绕过；旧图未声明时保持未指定，不回写冻结图。
+## 原始输入到保存分析
 
-人工绑定继续通过完整包 `knowledge.value_bindings` 新增／删除，再PUT保存。每项为：
+`POST /api/tasks/inference` 接收 multipart：`file`、`graph_id`、`input_mode`、可选 `reasoner_id`、`dataset`、`title`、`top_k`。按所选模式补充：
 
-```json
-{
-  "binding_id":"alias:legacy-scratch", "feature_id":"appearance.semantic_candidates",
-  "external_value":"LegacyScratch", "canonical_value":"scratch",
-  "procedure_model_id":null, "source_assertion_ids":["source:glossary"]
-}
-```
+| `input_mode` | 输入与配置 |
+| --- | --- |
+| `evidence` | 原生 `rootlens-evidence.v2` 单帧、数组或 `{frames:[…]}`。保留类型、单位、范围、正常参考与原始引用。 |
+| `image` | 原图，按 `object_name` 和可选 `model_preset` 选择对应模型；`semantic_mode=disabled` 为默认。 |
+| `process` | 52 通道序列和同序 `reference_file`，`windows` 如 `[[1,100],[161,260]]`（一基闭区间），`sampling_seconds` 默认 180。 |
+| `wafer` | 0 背景／1 正常／2 失效的网格，单对象或 JSONL 批；原生类别不传分类器。 |
 
-来源ID必须存在。映射只在同feature及指定模型（null表示全局）内生效，原观测及`actual_values`不改写，事实记录`applied_value_binding_ids`。保存／删除后下一次分析生效；历史运行与已编译快照不变。
+`GET /api/tasks?limit=50` 查看近况，`GET /api/tasks/{task_id}?after_sequence=0` 增量读取实际事件。状态为 `queued/running/completed/failed/interrupted`；未知比例时 `progress.indeterminate` 为真。任务完成返回 `material_ids`、`graph_id/build_id` 或 `run_id`。失败保留阶段和错误；仅在 `failed/interrupted` 可用 `POST /api/tasks/{task_id}/retry` 明确重提，不自动重放付费步骤。API 重启不会把未完成任务标成成功。
 
-LLM Blueprint也可提供`value_bindings[]`：`binding_key/relation=equivalent/feature_id/external_value/canonical_value/procedure_model_id/assertion`；assertion只允许`origin=source_explicit`，由编译器保留实际source ID、unit ID与locator。没有明确等价来源就留空，不把相似、上位词或缺失部位当等价，尤其不将`cracked_or_missing_glass`补成具体`broken_finish/chipped_finish`。代码校验来源身份与可执行类型，等价语义仍需作者据来源判断。
+`GET /api/analyses` 返回摘要，`GET /api/analyses/{run_id}` 返回完整保存分析。`cases[]` 带 `evidence_frames`、同帧 `results`、`observation_locations` 与媒体状态，另保存 `working_graph_snapshot`。`GET /api/analyses/{run_id}/evidence` 下载该次 `{frames:[…]}`；`GET /api/analyses/{run_id}/artifacts/{name}` 读取受管附件。不访问 Frame 里的任意本地路径或 URL，未附媒体不阻止数值推理。
 
-### 候选独立诊断条件
+### 分级结果与实际贡献
 
-这组操作只补一条候选局部条件，不是通用图编辑器：
+`graded_joint_abduction_v1` 返回固定比较预算 `graded_comparison`、有支持／待核验的 `graded_candidates[]` 和实际选择的联合分支。每项 `graded_conditions[]` 保存实测值、`obs_id`、权重、支持／反证与带符号贡献。`scoring_details` 用 `support/conflict/score/coverage` 保存 P/C/S/V；`path_kind=graded_contribution` 附真实 `source_edges`、反向视图、正／反证观测和定位。`joint_proof_id` 为空，不从软证据合成布尔证明。仅有支持组进入 `ranked_root_causes`。
 
-- `GET /api/kg/working-graphs/{graph_id}/candidate-conditions` → `{conditions,features,subjects,zones}`。features为当前场景可产出且可比较的目录项，增加`allowed_operators`与`subject_kind=variable/focus`；subjects仅含图内已绑定的实际过程通道`{entity_id,label,external_id}`。
-- `POST`同地址；请求示例如下。返回`{graph:WorkingGraphRecord,conditions:[...]}`，完成时已经保存，沿用既有图锁、自动备份、PG canonical包与Neo4j投影。
-- `DELETE /api/kg/working-graphs/{graph_id}/candidate-conditions/{condition_id}`撤销本向导创建的独立束，返回同一外壳。conditions含`condition_id/predicate_id/pattern_id/expectation_rule_id/anomaly_gate_id/can_delete/delete_blocker`及原输入字段。
+`graded_policy.groups[]` 为 `{group_id,weight,slots:[{slot_id,weight,predicate_ids}]}`，`anchor_predicate_ids[]` 引用判别条件。仅适用知识决定固定预算，缺测不改分母；同一实际测量或 `dependency_group` 不得跨两个预算重复使用。必要反证排除分支，`expected` 的实测不符扣分，`possible` 不出现不算反证。数值曲线声明 `direction`、阈值、正的 `support_width/conflict_width`、可选中性宽度、单位、依据和来源引用；方向和单位需与运算一致。每个合法分支用 `S = Σ w·p − Σ w·c`，另报覆盖，分组内同分保留。
 
-```json
-{
-  "candidate_id":"目标候选的实际ID", "label":"冷却水阀变化率条件",
-  "feature_id":"statistics.slope_z", "op":"gte",
-  "operand":{"kind":"number","number":0.01,"unit":"1/sample"},
-  "subject_entity_id":"entity:tep_braatz.channel:xmv_10", "zone":null,
-  "mode":"necessary", "description":"作者检验假设，非已验证工业规则",
-  "source_assertion_ids":[]
-}
-```
+`tep_rootkgd_propagation_v2` 使用完整 52 维残差贡献、实际图传播、余弦／贡献覆盖／传播熵；按 host 和通道合并重复逻辑期待，主／备选路径各自保留真实源边。RootKGD 与分级分数不能直接比较。`authoring_diagnostics` 来自本次图快照和实际评分输入，不拿后来编辑的图补历史。
 
-`statistics.*`及`residual.contribution`必须选择已绑定通道；全局量／对象／ROI使用null；晶圆必须选择现有zone。未知变量、特征、单位、来源或范围明确报错，不自动制造实体或观测。可产出但图内尚未登记的特征加入目录定义，数据仍来自现有adapter。
+## 唯一公开演示目录
 
-新建诊断条件的GET仅列`diagnostic`特征，POST同样拒绝仅通用presence或主体背景的充分替代，具体错误为“不是候选区分条件”。这按目录语义分类，不按boolean类型一刀切；已有异常门仍可在原编辑器正常修改。
+- `GET /api/demo-library` 从 `backend/data/demo/graded_rca/manifest.json` 读取三组和样例。`sample_id` 为唯一键；`graph_ref` 只按完整知识匹配，返回就绪、待启用、未安装、歧义或不可用，不按日期和场景猜图。
+- `GET /api/demo-library/assets/{asset_id}` 只下载白名单资产。可用性取决于实际文件；没有原料或模型时仍可用发布 Frame 复算。
+- `POST /api/demo-library/{demo_id}/working-graph` 由用户显式发起。未安装则导入并启用，已匹配则启用或复用，返回就绪 `graph_id` 和动作。歧义明确拒绝，不改已有知识；目录读取本身不写入。
+- `POST /api/demo-library/{demo_id}/materials` 登记该组公开来源资料，重复登记复用同一素材；不执行提取、构图或安装图。
+- `POST /api/tasks/inference/demo`：`{"sample_id":"tep-d04-graded","graph_id":"...","reasoner_id":"graded_abduction","input_variant":"evidence","top_k":8}`。选中工作图须与样本同场景；默认 `evidence`，重新计算保存 Frame；显式 `raw` 用相同清单的原始样本及配套文件。需要附件的场景按精确 Frame ID 关联，缺失不从其它窗口／网格借用。
 
-新增predicate与独立pattern只从目标hypothesis直接接expectation，不修改共享mechanism。pattern以ALL复用图中已有的显式`anomaly=true`门控，不复制gate增加票数；缺门控只拒绝新操作，不改变原推理入口。`mode`仅有`necessary`（不成立排除）、`expected`（不成立沿现有C计冲突）、`possible`（弱兼容、不计此期待的冲突）；不存在第四种“冲突模式”。
-
-没有选择来源时明确保存人工`declared_demo_heuristic`，不伪造source/unit/locator。删除移除本束predicate、pattern、expectation和作者assertion，保留借用的gate、既有来源和可复用目录定义；出现额外引用就拒绝删除并说明共享依赖。下次任务使用新快照，历史run不变。
-
-RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host／通道的逻辑期待集合化，并消除沿显式effect已被下游同通道期待覆盖的上游重复声明；重复同通道条件、等价pattern拆分不再制造额外信号或shortcut。新增原本未达的通道或显式effect关系仍可改变结构分数，不等于新条件结构一律无效。不同实际作用路径应通过明确mechanism/effect表达，不能靠多写逻辑pattern当成多条物理路径。
-
-## 真实异步任务
-
-- `GET /api/tasks?limit=50` → `{tasks:[Task]}`，最近任务优先。
-- `GET /api/tasks/{task_id}?after_sequence=0` → `Task`，events 仅含 sequence 大于游标的事件。
-- `POST /api/tasks/{task_id}/retry`：只对 failed/interrupted 创建**新 task**；保留原输入，不自动重试付费步骤。
-- `POST /api/tasks/material-parse`，JSON `{"material_ids":["id"],"force":false}`。
-- `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1,"candidate_limit":null}`。每任务最多两次客户端模型请求（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。source客户端关闭SDK自动传输重发；连接失败按原阶段终止，不进入知识修复，也不自动新建任务。视觉／过程建议紧凑≤16候选，默认硬上限32，`candidate_limit`可明确设1–64；wafer仍只允许声明的8个图案类。超建议只警示并完整保留，超硬限明确失败；不截断／自动合并。
-- `POST /api/tasks/inference`，multipart：`file`、可选 `reference_file`、`graph_id`、`reasoner_id`、`input_mode`、`dataset`、`object_name`、`model_preset`、`semantic_mode`、`windows`、`title`、`top_k`。`windows` 为 JSON `[[1,100],[161,260]]`；一基闭区间。
-- `POST /api/tasks/inference/demo`，JSON `{"sample_id":"...","graph_id":"...","reasoner_id":"unified_abduction","input_variant":"raw","top_k":5}`。`input_variant` 可选 `raw/evidence`，默认 raw。Evidence 模式只要求清单登记的 Frame；原图、网格、曲线等本地附件缺失时仍可推理，媒体状态如实返回。`supporting_assets` 的通用附件用 `frame_asset_id`；单帧附件用 `frame_case_id` 加 `case_asset_id`，避免多个窗口误共享一份数组。路径越界或把目录登记成文件仍拒绝；raw 模式仍要求原件及 TEP 正常参考。
-
-`input_mode`：`evidence`=原生 EvidenceFrame JSON（单个／数组／`{frames:[...]}`）或旧结构化 Evidence；`records`=adapter records JSON/JSONL；`image`=MVTec 原图；`process`=52通道 dat/csv + 正常 `reference_file`；`wafer`=原生 0/1/2 网格 JSON（单个网格或带 `wafer_map` 的对象）。不允许用文件名／原生标签当推理答案。
-
-```json
-{
-  "task_id":"task_...", "kind":"inference", "status":"running",
-  "title":"过程分析", "created_at":"...", "updated_at":"...",
-  "stage":"measurement", "stage_label":"测量与 Evidence",
-  "progress":{"completed":1,"total":3,"unit":"窗口","indeterminate":false},
-  "events":[{"sequence":3,"at":"...","stage":"measurement","label":"完成窗口 1–100","completed":1,"total":3,"unit":"窗口"}],
-  "result":null, "error":null, "retry_of":null
-}
-```
-
-`status` 为 `queued/running/completed/failed/interrupted`。`failed` 保留 `error={stage,message,type}`；重启后未完成任务变 `interrupted`，不会永远转圈。LLM 阶段 `progress.indeterminate=true`，不伪造百分比。结果：parse 为 `{material_ids}`，build 为 `{graph_id,build_id}`，inference 为 `{run_id}`。
-
-素材上传／URL 注册／列表／chunks 沿用 `/api/kg/materials` 系列；解析改走异步任务。构图任务自动完成解析（仅缺失时）、LLM、自动校验、确定性编译与隔离工作图装载；无需人工审核门。
-
-这是两页唯一的任务提交合同。旧 `POST /api/runs/upload`、旧运行模型预设／下载、素材同步提取／构图、旧 `/api/kg/construction/*` 和旧草稿 HTTP 路由已退役。素材登记用 `/api/kg/materials/upload` 或 `/api/kg/materials/register-url`。已存旧 Run 的 GET、附件与回放仍供图谱历史使用；旧构图产物留在原路径，由离线工作流读取。
-
-- `GET /api/kg/materials` 默认只列活动素材；`?archived=true` 只列已移出素材。记录的 `archived_at` 为 `null` 或移出时间。
-- `POST /api/kg/materials/{material_id}/archive` 和 `/restore` 返回 `{status, material, note}`。移出和恢复不改原文件、提取结果或历史图谱来源；详情、片段和处理记录仍可按原 ID 读取。
-- 排队或运行中的素材任务阻止移出（HTTP 409）；已移出素材要先恢复，才能新建或重试提取与构图任务。
-
-升级既有库时，素材存储首次访问按需增加可空的 `archived_at` 列，已有记录保持活动。更新后端进程即可载入新路由；既有库不运行 `backend:init`。
-
-Source Blueprint将presence/context条件提到ALL前置，原ANY或at_least仅作用于具体diagnostic atoms；ALL只等价重组。ANY/at_least收紧写入`authoring_normalizations`并在实际validation事件展示`semantic_change=true`；at_least计数不能满足剩余诊断项时明确失败，不猜替代count。纯门控签名与canonical JSON绕过均拒绝，每条支持proof必须包含具体诊断观测。`appearance.defect_present=true`不能单独证明Finish、部位或制造原因。
-
-## 保存分析
-
-- `GET /api/analyses` → `{runs:[AnalysisRunSummary]}`；不返回完整 cases 或知识快照。`outcome_counts` 按已保存 Frame 结果统计；明确的 `no_match`／`normal_reference_gate_is_false` 单独进入 `normal_gate_count`，不再计入 `no_match`。未保存结果时省略两项。
-- `GET /api/analyses/{run_id}` → `AnalysisRun`；任务完成后用它载入。
-- `GET /api/analyses/{run_id}/evidence`：下载本次实际生成的 `{frames:[...]}`，可按 `input_mode=evidence` 重新上传；不重跑 backbone/LLM。
-- `GET /api/analyses/{run_id}/artifacts/{name}`：原图／mask／heatmap／输入等实际文件。
-- `GET /api/demo-library` → `{samples:[{sample_id,title,dataset,input_mode,description,source,available,...}]}`，仅列受管的公开演示资产。
-- 同时返回 `demos[]`（分组素材、图包、样本、配套数组、模型及来源）；每个资产有 `asset_id/download_url/available`。
-- 每个group、嵌套sample及平铺sample都有`graph_ref`：`{graph_id,title,state,ready,enabled,available,note,asset_id,download_url,candidates}`。`state=ready/disabled/missing/ambiguous/unavailable`；只有`ready`且`available=true`可在无明确选图意图时自动使用。匹配读取注册图包与现存canonical知识，除graph身份外完整内容必须相同；原包身份只有内容仍相同时优先，否则只选唯一启用匹配，多份无法确定则ambiguous，不按latest／同场景猜。GET不导图、不启用或覆盖图；registry不可读明确unavailable，白名单资产下载仍独立可用。
-- 推荐样例在前端只覆盖隐式默认选图；用户手选／route明确的图保留，并提示与配套图不同及切换动作。缺配套图时提示导入／启用或明确选图，不以最新启用的严格源图替代就绪演示图；源图对照仍可显式选择。
-- `GET /api/demo-library/assets/{asset_id}`：白名单资产下载，`Content-Disposition` 明确保留真实安全文件名与后缀（例如 `.jsonl`），可原名重新上传。
-- `POST /api/demo-library/{demo_id}/materials`：把原始资料实际登记到素材库，返回 `{materials:[...]}`；不偷偷导入预制图。重复点击复用同一素材，不覆盖原文件。
-
-```json
-{
-  "run_id":"...", "title":"过程窗口", "created_at":"...", "status":"completed",
-  "dataset":"tep", "input_mode":"process", "reasoner_id":"tep_rootkgd",
-  "graph_id":"...", "graph_title":"过程知识", "case_count":2,
-  "cases":[{
-    "case_id":"...", "display_name":"样本 161–260", "evidence_frames":[{}],
-    "results":[{
-      "case_id":"...", "outcome":"supported", "scoring_method":"tep_rootkgd_propagation_v2",
-      "ranked_root_causes":[], "grounded_facts":[], "candidate_evaluations":[],
-      "proof_graph":{}, "unused_observation_ids":[]
-    }],
-    "generated_evidence":{}, "visual_evidence":[], "observation_locations":[]
-  }],
-  "working_graph_snapshot":{}, "artifacts":{}
-}
-```
-
-unified 结果保留当前 `UnifiedReasoner.analyze` 的完整结果（U/C/A/J、支持／冲突／缺失、来源 ID、联合证明）。RootKGD 结果沿用相同外壳但 `scoring_details` 为余弦、贡献覆盖、传播熵等分解，绝不把该分数标成概率。每条路径提供显示名、实际 source assertion、obs IDs 与 scope/asset 定位。Frame 原始字段完整保存，页面以中文显示名默认呈现、稳定 ID 用于引用。
-
-每个 case 另有 `media_status=available/not_attached` 与 `media_note`。普通 Frame 上传只含 URI 时不会任意读取本机路径或抓取 URL；未关联受管媒体则明确显示“只有统计与引用，原始媒体未附带”，数值推理仍执行。Demo 与本次原始分析登记的实际资产可关联：`visual_evidence[].url` 为图片／mask 预览，`process_trends=[{channel,samples}]` 为完整通道曲线，`wafer_map` 为原网格。`evidence_download_url` 指向本次 Frame 下载。
-
-RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution_mass / uncovered_contribution_mass / propagation_entropy / active_channel_count / coverage_penalty / entropy_penalty / structural_score / observed_channel_vector[52] / propagated_channel_vector[52] / channel_order`，实际复用原 `ranking_score`：`cosine - 0.12*covered_mass - 0.03*entropy`。没有旧 memory 或按 fault family 的加分。`propagation.graph_channel_coverage` 明示图上不可达通道与其残差贡献质量。
-
-当前`scoring_method=tep_rootkgd_propagation_v2`，`propagation.projection_version=rootkgd-host-channel.v2`。`propagation.projection`给出显式effect边数、规范host／通道集合边数、上游冗余链接数及每条链接的主来源／备选来源；保留真实effect方向和原传播／评分函数。主路径`source_edge_views`始终是实际源边组成的连续路径，`top_k_paths[].source_path_alternatives`单独保留等价或上游冗余声明的完整候选→通道源路径，不伪接到主路径。旧run保持原投影与分数；没有版本字段时仅显示“未记录”。
-
-### 待验证分支与完整证明分开
-
-统一引擎可在新结果中保存 `tentative_candidates[]` 和 `tentative_diagnostic_context`。入选者未获完整支持，必要条件成立，且同一可连接的分支上有明确、成立的异常门和至少两项不同的实测诊断量支持。没有完整候选但有此类分支时，`outcome` 为 `insufficient_evidence`；原 `candidate_evaluations`、完整榜、证明和源路径不变。RootKGD 不生成待验证分支。
-
-`condition_checks[]` 指向保存的真／假／未知观测与来源，`scoring_details` 使用共用的已判定诊断量为分母（`shared_observed_diagnostics_v1`）：同一特征、主体和范围只计一次，先计算各依赖组未覆盖和反证比例，再分别平均得 U 和 C。缺测不作反证；待验证 J 不与完整榜代价混排。结果未保存这两项时不从旧未入榜行补算。
-
-### 分级解释溯因（可选）
-
-`GET /api/reasoners` 列出 `graded_abduction`（`requires_graded_policy=true`）。原始、普通 Frame 或公开样例均可显式选择；图无配置则拒绝提交，不转用旧引擎。旧 `unified_abduction` 和 `tep_rootkgd` 的分数、证明和历史 Run 保持原合同。LLM 源构图仍只编译条件、结构与来源；数值曲线和权重由审阅者在完整工作图包里保存。
-
-- 数值谓词的 `grade` 是有限曲线：`direction=lower/higher/interval/absolute_higher`、`pivot` 或 `lower/upper`、正的 `support_width/conflict_width`、可选非负 `neutral_support/neutral_conflict`、`unit/basis/source_assertion_ids`。方向、阈值及单位必须与 `lte/gte/between/abs_gte` 的原离散比较一致。`between` 使用 `{kind:"interval",lower,upper,unit}`，两端包含。`basis` 要有相符的实际来源断言；演示宽度不当工艺规格。
-- `knowledge.graded_policy.groups[]` 声明 `{group_id,weight,slots:[{slot_id,weight,predicate_ids}]}`；`anchor_predicate_ids[]` 指向这些槽内的判别条件。先按适用候选固定预算，再在组间、组内归一。槽以特征、选择器、范围及参考为同一测量；同一实际测量或 `dependency_group` 跨槽／名义组冲突时拒绝评分（`graded_budget_source_overlap`），缺项不重新分权重。异常门及上下文不计票。
-- 选定合法联合分支后，先算每个唯一槽的支持 `p` 与反证 `c`，再求 `P=Σw·p`、`C=Σw·c`、`S=P−C`；同槽的多个必要／预期条件取最低支持、最大反证。可能规则不以不出现扣分。`V` 是所选分支声明槽可核验的权重比例。未知不成反证；必要反证排除分支，未核验必要条件阻止标为有支持。至少两项不同槽有实测净支持，才有「有支持／待核验」条目；入有支持还要硬条件、锚点实测净支持且 `S>0`。两组各自按同一个 S 排序、同分保留；不使用假设先验。
-- 新结果标 `scoring_method=graded_joint_abduction_v1`。`graded_comparison` 保存共享预算；`graded_candidates[]` 保存两组候选、`scoring_details={support,conflict,score,coverage}`、选中 `expectation_checks`、逐项 `graded_conditions` 以及汇总 `graded_slots`。同槽重复引用的原始度数可见，实际 `support_credit/conflict_credit/score_contribution` 仅记一次。`ranked_root_causes` 仅镜像有支持组，不能当完整布尔证明。
-- `top_k_paths[]` 与候选 `explanation_paths[]` 的 `path_kind=graded_contribution`，`contribution_kind` 区分支持、反证、前置。`observation_ids`、选中 `rule_id/predicate_id`、真实 `source_edges` 和反向视图随 Run 保存；`joint_proof_id=null`。图上实际节点／边可追到同窗、同 ROI 或同网格实测，不把软证据写成完整证明。
-
-### 本次知识可分辨性与观测覆盖
-
-新任务的每项`cases[].results[]`保存`authoring_diagnostics`（`schema_version=rootlens-candidate-discriminability.v1`），严格由该run的知识快照、Frame和实际推理结果生成，不改变候选或分数。历史run没有此字段时显示“未生成”，GET不会拿当前工作图补算。
-
-- `grouping_status=available/unavailable/incomplete`与`issues[]`说明诊断是否完整；搜索预算不足不把有效推理任务变失败。
-- unified的`grouping_basis=reachable_expectation_conditions`：`equivalence_groups[]`按可达`(pattern_id,mode)`签名分组；不同假设cost仍可同组，`cost_priors`单独显示先验，不能将分数差误认为数据区分。
-- RootKGD只用该次实际完整通道向量和评分分解分组，`grouping_basis=actual_structural_projection`；缺输入为`structural_inputs_unavailable`，不拿逻辑条件组替代传播评分。
-- `evidence_usage`保留总观测、已观测、条件grounding数与真实评分输入数，并列出`unreferenced_features`和`not_scored_features`。`condition_reference_status`与`score_input_status`区分完整、未知、正常门控未排名，未知不冒充0覆盖。
-- `candidate_checks`列出本次已有expectation/predicate checks；RootKGD明确`condition_checks_used_for_score=false`，这些条件仅供作者检查，不影响传播分数。
-
-## 存储与运行
-
-任务和新分析使用指定 PG 的增量表，不重建既有表；输入／构图产物保留在 `backend/runs/two_loop_tasks`。工作图继续 PG canonical 包＋Neo4j 隔离投影。API 仍运行 8012，仅使用独立 PG 55433／Neo4j 57687，不操作普通库。
-
-本轻量 worker 部署为一个 API 进程、两个线程任务 worker；不使用多进程 Uvicorn workers。新的任务服务第一次访问会把旧进程遗留的 queued/running 标为 interrupted，不自动重算。新知识制作的视觉默认硬预算为32候选／8签名／每签名32假设，过程为32／12／32，wafer为8／8／1；视觉／过程可显式调候选／每签名硬限到64。建议规模与结构硬限分开，报告保留二者。推理器原128候选、256分支、2048组合、1024状态搜索预算不改，耗尽仍明确search_incomplete。
-
-本机8012演示服务改由手动加载的launchd会话作业 `com.rootlens.dev.two-loop-api` 管理，不依赖agent exec会话，不配置登录／开机自启。`backend/scripts/development_api.py` 提供 `start/status/stop/health --name two-loop-api`，启动8012时加 `--port 8012`；日志、PID记录与恢复命令见 [后端运行记录](../../backend/docs/two-loop-backend.md#0239-断连恢复进程归-launchd不归临时执行会话)。
-
-本机隔离容器已存在但停止时，先确认 Docker 运行，从仓库根目录执行 `docker compose -p rootlens-mvtec-m1-test -f backend/compose.test.yaml start --wait postgres neo4j`，然后启动上述命名作业。该命令只启动既有容器，不建库或重建卷。服务起来后在 `backend/` 执行 `uv run --offline --no-sync python scripts/smoke_rootlens_dashboard.py` 检查两页实际读取。
-
-复算除同一知识快照／reasoner外，还需保留 `run.input_snapshot.top_k` 等选项（本轮demo为8）；默认5会少返回部分候选和路径。RootKGD 的 `propagation.scoring_input_obs_ids` 列出所有52个实际评分输入，不将未展示路径的贡献误标为unused。
+[演示手册](../../backend/docs/graded-rca-demo.md)提供三个可直接操作的场景与来源。Postgres 存素材、图登记和完整分析；Neo4j 存图投影。旧持久化数据没有被批量迁移、清空或重算。

@@ -13,11 +13,26 @@ from kgtracevis.service.two_loop_store import TwoLoopStore
 
 def test_current_loop_routes_replace_retired_creation_without_losing_history():
     paths = create_app().openapi()["paths"]
-    assert not any(path.startswith("/api/kg/construction/") for path in paths)
+    assert not any(
+        path.startswith(
+            (
+                "/api/kg/construction/",
+                "/api/runs",
+                "/api/cases",
+                "/api/kg/runtime/",
+                "/api/reasoning/",
+            )
+        )
+        for path in paths
+    )
     assert (
         not {
-            "/api/runs/upload",
-            "/api/runs/mvtec-model-presets",
+            "/api/feedback",
+            "/api/analyze",
+            "/api/what-if",
+            "/api/dashboard/bootstrap",
+            "/api/kg/working-graphs/{graph_id}/candidate-conditions",
+            "/api/kg/working-graphs/{graph_id}/candidate-conditions/{condition_id}",
             "/api/model-assets/download",
             "/api/kg/drafts",
             "/api/kg/source-draft",
@@ -34,19 +49,24 @@ def test_current_loop_routes_replace_retired_creation_without_losing_history():
             "/api/tasks/material-parse",
             "/api/tasks/material-build",
             "/api/tasks/inference",
+            "/api/tasks/inference/demo",
+            "/api/demo-library/{demo_id}/working-graph",
+            "/api/kg/working-graphs/import",
             "/api/kg/working-graphs/{graph_id}/enable",
         )
     )
     assert all(
         "get" in paths[path]
         for path in (
-            "/api/runs/{run_id}",
-            "/api/runs/{run_id}/artifacts/{artifact_name}",
-            "/api/runs/{run_id}/replay",
+            "/api/analyses",
+            "/api/analyses/{run_id}",
+            "/api/kg/studio",
+            "/api/kg/working-graphs/{graph_id}/package",
             "/api/analyses/{run_id}/evidence",
             "/api/analyses/{run_id}/artifacts/{name}",
         )
     )
+    assert set(paths["/api/kg/working-graphs/{graph_id}/package"]) == {"get", "put"}
 
 
 def test_analysis_index_separates_normal_gate_from_unmatched_and_preserves_unknown(monkeypatch):
@@ -56,6 +76,7 @@ def test_analysis_index_separates_normal_gate_from_unmatched_and_preserves_unkno
             "payload": {"run_id": "mixed", "candidate_count": 8},
             "saved_outcomes": [
                 ["no_match", "normal_reference_gate_is_false"],
+                ["no_match", "anomaly_gate_is_false"],
                 ["no_match", None],
                 ["ambiguous", None],
                 ["ambiguous", None],
@@ -82,7 +103,7 @@ def test_analysis_index_separates_normal_gate_from_unmatched_and_preserves_unkno
                 "run_id": "mixed",
                 "candidate_count": 8,
                 "outcome_counts": {"no_match": 1, "ambiguous": 2, "insufficient_evidence": 1},
-                "normal_gate_count": 1,
+                "normal_gate_count": 2,
             },
             {
                 "run_id": "normal-only",

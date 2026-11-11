@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { UnifiedWorkingGraphPackage, WorkingGraphPackage } from '@/api/contracts'
+import type { UnifiedWorkingGraphPackage } from '@/api/contracts'
 import { editableWorkingGraphNode, parseWorkingGraphDraft, updateWorkingGraphNode } from './working-graph-edit'
 
 function workingPackage() {
@@ -61,18 +61,12 @@ describe('working graph edits', () => {
     expect(() => updateWorkingGraphNode(base, id, { name: '新名称', aliases: [] })).toThrow('只有实体')
   })
 
-  it('does not edit compiled definitions, predicates, rules, missing IDs, or old graphs', () => {
+  it('does not edit compiled definitions, predicates, rules, or missing IDs', () => {
     const base = workingPackage()
     for (const id of ['definition', 'p', 'e', 'r', 's', 'unknown']) {
       expect(editableWorkingGraphNode(base, id)).toBeNull()
       expect(() => updateWorkingGraphNode(base, id, { name: '错误编辑' })).toThrow('没有可编辑')
     }
-    const legacy: WorkingGraphPackage = {
-      schema_version: 'rootlens-working-graph.v1', title: '旧版', dataset: 'mvtec',
-      build_id: 'old', nodes: [], edges: [], profiles: {},
-    }
-    expect(editableWorkingGraphNode(legacy, 'bottle')).toBeNull()
-    expect(() => updateWorkingGraphNode(legacy, 'bottle', { name: '错误编辑' })).toThrow('只读')
     expect(() => updateWorkingGraphNode(base, 'bottle', { name: '   ' })).toThrow('请输入')
   })
 

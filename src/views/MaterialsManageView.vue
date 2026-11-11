@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { IconHistory, IconPlus, IconRefresh, IconRelation, IconSearch, IconSettings } from '@arco-design/web-vue/es/icon'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createApiClient } from '@/api/client'
 import type { KGMaterialRecord } from '@/api/contracts'
 import { changeMaterialArchive, listArchivedMaterials } from '@/api/material-archive'
 import { materialBuildBlocker, materialCapabilities, type MaterialBuildScenario } from '@/api/material-tasks'
-import type { WorkTask } from '@/api/two-loop'
+import { createTwoLoopClient, type DemoGroup, type WorkTask } from '@/api/two-loop'
 import MaterialDetails from '@/components/materials/MaterialDetails.vue'
 import MaterialImportDialog from '@/components/materials/MaterialImportDialog.vue'
 import TaskStatusPanel from '@/components/tasks/TaskStatusPanel.vue'
@@ -17,19 +17,12 @@ import {
   materialStatuses, materialTypeLabel, materialTypes, scenarioLabel, type MaterialStatus,
 } from '@/services/material-presentation'
 import { materialTaskGraphId, materialTaskIds, useMaterialSourceTasks } from '@/services/material-source-tasks'
-import { mockBackend } from '@/services/mock-backend'
-import { getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
 import { taskCanRetry, taskIsActive, taskStatusLabels } from '@/services/task-observer'
-import { sourceSelectionReset, useWorkbenchState } from '@/services/workbench-state'
 
 const { preferences } = useAppPreferences()
-const { updateState } = useWorkbenchState()
 const router = useRouter()
-const replay = ref(getLocalSessionMeta())
-const replayActive = computed(() => replay.value?.source === 'import')
-const backendUrl = computed(() => preferences.value.dataSourceMode === 'backend' && !replayActive.value ? preferences.value.apiBaseUrl : null)
-const canManage = computed(() => backendUrl.value !== null)
-const reader = computed(() => backendUrl.value ? createApiClient(backendUrl.value) : mockBackend)
+const backendUrl = computed(() => preferences.value.apiBaseUrl)
+const reader = computed(() => createApiClient(backendUrl.value))
 const scenes = materialScenarios.filter((scene) => scene.value !== 'shared')
 
 type LibraryView = 'active' | 'archive'
@@ -47,6 +40,11 @@ const selectedIds = ref<string[]>([])
 const detailRevision = ref(0)
 const notice = ref('')
 const importVisible = ref(false)
+const demoVisible = ref(false)
+const demoGroups = shallowRef<DemoGroup[]>([])
+const demoLoading = ref(false)
+const demoAdding = ref('')
+const demoError = ref('')
 const buildVisible = ref(false)
 const historyVisible = ref(false)
 const historyTab = ref<'build' | 'parse'>('build')
@@ -168,7 +166,6 @@ function toggleVisible(checked: boolean) {
 
 async function refreshMaterials(view: LibraryView = libraryView.value) {
   const base = backendUrl.value
-  if (view === 'archive' && !base) return
   const revision = sourceRevision
   const request = ++listRequests[view]
   const state = library[view]
@@ -176,7 +173,7 @@ async function refreshMaterials(view: LibraryView = libraryView.value) {
   state.loading = true
   state.error = ''
   try {
-    const response = view === 'archive' && base ? await listArchivedMaterials(base) : await reader.value.listKGMaterials()
+    const response = view === 'archive' ? await listArchivedMaterials(base) : await reader.value.listKGMaterials()
     if (!stillCurrent()) return
     state.rows = response.materials
     state.loaded = true
@@ -193,13 +190,11 @@ async function refreshMaterials(view: LibraryView = libraryView.value) {
 
 async function refreshTaskMaterials(ids: string[]) {
   const revision = sourceRevision
-  if (!canManage.value) return
   await refreshMaterials('active')
   if (revision === sourceRevision && focusedId.value && ids.includes(focusedId.value)) detailRevision.value += 1
 }
 
 function changeLibrary(view: LibraryView) {
-  if (!canManage.value) return
   libraryView.value = view
   resetFilters()
   void refreshMaterials(view)
@@ -227,8 +222,56 @@ function handleAdded(records: KGMaterialRecord[]) {
   void refreshMaterials('active')
 }
 
+async function openDemoMaterials() {
+  if (demoLoading.value || demoAdding.value) return
+  const revision = sourceRevision
+  const base = backendUrl.value
+  demoVisible.value = true
+  demoLoading.value = true
+  demoError.value = ''
+  demoGroups.value = []
+  try {
+    const result = await createTwoLoopClient(base).demos()
+    if (revision === sourceRevision) demoGroups.value = result.demos.filter(group => group.materials.length)
+  } catch (error) {
+    if (revision === sourceRevision) demoError.value = materialError(error)
+  } finally {
+    if (revision === sourceRevision) demoLoading.value = false
+  }
+}
+
+async function addDemoMaterials(group: DemoGroup) {
+  if (!demoVisible.value || demoAdding.value || !demoGroups.value.includes(group)
+    || !group.materials.length || group.materials.some(asset => asset.available !== true)) return
+  const revision = sourceRevision
+  const base = backendUrl.value
+  demoAdding.value = group.id
+  demoError.value = ''
+  try {
+    const { materials } = await createTwoLoopClient(base).addDemoMaterials(group.id)
+    if (revision !== sourceRevision) return
+    const active = materials.filter(record => !record.archived_at)
+    const archived = materials.length - active.length
+    if (active.length) handleAdded(active)
+    if (archived) {
+      if (!active.length) changeLibrary('archive')
+      notice.value = [active.length ? `素材库中可用 ${active.length} 份。` : '', `${archived} 份已移出，恢复后可选作构图素材。`].filter(Boolean).join('')
+    } else if (active.length) {
+      notice.value = `${active.length} 份演示素材已在素材库中。可勾选后提取内容或生成工作图。`
+    } else {
+      demoError.value = '后端没有返回演示素材。'
+      return
+    }
+    demoVisible.value = false
+  } catch (error) {
+    if (revision === sourceRevision) demoError.value = materialError(error)
+  } finally {
+    if (revision === sourceRevision) demoAdding.value = ''
+  }
+}
+
 function requestArchive() {
-  if (!focused.value || !canManage.value || activeIds.value.has(focused.value.material_id)) return
+  if (!focused.value || activeIds.value.has(focused.value.material_id)) return
   archiveError.value = ''
   archiveTarget.value = focused.value
 }
@@ -237,7 +280,7 @@ function dismissArchive() {
 }
 async function mutateArchive(material: KGMaterialRecord | null, action: 'archive' | 'restore') {
   const base = backendUrl.value
-  if (!material || !base || archiveBusy.value || (action === 'archive' && activeIds.value.has(material.material_id))) return
+  if (!material || archiveBusy.value || (action === 'archive' && activeIds.value.has(material.material_id))) return
   const revision = sourceRevision
   archiveBusy.value = true
   archiveError.value = ''
@@ -263,7 +306,7 @@ async function mutateArchive(material: KGMaterialRecord | null, action: 'archive
 }
 
 async function extractMaterials(materials: KGMaterialRecord[], force = false) {
-  if (!canManage.value || sourceBusy.value || archiveBusy.value || libraryView.value !== 'active' || !materials.length) return
+  if (sourceBusy.value || archiveBusy.value || libraryView.value !== 'active' || !materials.length) return
   const revision = sourceRevision
   notice.value = ''
   const ids = materials.map(({ material_id }) => material_id)
@@ -276,7 +319,7 @@ async function extractMaterials(materials: KGMaterialRecord[], force = false) {
 }
 
 function requestBuild() {
-  if (!canManage.value || sourceBusy.value || archiveBusy.value || !selected.value.length || libraryView.value !== 'active') return
+  if (sourceBusy.value || archiveBusy.value || !selected.value.length || libraryView.value !== 'active') return
   buildScope.value = [...selected.value]
   const nonShared = new Set(buildScope.value.map((material) => material.scenario).filter((scene) => scene !== 'shared'))
   const single = nonShared.size === 1 ? [...nonShared][0] : undefined
@@ -287,7 +330,7 @@ function requestBuild() {
   buildVisible.value = true
 }
 async function submitBuild() {
-  if (!canManage.value || sourceBusy.value || archiveBusy.value || buildBlocker.value || !buildForm.dataset) return
+  if (sourceBusy.value || archiveBusy.value || buildBlocker.value || !buildForm.dataset) return
   const revision = sourceRevision
   notice.value = ''
   submittingIds.value = buildScope.value.map(({ material_id }) => material_id)
@@ -303,7 +346,6 @@ async function submitBuild() {
 }
 
 function openGraph(graphId: string) {
-  if (!canManage.value) return
   void router.push({ name: 'graphs', query: { graph: graphId } })
 }
 function showTask(task: WorkTask, historical = false) {
@@ -319,7 +361,7 @@ function closeTask(back = false) {
 }
 async function retryTask() {
   const task = taskDialogRecord.value
-  if (!canManage.value || !task || !taskCanRetry(task) || sourceBusy.value || archiveBusy.value) return
+  if (!task || !taskCanRetry(task) || sourceBusy.value || archiveBusy.value) return
   const revision = sourceRevision
   if (!taskIsTracked.value) sourceTasks.viewTask(task)
   submittingIds.value = materialTaskIds(task)
@@ -332,7 +374,6 @@ async function retryTask() {
 }
 
 function showHistory() {
-  if (!canManage.value) return
   historyTab.value = 'build'
   historyVisible.value = true
   void sourceTasks.refreshHistory(true)
@@ -348,7 +389,7 @@ watch(filtered, (rows) => {
   if (!rows.some(({ material_id }) => material_id === focusedId.value)) focusedId.value = rows[0]?.material_id ?? null
 })
 watch(
-  [() => preferences.value.dataSourceMode, () => preferences.value.apiBaseUrl, replayActive, () => replay.value?.updatedAt],
+  backendUrl,
   () => {
     sourceRevision += 1
     Object.assign(library.active, emptyLibrary())
@@ -361,21 +402,18 @@ watch(
     detailRevision.value += 1
     notice.value = ''
     importVisible.value = buildVisible.value = historyVisible.value = false
+    demoVisible.value = demoLoading.value = false
+    demoAdding.value = demoError.value = ''
+    demoGroups.value = []
     taskDialogId.value = null
     archiveTarget.value = null
     archiveError.value = ''
     archiveBusy.value = false
-    if (sourceRevision > 1) updateState(sourceSelectionReset())
     void refreshMaterials('active')
   },
   { immediate: true },
 )
-function updateReplay() { replay.value = getLocalSessionMeta() }
-onMounted(() => window.addEventListener(getLocalSessionEventName(), updateReplay))
-onBeforeUnmount(() => {
-  sourceRevision += 1
-  window.removeEventListener(getLocalSessionEventName(), updateReplay)
-})
+onBeforeUnmount(() => { sourceRevision += 1 })
 </script>
 
 <template>
@@ -385,17 +423,15 @@ onBeforeUnmount(() => {
         <h1>素材库</h1>
         <p>管理知识图谱的来源资料</p>
       </div>
-      <a-space v-if="canManage" wrap>
+      <a-space wrap>
         <a-button @click="showHistory"><template #icon><IconHistory /></template>构图记录</a-button>
+        <a-button @click="openDemoMaterials">添加演示素材</a-button>
         <a-button :type="selected.length ? 'secondary' : 'primary'" @click="importVisible = true">
           <template #icon><IconPlus /></template>添加素材
         </a-button>
       </a-space>
     </header>
 
-    <a-alert v-if="!canManage" type="info">
-      {{ replayActive ? '回放只展示已有结果。退出回放并切换到 Backend 后可管理素材。' : 'Demo 为只读快照。切换到 Backend 后可管理素材。' }}
-    </a-alert>
     <div v-if="sourceTask && (sourceTask.kind === 'material_build' || sourceTask.status !== 'completed')" class="materials-task-banner" :class="'materials-task-banner--' + sourceTask.status" aria-live="polite">
       <div>
         <strong>{{ bannerLabel }}</strong>
@@ -467,8 +503,8 @@ onBeforeUnmount(() => {
               <a-button type="text" size="mini" aria-label="刷新素材列表" :loading="currentLibrary.loading" @click="refreshMaterials()">
                 <template #icon><IconRefresh /></template>
               </a-button>
-              <a-button v-if="canManage && libraryView === 'active'" type="text" size="mini" @click="changeLibrary('archive')">已移出</a-button>
-              <a-button v-else-if="canManage" type="text" size="mini" @click="changeLibrary('active')">返回素材库</a-button>
+              <a-button v-if="libraryView === 'active'" type="text" size="mini" @click="changeLibrary('archive')">已移出</a-button>
+              <a-button v-else type="text" size="mini" @click="changeLibrary('active')">返回素材库</a-button>
             </a-space>
           </div>
 
@@ -480,7 +516,7 @@ onBeforeUnmount(() => {
             <table class="materials-library__table">
               <thead>
                 <tr>
-                  <th v-if="canManage && libraryView === 'active'" scope="col" class="materials-library__check">
+                  <th v-if="libraryView === 'active'" scope="col" class="materials-library__check">
                     <input
                       type="checkbox"
                       aria-label="选择当前列表中的全部素材"
@@ -501,7 +537,7 @@ onBeforeUnmount(() => {
                   :data-material-id="material.material_id"
                   :class="{ 'materials-library__row--focused': material.material_id === focusedId }"
                 >
-                  <td v-if="canManage && libraryView === 'active'" class="materials-library__check">
+                  <td v-if="libraryView === 'active'" class="materials-library__check">
                     <input
                       type="checkbox"
                       :checked="selectedIds.includes(material.material_id)"
@@ -542,7 +578,7 @@ onBeforeUnmount(() => {
           <div v-else-if="!currentLibrary.error" class="materials-library__empty">
             <strong>{{ hasFilters ? '没有匹配的素材' : (libraryView === 'archive' ? '没有已移出的素材' : '还没有素材') }}</strong>
             <a-button v-if="hasFilters" type="text" size="small" @click="resetFilters">清除筛选</a-button>
-            <span v-else-if="canManage && libraryView === 'active'">上传文件或登记网址后，素材会显示在这里。</span>
+            <span v-else-if="libraryView === 'active'">添加演示素材、上传文件或登记网址后，素材会显示在这里。</span>
           </div>
         </section>
 
@@ -550,7 +586,7 @@ onBeforeUnmount(() => {
           <MaterialDetails
             v-if="focused" :key="focused.material_id"
             :material="focused" :reader="reader" :revision="detailRevision" :status="displayedStatus(focused)"
-            :can-manage="canManage" :archived="libraryView === 'archive'" :archive-blocked="activeIds.has(focused.material_id)"
+            :archived="libraryView === 'archive'" :archive-blocked="activeIds.has(focused.material_id)"
             :mutation-busy="archiveBusy" :task-busy="sourceBusy"
             @archive="requestArchive" @restore="mutateArchive(focused, 'restore')"
             @parse="extractMaterials([focused], materialStatus(focused) === 'ready')"
@@ -559,7 +595,7 @@ onBeforeUnmount(() => {
         </aside>
       </div>
 
-      <footer v-if="canManage && libraryView === 'active'" class="materials-selection" aria-label="构图选材">
+      <footer v-if="libraryView === 'active'" class="materials-selection" aria-label="构图选材">
         <div aria-live="polite">
           <strong>构图选材</strong>
           <b v-if="selected.length">已选 {{ selected.length }} 份{{ selectedScene ? ' · ' + selectedScene : '' }}</b>
@@ -578,6 +614,26 @@ onBeforeUnmount(() => {
   </div>
 
   <MaterialImportDialog v-model:visible="importVisible" :backend-url="backendUrl" @added="handleAdded" />
+
+  <a-modal v-model:visible="demoVisible" title="添加演示素材" width="min(520px, calc(100vw - 32px))"
+    :footer="false" :mask-closable="false" :closable="!demoAdding" :esc-to-close="!demoAdding">
+    <div class="materials-dialog__body">
+      <p class="materials-dialog__note">将发布资料加入素材库。提取和构图由您另行发起。</p>
+      <a-alert v-if="demoError" type="error">{{ demoError }}
+        <a-button v-if="!demoGroups.length" size="mini" type="text" @click="openDemoMaterials">重读目录</a-button>
+      </a-alert>
+      <div v-if="demoLoading" role="status"><a-spin /> 正在读取演示目录…</div>
+      <ul v-else-if="demoGroups.length" class="materials-dialog__scope">
+        <li v-for="group in demoGroups" :key="group.id">
+          <span><strong>{{ scenarioLabel(group.dataset) }}</strong> · {{ group.materials.length }} 份资料</span>
+          <a-button :data-demo-materials-id="group.id" :loading="demoAdding === group.id"
+            :disabled="!!demoAdding || group.materials.some(asset => asset.available !== true)"
+            @click="addDemoMaterials(group)">{{ group.materials.some(asset => asset.available !== true) ? '资料不可用' : '添加' }}</a-button>
+        </li>
+      </ul>
+      <p v-else-if="!demoError" class="materials-dialog__note">目录中没有可添加的演示素材。</p>
+    </div>
+  </a-modal>
 
   <a-modal
     :visible="Boolean(archiveTarget)" title="移出素材库？" width="min(480px, calc(100vw - 32px))"

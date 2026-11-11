@@ -5,7 +5,7 @@
 ## 运行这个演示
 
 1. 在「素材与构图」上传并提取 [material.md](material.md)，可用配置的文本模型制作初稿。先检查模型有没有把实际缺项编成代理条件、有没有保留细长形态的两个替代分支；给当前图加分级比较预算后再启用。直接演示时，导入并启用已经复核的 [working-graph.v2.json](working-graph.v2.json)，不需要文本模型。
-2. 在该图点击「用这张图分析」，选**分级解释溯因**（`graded_abduction`）。用 [原生 Evidence](evidence.json) 可直接复算，不需要任何模型或权重。也可上传[同一张公开 006 原图](../../two_loop/mvtec/sample_006.png)，选择 `bottle`、PatchCore、关闭 ROI 外观语义，现场生成原图、掩膜、热图及 ROI 对照。第三方权重不随包分发；有权使用时按[固定上游文件](https://huggingface.co/micguida1/mvtec-anomaly-checkpoints/blob/17e6b9b9bbb42f2f0ccda588bd088724520b8348/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt)配置。
+2. 在该图点击「用这张图分析」，选**分级解释溯因**（`graded_abduction`）。用 [原生 Evidence](evidence.json) 可直接复算，不需要任何模型或权重。也可上传[同一张公开 006 原图](sample_006.png)，选择 `bottle`、PatchCore、关闭 ROI 外观语义，现场生成原图、掩膜、热图及 ROI 对照。第三方权重不随包分发；有权使用时按[准备指南](../../../../docs/graded-rca-demo.md#准备原始输入和权重)配置固定版本。
 3. 保留候选数为 8，打开「推理」查看每项实测、正／负贡献和来源，点离心率回到同一 ROI。可下载本次 Evidence，再按同图、同引擎、同候选数普通上传。普通重传不调用 Backbone；仅拿随包 Frame 在新实例复算时，旧实例的媒体路径不会自动恢复。
 
 对照用 [A 原图](contrast-a.png)／[Frame](contrast-a.evidence.json) 与 [B 原图](contrast-b.png)／[Frame](contrast-b.evidence.json)。两张原图都由同一 CPU PatchCore 测量后交给同一 adapter；没有使用目录类别或像素标注作为输入。A 未触发异常门，不出形态候选；B 触发异常门，实测面积 **10.19%**、长短比 **1.0753**、离心率 **0.7125**，块状分支的两个解释仍并列，`S=0.6795`。
@@ -27,7 +27,7 @@
 
 ## 来源与许可
 
-- 006 原图沿用[旧包中的已署名公开文件](../../two_loop/mvtec/README.md#样本署名和许可)。A、B 原图分别为 `bottle/test/good/001.png`、`bottle/test/contamination/000.png`，来自[固定镜像](https://huggingface.co/datasets/foersben/mvtec-ad/tree/4e0e64896390500eb67720e1ceef16e160bb2a8d/bottle)，仅改文件名，不修改像素。配准参考为同版本 `bottle/train/good/{000,001,002}.png`，不在包中重复分发。
+- `sample_006.png` 为 `bottle/test/broken_large/006.png`（900×900 RGB，523,230 字节）；A、B 原图分别为 `bottle/test/good/001.png`、`bottle/test/contamination/000.png`。三张均来自[固定镜像](https://huggingface.co/datasets/foersben/mvtec-ad/tree/4e0e64896390500eb67720e1ceef16e160bb2a8d/bottle)，仅改文件名，不修改像素。配准参考为同版本 `bottle/train/good/{000,001,002}.png`，不在包中重复分发。数据集原目录名只用于署名与溯源，不参与推理。
 - MVTec AD © 2019 MVTec Software GmbH；创作者 Paul Bergmann、Michael Fauser、David Sattlegger、Carsten Steger。[官方数据页](https://www.mvtec.com/research-teaching/datasets/mvtec-ad)。原图、图像派生 Frame、测量与叠加图按 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 提供；叠加图标出拟合轮廓与比较区域，并附曲线。
 - 材料与工作图是 RootLens 的演示说明，引用 Emhart 和 Basler 的公开资料，不再分发原文 PDF；几何规则不是厂商或数据集提供的工艺标准。
 

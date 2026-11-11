@@ -1,6 +1,6 @@
 # 统一工业推理 v2：运行、构图与展示
 
-2026-11-11。U0–U5 已实现：三个 adapter 进入同一类型契约、同一候选展开／条件执行／代价计算内核。不同场景变的是测量能力和知识，不是最终评分算法。
+2026-11-11 · U0–U5 研究基线。三个 adapter 进入同一类型契约、同一候选展开／条件执行／代价计算内核。此文保留离线实验和对照；当前工作台使用[分级溯因演示](graded-rca-demo.md)和[双闭环 API](../../src/doc/rootlens-two-loop-backend-contract.md)。
 
 ## 先运行真实测量 JSON，不需要数据库或模型调用
 
@@ -97,33 +97,9 @@ uv run --no-sync python scripts/build_unified_knowledge.py \
 
 本机原始片段在 `runs/unified_reasoning/public/{bottle,tep,wafer}-source-units.json`；最终 LLM 原文／蓝图／编译报告保留在 `u2_bottle_compact`／`u2_bottle_final`、`u3_tep_knowledge_alternatives`、`u4_wafer_single_target`。直接生成完整 IR、过细候选、错误 AND 和对称分类等失败也保留；U5 没再调图或调用模型来改善评价数字。
 
-## 在现有三页使用 v2
+## 复现 U0–U5 的产品历史
 
-1. **素材与构图**：勾选资料后点“生成知识图谱”，确认场景和名称。完成后“打开图谱”使用本次返回的图 ID。
-2. **根因与图谱**：导入种子／新包、编辑完整 canonical `knowledge`、保存并投入使用。绑定、条件和规则一起保存，派生图不是第二份知识。历史 run 保留当时的图和结果。
-3. **运行与证据**：“新建分析”选择已启用图和解释器，提交原始输入或原生 Frame。打开保存详情查看同一 Frame 的候选、实测值、联合条件或传播依据和源边；浏览器不重新判断。
-
-离线研究仍可使用 v1 包和旧策略。下面是直接计算 v2 Frame、不保存 Run 的研究接口：
-
-```bash
-curl -sS -H 'Content-Type: application/json' \
-  --data-binary @data/kg/unified/bottle-working-graph.v2.json \
-  http://127.0.0.1:8012/api/kg/working-graphs/import
-# 使用返回 graph_id；该入口计算结果，不新建持久 Run
-curl -sS -H 'Content-Type: application/json' \
-  --data-binary @data/examples/unified/mvtec-chipped.json \
-  'http://127.0.0.1:8012/api/reasoning/<graph_id>/analyze?top_k=5'
-```
-
-持久分析使用 `POST /api/tasks/inference`（multipart，`input_mode=evidence` 可直接接收原生 Frame），由 `GET /api/analyses/{run_id}` 读取。已导入的图须先投入使用；完整包可经 `GET/PUT /api/kg/working-graphs/{graph_id}/package` 交换。旧 Run 上传端点已退役。
-
-### 本机演示与恢复
-
-当前演示前端 `http://127.0.0.1:5186`、API `http://127.0.0.1:8012` 使用独立 Compose 项目 `rootlens-mvtec-m1-test`：PG 55433、Neo4j bolt 57687；原本机库／来源备份保持。恢复命令和测试专用连接配置见 [M1 配置与恢复](mvtec-m1-demo.md#配置与恢复)，已有服务不要重复启动，不执行 `backend:init` 或删除卷。
-
-完整回放：`runs/unified_reasoning/u5_replay/all-scenes-session.json`。包含 3 个原始 Run、3 张知识快照、22 个 case 与内嵌预览。运行页“导入回放”打开该成品，不请求后端重新测量或推理。D3 使用项目锁定依赖。
-
-建议依次展示：bottle 的 4 条并列原因；TEP 的正常／异常窗口、完整 52 通道及错误首位对应的条件；Wafer 的实际网格、空间统计和分类一致／不一致。支持和失败都能从同一“推理依据”检查。
+当时的页面、回放和部署记录可从 `809fb8d:backend/docs/unified-reasoning.md` 查阅。基线比较使用本页的离线 CLI；当前应用不提供旧 `/api/reasoning/{graph_id}/analyze` 和 Session 回放入口。
 
 ## 评价与已知限制
 

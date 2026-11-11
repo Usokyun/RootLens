@@ -1,15 +1,16 @@
 """The new public API persists native Frames and exposes honest task state."""
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from graded_fixtures import compact_bottle, public_release, without_grades
 from PIL import Image
-from test_graded_reasoner import ECC, graded_public, observation
+from test_graded_reasoner import ECC, observation
 from test_two_loop_tasks import MemoryStore, finish
+from test_unified_integration import storage as storage
 
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.service import two_loop_api as api
@@ -21,14 +22,12 @@ from kgtracevis.service.two_loop_tasks import TaskManager
 
 @pytest.fixture
 def client_runtime(tmp_path, monkeypatch):
-    package = UnifiedWorkingGraphPackage.model_validate_json(
-        Path("data/kg/unified/bottle-working-graph.v2.json").read_text()
-    )
+    package = UnifiedWorkingGraphPackage.model_validate(compact_bottle()[0])
     record = SimpleNamespace(
         status="ready", enabled=True, knowledge=package.knowledge, dataset="mvtec"
     )
     monkeypatch.setattr(api, "working_graph_store", lambda: SimpleNamespace(get=lambda _: record))
-    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    monkeypatch.setattr(api, "export_v2_working_graph", lambda _: package)
     monkeypatch.setattr(api, "TASK_ROOT", tmp_path / "tasks")
     monkeypatch.setattr(runtime, "TASK_ROOT", tmp_path / "tasks")
     manager = TaskManager(MemoryStore())
@@ -40,7 +39,8 @@ def client_runtime(tmp_path, monkeypatch):
 
 def test_native_frame_upload_returns_real_task_saved_run_and_download(client_runtime):
     client, manager, _ = client_runtime
-    content = Path("data/examples/unified/mvtec-chipped.json").read_bytes()
+    _, (frame,) = compact_bottle()
+    content = json.dumps(frame).encode()
     response = client.post(
         "/api/tasks/inference",
         data={"graph_id": "g", "input_mode": "evidence"},
@@ -54,6 +54,7 @@ def test_native_frame_upload_returns_real_task_saved_run_and_download(client_run
     assert status["status"] == "completed"
     assert "graph_snapshot" not in status["request"]
     run = client.get("/api/analyses/" + final["result"]["run_id"]).json()
+    assert run["reasoner_id"] == "graded_abduction"
     assert run["cases"][0]["results"][0]["ranked_root_causes"]
     evidence = client.get(run["evidence_download_url"])
     assert evidence.status_code == 200
@@ -94,6 +95,10 @@ def test_graded_engine_requires_config_and_saves_the_same_native_analysis_on_reu
     )
     assert row["requires_graded_policy"] is True
     args = {"graph_id": "g", "input_mode": "evidence", "reasoner_id": "graded_abduction"}
+    payload, frames = compact_bottle()
+    stripped = {**payload, "knowledge": without_grades(payload["knowledge"])}
+    ungraded = UnifiedWorkingGraphPackage.model_validate(stripped)
+    monkeypatch.setattr(api, "export_v2_working_graph", lambda _: ungraded)
     wrong = client.post(
         "/api/tasks/inference",
         data=args,
@@ -102,10 +107,9 @@ def test_graded_engine_requires_config_and_saves_the_same_native_analysis_on_reu
     assert wrong.status_code == 400 and "graded_policy" in wrong.json()["detail"]
     assert not manager.store.tasks
 
-    payload, frames = graded_public("mvtec")
     package = UnifiedWorkingGraphPackage.model_validate(payload)
     record.knowledge = package.knowledge
-    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    monkeypatch.setattr(api, "export_v2_working_graph", lambda _: package)
     frame = frames[0]
     eccentricity = observation(frame, ECC)
     eccentricity["value"]["number"] = 0.94
@@ -286,30 +290,38 @@ def test_demo_download_preserves_real_filename_extension(
 
 def write_demo_manifest(tmp_path, monkeypatch, sample):
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"demos": [{"id": "test", "samples": [sample]}]}))
+    manifest.write_text(
+        json.dumps(
+            {
+                "demos": [
+                    {"id": "test", "dataset": sample["dataset"], "samples": [sample]},
+                ]
+            }
+        )
+    )
     monkeypatch.setattr(api, "BACKEND_ROOT", tmp_path)
     monkeypatch.setattr(api, "DEMO_MANIFEST", manifest)
 
 
+def configure_dataset(record, monkeypatch, dataset):
+    payload, frames = public_release(dataset)
+    package = UnifiedWorkingGraphPackage.model_validate(payload)
+    record.dataset = dataset
+    record.knowledge = package.knowledge
+    monkeypatch.setattr(api, "export_v2_working_graph", lambda _: package)
+    return frames
+
+
 @pytest.mark.parametrize(
-    "dataset,mode,package_stem,frame_stem,support_id",
-    [
-        ("mvtec", "image", "bottle", "mvtec-chipped", "mask"),
-        ("tep", "process", "tep", "tep-cooling-window", "window"),
-        ("wafer", "wafer", "wafer", "wafer-nearfull", "grid"),
-    ],
+    "dataset,mode,support_id,frame_index",
+    [("mvtec", "image", "mask", 0), ("tep", "process", "window", 1), ("wafer", "wafer", "grid", 0)],
 )
 def test_demo_native_evidence_can_run_without_optional_media(
-    client_runtime, tmp_path, monkeypatch, dataset, mode, package_stem, frame_stem, support_id
+    client_runtime, tmp_path, monkeypatch, dataset, mode, support_id, frame_index
 ):
     client, manager, record = client_runtime
-    package = UnifiedWorkingGraphPackage.model_validate_json(
-        Path(f"data/kg/unified/{package_stem}-working-graph.v2.json").read_text()
-    )
-    record.dataset = dataset
-    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
-    frame = Path(f"data/examples/unified/{frame_stem}.json").read_bytes()
-    (tmp_path / "evidence.json").write_bytes(frame)
+    frame = configure_dataset(record, monkeypatch, dataset)[frame_index]
+    (tmp_path / "evidence.json").write_text(json.dumps(frame))
     write_demo_manifest(
         tmp_path,
         monkeypatch,
@@ -321,7 +333,12 @@ def test_demo_native_evidence_can_run_without_optional_media(
             "evidence": {"asset_id": "frame", "path": "evidence.json"},
             "raw_input": {"asset_id": "original", "path": "not-downloaded.dat"},
             "supporting_assets": [
-                {"asset_id": "support", "path": "not-downloaded.json", "frame_asset_id": support_id}
+                {
+                    "asset_id": "support",
+                    "path": "not-downloaded.json",
+                    "case_asset_id": support_id,
+                    "frame_case_id": frame["case_id"],
+                }
             ],
         },
     )
@@ -333,7 +350,7 @@ def test_demo_native_evidence_can_run_without_optional_media(
     assert task["request"]["media_bindings"] == {}
     run = client.get("/api/analyses/" + task["result"]["run_id"]).json()
     assert run["input_mode"] == "evidence"
-    assert run["cases"][0]["evidence_frames"][0]["case_id"] == json.loads(frame)["case_id"]
+    assert run["cases"][0]["evidence_frames"][0]["case_id"] == frame["case_id"]
     assert run["cases"][0]["results"][0]["ranked_root_causes"]
     assert run["cases"][0]["media_status"] == "not_attached"
     assert run["media_assets"] == {}
@@ -348,8 +365,8 @@ def test_demo_native_evidence_preserves_prepared_image_attachment(
     client_runtime, tmp_path, monkeypatch
 ):
     client, manager, _ = client_runtime
-    frame = Path("data/examples/unified/mvtec-chipped.json").read_text()
-    (tmp_path / "evidence.json").write_text(json.dumps({"frames": [json.loads(frame)]}))
+    _, frames = compact_bottle()
+    (tmp_path / "evidence.json").write_text(json.dumps({"frames": frames}))
     image = tmp_path / "original.png"
     Image.new("RGB", (16, 16), "white").save(image)
     monkeypatch.setattr(visual_evidence, "PROJECT_ROOT", tmp_path)
@@ -370,7 +387,7 @@ def test_demo_native_evidence_preserves_prepared_image_attachment(
     )
     response = client.post(
         "/api/tasks/inference/demo",
-        json={"sample_id": "sample", "graph_id": "g", "input_variant": "evidence"},
+        json={"sample_id": "sample", "graph_id": "g"},
     )
     assert response.status_code == 202, response.text
     task = finish(manager, response.json())
@@ -385,14 +402,9 @@ def test_demo_native_evidence_preserves_prepared_image_attachment(
 
 def test_demo_process_media_is_scoped_to_the_actual_frame(client_runtime, tmp_path, monkeypatch):
     client, manager, record = client_runtime
-    package = UnifiedWorkingGraphPackage.model_validate_json(
-        Path("data/kg/unified/tep-working-graph.v2.json").read_text()
-    )
-    record.dataset = "tep"
-    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    source = configure_dataset(record, monkeypatch, "tep")
     frames, supporting = [], []
-    for value in (1, 2):
-        frame = json.loads(Path("data/examples/unified/tep-cooling-window.json").read_text())
+    for value, frame in enumerate(source[:2], 1):
         frame["case_id"] = f"window_{value}/query/window"
         asset = next(item for item in frame["assets"] if item["asset_id"] == "window")
         asset["uri"] = f"evidence://window_{value}"
@@ -440,7 +452,8 @@ def test_demo_evidence_rejects_invalid_optional_attachment(
     client_runtime, tmp_path, monkeypatch, asset_location, message
 ):
     client, manager, _ = client_runtime
-    (tmp_path / "evidence.json").write_text("{}")
+    _, frames = compact_bottle()
+    (tmp_path / "evidence.json").write_text(json.dumps({"frames": frames}))
     (tmp_path / "directory").mkdir()
     write_demo_manifest(
         tmp_path,
@@ -465,7 +478,7 @@ def test_demo_evidence_rejects_invalid_optional_attachment(
 
 def test_demo_raw_process_still_requires_a_normal_reference(client_runtime, tmp_path, monkeypatch):
     client, manager, record = client_runtime
-    record.dataset = "tep"
+    configure_dataset(record, monkeypatch, "tep")
     (tmp_path / "raw.dat").write_text("placeholder")
     write_demo_manifest(
         tmp_path,
@@ -479,8 +492,247 @@ def test_demo_raw_process_still_requires_a_normal_reference(client_runtime, tmp_
         },
     )
     response = client.post(
-        "/api/tasks/inference/demo", json={"sample_id": "sample", "graph_id": "g"}
+        "/api/tasks/inference/demo",
+        json={"sample_id": "sample", "graph_id": "g", "input_variant": "raw"},
     )
     assert response.status_code == 400
     assert "正常参考" in response.json()["detail"]
     assert not manager.store.tasks
+
+
+def test_public_inference_does_not_accept_retired_aliases_or_legacy_payload(client_runtime):
+    client, manager, _ = client_runtime
+    assert [row["reasoner_id"] for row in client.get("/api/reasoners").json()["reasoners"]] == [
+        "graded_abduction",
+        "tep_rootkgd",
+    ]
+    for field, value in [
+        ("reasoner_id", "unified_abduction"),
+        ("reasoner_id", "unified"),
+        ("input_mode", "records"),
+        ("input_mode", "tep_raw"),
+    ]:
+        response = client.post(
+            "/api/tasks/inference",
+            data={"graph_id": "g", field: value},
+            files={"file": ("frame.json", b"{}", "application/json")},
+        )
+        assert response.status_code == 422, response.text
+    response = client.post(
+        "/api/tasks/inference",
+        data={"graph_id": "g"},
+        files={"file": ("legacy.json", b'{"case_id":"old","dataset":"mvtec"}', "application/json")},
+    )
+    assert response.status_code == 400 and "rootlens-evidence.v2" in response.json()["detail"]
+    assert not manager.store.tasks
+
+
+def test_old_inference_retry_is_not_reinterpreted_as_a_new_reasoner(client_runtime):
+    client, manager, _ = client_runtime
+    historical = {
+        "task_id": "old",
+        "kind": "inference",
+        "status": "failed",
+        "events": [],
+        "request": {"reasoner_id": "unified_abduction", "input_mode": "evidence"},
+    }
+    manager.store.save_task(historical)
+    response = client.post("/api/tasks/old/retry")
+    assert response.status_code == 400 and "解释器不可用" in response.json()["detail"]
+    assert manager.store.tasks == {"old": historical}
+
+
+def test_demo_evidence_rejects_cross_scenario_before_resolving_any_asset(
+    client_runtime, tmp_path, monkeypatch
+):
+    client, manager, _ = client_runtime
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "wafer",
+            "dataset": "wafer",
+            "title": "晶圆样本",
+            "input_mode": "wafer",
+            "evidence": {"asset_id": "frame", "path": "not-read.json"},
+        },
+    )
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a cross-scenario request must not touch any asset")
+
+    monkeypatch.setattr(api, "asset_path", forbidden)
+    response = client.post(
+        "/api/tasks/inference/demo",
+        json={"sample_id": "wafer", "graph_id": "g", "input_variant": "evidence"},
+    )
+    assert response.status_code == 400 and "场景与所选工作图不一致" in response.json()["detail"]
+    assert not manager.store.tasks
+
+
+def test_demo_wafer_media_cannot_fall_back_to_first_grid_in_a_batch(
+    client_runtime, tmp_path, monkeypatch
+):
+    client, manager, record = client_runtime
+    frames = configure_dataset(record, monkeypatch, "wafer")
+    (tmp_path / "evidence.json").write_text(json.dumps({"frames": frames}))
+    first, second = [[0, 1], [2, 2]], [[0, 2], [1, 1]]
+    (tmp_path / "batch.jsonl").write_text(
+        "\n".join(
+            json.dumps({"case_id": f["case_id"], "waferMap": grid})
+            for f, grid in zip(frames, (first, second), strict=True)
+        )
+    )
+    (tmp_path / "first.json").write_text(json.dumps(first))
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "wafer",
+            "dataset": "wafer",
+            "title": "两帧晶圆样本",
+            "input_mode": "wafer",
+            "evidence": {"asset_id": "frame", "path": "evidence.json"},
+            "raw_input": {"asset_id": "original", "path": "batch.jsonl"},
+            "supporting_assets": [
+                {
+                    "asset_id": identity,
+                    "path": identity + ".json",
+                    "case_asset_id": "grid",
+                    "frame_case_id": frame["case_id"],
+                }
+                for frame, identity in zip(frames, ("first", "not-downloaded"), strict=True)
+            ],
+        },
+    )
+    response = client.post(
+        "/api/tasks/inference/demo",
+        json={"sample_id": "wafer", "graph_id": "g", "input_variant": "evidence"},
+    )
+    assert response.status_code == 202, response.text
+    task = finish(manager, response.json())
+    assert task["status"] == "completed", task["error"]
+    run = manager.store.get_analysis(task["result"]["run_id"])
+    first_case, second_case = run["cases"]
+    assert first_case["media_status"] == "available" and first_case["wafer_map"] == first
+    assert second_case["media_status"] == "not_attached" and "wafer_map" not in second_case
+    assert second_case["results"][0]["graded_candidates"]
+    assert list(task["request"]["media_bindings"].values()) == [str(tmp_path / "first.json")]
+
+
+def test_public_material_build_compiles_a_measured_budget_and_can_run_native_frame(
+    storage, tmp_path, monkeypatch
+):
+    from contextlib import nullcontext
+
+    from test_source_gate_safety import source_blueprint
+
+    from kgtracevis.service import two_loop_tasks
+    from kgtracevis.source_kg_compiler import compiler, llm
+
+    store, _, _ = storage
+    units, _, blueprint = source_blueprint(tmp_path, logic="all")
+    proposal = blueprint.model_dump(mode="json")
+    conditions = proposal["signatures"][0]["conditions"]
+    template = conditions[1]
+    conditions[0].update(feature_id="detection.anomaly_present")
+    conditions[:] = [conditions[0]] + [
+        {
+            **template,
+            "feature_id": feature,
+            "label": label,
+            "op": op,
+            "operand": {"kind": "number", "number": boundary, "unit": "1"},
+        }
+        for feature, label, op, boundary in [
+            ("geometry.area_ratio", "测试面积下界", "gte", 0.1),
+            ("geometry.area_ratio", "测试面积上界", "lte", 0.5),
+            ("geometry.aspect_ratio", "测试长短比", "lte", 2),
+        ]
+    ]
+
+    class FixtureLLM:
+        calls = 0
+
+        def complete_json(self, **kwargs):
+            self.calls += 1
+            return json.dumps(proposal)
+
+    provider = FixtureLLM()
+    monkeypatch.setattr(two_loop_tasks, "material_operations", lambda _: nullcontext(None))
+    monkeypatch.setattr(
+        two_loop_tasks,
+        "require_active_material",
+        lambda _, identity: SimpleNamespace(material_id=identity, scenario="mvtec"),
+    )
+    monkeypatch.setattr(llm, "OpenAICompatibleSourceKGLLM", lambda: provider)
+    monkeypatch.setattr(compiler, "load_source_units", lambda *a, **k: units)
+    monkeypatch.setattr(runtime, "parse_materials", lambda context, request: None)
+    monkeypatch.setattr(
+        runtime,
+        "prepare_kg_material_construction_build",
+        lambda _: SimpleNamespace(
+            sources=[SimpleNamespace(path=tmp_path / "source.txt")],
+            materials=[],
+        ),
+    )
+    monkeypatch.setattr(api, "TASK_ROOT", tmp_path / "tasks")
+    monkeypatch.setattr(runtime, "TASK_ROOT", tmp_path / "tasks")
+    manager = TaskManager(MemoryStore())
+    manager.handlers.update(material_build=runtime.build_materials, inference=runtime.infer)
+    monkeypatch.setattr(api, "task_manager", lambda: manager)
+    client = TestClient(create_app())
+    try:
+        submission = client.post(
+            "/api/tasks/material-build",
+            json={
+                "material_ids": ["source"],
+                "title": "测试源稿预算",
+                "dataset": "mvtec",
+                "capability_id": "visual-region-v2",
+                "max_repairs": 0,
+            },
+        )
+        assert submission.status_code == 202, submission.text
+        built = finish(manager, submission.json())
+        assert built["status"] == "completed", built["error"]
+        assert provider.calls == 1
+        gid = built["result"]["graph_id"]
+        assert not store.get(gid).enabled
+        graph = client.get(f"/api/kg/working-graphs/{gid}/package").json()
+        knowledge = graph["knowledge"]
+        (group,) = knowledge["graded_policy"]["groups"]
+        assert group["group_id"] == "source-draft"
+        assert [len(s["predicate_ids"]) for s in group["slots"]] == [2, 1]
+        assert {s["weight"] for s in group["slots"]} == {1}
+        assert all("grade" not in p for p in knowledge["observable_definitions"])
+        artifact = tmp_path / "tasks" / built["task_id"] / "build" / "working-graph.v2.json"
+        saved = UnifiedWorkingGraphPackage.model_validate_json(artifact.read_bytes())
+        assert saved.knowledge.graded_policy == store.get(gid).knowledge.graded_policy
+
+        entity = next(e for e in knowledge["entities"] if e["entity_id"].endswith(":bottle"))
+        entity["aliases"].append("复核别名")
+        edited = client.put(f"/api/kg/working-graphs/{gid}/package", json=graph)
+        assert edited.status_code == 200, edited.text
+        assert (
+            client.post(f"/api/kg/working-graphs/{gid}/enable", json={"enabled": True}).status_code
+            == 200
+        )
+        _, (frame,) = public_release("mvtec")
+        infer = client.post(
+            "/api/tasks/inference",
+            data={"graph_id": gid},
+            files={"file": ("frame.json", json.dumps(frame).encode(), "application/json")},
+        )
+        assert infer.status_code == 202, infer.text
+        completed = finish(manager, infer.json())
+        assert completed["status"] == "completed", completed["error"]
+        run = manager.store.get_analysis(completed["result"]["run_id"])
+        assert run["reasoner_id"] == "graded_abduction"
+        assert (
+            run["working_graph_snapshot"]["knowledge"]["graded_policy"]
+            == knowledge["graded_policy"]
+        )
+        assert run["cases"][0]["results"][0]["outcome"] == "supported"
+    finally:
+        manager.executor.shutdown()

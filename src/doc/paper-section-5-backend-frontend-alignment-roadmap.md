@@ -3,7 +3,7 @@
 > **历史文档说明（2026-05-17）**
 >
 > 本文记录的是 RootLens 早期“前端承接本地建图 / 本地推理 / 对齐规划”的阶段性设计或交接语义，**已不代表当前实现边界**。
-> 当前请优先以 `src/doc/backend-integration-current.md` 为真值；RootLens 现仅保留 backend-first 工作台、内置 Demo 与成品回放导入。
+> 当前实现以[集成边界](backend-integration-current.md)为准。
 
 
 > 文档定位：**执行路线图 / 联调分期稿**

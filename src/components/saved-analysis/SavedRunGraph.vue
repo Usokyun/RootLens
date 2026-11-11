@@ -2,7 +2,7 @@
 import { IconInfoCircle, IconPushpin, IconRefresh, IconRelation } from '@arco-design/web-vue/es/icon'
 import { computed, ref } from 'vue'
 import KnowledgeForceGraph from '@/components/graphs/KnowledgeForceGraph.vue'
-import { buildPathSubgraphDataset } from '@/services/graph-curation'
+import { buildPathSubgraphDataset } from '@/services/saved-path-graph'
 import type { SavedAnalysis, SavedAnalysisFrame } from '@/services/saved-analysis-reader'
 import { isSavedGradedResult, traceRows, type TraceRecord } from '@/services/unified-reasoning-display'
 import { channelLabel, factOnPath, featureLabel, getPathObs, isRootPropagation, nativePath, pathForFact, sourceLocator, text, type PathFocus } from './presentation'

@@ -1,6 +1,6 @@
 # RootLens 渐进重构执行计划
 
-日期：2026-11-10。状态：**M1–M6 / T01–T22 已完成并验收**。最终能力、实际结果、JSON/路径和已知失败见 [三场景 Demo 使用与验收](../../backend/docs/progressive-demo-2026-11-10.md)；M1 历史记录见 [首个闭环](../../backend/docs/mvtec-m1-demo.md)。
+日期：2026-11-10。状态：**M1–M6 / T01–T22 已完成并验收**。当时的 JSON、路径和已知失败见 `809fb8d:backend/docs/progressive-demo-2026-11-10.md`；当前操作见[分级演示手册](../../backend/docs/graded-rca-demo.md)。
 
 本文件维护实施顺序、任务和完成证据；[技术方案与三个场景的 JSON/图谱/路径示例](rootlens-demo-backend-plan-2026-11-10.md)维护目标设计，[源码差距与调研](rootlens-rearchitecture-research-2026-11-10.md)保留判断依据。当前已实现能力仍以 [backend-integration-current.md](backend-integration-current.md) 为准。
 
@@ -228,7 +228,7 @@ uv run --extra dev ruff check src tests scripts
 - 存储联调修复了完整输入只存摘要、区域 `obs_id` 丢失、同 case 新 run 改写历史输入的问题；在现有 PG parameters 保存输入/绑定快照，不给旧入口增加迁移前提。隔离验收行从原始保存结果回填新字段，未重算旧结果。
 - 本机最初基线为 276 passed / 23 failed / 3 skipped；准备隔离数据库与所需资产后，最终完整测试为 **329 passed / 7 failed / 1 skipped**，不是全通过。7 项的具体原因与日志见 M1 验收文档；其中环境敏感的旧配置测试单独清空 Neo4j 变量后通过。
 - 前端 **18 文件 / 85 项通过，build 通过**；实际检查了工作图装载/选择、records 上传、ROI/数值详情、候选条件和路径联动。修复长 ID 导致的链路横向溢出。修改的 Python 文件 Ruff 通过。
-- 完整结果与截图：`backend/runs/mvtec_m1_public/`；构图产物：`backend/runs/source_kg_build/mvtec_m1_public_20261110/`；使用说明：[MVTec 首个闭环](../../backend/docs/mvtec-m1-demo.md)。
+- 完整结果与截图：`backend/runs/mvtec_m1_public/`；构图产物：`backend/runs/source_kg_build/mvtec_m1_public_20261110/`；历史使用说明：`809fb8d:backend/docs/mvtec-m1-demo.md`。
 
 ### M2–M6 完成记录
 

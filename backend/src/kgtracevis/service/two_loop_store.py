@@ -149,7 +149,10 @@ class TwoLoopStore:
             counts: Counter[str] = Counter()
             normal_gates = 0
             for outcome, reason in row["saved_outcomes"]:
-                if outcome == "no_match" and reason == "normal_reference_gate_is_false":
+                if outcome == "no_match" and reason in {
+                    "anomaly_gate_is_false",
+                    "normal_reference_gate_is_false",
+                }:
                     normal_gates += 1
                 else:
                     counts[outcome] += 1

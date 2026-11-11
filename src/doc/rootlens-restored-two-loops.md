@@ -1,5 +1,7 @@
 # 在原工作台接通两个后端闭环（2026-11-11）
 
+> 历史版本记录。当前的工作台和演示以[集成边界](backend-integration-current.md)为准。
+
 本轮在 `codex/restore-original-frontend@f5e93aa` 上渐进接回真实任务，不另建页面。原导航、三页布局、D3总图／局部网络与成品回放保留；已推送的 `codex/demo-two-loops@8cf4d0b` 是另一个历史界面版本，不覆盖。本轮未推送。
 
 ## 素材与构图：完成后打开确切的新工作图

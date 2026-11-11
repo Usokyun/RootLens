@@ -59,7 +59,6 @@ export function updateWorkingGraphNode(
   nodeId: string,
   edit: { name: string; aliases?: readonly string[] },
 ): UnifiedWorkingGraphPackage {
-  if (graph.schema_version !== 'rootlens-working-graph.v2') throw new Error('旧版工作图只读。')
   const match = findNode(graph, nodeId)
   if (!match) throw new Error('所选节点没有可编辑的规范记录。')
   const label = edit.name.trim()
@@ -93,7 +92,7 @@ export function parseWorkingGraphDraft(
     throw new Error('JSON 格式不正确，请检查引号、括号和逗号。')
   }
   if (!isRow(value) || value.schema_version !== 'rootlens-working-graph.v2') {
-    throw new Error('请选择或粘贴完整的 v2 工作图 JSON；旧版工作图只读。')
+    throw new Error('请选择或粘贴完整的 v2 工作图 JSON。')
   }
   const knowledge = value.knowledge
   if (

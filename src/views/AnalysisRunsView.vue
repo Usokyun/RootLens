@@ -2,21 +2,19 @@
 import { IconClockCircle, IconHistory, IconPlus, IconRefresh, IconRight, IconSearch } from '@arco-design/web-vue/es/icon'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { createTwoLoopClient, type SavedAnalysisListItem, type WorkTask } from '@/api/two-loop'
+import { createTwoLoopClient, type DemoLibrary, type DemoSample, type SavedAnalysisListItem, type WorkTask } from '@/api/two-loop'
 import NewAnalysisDialog from '@/components/evidence/NewAnalysisDialog.vue'
 import TaskStatusPanel from '@/components/tasks/TaskStatusPanel.vue'
-import { type AnalysisDraftSeed } from '@/services/analysis-draft'
+import { demoAnalysisSeed, type AnalysisDraftSeed } from '@/services/analysis-draft'
 import { newAnalysisIntent, savedAnalysisRoute } from '@/services/analysis-entry'
 import {
   analysisTaskStages, buildAnalysisHistory, completedAnalysisId, emptyAnalysisFilters, filterAnalysisHistory,
   rememberAnalysisList, restoreAnalysisList, type AnalysisHistoryRow,
 } from '@/services/analysis-history'
 import { taskCanRetry, taskIsActive, taskStatusLabels, useTaskObserver } from '@/services/task-observer'
-import { sourceSelectionReset, updateWorkbenchState } from '@/services/workbench-state'
 
 // EvidenceHomeView keys this instance by backend address; it never follows another source’s task.
 const props = defineProps<{ baseUrl: string }>()
-const emit = defineEmits<{ 'import-replay': [] }>()
 const base = props.baseUrl
 const service = createTwoLoopClient(base)
 const router = useRouter(), route = useRoute()
@@ -24,6 +22,9 @@ const previous = restoreAnalysisList(base)
 const filters = reactive(previous.filters)
 const history = shallowRef<SavedAnalysisListItem[]>([])
 const tasks = shallowRef<WorkTask[]>([])
+const demos = shallowRef<DemoLibrary | null>(null)
+const demoLoading = ref(false)
+const demoError = ref('')
 const indexLoading = ref(true)
 const listError = ref(''), taskListError = ref('')
 const dialogVisible = ref(false)
@@ -58,6 +59,15 @@ const creationBlocked = computed(() => taskIsActive(task.value) || retrying.valu
 const datasetLabels: Record<string, string> = { mvtec: 'MVTec', tep: 'TEP', wafer: 'Wafer' }
 const reasonerLabels: Record<string, string> = { unified_abduction: '统一条件溯因', tep_rootkgd: 'RootKGD', graded_abduction: '分级解释溯因' }
 const inputLabels: Record<string, string> = { image: '原始样本', process: '原始样本', wafer: '原始样本', evidence: '中间 Evidence', records: '测量记录' }
+const demoGroups = computed(() => {
+  const library = demos.value
+  if (!library) return []
+  return library.demos.flatMap(group => {
+    const samples = library.samples.filter(sample => sample.demo_id === group.id)
+    const primary = samples.find(sample => sample.recommended === true) ?? samples[0]
+    return primary ? [{ group, primary, alternatives: samples.filter(sample => sample.sample_id !== primary.sample_id) }] : []
+  })
+})
 const date = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
 function createdAt(value: string) {
   const parsed = new Date(value)
@@ -111,7 +121,21 @@ async function readIndex() {
   indexLoading.value = false
 }
 async function refresh() {
-  await Promise.all([readIndex(), observer.refresh()])
+  await Promise.all([readIndex(), observer.refresh(), readDemos()])
+}
+async function readDemos() {
+  if (demoLoading.value) return
+  demoLoading.value = true
+  demoError.value = ''
+  try {
+    const value = await service.demos()
+    if (!disposed) demos.value = value
+  } catch (error) {
+    if (!disposed) {
+      demos.value = null
+      demoError.value = error instanceof Error ? error.message : String(error)
+    }
+  } finally { if (!disposed) demoLoading.value = false }
 }
 function focusTask(value: WorkTask, follow = false) {
   followCompletion = follow
@@ -127,7 +151,7 @@ function selectActive(value: unknown) {
 async function openAnalysis(runId: string) {
   if (restoringScroll) persistPosition()
   else recordScroll()
-  await router.push(savedAnalysisRoute('evidence', runId))
+  await router.push(savedAnalysisRoute(runId))
 }
 function openRow(row: AnalysisHistoryRow) {
   followCompletion = false
@@ -146,11 +170,11 @@ function openNew(seedValue: AnalysisDraftSeed = {}) {
   seed.value = seedValue
   dialogVisible.value = true
 }
+function openDemo(sample: DemoSample) { openNew(demoAnalysisSeed(sample)) }
 function consumeGraphIntent() {
   const intent = newAnalysisIntent(route.query)
   if (route.name !== 'evidence' || !intent) return
   followCompletion = false
-  updateWorkbenchState(sourceSelectionReset())
   openNew({ graphId: intent.graphId, graphOrigin: 'explicit' })
   void router.replace({ name: 'evidence' })
 }
@@ -165,6 +189,7 @@ onMounted(async () => {
   scroller = root.value?.closest<HTMLElement>('.ads-brain-workbench-layout__content') ?? null
   scroller?.addEventListener('scroll', recordScroll, { passive: true })
   consumeGraphIntent()
+  void readDemos()
   await readIndex()
   await nextTick()
   if (disposed) return
@@ -183,11 +208,32 @@ onBeforeUnmount(() => {
   <section ref="root" class="analysis-list rl-page rl-screen" aria-label="运行与证据列表">
     <header class="analysis-list-title">
       <div><h1>运行与证据</h1><p class="workspace-subtle">发起分析，查看执行阶段与已保存结果。</p></div>
-      <a-space wrap>
-        <a-button type="text" @click="emit('import-replay')">导入回放</a-button>
-        <a-button type="primary" :disabled="creationBlocked" @click="openNew()"><template #icon><IconPlus /></template>新建分析</a-button>
-      </a-space>
+      <a-button type="primary" :disabled="creationBlocked" @click="openNew()"><template #icon><IconPlus /></template>新建分析</a-button>
     </header>
+
+    <section class="rl-section-card analysis-demo" aria-label="演示案例">
+      <header class="rl-section-card__header analysis-list-card-head">
+        <h2 class="rl-section-card__title">演示案例</h2>
+        <span class="workspace-subtle">从真实 Evidence 开始，确认后才提交分析。</span>
+      </header>
+      <div class="rl-section-card__body analysis-demo-body">
+        <div v-if="demoLoading && !demoGroups.length" class="workspace-subtle" role="status"><a-spin :size="12" /> 正在读取演示目录…</div>
+        <div v-else-if="demoError" class="workspace-subtle" role="status">演示目录读取失败：{{ demoError }}
+          <a-button size="mini" type="text" @click="readDemos">重新读取</a-button>
+        </div>
+        <div v-else-if="demoGroups.length" class="analysis-demo-grid">
+          <div v-for="{ group, primary, alternatives } in demoGroups" :key="group.id" class="analysis-demo-case">
+            <button type="button" class="analysis-demo-entry" :data-demo-sample-id="primary.sample_id" :disabled="creationBlocked" @click="openDemo(primary)">
+              <span><small>{{ datasetLabels[group.dataset] }}</small><strong>{{ primary.title }}</strong></span>
+              <IconRight />
+            </button>
+            <a-button v-for="item in alternatives" :key="item.sample_id" type="text" size="mini" class="analysis-demo-alt"
+              :data-demo-sample-id="item.sample_id" :disabled="creationBlocked" @click="openDemo(item)">{{ item.title }}</a-button>
+          </div>
+        </div>
+        <div v-else class="workspace-subtle">后端尚未提供可用的演示案例。</div>
+      </div>
+    </section>
 
     <section ref="taskSection" class="rl-section-card" aria-label="分析任务">
       <header class="rl-section-card__header analysis-list-card-head">
@@ -273,6 +319,18 @@ onBeforeUnmount(() => {
 .analysis-list-card-head { justify-content: flex-start; gap: 8px; }
 .analysis-list-card-head .rl-section-card__title { display: flex; align-items: center; gap: 7px; }
 .analysis-list-card-head .arco-icon { color: rgb(var(--primary-6)); }
+.analysis-demo .analysis-list-card-head { flex-wrap: wrap; }
+.analysis-demo-body { padding: 10px 12px; }
+.analysis-demo-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.analysis-demo-case { min-width: 0; }
+.analysis-demo-entry { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; min-height: 55px; padding: 6px 9px; background: var(--color-fill-1); border: 1px solid var(--color-border-2); border-radius: 3px; color: var(--color-text-1); text-align: left; font: inherit; cursor: pointer; }
+.analysis-demo-entry:hover:not(:disabled), .analysis-demo-entry:focus-visible { border-color: rgb(var(--primary-4)); background: var(--color-primary-light-1); }
+.analysis-demo-entry:disabled { cursor: not-allowed; opacity: .65; }
+.analysis-demo-entry small, .analysis-demo-entry strong { display: block; }
+.analysis-demo-entry small { color: var(--color-text-3); margin-bottom: 2px; }
+.analysis-demo-entry strong { font-weight: 550; overflow-wrap: anywhere; }
+.analysis-demo-entry .arco-icon { flex: none; color: rgb(var(--primary-6)); }
+.analysis-demo-alt { margin-top: 3px; max-width: 100%; height: auto; text-align: left; white-space: normal; }
 .analysis-list-actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
 .analysis-task-choice { width: min(244px, 26vw); }
 .analysis-task-body { display: grid; gap: 9px; }
@@ -298,4 +356,5 @@ onBeforeUnmount(() => {
 .analysis-history-input { white-space: nowrap; }
 .analysis-history-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 960px) { .analysis-list { padding-inline: 0; } .analysis-task-stages { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+@media (max-width: 680px) { .analysis-demo-grid { grid-template-columns: minmax(0, 1fr); } }
 </style>

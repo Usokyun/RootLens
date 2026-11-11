@@ -1,7 +1,6 @@
 import {
   DEFAULT_APP_PREFERENCES,
   getAppPreferences,
-  resetAppPreferences,
   updateAppPreferences,
   useAppPreferences,
 } from '@/services/app-preferences'
@@ -39,54 +38,19 @@ describe('app preferences', () => {
     app = undefined
   })
 
-  it('persists data source mode and api base url updates', () => {
-    updateAppPreferences({
-      dataSourceMode: 'backend',
-      apiBaseUrl: 'http://127.0.0.1:9000',
-      showDebugPanels: true,
-    })
-
-    expect(getAppPreferences()).toMatchObject({
-      dataSourceMode: 'backend',
-      apiBaseUrl: 'http://127.0.0.1:9000',
-      showDebugPanels: true,
-    })
+  it('persists a backend address and the motion preference', () => {
+    updateAppPreferences({ apiBaseUrl: 'http://127.0.0.1:9000/', enablePageEntranceMotion: false })
+    expect(getAppPreferences()).toEqual({ apiBaseUrl: 'http://127.0.0.1:9000', enablePageEntranceMotion: false })
   })
 
-  it('migrates stored legacy local backend ports to 8000', () => {
-    window.localStorage.setItem(
-      APP_PREFERENCES_STORAGE_KEY,
-      JSON.stringify({
-        dataSourceMode: 'backend',
-        apiBaseUrl: 'http://127.0.0.1:8081',
-      }),
-    )
-
-    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8000')
-  })
-
-  it('preserves an explicit manual override to 8081', () => {
-    updateAppPreferences({
-      dataSourceMode: 'backend',
-      apiBaseUrl: 'http://127.0.0.1:8081',
-    })
-
-    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8081')
-  })
-
-  it('restores defaults after reset', () => {
-    updateAppPreferences({
-      dataSourceMode: 'backend',
-      showDebugPanels: true,
-    })
-
-    expect(resetAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
-    expect(getAppPreferences()).toEqual(DEFAULT_APP_PREFERENCES)
-    expect(getAppPreferences().apiBaseUrl).toBe('http://127.0.0.1:8000')
+  it('retains the configured address without restoring a retired data source mode', () => {
+    window.localStorage.setItem(APP_PREFERENCES_STORAGE_KEY, JSON.stringify({
+      schemaVersion: 2, dataSourceMode: 'mock', apiBaseUrl: 'http://127.0.0.1:8081',
+    }))
+    expect(getAppPreferences()).toEqual({ apiBaseUrl: 'http://127.0.0.1:8081', enablePageEntranceMotion: true })
   })
 
   it('ignores another tab selecting a run and ignores sessionStorage events', () => {
-    updateAppPreferences({ dataSourceMode: 'backend' })
     const preferences = mountPreferences()
     const before = preferences.value
 
@@ -102,10 +66,10 @@ describe('app preferences', () => {
     const preferences = mountPreferences()
     const apiBaseUrl = 'http://127.0.0.1:9000'
     window.localStorage.setItem(APP_PREFERENCES_STORAGE_KEY, JSON.stringify({
-      schemaVersion: 2, dataSourceMode: 'backend', apiBaseUrl,
+      apiBaseUrl,
     }))
     dispatchStorage(APP_PREFERENCES_STORAGE_KEY)
-    expect(preferences.value).toMatchObject({ dataSourceMode: 'backend', apiBaseUrl })
+    expect(preferences.value).toMatchObject({ apiBaseUrl })
 
     window.localStorage.clear()
     dispatchStorage(null)
@@ -114,9 +78,7 @@ describe('app preferences', () => {
 
   it('keeps preferences in sync between components in the same tab', () => {
     const preferences = mountPreferences()
-    updateAppPreferences({ dataSourceMode: 'backend', showDebugPanels: true })
-    expect(preferences.value).toMatchObject({ dataSourceMode: 'backend', showDebugPanels: true })
-    resetAppPreferences()
-    expect(preferences.value).toEqual(DEFAULT_APP_PREFERENCES)
+    updateAppPreferences({ enablePageEntranceMotion: false })
+    expect(preferences.value.enablePageEntranceMotion).toBe(false)
   })
 })

@@ -23,7 +23,7 @@
 
 ## 已知基线与验证路径
 
-先前基线：后端 345 passed / 7 failed / 1 skipped，前端 19 文件 / 89 项及 build 通过；详见 [前期验收](/Users/hhm/code/RootLens/backend/docs/progressive-demo-2026-11-10.md)。它是历史证据，不当成本轮测试结果。
+先前基线：后端 345 passed / 7 failed / 1 skipped，前端 19 文件 / 89 项及 build 通过；详见历史验收 `809fb8d:backend/docs/progressive-demo-2026-11-10.md`。它是历史证据，不当成本轮测试结果。
 
 后端使用 `backend/` 的 uv 环境；新检查先使用离线 `uv run --no-sync`，需新增依赖时按锁文件更新。真实库验证只用明确指定的隔离测试库。运行及实验输出进入被忽略的 `backend/runs/unified_reasoning/`，小型公共种子与测试入库。
 

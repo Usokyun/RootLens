@@ -1,4 +1,4 @@
-"""Exercise the real two-loop API and retain inputs, stage events and complete results.
+"""Run the published graded catalog through the real analysis API.
 
 This is an API client, not a second measurement or reasoning implementation.
 Existing output directories require --resume; completed/failed tasks are not resubmitted.
@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 
 import httpx
+
+from scripts.prepare_two_loop_demo import read_manifest
 
 
 def write(path, value):
@@ -98,100 +100,36 @@ class DemoClient:
             identity = demo["id"]
             if identity in self.state["graphs"]:
                 continue
-            reference = demo["graph_ref"]
-            state = reference["state"]
-            if state == "missing":
-                package = self.request("GET", demo["working_graph"]["download_url"])
-                record = self.request("POST", "/api/kg/working-graphs/import", json=package)
-                graph_id = record["graph_id"]
-                write(self.output / f"{identity}.imported-graph.json", record)
-            elif state in {"ready", "disabled"} and reference["graph_id"]:
-                graph_id = reference["graph_id"]
-            else:
-                raise ValueError(f"{demo['title']}：{reference['note']}")
-            if state != "ready":
-                self.request(
-                    "POST", f"/api/kg/working-graphs/{graph_id}/enable", json={"enabled": True}
-                )
-            self.state["graphs"][identity] = graph_id
+            result = self.request("POST", f"/api/demo-library/{identity}/working-graph")
+            if result["state"] != "ready" or not result["available"] or not result["graph_id"]:
+                raise ValueError(f"{demo['title']}：配套图安装后仍未启用。")
+            write(self.output / f"{identity}.working-graph-install.json", result)
+            self.state["graphs"][identity] = result["graph_id"]
             self.save()
 
-    def build_bottle(self):
-        registered = self.request("POST", "/api/demo-library/bottle/materials")
-        write(self.output / "bottle.materials.json", registered)
+    def inference(self, sample, graph_id, reasoner_id, variant):
+        label = f"{sample['sample_id']}-{variant}-{reasoner_id}"
         task = self.task(
-            "bottle-source-build",
-            "/api/tasks/material-build",
+            label,
+            "/api/tasks/inference/demo",
             {
-                "material_ids": [m["material_id"] for m in registered["materials"]],
-                "dataset": "mvtec",
-                "title": "几何演示规则 → 真实 LLM · 玻璃瓶局部异常",
-                "capability_id": "visual-region-v2",
-                "enable_when_ready": False,
+                "sample_id": sample["sample_id"],
+                "graph_id": graph_id,
+                "reasoner_id": reasoner_id,
+                "input_variant": variant,
+                "top_k": 8,
             },
         )
         if task["status"] != "completed":
             return
-        graph_id = task["result"]["graph_id"]
-        if "bottle-source-built" not in self.state["graphs"]:
-            package = self.request("GET", f"/api/kg/working-graphs/{graph_id}/package")
-            write(self.output / "bottle.llm-original-package.json", package)
-            for entity in package["knowledge"]["entities"]:
-                if entity["entity_id"] == "entity:industrial.object:bottle":
-                    entity["aliases"] = list(dict.fromkeys(entity.get("aliases", []) + ["玻璃瓶"]))
-            package["title"] += " · 已保存中文别名"
-            self.request("PUT", f"/api/kg/working-graphs/{graph_id}/package", json=package)
-            readback = self.request("GET", f"/api/kg/working-graphs/{graph_id}/package")
-            assert any("玻璃瓶" in e.get("aliases", []) for e in readback["knowledge"]["entities"])
-            write(self.output / "bottle.edited-package.json", readback)
-            self.request(
-                "POST", f"/api/kg/working-graphs/{graph_id}/enable", json={"enabled": True}
-            )
-            self.state["graphs"]["bottle-source-built"] = graph_id
-            self.save()
-
-    def inference(self, sample, graph_id, reasoner_id, variant, *, from_raw=False):
-        label = f"{sample['sample_id']}-{variant}-{reasoner_id}"
-        if variant == "evidence" and from_raw:
-            raw = self.state["analyses"].get(f"{sample['sample_id']}-raw-{reasoner_id}")
-            if raw is None or raw["graph_id"] != graph_id:
-                raise ValueError("重新制作知识后，先完成同图的原始运行，再下载其Frame复算。")
-            downloaded = self.client.get(f"/api/analyses/{raw['run_id']}/evidence")
-            downloaded.raise_for_status()
-            task = self.task(
-                label,
-                "/api/tasks/inference",
-                {
-                    "graph_id": graph_id,
-                    "reasoner_id": reasoner_id,
-                    "input_mode": "evidence",
-                    "top_k": "8",
-                    "title": sample["title"] + " · 下载Frame复算",
-                },
-                files={
-                    "file": (
-                        sample["sample_id"] + "-from-raw.json",
-                        downloaded.content,
-                        "application/json",
-                    )
-                },
-            )
-        else:
-            task = self.task(
-                label,
-                "/api/tasks/inference/demo",
-                {
-                    "sample_id": sample["sample_id"],
-                    "graph_id": graph_id,
-                    "reasoner_id": reasoner_id,
-                    "input_variant": variant,
-                    "top_k": 8,
-                },
-            )
-        if task["status"] != "completed":
-            return
         run_id = task["result"]["run_id"]
         run = self.request("GET", f"/api/analyses/{run_id}")
+        if (
+            run["graph_id"] != graph_id
+            or run["reasoner_id"] != reasoner_id
+            or run["input_mode"] != (sample["input_mode"] if variant == "raw" else "evidence")
+        ):
+            raise ValueError("已保存的任务不对应本次图、引擎或入口；请使用新的输出目录。")
         write(self.output / f"{label}.analysis.json", run)
         self.state["analyses"][label] = {
             "run_id": run_id,
@@ -211,9 +149,15 @@ class DemoClient:
                             "candidates": [
                                 {
                                     k: candidate.get(k)
-                                    for k in ("candidate_id", "candidate_name", "rank", "score")
+                                    for k in (
+                                        "candidate_id",
+                                        "candidate_name",
+                                        "status",
+                                        "rank",
+                                        "score",
+                                    )
                                 }
-                                for candidate in r["ranked_root_causes"]
+                                for candidate in r.get("graded_candidates", r["ranked_root_causes"])
                             ],
                         }
                         for r in c["results"]
@@ -225,83 +169,89 @@ class DemoClient:
         self.save()
 
 
+def catalog_membership(catalog):
+    return {
+        demo["id"]: {sample["sample_id"]: sample["reasoner_ids"] for sample in demo["samples"]}
+        for demo in catalog["demos"]
+    }
+
+
+def select_demos(library, *, selected, all_samples, reasoner):
+    if catalog_membership(library) != catalog_membership(read_manifest()):
+        raise ValueError("后端尚未加载当前发布的分级演示清单；未提交任务。")
+    known = {s["sample_id"] for d in library["demos"] for s in d["samples"]}
+    if missing := selected - known:
+        raise ValueError("未在当前清单找到样本：" + ", ".join(sorted(missing)))
+    demos = []
+    for demo in library["demos"]:
+        samples = []
+        for sample in demo["samples"]:
+            identity = sample["sample_id"]
+            if not (all_samples or (identity in selected if selected else sample["recommended"])):
+                continue
+            if reasoner not in sample["reasoner_ids"]:
+                if identity in selected:
+                    raise ValueError(f"样本 {identity} 不支持推理器 {reasoner}。")
+                continue
+            samples.append(sample)
+        if samples:
+            demos.append({**demo, "samples": samples})
+    if not demos:
+        raise ValueError("当前选择没有适用的发布样本。")
+    return demos
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--base-url", default="http://127.0.0.1:8012")
+    p.add_argument("--base-url", required=True, help="后端地址（如 http://127.0.0.1:8000）")
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--resume", action="store_true")
-    p.add_argument("--build-bottle", action="store_true", help="actual configured LLM call")
-    p.add_argument("--build-only", action="store_true", help="stop after the material/KG loop")
-    p.add_argument("--sample", action="append", help="stable sample_id; repeat to select")
-    p.add_argument("--all", action="store_true", help="all samples, both entrances and engines")
-    p.add_argument("--variant", choices=("raw", "evidence", "both"), default="both")
-    p.add_argument("--graph-id", help="use one explicit enabled graph instead of importing seeds")
+    sample_choice = p.add_mutually_exclusive_group()
+    sample_choice.add_argument("--sample", action="append", help="发布 sample_id；可重复指定")
+    sample_choice.add_argument("--all", action="store_true", help="包含所有发布样本")
+    p.add_argument("--variant", choices=("raw", "evidence", "both"), default="evidence")
+    p.add_argument("--graph-id", help="仅对单场景明确指定已启用的工作图")
     p.add_argument(
-        "--reasoner",
-        choices=("unified_abduction", "tep_rootkgd"),
-        help="run only this engine; otherwise use each sample's supported engines",
+        "--reasoner", choices=("graded_abduction", "tep_rootkgd"), default="graded_abduction"
     )
     args = p.parse_args()
     client = DemoClient(args.base_url, args.output_dir, resume=args.resume)
-    library = client.request("GET", "/api/demo-library")
-    write(args.output_dir / "library.json", library)
-    selected = set(args.sample or [])
-    known = {sample["sample_id"] for sample in library["samples"]}
-    if selected - known:
-        p.error("未在当前清单找到样本：" + ", ".join(sorted(selected - known)))
-    demos = [
-        {
-            **demo,
-            "samples": [
-                sample
-                for sample in demo["samples"]
-                if args.all
-                or (sample["sample_id"] in selected if selected else sample["recommended"])
-            ],
-        }
-        for demo in library["demos"]
-    ]
-    demos = [demo for demo in demos if demo["samples"]]
-    if args.graph_id is None and not args.build_only:
-        client.import_graphs([d for d in demos if not (d["id"] == "bottle" and args.build_bottle)])
-    if args.build_bottle:
-        client.build_bottle()
-    if args.build_only:
-        print(json.dumps(client.state, ensure_ascii=False), flush=True)
-        return int(bool(client.state["failures"]))
-    for demo in demos:
-        for sample in demo["samples"]:
-            graph_id = args.graph_id or client.state["graphs"].get(
-                "bottle-source-built"
-                if demo["id"] == "bottle" and args.build_bottle
-                else demo["id"]
+    try:
+        library = client.request("GET", "/api/demo-library")
+        try:
+            demos = select_demos(
+                library,
+                selected=set(args.sample or []),
+                all_samples=args.all,
+                reasoner=args.reasoner,
             )
-            if graph_id is None:
-                continue
-            for reasoner in [args.reasoner] if args.reasoner else sample["reasoner_ids"]:
-                if reasoner not in sample["reasoner_ids"]:
-                    continue
+        except ValueError as error:
+            p.error(str(error))
+        if args.graph_id and len(demos) != 1:
+            p.error("--graph-id 只适用于单场景；请用 --sample 限定。")
+        write(args.output_dir / "library.json", library)
+        if args.graph_id is None:
+            client.import_graphs(demos)
+        for demo in demos:
+            graph_id = args.graph_id or client.state["graphs"][demo["id"]]
+            for sample in demo["samples"]:
                 for variant in ["raw", "evidence"] if args.variant == "both" else [args.variant]:
-                    client.inference(
-                        sample,
-                        graph_id,
-                        reasoner,
-                        variant,
-                        from_raw=args.build_bottle and demo["id"] == "bottle",
-                    )
-    print(
-        json.dumps(
-            {
-                "state": str(args.output_dir / "state.json"),
-                "graph_ids": client.state["graphs"],
-                "analyses": len(client.state["analyses"]),
-                "failures": client.state["failures"],
-            },
-            ensure_ascii=False,
-        ),
-        flush=True,
-    )
-    return int(bool(client.state["failures"]))
+                    client.inference(sample, graph_id, args.reasoner, variant)
+        print(
+            json.dumps(
+                {
+                    "state": str(args.output_dir / "state.json"),
+                    "graph_ids": client.state["graphs"],
+                    "analyses": len(client.state["analyses"]),
+                    "failures": client.state["failures"],
+                },
+                ensure_ascii=False,
+            ),
+            flush=True,
+        )
+        return int(bool(client.state["failures"]))
+    finally:
+        client.client.close()
 
 
 if __name__ == "__main__":

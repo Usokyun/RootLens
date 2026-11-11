@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
-from test_graded_reasoner import frozen_public, graded_public, observation
+from test_graded_reasoner import observation
 
 from kgtracevis.core.graded_reasoner import GradedReasoner
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
@@ -61,13 +61,18 @@ def test_the_actual_windows_distinguish_cooling_response_families_not_their_caus
     assert not any(p["candidate_id"] == off["candidate_id"] for p in condenser["top_k_paths"])
 
 
-def test_same_actual_d05_frame_separates_effect_of_knowledge_from_effect_of_formula(release):
+def test_same_actual_d05_frame_separates_new_knowledge_from_scoring_formula(release):
     engine, _, d05 = release
-    old, _ = frozen_public("tep")
-    stage_a, _ = graded_public("tep")
-    old_strict = UnifiedReasoner(old["knowledge"]).analyze(d05)
-    old_graded = GradedReasoner(stage_a["knowledge"]).analyze(d05)
-    assert old_strict["outcome"] == "no_match" and not old_strict["ranked_root_causes"]
+    # Control: hold the engine/curves fixed but remove the new condenser/separator
+    # expectation. This is a topology ablation, not a reconstruction of a prior run.
+    without_cold_branch = engine.program.package.model_dump(mode="json")
+    without_cold_branch["expectation_rules"] = [
+        row for row in without_cold_branch["expectation_rules"] if "condenser" not in row["from_id"]
+    ]
+    old_strict = UnifiedReasoner(without_cold_branch).analyze(d05)
+    old_graded = GradedReasoner(without_cold_branch).analyze(d05)
+    assert old_strict["outcome"] == "insufficient_evidence"
+    assert not old_strict["ranked_root_causes"]
     assert not old_graded["graded_candidates"]
     new_strict = UnifiedReasoner(engine.program.package).analyze(d05)
     new_graded = engine.analyze(d05)

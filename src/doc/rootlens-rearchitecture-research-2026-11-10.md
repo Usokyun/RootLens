@@ -1,6 +1,6 @@
 # RootLens 素材、图谱与推理能力重构调研
 
-日期：2026-11-10。本文保留重构前的源码差距与技术路线，不作为当前实现清单。后续 M1–M6 已完成；当前能力见 `backend-integration-current.md` 与 [三场景验收](../../backend/docs/progressive-demo-2026-11-10.md)。
+日期：2026-11-10。本文保留重构前的源码差距与技术路线，不作为当前实现清单。后续 M1–M6 已完成；当前能力见[集成边界](backend-integration-current.md)与[分级演示手册](../../backend/docs/graded-rca-demo.md)。
 
 ## 当前推进边界
 

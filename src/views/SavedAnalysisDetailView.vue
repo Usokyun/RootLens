@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconArrowLeft, IconCheck, IconDashboard, IconDownload, IconList, IconRefresh } from '@arco-design/web-vue/es/icon'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/client'
 import SavedRunOverview from '@/components/saved-analysis/SavedRunOverview.vue'
@@ -12,14 +12,11 @@ import { chooseSavedPath, datasetLabel, detailTab, detailTabs, factOnPath, getPa
 import { gradedPathFocus, gradedUnranked } from '@/components/saved-analysis/graded-presentation'
 import { savedAnalysisRoute } from '@/services/analysis-entry'
 import { useAppPreferences } from '@/services/app-preferences'
-import { getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
 import { readSavedAnalysis, type SavedAnalysis } from '@/services/saved-analysis-reader'
 import { isSavedGradedResult, savedGradedCandidates, savedTentativeCandidates, traceRows } from '@/services/unified-reasoning-display'
 
 const route = useRoute(), router = useRouter()
-const { preferences, updatePreferences } = useAppPreferences()
-const replay = ref(getLocalSessionMeta()?.source === 'import')
-const updateReplay = () => { replay.value = getLocalSessionMeta()?.source === 'import' }
+const { preferences } = useAppPreferences()
 const saved = shallowRef<SavedAnalysis | null>(null)
 const loading = ref(false)
 const failure = ref('')
@@ -73,14 +70,6 @@ async function load() {
     failure.value = '链接未指定有效的保存分析。'
     return
   }
-  if (replay.value) {
-    failure.value = '请先在运行列表退出成品回放，再查看这次后端分析。'
-    return
-  }
-  if (preferences.value.dataSourceMode !== 'backend') {
-    failure.value = '此分析保存在后端。切换到 Backend 后查看。'
-    return
-  }
   loading.value = true
   try {
     const data = await readSavedAnalysis(preferences.value.apiBaseUrl, runId.value)
@@ -97,9 +86,8 @@ async function load() {
     failureDetail.value = error instanceof Error ? error.message : String(error)
   } finally { if (version === revision) loading.value = false }
 }
-watch([runId, replay, () => preferences.value.dataSourceMode, () => preferences.value.apiBaseUrl], () => void load(), { immediate: true })
-onMounted(() => window.addEventListener(getLocalSessionEventName(), updateReplay))
-onBeforeUnmount(() => { revision += 1; window.removeEventListener(getLocalSessionEventName(), updateReplay) })
+watch([runId, () => preferences.value.apiBaseUrl], () => void load(), { immediate: true })
+onBeforeUnmount(() => { revision += 1 })
 watch(() => frame.value?.id, () => { selected.value = emptyFocus(); if (scrollHost.value) scrollHost.value.scrollTop = 0 }, { flush: 'sync' })
 watch(tab, () => { if (scrollHost.value) scrollHost.value.scrollTop = 0 })
 
@@ -124,7 +112,7 @@ async function downloadEvidence() {
 
 function setQuery(patch: { tab?: DetailTab; case_id?: string }) {
   const nextTab = patch.tab ?? tab.value
-  void router.replace(savedAnalysisRoute('evidence', runId.value, patch.case_id ?? frameIntent.value, nextTab === 'overview' ? undefined : nextTab))
+  void router.replace(savedAnalysisRoute(runId.value, patch.case_id ?? frameIntent.value, nextTab === 'overview' ? undefined : nextTab))
 }
 function showTab(next: DetailTab) { if (next !== tab.value) setQuery({ tab: next }) }
 function chooseFrame(value: unknown) {
@@ -233,8 +221,7 @@ function toList() { void router.push({ name: 'evidence' }) }
     <div v-if="loading" class="saved-run-empty" aria-live="polite"><a-spin /> 正在读取这次保存分析…</div>
     <div v-else-if="failure" class="saved-run-empty" role="alert">
       <a-alert type="warning" :title="failure"><span v-if="failureDetail">{{ failureDetail }}</span></a-alert>
-      <a-button v-if="!replay && runId && preferences.dataSourceMode !== 'backend'" size="small" type="primary" @click="updatePreferences({ dataSourceMode: 'backend' })">切换 Backend</a-button>
-      <a-button v-else-if="!replay && runId" size="small" @click="load"><IconRefresh /> 重读此分析</a-button>
+      <a-button v-if="runId" size="small" @click="load"><IconRefresh /> 重读此分析</a-button>
     </div>
     <div v-else-if="!isReady || !frame || !saved" class="saved-run-empty" role="status">
       <a-alert type="warning" :title="frameIntent && saved?.frames.length ? '这次分析未保存所选 Frame。' : '这次分析没有可查看的保存 Frame。'">

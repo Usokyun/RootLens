@@ -1,14 +1,12 @@
 """The tentative layer must not assemble a proof that was never jointly measured."""
 
 import copy
-import json
-from pathlib import Path
 
 import pytest
+from graded_fixtures import compact_bottle, public_release, without_grades
 
 from kgtracevis.core.unified_reasoner import UnifiedReasoner
 
-DEMO = Path(__file__).resolve().parents[1] / "data/demo/two_loop"
 GATE = "detection.anomaly_present"
 AREA = "geometry.area_ratio"
 ASPECT = "geometry.aspect_ratio"
@@ -16,10 +14,8 @@ ECC = "geometry.eccentricity"
 
 
 def load_demo(dataset):
-    folder = DEMO / dataset
-    knowledge = json.loads((folder / "working-graph.v2.json").read_bytes())["knowledge"]
-    frame = json.loads((folder / "evidence.json").read_bytes())["frames"][0]
-    return knowledge, frame
+    package, frames = compact_bottle() if dataset == "mvtec" else public_release(dataset)
+    return without_grades(package["knowledge"]), frames[0]
 
 
 def obs(frame, feature):
@@ -216,6 +212,26 @@ def test_cannot_join_observations_from_two_references():
 
 def test_real_wafer_one_value_counterexample_uses_only_same_parent_grid():
     knowledge, frame = load_demo("wafer")
+    # Isolate the strict research proof: require the classifier together with all
+    # spatial conditions here. The public graded graph treats it as optional advice.
+    (rule,) = [
+        r for r in knowledge["expectation_rules"] if r["pattern_id"] == "signature:pattern_nearfull"
+    ]
+    pattern, classifier = [
+        p
+        for p in knowledge["pattern_definitions"]
+        if p["pattern_id"] in {rule["pattern_id"], rule["pattern_id"] + ":classifier-advice"}
+    ]
+    pattern["body"]["all"].extend(classifier["body"]["all"])
+    knowledge["expectation_rules"] = [rule]
+    knowledge["effect_rules"] = [
+        r for r in knowledge["effect_rules"] if r["to_id"] == rule["from_id"]
+    ]
+    knowledge["hypotheses"] = [
+        h
+        for h in knowledge["hypotheses"]
+        if h["hypothesis_id"].endswith(":pattern_family_nearfull")
+    ]
     component = obs(frame, "spatial.largest_component_ratio")
     component["value"]["number"] = 0.50
     result = UnifiedReasoner(knowledge).analyze(frame)

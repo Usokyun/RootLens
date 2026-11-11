@@ -137,10 +137,8 @@ def test_real_persistent_edit_import_reanalysis_and_original_run(tmp_path, monke
     import json
 
     import psycopg
-    from fastapi.testclient import TestClient
 
     from kgtracevis.kg.working_graph_repository import WorkingGraphRepository
-    from kgtracevis.service.api import app
     from kgtracevis.service.postgres import resolve_postgres_config
     from kgtracevis.service.runs import create_run_from_upload, get_run_detail
 
@@ -155,15 +153,10 @@ def test_real_persistent_edit_import_reanalysis_and_original_run(tmp_path, monke
         build_id="test",
         profiles=compile_visual_profiles(graph),
     )
-    client = TestClient(app)
     graphs = []
     run = None
     try:
-        response = client.post(
-            "/api/kg/working-graphs/import", json=package.model_dump(mode="json")
-        )
-        assert response.status_code == 200, response.text
-        gid = response.json()["graph_id"]
+        gid = editor.import_working_graph(package).graph_id
         graphs.append(gid)
         run = create_run_from_upload(
             "mask.jsonl",
@@ -182,31 +175,23 @@ def test_real_persistent_edit_import_reanalysis_and_original_run(tmp_path, monke
         )
         assert run.ranked_root_causes
         original_snapshot = run.summary["working_graph_snapshot"]
-        exported = client.get(f"/api/kg/working-graphs/{gid}/package").json()
+        exported = editor.export_working_graph(gid).model_dump(mode="json")
         exported["nodes"][0]["aliases"].append("持久别名")
         for p in exported["profiles"]["profiles"]:
             p["conditions"].append(
                 {"feature": "region.area_ratio", "op": "gte", "value": 0.99, "required": True}
             )
-        saved = client.put(f"/api/kg/working-graphs/{gid}/package", json=exported)
-        assert saved.status_code == 200, saved.text
-        reread = client.get(f"/api/kg/working-graphs/{gid}/package").json()
-        assert reread == WorkingGraphPackage.model_validate(exported).model_dump(mode="json")
+        edited = WorkingGraphPackage.model_validate(exported)
+        assert editor.save_working_graph(gid, edited).status == "ready"
+        reread = editor.export_working_graph(gid)
+        assert reread == edited
         assert (
             build_pipeline(graph_id=gid).analyze(evidence_for(linear_mask())).ranked_root_causes
             == []
         )
         assert get_run_detail(run.run.run_id).ranked_root_causes == run.ranked_root_causes
         assert get_run_detail(run.run.run_id).summary["working_graph_snapshot"] == original_snapshot
-        replay = client.get(f"/api/runs/{run.run.run_id}/replay")
-        assert replay.status_code == 200, replay.text
-        assert (
-            replay.json()["runtime"]["backend_runs"][0]["summary"]["working_graph_snapshot"]
-            == original_snapshot
-        )
-        imported = client.post("/api/kg/working-graphs/import", json=reread)
-        assert imported.status_code == 200, imported.text
-        gid2 = imported.json()["graph_id"]
+        gid2 = editor.import_working_graph(reread).graph_id
         graphs.append(gid2)
         assert (
             build_pipeline(graph_id=gid2).analyze(evidence_for(linear_mask())).ranked_root_causes

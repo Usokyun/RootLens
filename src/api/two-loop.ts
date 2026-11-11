@@ -1,9 +1,9 @@
 import { buildUrl, jsonInit, requestJson } from '@/api/client'
-import type { WorkingGraphSummary } from '@/api/contracts'
+import type { KGMaterialRecord, WorkingGraphSummary } from '@/api/contracts'
 
 export type Dataset = WorkingGraphSummary['dataset']
-export type ReasonerId = 'unified_abduction' | 'tep_rootkgd' | 'graded_abduction'
-export type InputMode = 'evidence' | 'records' | 'image' | 'process' | 'wafer'
+export type ReasonerId = 'graded_abduction' | 'tep_rootkgd'
+export type InputMode = 'evidence' | 'image' | 'process' | 'wafer'
 export type InputVariant = 'raw' | 'evidence'
 export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'interrupted'
 export interface TaskEvent {
@@ -39,11 +39,6 @@ export interface Reasoner {
   description: string
   requires_graded_policy?: boolean
 }
-export interface AuthoringCapability {
-  capability_id: string
-  features: Array<Record<string, unknown>>
-  [key: string]: unknown
-}
 export interface DemoAsset {
   asset_id?: string
   path?: string
@@ -65,11 +60,10 @@ export interface DemoGraphReference {
   candidates: Array<{ graph_id: string; title: string; ready: boolean; enabled: boolean }>
 }
 export interface DemoSample {
-  id: string
-  sample_id?: string
+  sample_id: string
   title: string
   dataset: Dataset
-  demo_id?: string
+  demo_id: string
   input_mode?: InputMode
   expectation?: string
   recommended?: boolean
@@ -92,6 +86,11 @@ export interface DemoGroup {
   graph_ref?: DemoGraphReference
 }
 export interface DemoLibrary { demos: DemoGroup[]; samples: DemoSample[] }
+export type InstalledDemoGraph = DemoGraphReference & {
+  graph_id: string
+  state: 'ready'
+  action: 'installed' | 'enabled' | 'already_ready'
+}
 
 export interface SavedAnalysisListItem {
   run_id: string
@@ -99,8 +98,8 @@ export interface SavedAnalysisListItem {
   created_at: string
   status: 'completed' | 'failed'
   dataset: Dataset
-  input_mode: InputMode
-  reasoner_id: ReasonerId
+  input_mode: string
+  reasoner_id: string
   source_filename?: string
   case_count?: number
   outcome_counts?: Record<string, number>
@@ -146,8 +145,11 @@ export function createTwoLoopClient(base: string) {
     listAnalyses: (limit = 50) => get<{ runs: SavedAnalysisListItem[] }>('/api/analyses', new URLSearchParams({ limit: String(limit) })),
     retryTask: (id: string) => requestJson<WorkTask>(base, `/api/tasks/${encodeURIComponent(id)}/retry`, { method: 'POST' }),
     demos: () => get<DemoLibrary>('/api/demo-library'),
+    installDemoGraph: (demoId: string) => requestJson<InstalledDemoGraph>(
+      base, `/api/demo-library/${encodeURIComponent(demoId)}/working-graph`, { method: 'POST' }),
+    addDemoMaterials: (demoId: string) => requestJson<{ materials: KGMaterialRecord[] }>(
+      base, `/api/demo-library/${encodeURIComponent(demoId)}/materials`, { method: 'POST' }),
     reasoners: () => get<{ reasoners: Reasoner[] }>('/api/reasoners'),
-    authoringCapabilities: () => get<{ capabilities: Record<Dataset, AuthoringCapability> }>('/api/authoring/capabilities'),
     infer: ({ file, reference_file, ...options }: InferenceInput) => {
       const form = new FormData()
       form.append('file', file)

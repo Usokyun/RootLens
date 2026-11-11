@@ -1,24 +1,20 @@
 """Logical expression rewrites do not become extra physical propagation votes."""
 
 import copy
-import json
-from pathlib import Path
 
 import pytest
+from graded_fixtures import public_release, without_grades
 
 from kgtracevis.core.rootkgd_reasoner import CHANNELS, RootKGDReasoner
 from kgtracevis.kg.unified_compiler import KnowledgeProgram
 from kgtracevis.schema.unified_knowledge import KnowledgePackage
 from kgtracevis.service.candidate_conditions import CandidateConditionRequest, add_condition
 
-DATA = Path("data/demo/two_loop")
-
 
 @pytest.fixture
 def inputs():
-    knowledge = json.loads((DATA / "knowledge/tep-working-graph.v2.json").read_text())["knowledge"]
-    frame = json.loads((DATA / "evidence/tep-sequence-04.json").read_text())
-    return knowledge, frame
+    package, frames = public_release("tep")
+    return without_grades(package["knowledge"]), frames[1]
 
 
 def numeric_signature(result):

@@ -25,7 +25,7 @@
 - 复制 Python 后端至 RootLens `backend/`，保留 `src/kgtracevis/`、`scripts/`、`configs/`、`data/` 小型种子与 examples、`tests/`、`docs/`、`pyproject.toml`、`uv.lock`。
 - 旧 `web/`、`web_legacy/`、论文、实验输出、Git 与 agent 历史不迁入；这些未迁入的来源资产仍应从原目录按需查阅。
 - RootLens 前端 `src/` 不搬家，不由来源 React 前端替换。
-- 日常后端运行与后续修改以 RootLens `backend/` 为准。本次既有库离线复制、新路径启动、既有记录标识 / 图谱核对及新写入隔离已完成相应验证，摘要见 `backend-integration-current.md` §1.2；不代表全部外部数据、模型权重或模型能力已迁移可用。
+- 日常后端运行与后续修改以 RootLens `backend/` 为准。既有库离线复制、新路径启动、记录标识／图谱核对及新写入隔离见[迁移验收](../../backend/docs/rootlens-monorepo-migration.md)；不代表全部外部数据、模型权重或模型能力已迁移可用。
 
 ### 1.2 历史路径标记
 

@@ -1,5 +1,7 @@
 # 原前端恢复记录（2026-11-11）
 
+> 历史版本记录。当前的工作台和演示以[集成边界](backend-integration-current.md)为准。
+
 ## 恢复原界面，不回滚后端或数据
 
 用户要求先还原大幅重做前的界面，并明确知识图谱应是图而不是树。本轮从已推送的 `codex/demo-two-loops@8cf4d0b` 创建本地分支 `codex/restore-original-frontend`，不覆盖原分支，不推送本次还原。

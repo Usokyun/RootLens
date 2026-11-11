@@ -1,4 +1,3 @@
-import { analysisRunSummary, analysisSnapshotView } from '@/services/analysis-snapshot-view';
 import type {
   KGMaterialChunkListResponse,
   KGMaterialDetailResponse,
@@ -8,12 +7,6 @@ import type {
   KGMaterialMutationResponse,
   KGMaterialRegisterUrlRequest,
   KGStudioPayload,
-  ReviewLedgerListRequest,
-  ReviewLedgerListResponse,
-  ReviewRequest,
-  RunDetail,
-  RunSourceContract,
-  RunSummary,
   WorkingGraphSummary,
   WorkingGraphPackage,
 } from "@/api/contracts";
@@ -145,22 +138,12 @@ export function jsonInit(method: string, body: unknown): RequestInit {
 }
 
 export interface ApiClient {
-  kgStudio: (graphId?: string) => Promise<KGStudioPayload>;
+  kgStudio: (graphId: string) => Promise<KGStudioPayload>;
   listWorkingGraphs: () => Promise<{ graphs: WorkingGraphSummary[] }>;
   getWorkingGraphPackage: (graphId: string) => Promise<WorkingGraphPackage>;
   saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
-  mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
   enableWorkingGraph: (graphId: string, enabled: boolean) => Promise<WorkingGraphSummary>;
-  listRuns: () => Promise<RunSummary[]>;
-  listArchivedRuns: () => Promise<RunSummary[]>;
-  getRun: (runId: string, source: RunSourceContract) => Promise<RunDetail>;
-  submitReview: (
-    request: ReviewRequest,
-  ) => Promise<{ status: string; record: Record<string, unknown> }>;
-  listReviewLedger: (
-    request?: ReviewLedgerListRequest,
-  ) => Promise<ReviewLedgerListResponse>;
   listKGMaterials: () => Promise<KGMaterialListResponse>;
   getKGMaterial: (materialId: string) => Promise<KGMaterialDetailResponse>;
   uploadKGMaterial: (input: {
@@ -188,65 +171,14 @@ export interface ApiClient {
 }
 
 export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
-  const listArchivedRuns = async (): Promise<RunSummary[]> =>
-    (await requestJson<RunSummary[]>(baseUrl, "/api/runs")).map(run => ({ ...run, source_contract: "legacy-run" }));
   return {
     kgStudio: (graphId) => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio", undefined,
-      graphId ? new URLSearchParams({ graph_id: graphId }) : undefined),
+      new URLSearchParams({ graph_id: graphId })),
     listWorkingGraphs: () => requestJson(baseUrl, "/api/kg/working-graphs"),
     getWorkingGraphPackage: (id) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`),
     saveWorkingGraphPackage: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`, jsonInit("PUT", body)),
     importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
-    mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
     enableWorkingGraph: (id, enabled) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/enable`, jsonInit("POST", { enabled })),
-    listArchivedRuns,
-    listRuns: async () => {
-      const [legacy, current] = await Promise.all([
-        listArchivedRuns(),
-        requestJson<{ runs: Record<string, unknown>[] }>(baseUrl, "/api/analyses"),
-      ]);
-      const merged = new Map<string, RunSummary>(legacy.map(run => [run.run_id, run]));
-      current.runs.forEach(run => merged.set(String(run.run_id), analysisRunSummary(run)));
-      return [...merged.values()].sort((left, right) => right.created_at.localeCompare(left.created_at));
-    },
-    getRun: async (runId, source) => {
-      const id = encodeURIComponent(runId);
-      let detail: RunDetail;
-      if (source === "analysis-v2") {
-        detail = analysisSnapshotView(await requestJson<unknown>(baseUrl, `/api/analyses/${id}`));
-      } else if (source === "legacy-run") {
-        const archived = await requestJson<RunDetail>(baseUrl, `/api/runs/${id}`);
-        detail = { ...archived, run: { ...archived.run, source_contract: "legacy-run" } };
-      } else {
-        throw new Error("运行来源未指定。");
-      }
-      if (detail.run.run_id !== runId) throw new Error("服务返回的运行编号与请求不一致。");
-      return detail;
-    },
-    submitReview: (request) =>
-      requestJson<{ status: string; record: Record<string, unknown> }>(
-        baseUrl,
-        "/api/feedback",
-        jsonInit("POST", request),
-      ),
-    listReviewLedger: (request) => {
-      const search = new URLSearchParams();
-      if (request?.run_id) search.set("run_id", request.run_id);
-      if (request?.case_id) search.set("case_id", request.case_id);
-      if (request?.target_type) search.set("target_type", request.target_type);
-      if (request?.target_id) search.set("target_id", request.target_id);
-      if (typeof request?.offset === "number")
-        search.set("offset", String(request.offset));
-      if (typeof request?.limit === "number")
-        search.set("limit", String(request.limit));
-
-      return requestJson<ReviewLedgerListResponse>(
-        baseUrl,
-        "/api/feedback",
-        undefined,
-        search,
-      );
-    },
     listKGMaterials: () =>
       requestJson<KGMaterialListResponse>(baseUrl, "/api/kg/materials"),
     getKGMaterial: (materialId) =>

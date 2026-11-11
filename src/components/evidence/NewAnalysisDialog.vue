@@ -3,9 +3,9 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { ApiError, createApiClient } from '@/api/client'
 import { backendResourceUrl, createTwoLoopClient, type Dataset, type InputVariant, type ReasonerId, type WorkTask } from '@/api/two-loop'
 import {
-  analysisReasoners, analysisSubmission, createAnalysisDraft, currentDemoSample, datasetNames, demoGraphReference, demoGraphUnavailableNote,
+  analysisReasoners, analysisSubmission, canInstallDemoGraph, createAnalysisDraft, currentDemoSample, datasetNames, demoGraphUnavailableNote,
   demoInputAvailable, enabledAnalysisGraphs, isAnalysisDataset, modeForDraft, readyDemoGraph, reconcileAnalysisSelection,
-  sampleIdentity, type AnalysisCatalog, type AnalysisDraftSeed,
+  type AnalysisCatalog, type AnalysisDraftSeed,
 } from '@/services/analysis-draft'
 
 const props = defineProps<{ visible: boolean; baseUrl: string; seed: AnalysisDraftSeed; submissionBlocked?: boolean }>()
@@ -17,6 +17,8 @@ const catalogError = ref('')
 const sampleError = ref('')
 const submitError = ref('')
 const submitting = ref(false)
+const installing = ref(false)
+const installError = ref('')
 const fileKey = ref(0)
 const fileInput = ref<HTMLInputElement | null>(null)
 const referenceInput = ref<HTMLInputElement | null>(null)
@@ -30,22 +32,22 @@ const graphUsable = computed(() => availableGraphs.value.some((graph) => graph.g
 const chosenGraph = computed(() => catalog.value?.graphs.find((graph) => graph.graph_id === draft.value.graphId))
 const compatibleReasoners = computed(() => catalog.value ? analysisReasoners(catalog.value, draft.value.dataset, draft.value.graphId) : [])
 const chosenReasoner = computed(() => compatibleReasoners.value.find((reasoner) => reasoner.reasoner_id === draft.value.reasonerId))
-const pairedReference = computed(() => demoGraphReference(sample.value, catalog.value?.demos ?? null))
+const pairedReference = computed(() => sample.value?.graph_ref ?? null)
 const pairedGraph = computed(() => readyDemoGraph(pairedReference.value, catalog.value?.graphs ?? [], draft.value.dataset))
 const pairDiffers = computed(() => draft.value.graphOrigin === 'explicit' && pairedGraph.value && pairedGraph.value.graph_id !== draft.value.graphId)
 const pairDownload = computed(() => backendResourceUrl(props.baseUrl, pairedReference.value?.download_url))
+const installable = computed(() => canInstallDemoGraph(sample.value))
 const sampleAsset = computed(() => draft.value.variant === 'evidence' ? sample.value?.evidence : sample.value?.raw_input)
 const sampleDownload = computed(() => backendResourceUrl(props.baseUrl, sampleAsset.value?.download_url))
 const inputMode = computed(() => modeForDraft(draft.value))
-const inputAccept = computed(() => ({ image: '.png,.jpg,.jpeg,.bmp,.webp', process: '.dat,.csv,.txt', wafer: '.json,.jsonl', evidence: '.json', records: '.json,.jsonl' })[inputMode.value])
+const inputAccept = computed(() => ({ image: '.png,.jpg,.jpeg,.bmp,.webp', process: '.dat,.csv,.txt', wafer: '.json,.jsonl', evidence: '.json' })[inputMode.value])
 const inputHint = computed(() => ({
   image: 'PNG / JPG 等原始图像。后端定位 ROI 并测量几何。',
   process: 'DAT / CSV / TXT，完整 52 通道，另选配套正常参考。',
   wafer: 'JSON / JSONL，可包含 waferMap；0 背景、1 正常、2 失效。',
   evidence: '上传原生 EvidenceFrame、Frame 数组或 {frames:[…]}，不重复模型测量。',
-  records: 'JSON / JSONL 测量记录。',
 })[inputMode.value])
-const canSubmit = computed(() => !!catalog.value && !preparing.value && !catalogError.value && !props.submissionBlocked && !submitting.value
+const canSubmit = computed(() => !!catalog.value && !preparing.value && !catalogError.value && !props.submissionBlocked && !submitting.value && !installing.value
   && graphUsable.value && !!chosenReasoner.value && (draft.value.sampleId ? !!sample.value && demoInputAvailable(sample.value, draft.value.variant)
     : !!draft.value.file && (inputMode.value !== 'process' || !!draft.value.referenceFile)))
 const sampleGroups = computed(() => (Object.keys(datasetNames) as Dataset[]).map((dataset) => ({
@@ -105,18 +107,45 @@ function chooseReasoner(value: unknown) {
   if (compatibleReasoners.value.some((item) => item.reasoner_id === value)) draft.value.reasonerId = value as ReasonerId
 }
 function chooseSample(value: unknown) {
+  if (installing.value || submitting.value) return
+  installError.value = ''
   if (typeof value !== 'string' || !value) {
     draft.value.sampleId = ''
     reconcileSelection()
     return
   }
-  const next = catalog.value?.demos?.samples.find((item) => sampleIdentity(item) === value)
+  const next = catalog.value?.demos?.samples.find(item => item.sample_id === value)
   if (!next) return
   draft.value.sampleId = value
   draft.value.dataset = next.dataset
-  draft.value.variant = demoInputAvailable(next, 'evidence') ? 'evidence' : 'raw'
+  draft.value.variant = 'evidence'
   clearLocalInput()
   reconcileSelection()
+}
+async function installDemoGraph() {
+  const selected = sample.value
+  if (!selected || !installable.value || preparing.value || submitting.value || installing.value) return
+  const base = props.baseUrl
+  const revision = draftRevision
+  const stillCurrent = () => !disposed && revision === draftRevision && props.baseUrl === base
+  installing.value = true
+  installError.value = ''
+  try {
+    const graph = await createTwoLoopClient(base).installDemoGraph(selected.demo_id)
+    if (!stillCurrent()) return
+    if (graph.state !== 'ready' || graph.enabled !== true || !graph.graph_id) throw new Error('后端未确认配套图已启用。')
+    await readCatalog()
+    if (stillCurrent() && !catalogError.value && pairedGraph.value?.graph_id !== graph.graph_id) {
+      installError.value = '服务已确认启用，当前目录尚未读到该配套图。请重读目录。'
+    }
+  } catch (error) {
+    if (stillCurrent()) {
+      installError.value = error instanceof Error ? error.message : String(error)
+      if (error instanceof ApiError && error.status === 0) installError.value += ' 安装结果尚未确认，请先重读目录。'
+    }
+  } finally {
+    if (stillCurrent()) installing.value = false
+  }
 }
 function changeVariant(value: unknown) {
   if ((value !== 'raw' && value !== 'evidence') || value === draft.value.variant) return
@@ -153,6 +182,8 @@ watch([() => props.visible, () => props.seed], ([visible, seed], previous) => {
   catalog.value = null
   fileKey.value += 1
   submitError.value = ''
+  installError.value = ''
+  installing.value = false
   void readCatalog(true)
 }, { immediate: true })
 onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
@@ -161,7 +192,7 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
 <template>
   <a-modal
     :visible="visible" title="新建分析" :footer="false"
-    width="min(640px, calc(100vw - 32px))" :mask-closable="false" :closable="!submitting" :esc-to-close="!submitting"
+    width="min(640px, calc(100vw - 32px))" :mask-closable="false" :closable="!submitting && !installing" :esc-to-close="!submitting && !installing"
     @update:visible="emit('update:visible', $event)"
   >
       <a-alert v-if="catalogError" type="error">
@@ -172,9 +203,9 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
       <a-form v-else :model="draft" layout="vertical" class="new-analysis-form">
         <a-form-item v-if="sampleGroups.length || sampleError" label="公开演示样本（可选）">
           <div class="workspace-stack workspace-stack--tight new-analysis-fill">
-            <a-select v-if="sampleGroups.length" :model-value="draft.sampleId || undefined" placeholder="选择样本以填入，不会自动运行" allow-clear allow-search aria-label="公开演示样本" @change="chooseSample">
+            <a-select v-if="sampleGroups.length" :model-value="draft.sampleId || undefined" placeholder="选择样本以填入，不会自动运行" allow-clear allow-search aria-label="公开演示样本" :disabled="installing || submitting" @change="chooseSample">
               <a-optgroup v-for="group in sampleGroups" :key="group.dataset" :label="datasetNames[group.dataset]">
-                <a-option v-for="item in group.samples" :key="sampleIdentity(item)" :value="sampleIdentity(item)" :label="item.title">
+                <a-option v-for="item in group.samples" :key="item.sample_id" :value="item.sample_id" :label="item.title">
                   {{ item.title }}<a-tag v-if="item.recommended" color="arcoblue" size="small" class="new-analysis-recommended">推荐</a-tag>
                 </a-option>
               </a-optgroup>
@@ -185,7 +216,7 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
 
         <div class="new-analysis-pair">
           <a-form-item label="输入类型">
-            <a-radio-group :model-value="draft.variant" type="button" aria-label="输入类型" @change="changeVariant">
+            <a-radio-group :model-value="draft.variant" type="button" aria-label="输入类型" :disabled="installing || submitting" @change="changeVariant">
               <a-radio value="raw" :disabled="!!sample && !demoInputAvailable(sample, 'raw')">原始样本</a-radio>
               <a-radio value="evidence" :disabled="!!sample && !demoInputAvailable(sample, 'evidence')">中间 Evidence</a-radio>
             </a-radio-group>
@@ -245,12 +276,12 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
 
         <div class="new-analysis-pair">
           <a-form-item label="工作图（已启用）">
-            <a-select :model-value="graphUsable ? draft.graphId : undefined" placeholder="选择当前场景工作图" aria-label="工作图（已启用）" @change="chooseGraph">
+            <a-select :model-value="graphUsable ? draft.graphId : undefined" placeholder="选择当前场景工作图" aria-label="工作图（已启用）" :disabled="installing || submitting" @change="chooseGraph">
               <a-option v-for="graph in availableGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }}</a-option>
             </a-select>
           </a-form-item>
           <a-form-item label="推理器">
-            <a-select :model-value="draft.reasonerId || undefined" placeholder="当前场景无兼容推理器" aria-label="推理器" @change="chooseReasoner">
+            <a-select :model-value="draft.reasonerId || undefined" placeholder="所选工作图无兼容推理器" aria-label="推理器" :disabled="installing || submitting" @change="chooseReasoner">
               <a-option v-for="reasoner in compatibleReasoners" :key="reasoner.reasoner_id" :value="reasoner.reasoner_id">{{ reasoner.title }}</a-option>
             </a-select>
           </a-form-item>
@@ -262,12 +293,17 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
         </a-alert>
         <a-alert v-else-if="draft.sampleId && !pairedGraph" type="warning" class="new-analysis-note">
           {{ demoGraphUnavailableNote(pairedReference) }}
-          {{ graphUsable ? '按您明确选择的工作图运行。' : '请在图谱页导入并启用配套图，或明确选择其他工作图。' }}
+          <template v-if="graphUsable">保留您明确选择的工作图。</template>
+          <a-button v-if="installable" size="mini" type="primary" :loading="installing" :disabled="preparing || submitting" @click="installDemoGraph">
+            {{ pairedReference?.state === 'disabled' ? '启用配套图' : '安装并启用配套图' }}
+          </a-button>
           <a v-if="pairDownload" :href="pairDownload" download>下载配套图包</a>
         </a-alert>
         <a-alert v-else-if="!graphUsable" type="warning" class="new-analysis-note">
           {{ draft.graphOrigin === 'explicit' ? '指定图未启用、不可用或与场景不符，请核对后明确选图。' : '当前场景没有已启用的 v2 工作图，请先在图谱页启用。' }}
         </a-alert>
+        <a-alert v-else-if="!compatibleReasoners.length" type="warning" class="new-analysis-note">这张工作图没有可用的推理策略，请选择另一张已启用工作图。</a-alert>
+        <a-alert v-if="draft.sampleId && sample && !demoInputAvailable(sample, draft.variant)" type="warning" class="new-analysis-note">所选演示输入暂不可用；可切换输入类型或上传本地文件。</a-alert>
         <details class="new-analysis-options">
           <summary>结果设置</summary>
           <div class="new-analysis-pair">
@@ -275,10 +311,11 @@ onBeforeUnmount(() => { disposed = true; catalogRevision += 1 })
             <a-form-item label="保留候选数"><a-input-number v-model="draft.topK" :min="1" :max="100" :step="1" aria-label="保留候选数" /></a-form-item>
           </div>
         </details>
+        <a-alert v-if="installError" type="error" class="new-analysis-note">{{ installError }}</a-alert>
         <a-alert v-if="submitError" type="error" class="new-analysis-note">{{ submitError }}</a-alert>
         <a-alert v-if="submissionBlocked" type="info" class="new-analysis-note">当前查看的任务仍在处理，请等它结束后再提交。</a-alert>
         <div class="rl-form-actions new-analysis-actions">
-          <a-button :loading="preparing" :disabled="submitting" @click="readCatalog()">重读目录</a-button>
+          <a-button :loading="preparing" :disabled="submitting || installing" @click="readCatalog()">重读目录</a-button>
           <a-button type="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">开始分析</a-button>
         </div>
       </a-form>

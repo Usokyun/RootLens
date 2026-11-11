@@ -1,98 +1,53 @@
 # RootLens
 
-RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。前端沿用 `471e1aa` 的三个入口：**运行与证据 → 根因与图谱 → 素材与构图**。Backend 的图谱工作台以有向力导向网络呈现共享节点和真实关系，不以层级树代替。
+RootLens 是工业异常分析的知识与证据工作台。Vue 前端保留 **运行与证据、根因与图谱、素材与构图** 三页；模型、Evidence 转换、构图和推理在 Python 后端运行。
 
-`codex/restore-original-frontend` 保留 `8cf4d0b` 的后端、数据库、知识与分析结果，并在原三页接通两个可执行闭环：
+## 先跑一个演示
 
-1. **资料 → 可用知识**：导入原始资料，实际解析和调用 LLM，自动校验／编译，再由使用者修改并启用工作图。
-2. **样本 → 可追溯解释**：原始图片、过程时序或晶圆网格经过真实模型／adapter 生成 Evidence；也可直接上传中间 Evidence，选择推理器，查看候选、条件、来源与原始数据对应。
+启动服务后打开 `http://127.0.0.1:5174/evidence`。在 **演示案例** 选场景，首次点击 **安装并启用配套图**，然后用默认的 **中间 Evidence → 分级解释溯因** 开始分析。这个入口会从保存的实测观测重新推理，不用 LLM 密钥、模型权重或旧数据库。
 
-页面顶部可切换 **Demo / Backend**；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。当前操作见下文，前一阶段验收见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)。
+| 场景 | 现场值得看什么 |
+| --- | --- |
+| [MVTec · Bottle 006](backend/data/demo/graded_rca/mvtec/README.md) | 同一个异常 ROI 的三项几何如何支持块状解释；两个工位假设为何仍并列。 |
+| [TEP · d04、d05](backend/data/demo/graded_rca/tep/README.md) | 正常窗不推荐；d04 支持反应器补偿，d05 用三个实际观测支持冷凝侧。也可用 RootKGD 看 52 通道图传播。 |
+| [WM811K · 248536、31707](backend/data/demo/graded_rca/wafer/README.md) | 近全片获支持；边缘环的正证与反证同时显示，31707 仍待核验。 |
 
-## 演示：三个公开样本走完两条闭环
-
-要试新版 **分级解释溯因**，从[三场景复演手册](backend/docs/graded-rca-demo.md)选一套工作图和原生 Evidence；普通导入即可复算。下表是保留的默认演示，仍可用来对照旧解释器。
-
-| 公开包 | 样本 | 解释重点 |
-| --- | --- | --- |
-| [MVTec](backend/data/demo/two_loop/mvtec/README.md) | `bottle-rim-break` · 原图 006 | 同一 ROI 的面积、长短比、离心率共同支持两个待区分解释；不调用 VLM。 |
-| [TEP](backend/data/demo/two_loop/tep/README.md) | `tep-sequence-04` · d04 三窗口 | 独立正常参考、串级控制的联合条件；比较统一约束与 RootKGD 的 52 通道结构贡献。 |
-| [WM811K](backend/data/demo/two_loop/wafer/README.md) | `wafer-nearfull` · 行 248536 | 分类之外再核全片／分区密度和最大连通占比；结论是图案，不是制造根因。 |
-
-完成下文的安装和新库初始化后，运行 `npm run dev:all`，在 `http://localhost:5174` 选 **Backend**。每个包均有短资料、已编辑的 v2 图包和同图实际原始运行导出的 Evidence。
-
-1. **不用密钥和权重**：在「根因与图谱」导入并启用该包的 `working-graph.v2.json`。点「用这张图分析」，选择 **中间 Evidence**，上传同目录 `evidence.json`。后端重新推理，不重跑测量。也可从「公开演示样本」选择同一场景的现成 Evidence。
-2. **走完整来源和原始链路**：在「素材与构图」上传 `material.md`、提取并实际制作；在「根因与图谱」检查、编辑、启用。随后用同一图分析原始样本，再在「运行与证据」下载并普通上传本次 Evidence。构图需要已配置的文本模型；MVTec 和晶圆原始输入需本机权重，TEP 原始输入需正常参考。
-
-[现场手册](backend/docs/two-loop-demo.md)列出固定下载、UI／API 复跑及实际验收。`backend/data/demo/two_loop/manifest.json` 是 `/api/demo-library` 的唯一清单，每场景一条当前完整链；保留历史对照、Demo 和成品 Replay。原始文件或媒体未准备时，已有 Frame 仍可复算。
+[演示手册](backend/docs/graded-rca-demo.md)提供原始数据和权重的准备命令、真实构图步骤和 CLI。发布资产由 [`backend/data/demo/graded_rca/manifest.json`](backend/data/demo/graded_rca/manifest.json) 统一登记；同一案例可选择原始输入或原生 Evidence。
 
 ## 首次安装
 
-需要 PATH 中可用的 uv、满足根 `package.json` engines 的 Node.js，以及 `backend/pyproject.toml` 支持的 Python。使用项目环境，不用全局 Python 代替依赖。
+准备符合 `package.json` 的 Node.js、uv 和 Python 3.10–3.12：
 
 ```bash
 # RootLens 根目录
 npm ci
 cd backend
 uv sync --extra dev --frozen
+cd ..
 ```
 
-基础安装只提供基础 API／开发依赖。运行三场景模型、PDF 和 LLM 需安装相应 extras：
+只运行演示 Evidence 时，基础／开发依赖就够。实跑图像和晶圆需要 `ml`、`vision`；文本构图需要 `llm`；PDF 文本层解析需要 `parsers`。需要全部可选能力时，在 `backend/` 一次同步：
 
 ```bash
-# backend/
 uv sync --frozen --extra dev --extra llm --extra ml --extra parsers --extra vision
 ```
 
-后端环境是 `backend/.venv/`。已安装 ML extras 后，日常使用 `uv run --no-sync`，或继续声明所需 extras，避免同步移除模型依赖。安装不包含大权重，也不保证外部模型服务已配置。
+日常命令使用 `backend/.venv/`，执行 `uv run --no-sync` 不会重同步掉模型依赖。大权重另外准备。
 
-## 数据库：新库与既有数据分开处理
+### 启动数据库与服务
 
-Neo4j 保存隔离工作图；Postgres 保存素材、工作图登记、任务及完整分析快照。CSV／JSON 用于交换与复算，不替代运行时数据库。
-
-### fresh clone：只给新空库初始化
-
-从 RootLens 根目录执行，连接参数与 `backend/compose.yaml` 保持一致：
+从仓库根目录为**全新空库**执行：
 
 ```bash
-docker compose -f backend/compose.yaml up -d neo4j postgres
-# 等待两个数据库健康后，仅对新空库执行
+docker compose -f backend/compose.yaml up -d --wait neo4j postgres
 npm run backend:init
-npm run backend:check
-```
-
-`backend:check` 会读取应用表，初始化前缺表是预期行为。顺序是“数据库健康 → 新库 init → check”。**`backend:init` 仅用于新空库**，会拒绝已有 PG 应用数据、非空 KG 及未知参数；不是日常启动或迁移命令。已有库的新工作图／任务能力使用增量表，不重建原数据。
-
-### 已配置的本机数据库
-
-`backend:db:*` 只管理 `backend/runs/local_runtime/` 中预置的 PG／Neo4j／JDK，不下载软件、不新建库、不导入种子、不设置开机自启，也不管理 Compose。
-
-```bash
-# 确认运行目录与连接配置，且服务尚未启动
-npm run backend:db:start
 npm run backend:check
 npm run dev:all
 ```
 
-已有服务不要重复启动。端口占用时先确认所属实例，不为抢占端口杀进程。
+已有库只需启动并检查，不重跑 `backend:init`；初始化会拒绝已有应用数据或非空 KG。已预置的本机实例可用 `npm run backend:db:start`、`backend:db:status`、`backend:db:stop`；它们只管理 `backend/runs/local_runtime/` 内的数据库，不管理 Compose，也不设置开机自启。`dev:all` 不启动或初始化数据库；已有服务不要重复启动。
 
-## 启动与连接
-
-数据库可用后，从根目录运行：
-
-| 命令 | 用途 |
-| --- | --- |
-| `npm run dev` | 仅前端，默认 5174 |
-| `npm run dev:backend` | 使用 `backend/.venv/bin/python`，工作目录 `backend/`，默认 `127.0.0.1:8000` |
-| `npm run dev:all` | 启动前后端；不自动启动或初始化数据库 |
-| `npm run backend:check` | 数据库探活，不代表模型／业务验收 |
-| `npm run backend:test` | 后端现有 pytest |
-| `npm run backend:db:status` / `start` / `stop` | 仅预置 `runs/local_runtime/` 实例 |
-| `npm run build` / `npm test` | 前端类型／构建检查和测试 |
-
-页面顶部选择 **Backend** 后，可通过“修改后端地址”设置完整服务地址；Demo 模式与成品 Replay 不会发起新模型推理。
-
-自定义端口需同步后端与前端配置，再重启对应进程：
+默认前端 5174、API `127.0.0.1:8000`。`npm run dev` 只起前端，`npm run dev:backend` 只起 API。自定义端口要同步两端：
 
 ```bash
 ROOTLENS_API_PORT=8100 \
@@ -101,81 +56,22 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
   npm run dev:all
 ```
 
-根 `.env.example` 是公开 Vite 模板，`backend/.env.example` 是后端私有设置模板。真实 `.env`／`.env.local` 不提交、不直接覆盖；凭据不能放进 `VITE_` 变量。后端优先级为 **进程环境 > `backend/.env.local` > `backend/.env` > YAML > 默认值**。
+页面顶部可修改后端连接。根 `.env.example` 是公开的 Vite 模板；后端私有配置参考 `backend/.env.example`。真实 `.env`、`.env.local` 不提交，密钥不放进 `VITE_` 变量。后端优先级：进程环境 > `backend/.env.local` > `backend/.env` > YAML > 默认值。
 
-本轮演示验收使用独立前端 5186／API 8012、PG 55433／Neo4j bolt 57687，与日常默认库分开。开发命令不是开机或登录自启配置；服务恢复见演示手册。
+## 在三页完成两个闭环
 
-## 在原三页完成两个闭环
+- **素材与构图**：上传文件或登记网址，也可添加演示素材。提取后查看原文片段，勾选同场景及共享资料，发起真实文本构图。构图记录显示实际阶段，完成后打开待启用的工作图。移出素材只影响选材，原文件、提取和历史引用保留，可恢复。
+- **根因与图谱**：搜索、缩放和检查有向图。在工作图编辑名称与别名，或用完整 v2 图包调整规则、绑定和分级曲线。导入创建新图；只有显式启用后才用于新分析。编辑不重算保存结果。
+- **运行与证据**：上传原图、52 通道序列与正常参考、0/1/2 晶圆网格，或直接上传原生 `EvidenceFrame`。分级引擎比较合法联合分支，展示支持、反证和覆盖。保存详情能从贡献定位实际源边和 ROI、曲线或网格。**下载 Evidence** 后可同图同引擎复算，不重跑测量。
 
-### 1. 运行与证据 · `/evidence`
+TEP 的 **RootKGD 图传播** 是独立可选推理器，不与分级相容分混算。旧离线演示、旧回放导入、旧版 API 和格式已退役；没有删除本机数据库或历史文件。当前格式的保存分析仍在原运行页查看。
 
-1. 在 **Backend** 点 **新建分析**，选择原图、52 通道过程文件＋正常参考、晶圆网格或原生 EvidenceFrame，再选已启用的同场景图和解释器。列表集中显示实际任务阶段；历史表分别显示运行状态和保存结论。未知进度不显示估算百分比。
-2. 从历史点 **打开**，进入 `/evidence/runs/:runId`。在同一保存范围查看输入、Backbone、Evidence、推理与图谱。候选、路径和观测按本次记录联动；换窗口不带入上一窗的选中项。路径图只画本次保存的源边。
-3. 点 **下载 Evidence** 获取本次保存 Frame，可作为中间入口重新提交。中间入口不重跑 Backbone；已有原图、网格或曲线可以关联，未保存的产物不补造。改图不会重算历史，候选分数也不是根因概率。
+## 开发与文档
 
-**导入回放**只打开成品 Session／runtime 快照，不运行模型。旧上传工作台已退役；图谱页仍能读取已保存的旧 Run、附件和回放。
+- `npm test`、`npm run build`、`npm run backend:test`：前端单测、类型／构建和后端 pytest。
+- [`src/doc/backend-integration-current.md`](src/doc/backend-integration-current.md)：当前边界和三页职责。
+- [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：输入、任务、图包、演示和保存结果。
+- [演示手册](backend/docs/graded-rca-demo.md)、[构图和评分设计](src/doc/rootlens-graded-rca-demo-proposal-2026-11-11.md)。
+- [来源项目](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)：后端来自 KGTraceVis，保留 `kgtracevis` 包名；历史研究文档不定义当前产品接口。
 
-### 2. 根因与图谱 · `/graphs`
-
-1. 在 **Backend** 点 **切换图谱**，按图名或场景选择登记图。切换只改变正在查看的图，不改变启用状态。画布支持缩放、拖拽、节点／别名／通道搜索；点节点或有向关系，在右侧看详情、来源、规则与绑定。图网络读取 `/api/kg/studio?graph_id=...` 的真实关系，大图若截取预览会标明范围；完整知识以工作图包为准。
-2. 就绪 v2 图中，实体、候选原因、机理和现象可 **编辑节点**；实体还可编辑别名。其他规则和绑定使用 **导入 / 导出 → 查看工作图包** 的完整 JSON 高级编辑。保存保留未改的规范记录、稳定 ID、条件、绑定和来源，不从画布投影重建。**导入工作图包** 接受 v2 JSON 文件或粘贴内容，创建新的待启用图，不覆盖原图；也可以导出完整包。
-3. 待启用图点 **启用工作图 → 确认启用**。随后点 **用这张图分析**，打开携同一图 ID 的新建分析。取消启用或仅浏览图谱不写状态；启用和保存也不重算历史。
-
-v1 图和**旧运行档案**（`/graphs/archive`）只读；后者读取旧 Run 和原路径。Demo 和 Replay 的成品图与推理只读，原有本地批注和草稿不写后端。当前保存分析在 `/evidence/runs/:runId` 查看该次证据和真实源边，不用当前登记图替换历史快照。D3 由项目锁定依赖提供，不需要现场 CDN。
-
-### 3. 素材与构图 · `/materials`
-
-1. 在 Backend 点 **添加素材**，上传文件或登记网址。网址在提取时才抓取。点素材名称查看详情；点 **提取内容** 后可以按原文位置读片段。
-2. 勾选素材，点 **生成知识图谱**，核对清单、图谱名和场景。同一张图只使用该场景与共享素材；已提取的内容直接复用。制作进度和失败原因可从 **构图记录** 重看，重试须明确点击。
-3. 完成后点 **打开图谱**，进入本次生成的工作图。新图默认未启用；在图谱页编辑和启用后才可用于新分析。
-
-**移出素材库**会把素材从新构图候选中移除，保留原文件、提取结果和历史图谱来源。可在 **已移出**中恢复。正在被提取或构图任务使用的素材要等任务结束后才能移出。
-
-## 保留的后端推理能力
-
-- **分级解释溯因** `graded_abduction`：三个场景共用联合解释比较、连续支持／反证和去重证据预算；图包声明曲线和比较预算。输出同次分析的相容分、核验覆盖及对应真实观测与源边，保留缺项、反证和并列。
-- **统一约束推理** `unified_abduction`：三个场景共用类型、作用域、联合条件、冲突／缺失与 U/C/A/J 代价。
-- **TEP RootKGD** `tep_rootkgd`：当前图的有向传播与完整 52 维残差贡献结构比较，复用原 RootKGD 传播、余弦／覆盖／熵评分及路径回溯，不使用 fault 标签或固定旧图记忆。当前 v2 投影按 host／稳定通道合并重复逻辑期待，避免重复条件制造传播票；真正新增通道或 effect 仍可改变结构。它不执行条件阈值／AND-OR／期待模式的惩罚。
-
-原始 TEP 需要配套正常参考，窗口是一基闭区间。Wafer 接收 0 背景／1 正常／2 失效的原生网格，分类器不接收原生图案标签。图像使用对应对象的模型；缺模型或必要参考时明确失败。
-
-分析 API 保存原始输入、Frame、图快照、候选与解释；每条路径可追到 observation、scope、来源和媒体／曲线。Frame 导出可从中间入口复算，纯标量 Frame 未附媒体时仍能推理。
-
-“本次知识诊断”区分条件真／假／未知、排名资格、同签名候选组与成本先验；读取本次保存的知识，不用当前图重写历史。当前4个TEP×RootKGD v2已完成API／CLI精确复演，并验证d04原始输入→下载Frame→普通上传的三窗口结果及52曲线一致；原17项验证作为历史保留，其余13项统一引擎未重复运行。版本、实际正负结果与记录位置见演示手册。
-
-## 当前边界与历史资产
-
-创建操作统一走后端 `/api/tasks/material-parse`、`/api/tasks/material-build` 和 `/api/tasks/inference`。旧同步素材提取、多套构图／草稿、旧 Run 上传及其模型下载端点已退役；原素材、构图产物、旧 Run 和回放文件都保留。浏览器不从 nodes／edges／Evidence 临时组装 runtime，也不执行本地构图或推理。
-
-U0–U5 的结果保留为历史：32 份同输入的独立平坦对照完全等价，TEP 首位有明确错误；当时前端 95 项／build 通过，后端 442 通过／5 项既有失败／1 跳过。统一架构不等于准确率提升。见 [U5 历史验收](backend/docs/unified-reasoning-u5.md)。M1–M6 的迁移、模型接入和旧回放走查见 [渐进重构历史](backend/docs/progressive-demo-2026-11-10.md)，其旧模式入口说明不覆盖当前产品。
-
-原界面接通双闭环阶段前端原生 Vitest **28 文件／147 项通过**，类型与生产构建通过；保留 Arco 主 chunk 大小警告。后端原生 pytest **575 passed／4 既有可选跳过**：3 项隔离数据库 opt-in 和 1 项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实跑见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)；`f5e93aa` 的 22 文件／109 项和 `8cf4d0b` 的 18 文件／97 项按各自历史候选保留。
-
-两页合验的后端原生 pytest 为 **575 通过／4 既有可选跳过**。本机隔离 API 可用时，在 `backend/` 执行 `uv run --offline --no-sync python scripts/smoke_rootlens_dashboard.py`，只读核对素材归档、任务和分析列表；传 `--task-id`、`--run-id` 可核对指定历史及实际 Evidence 下载。
-
-## 仓库与数据安全
-
-```text
-src/                         恢复原布局的 Vue 三页前端
-src/doc/                     当前边界、契约与历史设计
-backend/src/kgtracevis/       Python 核心、adapter、模型客户端与 FastAPI
-backend/scripts/             开发、准备与复算命令
-backend/data/demo/two_loop/   小型知识、真实 Frame、manifest 与许可
-backend/data/kg/、examples/   其他小型种子与历史示例
-backend/runs/                本机原始数据、模型、任务与实验产物（忽略）
-backend/runs/local_runtime/  预置本机数据库与工具（忽略）
-```
-
-后端来自 KGTraceVis 的 Python 工作树，保留 `kgtracevis` 包名。旧 React `web/`／`web_legacy/` 未迁入；原来源目录和数据库备份继续保留。**Git 忽略不等于删除数据**：未经明确授权和核对，不删除、覆盖或重建数据库，不清理来源备份或持久化卷。
-
-## 文档入口
-
-- [当前集成边界](src/doc/backend-integration-current.md)：当前行为真值，含迁移／U0–U5 历史摘要。
-- [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：任务、图启用与完整分析合同。
-- [演示资产索引](src/doc/rootlens-two-loop-demo-assets.md)与[现场手册](backend/docs/two-loop-demo.md)。
-- [原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)与[实际操作验收](backend/docs/original-ui-loop-acceptance.md)：前一阶段的真实运行和保留限制。
-- [前端还原记录](src/doc/rootlens-original-frontend-restoration.md)与[独立实屏验收](backend/docs/frontend-restoration-acceptance.md)：原布局恢复阶段的兼容与检查。
-- [双闭环历史独立验收](backend/docs/two-loop-acceptance.md)与[重构前端交付](src/doc/rootlens-two-loop-frontend.md)：还原前的界面验收、后端消费证据和保留限制。
-- [来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。
-
-`module-1/2/3`、`frontend_handoff` 与旧 roadmap 是语义来源和历史背景，不覆盖当前边界。
+Neo4j 保存隔离工作图；Postgres 保存素材、图登记、任务及分析快照。仓库只带小型图包、Frame、许可允许的样本和种子；大数据、模型、数据库、运行产物和凭据留在本机。

@@ -1,61 +1,3 @@
-export type UploadMode = "evidence" | "records" | "image";
-export type ReviewAction = "accept" | "reject" | "needs_review";
-export type ReviewTargetType =
-  | "path"
-  | "edge"
-  | "entity_link"
-  | "correction"
-  | "root_cause_candidate"
-  | "case"
-  | "link";
-export interface WorkflowStep {
-  step_id: string;
-  title: string;
-  status: "completed" | "failed";
-  summary: string;
-  details: Record<string, unknown>;
-}
-
-export type RunSourceContract = "legacy-run" | "analysis-v2";
-
-export interface RunSummary {
-  run_id: string;
-  created_at: string;
-  mode: UploadMode | "process" | "wafer";
-  source_contract?: RunSourceContract;
-  source_filename: string;
-  top_k: number | null;
-  run_dir: string;
-  status: "completed" | "failed";
-  dataset: string | null;
-  case_count: number;
-  evidence_count: number | null;
-  label: string;
-  model_preset: string | null;
-  model_backend: string | null;
-}
-
-export interface EvidenceSummary {
-  case_id?: string;
-  dataset?: string;
-  source?: string;
-  object?: string | null;
-  anomaly_type?: string | null;
-  location?: string | null;
-  morphology?: string | null;
-  severity?: number | null;
-  confidence?: number | null;
-  observation_count?: number;
-  [key: string]: unknown;
-}
-
-export interface ReviewTarget {
-  target_type: ReviewTargetType;
-  target_id: string;
-  target_key: string;
-  label: string;
-}
-
 export interface PathGraphNode {
   node_id: string;
   label: string;
@@ -93,26 +35,6 @@ export interface PathGraph {
   edge_count: number;
 }
 
-export interface RankedRootCause {
-  ranking_id: string;
-  rank: number;
-  candidate_id: string;
-  candidate_name: string;
-  candidate_label?: string | null;
-  candidate_role?: string | null;
-  score?: number | null;
-  confidence?: number | null;
-  evidence_match?: number | null;
-  explanation_paths?: unknown[];
-  supporting_edges?: unknown[];
-  supporting_evidence?: unknown[];
-  scoring_method?: string | null;
-  scoring_details?: Record<string, unknown> | null;
-  source?: string | null;
-  review_status?: string | null;
-  [key: string]: unknown;
-}
-
 export interface WorkingGraphSummary {
   graph_id: string;
   title: string;
@@ -125,17 +47,6 @@ export interface WorkingGraphSummary {
   knowledge?: Record<string, unknown> | null;
 }
 
-export interface LegacyWorkingGraphPackage {
-  schema_version: "rootlens-working-graph.v1";
-  graph_id?: string | null;
-  title: string;
-  dataset: "mvtec" | "wafer" | "tep";
-  build_id: string;
-  nodes: Array<{ id: string; name: string; label: string; scenario: string; aliases: string[]; description: string }>;
-  edges: Array<Record<string, unknown> & { head: string; relation: string; tail: string; scenario: string }>;
-  profiles: Record<string, unknown>;
-}
-
 export interface UnifiedWorkingGraphPackage {
   schema_version: "rootlens-working-graph.v2";
   graph_id?: string | null;
@@ -145,22 +56,7 @@ export interface UnifiedWorkingGraphPackage {
   knowledge: Record<string, unknown>;
 }
 
-export type WorkingGraphPackage = LegacyWorkingGraphPackage | UnifiedWorkingGraphPackage;
-
-export interface RunReasoningMetadata {
-  query_results?: Array<Record<string, unknown>>;
-  evidence_frames?: Array<Record<string, unknown>>;
-  aggregation?: string;
-  graph_id?: string | null;
-  outcome?: string | null;
-  reasoning_profile_id?: string | null;
-  reasoner_adapter?: string | null;
-  selection_mode?: string | null;
-  requested_reasoning_profile_id?: string | null;
-  requested_reasoner_adapter?: string | null;
-  fallback_applied?: boolean | null;
-  fallback_reason?: string | null;
-}
+export type WorkingGraphPackage = UnifiedWorkingGraphPackage;
 
 export interface VisualEvidenceItem {
   artifact_id: string;
@@ -175,95 +71,6 @@ export interface VisualEvidenceItem {
   available: boolean;
   note: string;
   metadata: Record<string, unknown>;
-}
-
-export interface RunCaseDetail {
-  case_id: string;
-  dataset?: string;
-  label?: string;
-  case_label?: string;
-  source?: string;
-  generated_evidence?: Record<string, unknown> | null;
-  generated_evidence_path?: string | null;
-  linked_entities?: Array<Record<string, unknown>>;
-  consistency_score?: number | null;
-  inconsistent_fields?: string[];
-  correction_candidates?: Array<Record<string, unknown>>;
-  top_k_paths?: Array<Record<string, unknown>>;
-  ranked_root_causes?: RankedRootCause[];
-  source_edge_provenance?: Array<Record<string, unknown>>;
-  path_graph?: PathGraph;
-  review_targets?: ReviewTarget[];
-  visual_evidence?: VisualEvidenceItem[];
-  reasoning_metadata?: RunReasoningMetadata | null;
-  [key: string]: unknown;
-}
-
-export interface RunDetail {
-  run: RunSummary;
-  workflow_steps: WorkflowStep[];
-  claim_boundary: string;
-  evidence: Record<string, unknown> | null;
-  evidence_summary: EvidenceSummary | null;
-  evidence_with_analysis: Record<string, unknown> | null;
-  analysis: Record<string, unknown> | null;
-  summary: Record<string, unknown> | null;
-  cases: RunCaseDetail[];
-  linked_entities: Array<Record<string, unknown>>;
-  correction_candidates: Array<Record<string, unknown>>;
-  top_k_paths: Array<Record<string, unknown>>;
-  ranked_root_causes: RankedRootCause[];
-  reasoning_metadata?: RunReasoningMetadata | null;
-  path_graph: PathGraph;
-  source_edge_provenance: Array<Record<string, unknown>>;
-  review_targets: ReviewTarget[];
-  artifacts: Record<string, string>;
-  visual_evidence: VisualEvidenceItem[];
-}
-
-export interface ReviewRequest {
-  run_id?: string;
-  case_id?: string;
-  target_type: ReviewTargetType;
-  target_id?: string;
-  action: ReviewAction;
-  note?: string;
-  reviewer?: string;
-  source: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ReviewLedgerListRequest {
-  run_id?: string;
-  case_id?: string;
-  target_type?: ReviewTargetType;
-  target_id?: string;
-  offset?: number;
-  limit?: number;
-}
-
-export interface ReviewLedgerRecord {
-  feedback_id: string;
-  created_at: string;
-  run_id: string | null;
-  case_id: string | null;
-  target_type: ReviewTargetType;
-  target_id: string;
-  target_key: string | null;
-  action: ReviewAction;
-  note: string | null;
-  reviewer: string | null;
-  source: string;
-  metadata: Record<string, unknown> | null;
-}
-
-export interface ReviewLedgerListResponse {
-  records: ReviewLedgerRecord[];
-  total_count: number;
-  returned_count: number;
-  offset: number;
-  limit: number;
-  claim_boundary: string;
 }
 
 export interface KGMaterialRecord {

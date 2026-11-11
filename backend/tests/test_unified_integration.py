@@ -6,6 +6,7 @@ import pytest
 from test_working_graphs import MemoryStore
 
 from kgtracevis.adapters.unified import evidence_frames
+from kgtracevis.core.unified_reasoner import UnifiedReasoner
 from kgtracevis.kg.unified_projection import runtime_projection, validate_runtime_projection
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.schema.evidence_schema import Evidence, EvidenceObservation, RawEvidence
@@ -154,14 +155,19 @@ def test_api_typed_contract_and_export(package, storage):
     imported = client.post("/api/kg/working-graphs/import", json=package.model_dump(mode="json"))
     assert imported.status_code == 200, imported.text
     identity = imported.json()["graph_id"]
-    frame = evidence_frames(visual_evidence())[0]
-    result = client.post(f"/api/reasoning/{identity}/analyze", json=frame.model_dump(mode="json"))
-    assert result.status_code == 200, result.text
-    assert result.json()["outcome"] == "ambiguous"
-    assert (
-        client.get(f"/api/kg/working-graphs/{identity}/package").json()["knowledge"]["graph_id"]
-        == identity
-    )
+    exported = client.get(f"/api/kg/working-graphs/{identity}/package")
+    assert exported.status_code == 200, exported.text
+    payload = exported.json()
+    assert payload["schema_version"] == "rootlens-working-graph.v2"
+    assert payload["knowledge"]["graph_id"] == identity
+    assert UnifiedWorkingGraphPackage.model_validate(
+        payload
+    ).knowledge == package.knowledge.model_copy(update={"graph_id": identity})
+
+    legacy = {"schema_version": "rootlens-working-graph.v1", "title": "retired"}
+    assert client.post("/api/kg/working-graphs/import", json=legacy).status_code == 422
+    assert client.put(f"/api/kg/working-graphs/{identity}/package", json=legacy).status_code == 422
+    assert client.get(f"/api/kg/working-graphs/{identity}/package").json() == payload
 
 
 def test_value_binding_save_reopen_changes_next_run_not_existing_snapshot(package, storage):
@@ -196,9 +202,8 @@ def test_value_binding_save_reopen_changes_next_run_not_existing_snapshot(packag
     result = next_pipeline.analyze(evidence)
     assert len(result.ranked_root_causes) == 2
     frame = evidence_frames(evidence)[0]
-    native = client.post(f"/api/reasoning/{identity}/analyze", json=frame.model_dump(mode="json"))
-    assert native.status_code == 200, native.text
-    fact = next(f for f in native.json()["grounded_facts"] if f["predicate_id"] == "q:scratch_cue")
+    native = UnifiedReasoner(reread["knowledge"]).analyze(frame)
+    fact = next(f for f in native["grounded_facts"] if f["predicate_id"] == "q:scratch_cue")
     assert fact["actual_values"][0]["items"] == ["LegacyScratch"]
     assert fact["applied_value_binding_ids"] == ["alias:legacy-scratch"]
     assert not old_pipeline.analyze(evidence).ranked_root_causes

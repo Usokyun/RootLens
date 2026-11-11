@@ -26,7 +26,6 @@ const props = defineProps<{
   reader: MaterialReader
   revision: number
   status: MaterialStatus
-  canManage: boolean
   archived: boolean
   archiveBlocked: boolean
   mutationBusy: boolean
@@ -244,7 +243,7 @@ onBeforeUnmount(() => { revision += 1 })
       </a-tab-pane>
     </a-tabs>
 
-    <footer v-if="canManage" class="material-detail__footer">
+    <footer class="material-detail__footer">
       <template v-if="archived">
         <span class="material-detail__meta">保留原文件及提取记录</span>
         <a-button :loading="mutationBusy" @click="emit('restore')">恢复素材</a-button>

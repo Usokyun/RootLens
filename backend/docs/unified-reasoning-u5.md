@@ -83,7 +83,7 @@ uv run --no-sync python scripts/evaluate_legacy_profiles.py \
 | `u2_bottle_*`、`u3_tep_actual/`、`u3_tep_knowledge*`、`u4_wafer_actual/`、`u4_wafer_knowledge*` | 失败构图、过细候选、错误 AND、对称分类及其负结果 |
 | `u5_replay/` | 3 单场景与 22-case 合并回放，原图和结果内嵌 |
 
-上述目录均在 `runs/unified_reasoning/` 下，Git 忽略。便于 clone 后理解／复算的小型实际 Frame、种子和 `unified-reasoning-u5-results.json` 已入库。公开权重和数据下载出处见 [前期资产来源](progressive-demo-2026-11-10.md#来源与恢复)；新增 d01/d05 来自同一 Braatz 仓库，bottle 补充图为 [DefectSpectrum DS-MVTec](https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/tree/main/DS-MVTec/bottle/image/broken_large) 的 001–003，上传时使用中性文件名。
+上述目录均在 `runs/unified_reasoning/` 下，Git 忽略。小型实际 Frame、种子和 `unified-reasoning-u5-results.json` 已入库。前期权重和数据出处见 `809fb8d:backend/docs/progressive-demo-2026-11-10.md`；新增 d01/d05 来自同一 Braatz 仓库，bottle 补充图为 [DefectSpectrum DS-MVTec](https://huggingface.co/datasets/DefectSpectrum/Defect_Spectrum/tree/main/DS-MVTec/bottle/image/broken_large) 的 001–003，上传时使用中性文件名。
 
 ## 实际页面、持久化与回放验收
 

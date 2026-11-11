@@ -2,9 +2,9 @@
 
 import copy
 import json
-from pathlib import Path
 
 import pytest
+from graded_fixtures import public_release
 
 from kgtracevis.adapters.unified_capabilities import (
     process_capabilities,
@@ -111,7 +111,12 @@ def test_generic_defect_true_does_not_establish_fine_finish_cue(tmp_path):
         "authored_logic": "any",
         "semantic_change": True,
     }
-    frame = json.loads(Path("data/demo/two_loop/evidence/bottle-rim-break.json").read_text())
+    _, (frame,) = public_release("mvtec")
+    # Counterexample: the detector only asserts a coarse defect. It did not observe a finish cue.
+    defect = next(
+        o for o in frame["observations"] if o["feature_id"] == "appearance.defect_present"
+    )
+    defect.update(status="observed", value={"kind": "boolean", "boolean": True}, raw_refs=["image"])
     result = UnifiedReasoner(proposal.knowledge).analyze(frame)
     assert result["outcome"] == "insufficient_evidence"
     assert result["ranked_root_causes"] == []

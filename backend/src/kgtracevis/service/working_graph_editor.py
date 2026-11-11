@@ -47,6 +47,22 @@ def export_working_graph(graph_id: str) -> WorkingGraphPackage | UnifiedWorkingG
     return record_package(record, graph)
 
 
+def export_v2_working_graph(graph_id: str) -> UnifiedWorkingGraphPackage:
+    record, _ = load_working_graph(graph_id, v2_only=True)
+    return record_package(record)
+
+
+def same_working_knowledge(record: WorkingGraphRecord, package: UnifiedWorkingGraphPackage) -> bool:
+    """Registered identity may change on import, executable content may not."""
+    return (
+        record.status == "ready"
+        and record.dataset == package.dataset
+        and record.knowledge is not None
+        and record.knowledge.model_dump(mode="json", exclude={"graph_id"})
+        == package.knowledge.model_dump(mode="json", exclude={"graph_id"})
+    )
+
+
 def import_working_graph(
     package: WorkingGraphPackage | UnifiedWorkingGraphPackage,
     *,
@@ -99,6 +115,8 @@ def save_working_graph(
     store = working_graph_store()
     with graph_operation_lock(graph_id, store):
         record = store.get(graph_id)
+        if isinstance(package, UnifiedWorkingGraphPackage) != (record.knowledge is not None):
+            raise ValueError("不能覆盖不同版本的工作图；请导入为新图。")
         if isinstance(package, UnifiedWorkingGraphPackage):
             package = package.model_copy(
                 update={"knowledge": package.knowledge.model_copy(update={"graph_id": graph_id})}

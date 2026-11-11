@@ -1,6 +1,6 @@
 # RootLens 后端渐进重构与阶段展示方案
 
-实施顺序、任务状态与完成条件见 [渐进重构执行计划](rootlens-refactor-execution-plan-2026-11-10.md)；本文件保留技术设计与三场景示例。M1–M6 已实施；实际 JSON、运行图、路径及验收结果见 [三场景使用与验收](../../backend/docs/progressive-demo-2026-11-10.md)。
+实施顺序、任务状态与完成条件见 [渐进重构执行计划](rootlens-refactor-execution-plan-2026-11-10.md)；本文件保留技术设计与三场景示例。M1–M6 历史运行和验收见 `809fb8d:backend/docs/progressive-demo-2026-11-10.md`；当前操作见[分级演示手册](../../backend/docs/graded-rca-demo.md)。
 
 ## 当前目标
 

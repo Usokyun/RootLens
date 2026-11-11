@@ -32,18 +32,17 @@ const reading = ref(false)
 let readRevision = 0
 
 const kindNames = { entity: '实体', hypothesis: '候选原因', mechanism: '机理', pattern: '现象' }
-const legacy = computed(() => initialPackage.value?.schema_version === 'rootlens-working-graph.v1')
 const title = computed(() => props.mode === 'node' ? '编辑节点' : props.mode === 'import' ? '导入工作图' : '工作图包')
 const dirty = computed(() => {
   if (props.mode === 'node') return !!initialNode.value && (
     draftName.value !== initialNode.value.name || draftAliases.value !== initialAliases.value
   )
-  if (props.mode === 'package') return !legacy.value && draftJson.value !== initialJson.value
+  if (props.mode === 'package') return draftJson.value !== initialJson.value
   return props.mode === 'import' && !!draftJson.value.trim()
 })
 const canSubmit = computed(() => !props.busy && !reading.value && dirty.value && (
   props.mode === 'node' ? !!initialNode.value && !!draftName.value.trim()
-    : props.mode === 'package' ? !!initialPackage.value && !legacy.value && !!draftJson.value.trim()
+    : props.mode === 'package' ? !!initialPackage.value && !!draftJson.value.trim()
       : props.mode === 'import'
 ))
 
@@ -193,7 +192,7 @@ function submit() {
       <template v-else-if="mode === 'package' && initialPackage">
         <div class="working-graph-editor__toolbar working-graph-editor__toolbar--package">
           <p class="working-graph-editor__hint">
-            {{ legacy ? '旧版工作图只读，可以导出已保存的完整包。' : '高级编辑：保存完整包。条件、引用与来源由后端校验。' }}
+            高级编辑：保存完整包。条件、引用与来源由后端校验。
           </p>
           <a-button html-type="button" :disabled="busy" @click="downloadPackage">
             <template #icon><IconDownload /></template>导出 JSON
@@ -202,7 +201,7 @@ function submit() {
         <label class="working-graph-editor__field">
           <span>工作图 JSON</span>
           <textarea v-model="draftJson" class="working-graph-editor__input working-graph-editor__json" rows="14"
-            :readonly="legacy" :disabled="busy" spellcheck="false" />
+            :disabled="busy" spellcheck="false" />
         </label>
       </template>
       <a-alert v-else-if="mode === 'package'" type="warning">当前没有可读取的工作图包。</a-alert>
@@ -220,8 +219,8 @@ function submit() {
       </details>
       <a-alert v-if="localError || error" type="error" role="alert">{{ localError || error }}</a-alert>
       <div class="working-graph-editor__actions">
-        <a-button html-type="button" :disabled="busy" @click="close">{{ legacy && mode === 'package' ? '关闭' : '取消' }}</a-button>
-        <a-button v-if="mode === 'import' || (mode === 'node' && initialNode) || (mode === 'package' && initialPackage && !legacy)"
+        <a-button html-type="button" :disabled="busy" @click="close">取消</a-button>
+        <a-button v-if="mode === 'import' || (mode === 'node' && initialNode) || (mode === 'package' && initialPackage)"
           html-type="submit" type="primary" :disabled="!canSubmit" :loading="busy">
           {{ mode === 'import' ? '导入为新图' : '保存' }}
         </a-button>

@@ -1,0 +1,458 @@
+{
+  "schema_version": "rootlens-demo-manifest.v1",
+  "title": "RootLens · 三场景分级解释公开演示",
+  "path_base": "backend",
+  "demos": [
+    {
+      "id": "mvtec-graded",
+      "dataset": "mvtec",
+      "title": "MVTec 玻璃瓶 · 块状与细长响应",
+      "purpose": "自著材料与人工复核 → 原始 006 → 同 ROI 形态相容分与实际源边；结构缺口另行复查。",
+      "capability_id": "visual-region-v2",
+      "working_graph": {
+        "asset_id": "mvtec-graded-working-graph",
+        "title": "玻璃瓶块状与细长响应 · 已复核工作图",
+        "path": "data/demo/graded_rca/mvtec/working-graph.v2.json",
+        "media_type": "application/json",
+        "storage_scope": "repository",
+        "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+        "size_bytes": 29259
+      },
+      "materials": [
+        {
+          "asset_id": "mvtec-graded-source",
+          "title": "玻璃瓶局部异常：形态比较与结构复查",
+          "path": "data/demo/graded_rca/mvtec/material.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+          "size_bytes": 4218
+        }
+      ],
+      "samples": [
+        {
+          "sample_id": "mvtec-bottle-006-graded",
+          "title": "MVTec Bottle 006 · 块状形态",
+          "dataset": "mvtec",
+          "input_mode": "image",
+          "recommended": true,
+          "raw_input": {
+            "asset_id": "mvtec-graded-006-original",
+            "title": "MVTec AD bottle 原图 006",
+            "path": "data/demo/graded_rca/mvtec/sample_006.png",
+            "media_type": "image/png",
+            "storage_scope": "repository",
+            "redistribution": "MVTec AD · CC BY-NC-SA 4.0（非商业，原图像素未改）",
+            "size_bytes": 523230,
+            "source_url": "https://huggingface.co/datasets/foersben/mvtec-ad/resolve/4e0e64896390500eb67720e1ceef16e160bb2a8d/bottle/test/broken_large/006.png"
+          },
+          "evidence": {
+            "asset_id": "mvtec-graded-evidence",
+            "title": "006 原图导出的原生 Evidence",
+            "path": "data/demo/graded_rca/mvtec/evidence.json",
+            "media_type": "application/json",
+            "storage_scope": "repository",
+            "redistribution": "原始图像的派生测量，沿用 MVTec AD CC BY-NC-SA 4.0",
+            "size_bytes": 7842
+          },
+          "raw_options": {
+            "object_name": "bottle",
+            "model_preset": "patchcore",
+            "semantic_mode": "disabled"
+          },
+          "reasoner_ids": [
+            "graded_abduction"
+          ],
+          "expectation": "同一 ROI 的面积、长短比、离心率支持块状响应，两项工位解释并列 S=1；不判定缺口或工位。",
+          "origin_run_id": "db943d30-e8f3-4613-aad7-7bccb49f8077"
+        }
+      ],
+      "models": [
+        {
+          "title": "Bottle PatchCore · 可选原图权重",
+          "required_for": "raw",
+          "repository": "micguida1/mvtec-anomaly-checkpoints",
+          "revision": "17e6b9b9bbb42f2f0ccda588bd088724520b8348",
+          "source_url": "https://huggingface.co/micguida1/mvtec-anomaly-checkpoints/resolve/17e6b9b9bbb42f2f0ccda588bd088724520b8348/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt",
+          "local_path": "runs/refactor_m2_m6/public/bottle_patchcore.ckpt",
+          "size_bytes": 231213159,
+          "sha256": "30c62a17d9f9232058b5948ce6fb3f8f585b365daed22e5515cc7afb286a53a1",
+          "redistribution": "上游权重仓库未声明许可；按需从原仓下载到本机，不随 RootLens 分发"
+        }
+      ],
+      "sources": [
+        {
+          "title": "MVTec AD 数据集与许可",
+          "url": "https://www.mvtec.com/research-teaching/datasets/mvtec-ad",
+          "license": "CC BY-NC-SA 4.0；非商业，原图未改。"
+        }
+      ]
+    },
+    {
+      "id": "tep-graded",
+      "dataset": "tep",
+      "title": "TEP · 反应器补偿与冷凝负荷",
+      "purpose": "公开过程控制材料 → 同一参考下的窗口测量 → 分级证据与 RootKGD 结构对照。",
+      "capability_id": "process-window-v2",
+      "working_graph": {
+        "asset_id": "tep-graded-working-graph",
+        "title": "TEP 反应器与冷凝侧 · 已复核工作图",
+        "path": "data/demo/graded_rca/tep/working-graph.v2.json",
+        "media_type": "application/json",
+        "storage_scope": "repository",
+        "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+        "size_bytes": 48453
+      },
+      "materials": [
+        {
+          "asset_id": "tep-graded-source",
+          "title": "TEP：反应器供冷与冷凝侧调节",
+          "path": "data/demo/graded_rca/tep/material.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+          "size_bytes": 3607
+        }
+      ],
+      "authoring_notes": [
+        {
+          "asset_id": "tep-graded-expert-refinement",
+          "title": "TEP 人工修订依据",
+          "path": "data/demo/graded_rca/tep/expert-refinement.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+          "size_bytes": 2259
+        }
+      ],
+      "samples": [
+        {
+          "sample_id": "tep-d04-graded",
+          "dataset": "tep",
+          "title": "TEP d04 · 冷却补偿三窗口",
+          "input_mode": "process",
+          "recommended": true,
+          "raw_input": {
+            "asset_id": "tep-graded-d04-raw",
+            "title": "公开 52 通道 d04 过程序列",
+            "path": "runs/two_loop_demo/raw/tep/sequence_04.dat",
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "redistribution": "Illinois/Braatz；只在本机按固定版本准备",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d04_te.dat",
+            "size_bytes": 799680,
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "1ccb488dd5feac11aad54623451168abef066229e685872597897800363916f9"
+          },
+          "normal_reference": {
+            "asset_id": "tep-graded-d00-reference",
+            "title": "独立正常参考 d00",
+            "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
+            "size_bytes": 416049,
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d00.dat",
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "4c3c0b11eefacf93e5d2529e2866d7a625e37aa9153d0f95fae17a6c9e560deb",
+            "redistribution": "Illinois/Braatz，按需本机准备"
+          },
+          "evidence": {
+            "asset_id": "tep-graded-d04-evidence",
+            "title": "d04 三窗口原生 Evidence",
+            "path": "data/demo/graded_rca/tep/evidence.json",
+            "media_type": "application/json",
+            "storage_scope": "repository",
+            "redistribution": "实际运行导出的派生 Frame，不包含未授权原始数据",
+            "size_bytes": 629226
+          },
+          "raw_options": {
+            "windows": [
+              [
+                1,
+                100
+              ],
+              [
+                161,
+                260
+              ],
+              [
+                261,
+                360
+              ]
+            ],
+            "sampling_seconds": 180
+          },
+          "reasoner_ids": [
+            "graded_abduction",
+            "tep_rootkgd"
+          ],
+          "supporting_assets": [
+            {
+              "asset_id": "tep-graded-d04-window-1-100",
+              "title": "样本 1–100 的 52 通道窗口",
+              "path": "runs/graded_rca_demo/support/tep-d04/window-1-100.npy",
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_1_100/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-graded-d04-window-161-260",
+              "title": "样本 161–260 的 52 通道窗口",
+              "path": "runs/graded_rca_demo/support/tep-d04/window-161-260.npy",
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_161_260/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-graded-d04-window-261-360",
+              "title": "样本 261–360 的 52 通道窗口",
+              "path": "runs/graded_rca_demo/support/tep-d04/window-261-360.npy",
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_261_360/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-graded-d04-normal-array",
+              "title": "与当前帧匹配的正常参考矩阵",
+              "path": "runs/graded_rca_demo/support/tep-d04/normal.csv",
+              "media_type": "text/csv",
+              "storage_scope": "local_runtime",
+              "frame_asset_id": "normal"
+            },
+            {
+              "asset_id": "tep-graded-d04-scaler",
+              "title": "与当前帧匹配的正常 scaler/PCA",
+              "path": "runs/graded_rca_demo/support/tep-d04/scaler.json",
+              "media_type": "application/json",
+              "storage_scope": "local_runtime",
+              "frame_asset_id": "scaler"
+            }
+          ],
+          "expectation": "1–100 窗正常，后两窗支持反应器补偿并列解释；可用 RootKGD 比较同帧 52 通道结构。",
+          "origin_run_id": "5b722359-8a61-4daf-9ec4-d761421f89fb"
+        },
+        {
+          "sample_id": "tep-d05-graded",
+          "dataset": "tep",
+          "title": "TEP d05 · 冷凝负荷对照",
+          "input_mode": "process",
+          "recommended": false,
+          "raw_input": {
+            "asset_id": "tep-graded-d05-raw",
+            "title": "公开 52 通道 d05 过程序列",
+            "path": "runs/two_loop_demo/raw/tep/sequence_05.dat",
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "redistribution": "Illinois/Braatz；只在本机按固定版本准备",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d05_te.dat",
+            "size_bytes": 799680,
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "1def7258a2865aeead699d52c8cf926fbf34c1467aaf298121987ab858fd0888"
+          },
+          "normal_reference": {
+            "asset_id": "tep-graded-d00-reference",
+            "title": "独立正常参考 d00",
+            "path": "runs/two_loop_demo/raw/tep/normal_reference.dat",
+            "size_bytes": 416049,
+            "media_type": "text/plain",
+            "storage_scope": "local_runtime",
+            "source_url": "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/0643318858ce7c87292bd59820b459e12a13d009/d00.dat",
+            "revision": "0643318858ce7c87292bd59820b459e12a13d009",
+            "sha256": "4c3c0b11eefacf93e5d2529e2866d7a625e37aa9153d0f95fae17a6c9e560deb",
+            "redistribution": "Illinois/Braatz，按需本机准备"
+          },
+          "evidence": {
+            "asset_id": "tep-graded-d05-evidence",
+            "title": "d05 的 161–260 窗原生 Evidence",
+            "path": "data/demo/graded_rca/tep/evidence-d05.json",
+            "media_type": "application/json",
+            "storage_scope": "repository",
+            "redistribution": "实际运行导出的派生 Frame，不包含未授权原始数据",
+            "size_bytes": 209877
+          },
+          "raw_options": {
+            "windows": [
+              [
+                161,
+                260
+              ]
+            ],
+            "sampling_seconds": 180
+          },
+          "reasoner_ids": [
+            "graded_abduction"
+          ],
+          "supporting_assets": [
+            {
+              "asset_id": "tep-graded-d05-window-161-260",
+              "title": "样本 161–260 的 52 通道窗口",
+              "path": "runs/graded_rca_demo/support/tep-d05/window-161-260.npy",
+              "media_type": "application/octet-stream",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "process_window_161_260/query/window",
+              "case_asset_id": "window"
+            },
+            {
+              "asset_id": "tep-graded-d05-normal-array",
+              "title": "与当前帧匹配的正常参考矩阵",
+              "path": "runs/graded_rca_demo/support/tep-d05/normal.csv",
+              "media_type": "text/csv",
+              "storage_scope": "local_runtime",
+              "frame_asset_id": "normal"
+            },
+            {
+              "asset_id": "tep-graded-d05-scaler",
+              "title": "与当前帧匹配的正常 scaler/PCA",
+              "path": "runs/graded_rca_demo/support/tep-d05/scaler.json",
+              "media_type": "application/json",
+              "storage_scope": "local_runtime",
+              "frame_asset_id": "scaler"
+            }
+          ],
+          "expectation": "161–260 窗支持冷凝分离侧负荷响应，两项解释并列；不把 XMV11 命令视为实际阀位。",
+          "origin_run_id": "2c95491d-dc32-4c6f-929a-669d74dc9bec"
+        }
+      ],
+      "models": [],
+      "sources": [
+        {
+          "title": "Braatz 原程序与参考数据",
+          "url": "https://github.com/camaramm/tennessee-eastman-profBraatz/tree/0643318858ce7c87292bd59820b459e12a13d009",
+          "license": "Illinois/Braatz 通知；见 tep/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "wafer-graded",
+      "dataset": "wafer",
+      "title": "WM811K · 晶圆空间图案分级",
+      "purpose": "公开说明与人工复核 → 两片网格的真实分类、分区与扇区测量 → 图案竞争，不推断制造原因。",
+      "capability_id": "spatial-grid-v2",
+      "working_graph": {
+        "asset_id": "wafer-graded-working-graph",
+        "title": "WM811K 四种空间图案 · 已复核工作图",
+        "path": "data/demo/graded_rca/wafer/working-graph.v2.json",
+        "media_type": "application/json",
+        "storage_scope": "repository",
+        "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+        "size_bytes": 48772
+      },
+      "materials": [
+        {
+          "asset_id": "wafer-graded-source",
+          "title": "晶圆图案：径向结构、边缘环向参与和后续排查",
+          "path": "data/demo/graded_rca/wafer/material.md",
+          "media_type": "text/markdown",
+          "storage_scope": "repository",
+          "redistribution": "RootLens 自著演示资料；来源、人工修订和启发式边界见配套说明",
+          "size_bytes": 4075
+        }
+      ],
+      "samples": [
+        {
+          "sample_id": "wm811k-248536-31707-graded",
+          "title": "WM811K 248536 与 31707 · 两片图案对照",
+          "dataset": "wafer",
+          "input_mode": "wafer",
+          "recommended": true,
+          "raw_input": {
+            "asset_id": "wafer-graded-two-original-grids",
+            "title": "原始 0/1/2 网格 · 两行、不含原生标签",
+            "path": "runs/graded_rca_demo/raw/wafer/wm811k-248536-31707.jsonl",
+            "media_type": "application/x-ndjson",
+            "storage_scope": "local_runtime",
+            "redistribution": "镜像未声明原网格再分发许可；仅从固定源表本机裁取"
+          },
+          "raw_source": {
+            "local_path": "runs/refactor_m2_m6/public/wm811k_test.pkl",
+            "source_url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection/resolve/903fe28851d02a976db7a3a4bc12b6cfa2f5443c/test.pkl",
+            "revision": "903fe28851d02a976db7a3a4bc12b6cfa2f5443c",
+            "size_bytes": 18931136,
+            "sha256": "8ff6e0066602419d794c822aa61ec1e8d2bc3f0e000b53a46c91c6ecbe60e071",
+            "rows": [
+              {
+                "row_id": "248536",
+                "frame_case_id": "wm811k_248536/query/grid",
+                "shape": [
+                  38,
+                  38
+                ]
+              },
+              {
+                "row_id": "31707",
+                "frame_case_id": "wm811k_31707/query/grid",
+                "shape": [
+                  63,
+                  62
+                ]
+              }
+            ]
+          },
+          "evidence": {
+            "asset_id": "wafer-graded-evidence",
+            "title": "248536 与 31707 · 同次提交导出的原生 Evidence",
+            "path": "data/demo/graded_rca/wafer/evidence.json",
+            "media_type": "application/json",
+            "storage_scope": "repository",
+            "redistribution": "实际运行导出的派生 Frame，不包含未授权原始数据",
+            "size_bytes": 23873
+          },
+          "raw_options": {},
+          "reasoner_ids": [
+            "graded_abduction"
+          ],
+          "supporting_assets": [
+            {
+              "asset_id": "wafer-graded-grid-248536",
+              "title": "晶圆 248536 原网格",
+              "path": "runs/graded_rca_demo/support/wafer/grid-248536.json",
+              "media_type": "application/json",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "wm811k_248536/query/grid",
+              "case_asset_id": "grid"
+            },
+            {
+              "asset_id": "wafer-graded-grid-31707",
+              "title": "晶圆 31707 原网格",
+              "path": "runs/graded_rca_demo/support/wafer/grid-31707.json",
+              "media_type": "application/json",
+              "storage_scope": "local_runtime",
+              "frame_case_id": "wm811k_31707/query/grid",
+              "case_asset_id": "grid"
+            }
+          ],
+          "expectation": "248536 支持近全片失效；31707 边缘环、边缘局部只待核验，扇区与中心密度给出不同方向证据。",
+          "origin_run_id": "35d5f058-4aa8-4f72-81be-c397c31a00db"
+        }
+      ],
+      "models": [
+        {
+          "title": "RadAI ResNet34 · 可选晶圆原图分类权重",
+          "required_for": "raw",
+          "repository": "radai-agent/radai-wm811k-defect-detection",
+          "local_path": "runs/refactor_m2_m6/public/wm811k_resnet.pt",
+          "source_url": "https://huggingface.co/radai-agent/radai-wm811k-defect-detection/resolve/61747cac7cba3eee3714fee86ab99f8250dd2e08/best_radai_resnet.pt",
+          "revision": "61747cac7cba3eee3714fee86ab99f8250dd2e08",
+          "size_bytes": 85271146,
+          "sha256": "0c0c407babe0eb86b1466c0d7142527bb33c5a21ee3f58927c8fc739070f33fe",
+          "redistribution": "模型仓库声明 MIT；按需本机取，不覆盖网格许可"
+        }
+      ],
+      "sources": [
+        {
+          "title": "WM811K 原始数据论文",
+          "url": "https://doi.org/10.1109/TSM.2014.2364237"
+        },
+        {
+          "title": "WM811K 测试表镜像",
+          "url": "https://huggingface.co/datasets/lslattery/wafer-defect-detection/tree/903fe28851d02a976db7a3a4bc12b6cfa2f5443c",
+          "license": "未声明可再分发原网格；仓库仅提供派生标量 Frame"
+        }
+      ]
+    }
+  ],
+  "interpretation": "原始输入与原生 Evidence 覆盖同一案例集；说明与期望不输入测量或推理。每个场景仅一个推荐样本。"
+}

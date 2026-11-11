@@ -1,11 +1,10 @@
 """Candidate-local authoring uses actual typed Frames and existing persistent editor paths."""
 
-import copy
 import json
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from graded_fixtures import public_release, without_grades
 from test_two_loop_tasks import MemoryStore, finish
 from test_unified_integration import storage as storage
 
@@ -19,23 +18,26 @@ from kgtracevis.service.api import create_app
 from kgtracevis.service.candidate_conditions import (
     CandidateConditionRequest,
     add_condition,
+    condition_options,
+    list_conditions,
     remove_condition,
 )
 from kgtracevis.service.two_loop_tasks import TaskManager
 
-DATA = Path("data/demo/two_loop")
+IDENTITY = "candidate-condition:" + "0" * 32
 
 
 def actual_inputs():
-    package = json.loads((DATA / "knowledge/tep-working-graph.v2.json").read_text())
-    payload = json.loads((DATA / "evidence/tep-sequence-04.json").read_text())
-    return package, payload
+    package, frames = public_release("tep")
+    package["knowledge"] = without_grades(package["knowledge"])
+    return package, frames[1]
 
 
 @pytest.fixture
 def condition_api(storage, tmp_path, monkeypatch):
     client = TestClient(create_app())
-    package, frame = actual_inputs()
+    package, frames = public_release("tep")
+    frame = frames[1]
     response = client.post("/api/kg/working-graphs/import", json=package)
     assert response.status_code == 200, response.text
     graph_id = response.json()["graph_id"]
@@ -68,10 +70,7 @@ def request_for(
     knowledge, frame, *, feature="statistics.std_z", op="gte", passing=False, channel="xmv_10"
 ):
     result = UnifiedReasoner(knowledge).analyze(frame, top_k=8)
-    report = analyze_candidate_discriminability(
-        knowledge, frame, result, reasoner_id="unified_abduction"
-    )
-    candidate = report["equivalence_groups"][0]["candidate_ids"][0]
+    candidate = result["ranked_root_causes"][0]["candidate_id"]
     observation = next(
         o
         for o in frame["observations"]
@@ -98,21 +97,38 @@ def request_for(
 
 def test_create_save_analyze_delete_restores_knowledge_and_keeps_old_run(condition_api, storage):
     client, graph_id, frame, manager = condition_api
-    route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"
-    original = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
+    route = f"/api/kg/working-graphs/{graph_id}/package"
+    original = client.get(route).json()
     baseline = run_frame(client, graph_id, frame, manager)
-    options = client.get(route).json()
+    options = condition_options(graph_id)
     assert len(options["subjects"]) == 52 and options["zones"] == []
     feature = next(f for f in options["features"] if f["feature_id"] == "statistics.slope_z")
     assert feature["unit"] == "1/sample" and feature["subject_kind"] == "variable"
     assert feature["allowed_operators"] == ["gte", "lte", "abs_gte", "eq"]
     assert not any(f["value_kind"] == "array_ref" for f in options["features"])
     request = request_for(original["knowledge"], frame)
-    response = client.post(route, json=request)
-    assert response.status_code == 200, response.text
-    condition = response.json()["conditions"][0]
+    edited = add_condition(
+        KnowledgePackage.model_validate(original["knowledge"]),
+        "tep",
+        CandidateConditionRequest.model_validate(request),
+        IDENTITY,
+    )
+    (condition,) = list_conditions(edited)
     assert condition["can_delete"] and condition["candidate_id"] == request["candidate_id"]
-    modified = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
+    # Full-package editing is explicit: include a reviewed slot as part of the same save.
+    modified = {**original, "knowledge": edited.model_dump(mode="json")}
+    policy = modified["knowledge"]["graded_policy"]
+    policy["groups"][0]["slots"].append(
+        {
+            "slot_id": "candidate-local-check",
+            "predicate_ids": [condition["predicate_id"]],
+            "weight": 0.5,
+        }
+    )
+    response = client.put(route, json=modified)
+    assert response.status_code == 200, response.text
+    modified = client.get(route).json()
+    assert modified["knowledge"]["graded_policy"] == policy
     assert modified["knowledge"]["mechanisms"] == original["knowledge"]["mechanisms"]
     assert modified["knowledge"]["effect_rules"] == original["knowledge"]["effect_rules"]
     assert modified["knowledge"]["expectation_rules"][-1]["from_id"] == request["candidate_id"]
@@ -128,10 +144,12 @@ def test_create_save_analyze_delete_restores_knowledge_and_keeps_old_run(conditi
         for g in result["authoring_diagnostics"]["equivalence_groups"]
     )
     assert client.get("/api/analyses/" + baseline["run_id"]).json() == baseline
-    deleted = client.delete(route + "/" + condition["condition_id"])
-    assert deleted.status_code == 200, deleted.text
-    assert deleted.json()["conditions"] == []
-    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == original
+    # Deleting a predicate while leaving its slot behind is not a valid full package.
+    stale = {**original, "knowledge": {**original["knowledge"], "graded_policy": policy}}
+    assert client.put(route, json=stale).status_code == 422
+    assert client.get(route).json() == modified
+    assert client.put(route, json=original).status_code == 200
+    assert client.get(route).json() == original
     restored = run_frame(client, graph_id, frame, manager)
     assert restored["cases"][0]["results"] == baseline["cases"][0]["results"]
     assert len(list(storage[2].glob("backup_*.json"))) == 2
@@ -227,7 +245,7 @@ def test_modes_preserve_existing_conflict_and_necessary_semantics():
     "dataset,feature,operand,zone",
     [
         (
-            "bottle",
+            "mvtec",
             "appearance.semantic_candidates",
             {"kind": "category", "category": "distinct-appearance"},
             None,
@@ -241,38 +259,25 @@ def test_modes_preserve_existing_conflict_and_necessary_semantics():
         ("tep", "residual.energy", {"kind": "number", "number": 0.1, "unit": "1"}, None),
     ],
 )
-def test_all_three_scene_scopes_create_and_remove_only_owned_nodes(
-    storage, dataset, feature, operand, zone
-):
-    client = TestClient(create_app())
-    package = json.loads((DATA / f"knowledge/{dataset}-working-graph.v2.json").read_text())
-    imported = client.post("/api/kg/working-graphs/import", json=package)
-    assert imported.status_code == 200, imported.text
-    graph_id = imported.json()["graph_id"]
-    original = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
-    route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"
-    source = original["knowledge"]["source_assertions"][0]["assertion_id"]
-    response = client.post(
-        route,
-        json={
-            "candidate_id": original["knowledge"]["hypotheses"][0]["hypothesis_id"],
-            "label": "独立场景条件",
-            "feature_id": feature,
-            "op": "candidate_contains" if operand["kind"] == "category" else "gte",
-            "operand": operand,
-            "zone": zone,
-            "source_assertion_ids": [source],
-        },
+def test_all_three_scene_scopes_create_and_remove_only_owned_nodes(dataset, feature, operand, zone):
+    package, _ = public_release(dataset)
+    original = KnowledgePackage.model_validate(without_grades(package["knowledge"]))
+    source = original.source_assertions[0].assertion_id
+    request = CandidateConditionRequest(
+        candidate_id=original.hypotheses[0].hypothesis_id,
+        label="独立场景条件",
+        feature_id=feature,
+        op="candidate_contains" if operand["kind"] == "category" else "gte",
+        operand=operand,
+        zone=zone,
+        source_assertion_ids=[source],
     )
-    assert response.status_code == 200, response.text
-    condition = response.json()["conditions"][0]
+    changed = add_condition(original, dataset, request, IDENTITY)
+    (condition,) = list_conditions(changed)
     assert condition["subject_entity_id"] is None
     assert condition["zone"] == zone and condition["source_assertion_ids"] == [source]
-    assert condition["anomaly_gate_id"] in {
-        p["predicate_id"] for p in original["knowledge"]["observable_definitions"]
-    }
-    assert client.delete(route + "/" + condition["condition_id"]).status_code == 200
-    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == original
+    assert condition["anomaly_gate_id"] in {p.predicate_id for p in original.observable_definitions}
+    assert remove_condition(changed, IDENTITY) == original
 
 
 @pytest.mark.parametrize(
@@ -286,15 +291,13 @@ def test_all_three_scene_scopes_create_and_remove_only_owned_nodes(
         ({"operand": {"kind": "number", "number": 1.0, "unit": "wrong"}}, "units differ"),
     ],
 )
-def test_invalid_authoring_is_rejected_before_saving(condition_api, storage, change, expected):
-    client, graph_id, frame, _ = condition_api
-    before = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
-    request = {**request_for(before["knowledge"], frame), **change}
-    response = client.post(f"/api/kg/working-graphs/{graph_id}/candidate-conditions", json=request)
-    assert response.status_code == 400, response.text
-    assert expected in response.json()["detail"]
-    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == before
-    assert not list(storage[2].glob("backup_*.json"))
+def test_invalid_authoring_keeps_the_original_knowledge(change, expected):
+    package, frame = actual_inputs()
+    before = KnowledgePackage.model_validate(package["knowledge"])
+    request = {**request_for(package["knowledge"], frame), **change}
+    with pytest.raises(ValueError, match=expected):
+        add_condition(before, "tep", CandidateConditionRequest.model_validate(request), IDENTITY)
+    assert before == KnowledgePackage.model_validate(package["knowledge"])
 
 
 @pytest.mark.parametrize(
@@ -305,53 +308,51 @@ def test_invalid_authoring_is_rejected_before_saving(condition_api, storage, cha
         ("residual.normal_limit", {"kind": "number", "number": 0.1, "unit": "1"}, "gte"),
     ],
 )
-def test_operator_catalog_and_post_reject_presence_or_background_only_conditions(
+def test_operator_catalog_rejects_presence_or_background_only_conditions(
     condition_api, feature, operand, op
 ):
     client, graph_id, _, _ = condition_api
-    if feature == "appearance.defect_present":
-        package = json.loads((DATA / "knowledge/bottle-working-graph.v2.json").read_text())
+    dataset = "mvtec" if feature == "appearance.defect_present" else "tep"
+    if dataset == "mvtec":
+        package, _ = public_release(dataset)
         imported = client.post("/api/kg/working-graphs/import", json=package)
         assert imported.status_code == 200, imported.text
         graph_id = imported.json()["graph_id"]
-    route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"
-    assert feature not in {f["feature_id"] for f in client.get(route).json()["features"]}
+    assert feature not in {f["feature_id"] for f in condition_options(graph_id)["features"]}
     before = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
-    request = {
-        "candidate_id": before["knowledge"]["hypotheses"][0]["hypothesis_id"],
-        "label": "拒绝泛门控充分替代",
-        "feature_id": feature,
-        "operand": operand,
-        "op": op,
-        "subject_entity_id": None,
-    }
-    response = client.post(route, json=request)
-    assert response.status_code == 400, response.text
-    assert "不是候选区分条件" in response.json()["detail"]
-    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == before
-
-
-def test_shared_dependency_blocks_delete_and_foreign_rule_is_not_a_bundle(condition_api):
-    client, graph_id, frame, _ = condition_api
-    route = f"/api/kg/working-graphs/{graph_id}/candidate-conditions"
-    package = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
-    response = client.post(route, json=request_for(package["knowledge"], frame))
-    condition = response.json()["conditions"][0]
-    package = client.get(f"/api/kg/working-graphs/{graph_id}/package").json()
-    rule = copy.deepcopy(package["knowledge"]["expectation_rules"][-1])
-    rule["rule_id"] = "another-shared-expectation"
-    rule["from_id"] = next(
-        h["hypothesis_id"]
-        for h in package["knowledge"]["hypotheses"]
-        if h["hypothesis_id"] != rule["from_id"]
+    original = KnowledgePackage.model_validate(before["knowledge"])
+    request = CandidateConditionRequest(
+        candidate_id=original.hypotheses[0].hypothesis_id,
+        label="拒绝泛门控充分替代",
+        feature_id=feature,
+        operand=operand,
+        op=op,
     )
-    package["knowledge"]["expectation_rules"].append(rule)
-    assert client.put(f"/api/kg/working-graphs/{graph_id}/package", json=package).status_code == 200
-    assert client.get(route).json()["conditions"][0]["can_delete"] is False
-    blocked = client.delete(route + "/" + condition["condition_id"])
-    assert blocked.status_code == 400 and "共享依赖" in blocked.json()["detail"]
-    assert client.get(f"/api/kg/working-graphs/{graph_id}/package").json() == package
-    assert client.delete(route + "/an-existing-rule").status_code == 400
+    with pytest.raises(ValueError, match="不是候选区分条件"):
+        add_condition(original, dataset, request, IDENTITY)
+
+
+def test_shared_dependency_blocks_delete_and_foreign_rule_is_not_a_bundle():
+    package, frame = actual_inputs()
+    original = KnowledgePackage.model_validate(package["knowledge"])
+    request = CandidateConditionRequest.model_validate(request_for(package["knowledge"], frame))
+    changed = add_condition(original, "tep", request, IDENTITY)
+    rule = changed.expectation_rules[-1].model_copy(
+        update={
+            "rule_id": "another-shared-expectation",
+            "from_id": next(
+                h.hypothesis_id
+                for h in original.hypotheses
+                if h.hypothesis_id != request.candidate_id
+            ),
+        }
+    )
+    changed.expectation_rules.append(rule)
+    assert list_conditions(changed)[0]["can_delete"] is False
+    with pytest.raises(ValueError, match="共享依赖"):
+        remove_condition(changed, IDENTITY)
+    with pytest.raises(ValueError, match="只能撤销"):
+        remove_condition(changed, "an-existing-rule")
 
 
 def test_missing_gate_rejects_only_new_authoring_not_original_reasoning():

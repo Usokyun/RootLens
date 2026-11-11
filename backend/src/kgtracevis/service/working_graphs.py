@@ -237,13 +237,17 @@ def activate_compiler_build(
     return record
 
 
-def load_working_graph(graph_id: str) -> tuple[WorkingGraphRecord, KnowledgeGraph]:
+def load_working_graph(
+    graph_id: str, *, v2_only: bool = False
+) -> tuple[WorkingGraphRecord, KnowledgeGraph]:
     """Take one consistent graph/profile snapshot for a new analysis run."""
     store = working_graph_store()
     with graph_operation_lock(graph_id, store):
         record = store.get(graph_id)
         if record.status != "ready":
             raise ValueError(f"working graph is not ready: {record.status}")
+        if v2_only and record.knowledge is None:
+            raise ValueError("当前接口只支持 v2 工作图。")
         repository = WorkingGraphRepository.connect(graph_id)
         try:
             graph = repository.to_knowledge_graph(scenario=record.dataset)

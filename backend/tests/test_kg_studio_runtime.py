@@ -4,11 +4,14 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from graded_fixtures import compact_bottle
 from neo4j.exceptions import AuthError, ServiceUnavailable
+from test_unified_integration import storage as storage
 
 from kgtracevis.kg.graph import KGEdge, KGNode, KnowledgeGraph
 from kgtracevis.kg.import_neo4j import Neo4jConfig
-from kgtracevis.service import kg_studio
+from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
+from kgtracevis.service import kg_studio, working_graph_editor
 from kgtracevis.service.api import create_app
 
 
@@ -137,23 +140,40 @@ def test_runtime_default_uses_owned_repository_without_artifact_lookup(
     assert repository.closed
 
 
+def test_public_studio_requires_exact_ready_v2_identity(storage):
+    client = TestClient(create_app())
+    assert client.get("/api/kg/studio").status_code == 422
+    package = UnifiedWorkingGraphPackage.model_validate(compact_bottle()[0])
+    registered = working_graph_editor.import_working_graph(package)
+    response = client.get("/api/kg/studio", params={"graph_id": registered.graph_id})
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["graph_id"] == registered.graph_id
+    assert result["graph_origin"] == "neo4j"
+    assert result["node_count"] == registered.node_count
+    assert result["edge_count"] == registered.edge_count
+
+
 @pytest.mark.parametrize(
     "error", [ServiceUnavailable("offline"), AuthError("denied"), ValueError("config")]
 )
-def test_runtime_connection_failures_surface_as_503_without_fallback(
-    monkeypatch: pytest.MonkeyPatch,
-    error: Exception,
+def test_scoped_studio_connection_failures_surface_as_503_without_fallback(
+    storage, monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
-    """Connection or authentication failure never returns CSV or an empty success."""
+    package = UnifiedWorkingGraphPackage.model_validate(compact_bottle()[0])
+    registered = working_graph_editor.import_working_graph(package)
 
-    def connect(config: Neo4jConfig) -> SnapshotRepository:
+    def connect(graph_id: str):
+        assert graph_id == registered.graph_id
         raise error
 
-    monkeypatch.setattr(kg_studio.Neo4jKGRepository, "connect", connect)
+    monkeypatch.setattr(working_graph_editor.WorkingGraphRepository, "connect", connect)
     monkeypatch.setattr(kg_studio, "_first_candidate_artifacts", _reject_artifact_lookup)
-    response = TestClient(create_app()).get("/api/kg/studio")
+    response = TestClient(create_app()).get(
+        "/api/kg/studio", params={"graph_id": registered.graph_id}
+    )
     assert response.status_code == 503
-    assert "runtime Neo4j graph" in response.json()["detail"]
+    assert "工作图 Neo4j" in response.json()["detail"]
     assert "graph_nodes" not in response.json()
 
 
@@ -171,9 +191,7 @@ def test_runtime_empty_database_is_explicit(monkeypatch: pytest.MonkeyPatch) -> 
     """A genuinely empty Neo4j snapshot is distinguishable from a failed connection."""
     repository = SnapshotRepository(KnowledgeGraph([], []))
     _connect_repository(monkeypatch, repository)
-    response = TestClient(create_app()).get("/api/kg/studio")
-    assert response.status_code == 200
-    payload = response.json()
+    payload = kg_studio.kg_studio_payload().model_dump(mode="json")
     assert payload["graph_origin"] == "neo4j"
     assert payload["status"] == "empty"
     assert payload["node_count"] == payload["edge_count"] == 0

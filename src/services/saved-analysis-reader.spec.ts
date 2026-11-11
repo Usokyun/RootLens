@@ -13,7 +13,8 @@ const frame = (id: string, scope: Record<string, unknown>) => ({
 
 const result = (id: string) => ({
   case_id: id, graph_id: 'saved-graph', outcome: 'ambiguous',
-  ranked_root_causes: [{ candidate_id: 'c', rank: 1, score: .5854474293642782, support_obs_ids: [`obs:${id}`] }],
+  ranked_root_causes: [{ candidate_id: 'c', rank: 1, score: .5854474293642782, confidence: null,
+    support_obs_ids: [`obs:${id}`], explanation_paths: [{ path_id: `path:${id}` }] }],
   candidate_evaluations: [{ candidate_id: 'c', scoring_details: { structural_score: .5854474293642782 } }],
   proof_graph: { nodes: [{ node_id: 'c' }], edges: [] },
   top_k_paths: [{
@@ -55,6 +56,8 @@ describe('native saved analysis reader', () => {
     expect(selected.frame).toBe(later)
     expect(selected.result).toBe(second)
     expect(selected.scope?.sample_start).toBe(161)
+    expect(selected.label).toBe('样本 161–260')
+    expect(selected.result?.ranked_root_causes?.[0]).toMatchObject({ rank: 1, score: .5854474293642782, confidence: null })
     expect(selected.locationsByObsId.get('obs:later')?.subject_external_id).toBe('xmv_10')
     expect(selected.locationsByObsId.has('obs:first')).toBe(false)
     expect(selected.candidatesById.get('c')).toBe(second.candidate_evaluations[0])
@@ -94,7 +97,7 @@ describe('native saved analysis reader', () => {
     expect(view.backbone).toEqual({ state: 'measured', inherited: false })
     expect(view.framesById.get('r2')?.media.map((item) => item.artifact_id)).toEqual(['original', 'roi2'])
     expect(view.framesById.get('r2')?.media[0]?.url).toBe(`${base}${root}/artifacts/original.png`)
-    expect(view.framesById.get('r2')?.caseDetail?.visual_evidence?.[1]?.url).toBe(`${root}/artifacts/roi2.png`)
+    expect(view.framesById.get('r2')?.media[1]?.url).toBe(`${base}${root}/artifacts/roi2.png`)
     expect(view.evidenceUrl).toBe(`${base}${root}/evidence`)
   })
 
@@ -106,7 +109,7 @@ describe('native saved analysis reader', () => {
     const missing = projectSavedAnalysis({
       ...run([{ evidence_frames: [a], results: [] }], ''), evidence_download_url: '/api/analyses/other/evidence',
     }, base)
-    expect(missing.frames[0]).toMatchObject({ result: null, caseDetail: null, waferGrid: null, media: [] })
+    expect(missing.frames[0]).toMatchObject({ result: null, waferGrid: null, media: [] })
     expect(missing.evidenceUrl).toBeNull()
     expect(missing.backbone.state).toBe('not_recorded')
   })
@@ -127,5 +130,24 @@ describe('native saved analysis reader', () => {
     expect(fetch.mock.calls).toEqual([[`${base}${root}`, undefined]])
     await expect(readSavedAnalysis(base, 'another/run')).rejects.toThrow('没有返回请求的保存分析')
     expect(fetch.mock.calls[1]).toEqual([`${base}/api/analyses/another%2Frun`, undefined])
+  })
+
+  it('uses the saved RootKGD path association and rejects contradictory source directions', () => {
+    const r = result('first')
+    const path = r.top_k_paths[0]!
+    const actual = { ...path, source_edges: [{ edge_id: 'edge:first', head: 'c', tail: 'condition', relation: 'OBSERVES' }] }
+    const read = (p: typeof actual) => projectSavedAnalysis(run([{
+      evidence_frames: [frame('first', scope(1))], results: [{ ...r, scoring_method: 'tep_rootkgd_propagation_v2', top_k_paths: [p] }],
+    }]), base)
+    expect(read(actual).frames[0]?.pathsByCandidateId.get('c')?.[0]?.edges[0]?.relation).toBe('OBSERVES')
+    expect(() => read({ ...actual, source_edges: [{ ...actual.source_edges[0]!, head: 'condition', tail: 'c' }] }))
+      .toThrow('源边与原方向不一致')
+  })
+
+  it('reports a missing analysis without probing another source', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => '{"detail":"记录不存在"}' })
+    vi.stubGlobal('fetch', fetch)
+    await expect(readSavedAnalysis(base, 'missing')).rejects.toThrow('记录不存在')
+    expect(fetch.mock.calls).toEqual([[`${base}/api/analyses/missing`, undefined]])
   })
 })

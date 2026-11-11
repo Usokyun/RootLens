@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from graded_fixtures import compact_bottle, public_release
 from PIL import Image
 from test_two_loop_tasks import MemoryStore, finish
 
@@ -65,7 +66,7 @@ def test_raw_process_to_exported_frame_has_identical_rootkgd_result_without_back
 
 def test_native_frame_never_reads_unmanaged_local_media_uri(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime, "TASK_ROOT", tmp_path / "tasks")
-    frame = json.loads(Path("data/examples/unified/mvtec-chipped.json").read_text())
+    graph, (frame,) = compact_bottle()
     secret = tmp_path / "private-image.png"
     Image.new("RGB", (20, 20), (255, 0, 0)).save(secret)
     next(a for a in frame["assets"] if a["asset_id"] == "image")["uri"] = str(secret)
@@ -77,8 +78,8 @@ def test_native_frame_never_reads_unmanaged_local_media_uri(tmp_path, monkeypatc
         "input_mode": "evidence",
         "input_path": str(input_path),
         "title": "只有统计",
-        "graph_snapshot": package("bottle"),
-        "reasoner_id": "unified_abduction",
+        "graph_snapshot": graph,
+        "reasoner_id": "graded_abduction",
     }
     task = finish(manager, manager.submit("inference", request, title=request["title"]))
     assert task["status"] == "completed", task["error"]
@@ -130,8 +131,8 @@ def test_multi_wafer_raw_grid_and_native_reimport_keep_distinct_managed_media(
         "input_mode": "wafer",
         "input_path": str(input_path),
         "title": "不同晶圆",
-        "graph_snapshot": package("wafer"),
-        "reasoner_id": "unified_abduction",
+        "graph_snapshot": public_release("wafer")[0],
+        "reasoner_id": "graded_abduction",
     }
     task = finish(manager, manager.submit("inference", request, title=request["title"]))
     assert task["status"] == "completed", task["error"]
