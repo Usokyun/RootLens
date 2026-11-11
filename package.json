@@ -22,6 +22,8 @@
   },
   "dependencies": {
     "@arco-design/web-vue": "^2.57.0",
+    "@vueuse/core": "^14.3.0",
+    "d3": "7.9.0",
     "vue": "^3.5.32",
     "vue-router": "^5.0.6"
   },
@@ -29,6 +31,7 @@
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",
+    "csv-parse": "^6.2.0",
     "jsdom": "^27.0.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.10",

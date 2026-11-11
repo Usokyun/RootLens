@@ -1,205 +1,3590 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { IconArrowRight, IconCheck, IconDownload, IconUpload, IconRelation, IconEdit, IconSave, IconSearch, IconInfoCircle, IconFile, IconRefresh, IconPlus } from '@arco-design/web-vue/es/icon'
-import type { WorkingGraphPackage } from '@/api/contracts'
-import { apiUrl, type AuthoringCapability, type Dataset, type RecordValue } from '@/api/workbench'
-import { api, workspace, currentGraph, refreshGraphs, selectGraph } from '@/services/workspace'
-import { record, rows, text, texts, clone, friendly, datasetShort, downloadJson } from '@/services/presentation'
-import { knowledgeOf, catalog, nameOf, knowledgeSections, sourcesFor, rowId, type KnowledgeSection, type KnowledgeItem } from '@/services/knowledge'
-import { newAnalysisRoute } from '@/services/analysis-entry'
-import { categoricalFeatures, conditionIssues, featureChoices, newValueBinding, registerFeature, valueBindingIssues } from '@/services/feature-authoring'
-import CandidateConditions from '@/components/graphs/CandidateConditions.vue'
-import ConditionPredicateEditor from '@/components/graphs/ConditionPredicateEditor.vue'
-import ValueBindingEditor from '@/components/graphs/ValueBindingEditor.vue'
-import SemanticGraph from '@/components/graphs/SemanticGraph.vue'
-import ExpressionEditor from '@/components/graphs/ExpressionEditor.vue'
+import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
+import UnifiedReasoningDetails from '@/components/evidence/UnifiedReasoningDetails.vue'
+import {
+  IconBulb,
+  IconCheckCircle,
+  IconInfoCircle,
+  IconRefresh,
+  IconRelation,
+  IconSave,
+  IconSend,
+  IconStorage,
+} from "@arco-design/web-vue/es/icon";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-const route = useRoute(), router = useRouter()
-const pkg = ref<WorkingGraphPackage | null>(null)
-const loading = ref(false), saving = ref(false), enabling = ref(false), dirty = ref(false)
-const error = ref(''), notice = ref('')
-const section = ref<KnowledgeSection>('hypotheses'), selectedId = ref(''), search = ref('')
-const importOpen = ref(false), importFile = ref<File | null>(null), importing = ref(false)
-const importInput = ref<HTMLInputElement | null>(null)
-const capabilities = ref<Partial<Record<Dataset,AuthoringCapability>>>({})
-const capabilitiesLoading = ref(false), capabilitiesError = ref('')
-const editedConditions = new Set<string>(), editedBindings = new Set<string>()
-const executableGraphs = computed(() => workspace.graphs.filter((g) => record(g.knowledge).schema_version === 'rootlens-knowledge-package.v2'))
-const knowledge = computed(() => knowledgeOf(pkg.value))
-const capability = computed(() => capabilities.value[pkg.value?.dataset as Dataset] ?? null)
-const features = computed(() => featureChoices(knowledge.value,capability.value))
-const mappingFeatures = computed(() => categoricalFeatures(features.value))
-const items = computed(() => catalog(knowledge.value, section.value))
-const filteredItems = computed(() => items.value.filter((item) => [item.label, item.subtitle].join(' ').toLowerCase().includes(search.value.toLowerCase())))
-const selectedItem = computed(() => items.value.find((item) => item.id === selectedId.value) ?? items.value[0] ?? null)
-const selectedRow = computed(() => selectedItem.value?.raw ?? {})
-const selectedSources = computed(() => sourcesFor(knowledge.value, selectedRow.value))
-const activeOptions = computed(() => [...rows(knowledge.value.hypotheses), ...rows(knowledge.value.mechanisms)])
-const expressionOptions = computed(() => [...rows(knowledge.value.observable_definitions), ...rows(knowledge.value.pattern_definitions)].filter((r) => rowId(r) !== selectedItem.value?.id).map((r) => ({ id: rowId(r), label: friendly(r.label) })))
-const summaryCounts = computed(() => [
-  { label: '对象与变量', count: rows(knowledge.value.entities).length },
-  { label: '候选解释', count: rows(knowledge.value.hypotheses).length },
-  { label: '联合现象', count: rows(knowledge.value.pattern_definitions).length },
-  { label: '观测条件', count: rows(knowledge.value.observable_definitions).length },
-])
-const canEnable = computed(() => currentGraph.value?.status === 'ready' && !dirty.value && !saving.value)
+import type {
+  KGStudioGraphNode,
+  WorkingGraphPackage,
+  WorkingGraphSummary,
+  KGStudioPayload,
+  ReviewLedgerRecord,
+  RunDetail,
+  RunSummary,
+} from "@/api/contracts";
+import KnowledgeForceGraph from "@/components/graphs/KnowledgeForceGraph.vue";
+import RunPathGraph from "@/components/graphs/RunPathGraph.vue";
+import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
+import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
+import {
+  type GraphCurationDecision,
+  applyGraphCurationToDataset,
+  areGraphCurationDraftsEqual,
+  buildEmptyGraphCurationCaseDraft,
+  buildNeighborhoodSubgraphDataset,
+  buildPathSubgraphDataset,
+  loadGraphCurationCaseDraft,
+  replaceGraphEdgeDraft,
+  replaceGraphNodeDraft,
+  resetGraphCurationCaseDraft,
+  saveGraphCurationCaseDraft,
+  type MockGraphCurationCaseDraft,
+  type MockGraphEdgeDraft,
+  type MockGraphNodeDraft,
+} from "@/services/graph-curation";
+import { useAppPreferences } from "@/services/app-preferences";
+import {
+  buildCandidateSelectionPatch,
+  buildLocalGraphSelectionPatch,
+  buildTotalGraphSelectionPatch,
+  findBestPathForCandidateInGraph,
+  findReviewTargetInList,
+  resolveSelectedRootCause,
+  shouldAutoOpenCurationTabOnLocalGraphSelect,
+} from "@/services/graph-explore-selection";
+import {
+  getLocalSessionMeta,
+  loadUnifiedGraphs,
+} from "@/services/rootlens-data";
+import {
+  canSubmitReviewTargetType,
+  getRootLensService,
+} from "@/services/rootlens-service";
+import {
+  buildObservationBrowseItems,
+  findObservationBrowseItem,
+} from "@/services/evidence-observation";
+import {
+  buildGraphReasoningInspection,
+  type RecurrenceCaseHit,
+  type TraceStep,
+} from "@/services/graph-reasoning-inspection";
+import {
+  buildGraphCorrectionProvenance,
+  buildGraphEdgeProvenance,
+  buildGraphEntityLinkProvenance,
+  buildGraphPathProvenance,
+  resolveObservationForSelection,
+  type ProvenanceInspectorState,
+} from "@/services/provenance-inspector";
+import {
+  buildReviewLedgerDisplayItems,
+  filterReviewLedgerRecords,
+  formatReviewLedgerTargetType,
+  isBoundedReviewTargetType,
+  type ReviewLedgerDisplayItem,
+  type ReviewLedgerTargetFilter,
+} from "@/services/review-ledger";
+import {
+  formatClaimBoundaryCopy,
+  formatScoringMethodLabel,
+  resolveRunReasoningSummary,
+} from "@/services/ui-copy";
+import {
+  sourceSelectionReset,
+  useWorkbenchState,
+  type WorkbenchState,
+} from "@/services/workbench-state";
+import type {
+  UnifiedGraphDataset,
+  UnifiedGraphEdge,
+  UnifiedGraphNode,
+} from "@/types/graph";
 
-async function loadGraph(id: string) {
-  if (!id) { pkg.value = null; return }
-  loading.value = true; error.value = ''; notice.value = ''; dirty.value = false
+type GraphSelectPayload =
+  | { type: "node"; item: UnifiedGraphNode }
+  | { type: "edge"; item: UnifiedGraphEdge }
+  | null;
+
+type LocalGraphSelectPayload =
+  | { type: "node"; id: string }
+  | { type: "edge"; id: string }
+  | null;
+
+interface CurationSuggestion {
+  id: string;
+  kind: "node" | "edge";
+  label: string;
+  subtitle: string;
+}
+
+const route = useRoute();
+const router = useRouter();
+const { preferences } = useAppPreferences();
+const { state: workbenchState, updateState } = useWorkbenchState();
+
+let sourceRevision = 0;
+const loading = ref(false);
+const runs = ref<RunSummary[]>([]);
+const runDetail = ref<RunDetail | null>(null);
+const kgStudio = ref<KGStudioPayload | null>(null);
+const packageDrawerOpen = ref(false);
+const packageText = ref("");
+const packageBusy = ref(false);
+const workingGraphs = ref<WorkingGraphSummary[]>([]);
+const editableGraphId = computed(() => preferences.value.dataSourceMode === "backend"
+  && getLocalSessionMeta()?.source !== "import" ? kgStudio.value?.graph_id : undefined);
+
+async function openGraphPackage() {
+  packageDrawerOpen.value = true;
   try {
-    const next = await api().graph(id)
-    if (workspace.graphId !== id) return
-    pkg.value = clone(next); selectedId.value = ''; search.value = ''; editedConditions.clear(); editedBindings.clear()
-    const candidate = typeof route.query.candidate === 'string' ? route.query.candidate : ''
-    if (rows(knowledge.value.hypotheses).some(row => row.hypothesis_id === candidate)) { section.value = 'hypotheses'; selectedId.value = candidate }
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-  finally { loading.value = false }
+    workingGraphs.value = (await getRootLensService().listWorkingGraphs()).graphs;
+    if (editableGraphId.value) await selectPackageGraph(editableGraphId.value);
+  } catch (error) { errorMessage.value = String(error); }
 }
-function chooseGraph(id: string) {
-  if (dirty.value && !window.confirm('还有未保存的修改。切换图谱会放弃这些修改，是否继续？')) return
-  selectGraph(id); void loadGraph(id)
+async function selectPackageGraph(id: string) {
+  packageBusy.value = true;
+  try {
+    packageText.value = JSON.stringify(await getRootLensService().getWorkingGraphPackage(id), null, 2);
+    kgStudio.value = await getRootLensService().kgStudio(id);
+  } catch (error) { errorMessage.value = String(error); }
+  finally { packageBusy.value = false; }
 }
-function chooseItem(item: KnowledgeItem) { selectedId.value = item.id }
-function selectSemantic(id: string) {
-  for (const option of knowledgeSections) {
-    if (catalog(knowledge.value, option.key).some((item) => item.id === id)) { section.value = option.key; selectedId.value = id; search.value = ''; return }
+async function savePackage(importNew = false) {
+  packageBusy.value = true;
+  try {
+    const body = JSON.parse(packageText.value) as WorkingGraphPackage;
+    const service = getRootLensService();
+    const result = importNew ? await service.importWorkingGraphPackage(body)
+      : await service.saveWorkingGraphPackage(editableGraphId.value!, body);
+    await selectPackageGraph(result.graph_id);
+    workingGraphs.value = (await service.listWorkingGraphs()).graphs;
+    actionMessage.value = "工作图已保存；新分析使用当前知识，历史运行保持原结果。";
+  } catch (error) { errorMessage.value = String(error); }
+  finally { packageBusy.value = false; }
+}
+function downloadPackage() {
+  const url = URL.createObjectURL(new Blob([packageText.value], { type: "application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = "rootlens-working-graph.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+async function importPackageFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) { packageText.value = await file.text(); await savePackage(true); }
+}
+async function rebuildGraphProfiles() {
+  if (!editableGraphId.value) return;
+  try {
+    await getRootLensService().mutateWorkingGraph(editableGraphId.value, { rebuild_profiles: true });
+    await selectPackageGraph(editableGraphId.value);
+    actionMessage.value = "已按当前关系重新编译画像。";
+  } catch (error) { errorMessage.value = String(error); }
+}
+
+const bundledGraphDatasets = ref<UnifiedGraphDataset[]>([]);
+const errorMessage = ref("");
+const reviewMessage = ref("");
+const totalGraphRenderMessage = ref("正在准备总图谱...");
+const localGraphRenderMessage = ref("正在准备局部子图...");
+const actionMessage = ref("");
+const feedbackCardTab = ref<"rca" | "curation" | "trace" | "ledger">("rca");
+const crossCaseCompareOpen = ref(false);
+const selectedTraceStepId = ref<string | null>(null);
+const provenanceInspectorVisible = ref(false);
+const provenanceInspectorState = ref<ProvenanceInspectorState | null>(null);
+const ledgerLoading = ref(false);
+const ledgerErrorMessage = ref("");
+const ledgerRecords = ref<ReviewLedgerRecord[]>([]);
+const ledgerTargetTypeFilter = ref<ReviewLedgerTargetFilter>("all");
+const pendingCaseSelectionPatch = ref<Partial<WorkbenchState> | null>(null);
+const savedCaseDrafts = ref<Record<string, MockGraphCurationCaseDraft>>({});
+const workingCaseDrafts = ref<Record<string, MockGraphCurationCaseDraft>>({});
+
+const feedbackForm = reactive({
+  reviewer: "rootlens-frontend",
+  action: "accept" as "accept" | "reject",
+  note: "",
+  source: "rootlens-graphs",
+});
+
+function deepClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function normalizeText(value: unknown, fallback = "--") {
+  return typeof value === "string" && value.trim().length
+    ? value.trim()
+    : fallback;
+}
+
+function normalizeNullableText(value: unknown) {
+  return typeof value === "string" && value.trim().length ? value.trim() : null;
+}
+
+function parseAliasInput(value: string) {
+  const aliases = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length);
+
+  return aliases.length ? [...new Set(aliases)] : null;
+}
+
+function formatAliasInput(value: string[] | null | undefined) {
+  return value?.length ? value.join(", ") : "";
+}
+
+function formatScore(value: unknown) {
+  return typeof value === "number" ? value.toFixed(3) : "--";
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "--";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function readStringAttribute(
+  attributes: Record<string, unknown> | undefined,
+  key: string,
+) {
+  if (!attributes) {
+    return null;
+  }
+
+  const value = attributes[key];
+  return typeof value === "string" && value.trim().length ? value.trim() : null;
+}
+
+function edgeDecisionFromReviewStatus(edge: UnifiedGraphEdge | null) {
+  const reviewStatus = readStringAttribute(edge?.attributes, "review_status");
+  if (reviewStatus === "reviewed") {
+    return "accept" as const;
+  }
+  if (reviewStatus === "rejected") {
+    return "reject" as const;
+  }
+  if (reviewStatus === "needs_completion") {
+    return "needs_completion" as const;
+  }
+  return "revise" as const;
+}
+
+function resolveBundledDatasetId(dataset: string | null | undefined) {
+  const normalized = typeof dataset === "string" ? dataset.toLowerCase() : "";
+  if (normalized.includes("tep")) {
+    return "tep-kg";
+  }
+  return "mvtec-project";
+}
+
+function resolveCaseGraphDatasetId(
+  caseItem: RunDetail["cases"][number] | null | undefined,
+) {
+  const evidence = caseItem?.generated_evidence;
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) {
+    return null;
+  }
+
+  const value = (evidence as Record<string, unknown>).graph_dataset_id;
+  return typeof value === "string" && value.trim().length ? value.trim() : null;
+}
+
+function buildGraphRenderKey(dataset: UnifiedGraphDataset | null) {
+  if (!dataset) {
+    return null;
+  }
+
+  const nodeSignature = dataset.nodes
+    .map((node) => {
+      const attrs = node.attributes ?? {};
+      return [
+        node.id,
+        node.name,
+        node.category,
+        node.kind,
+        String(attrs.curation_status ?? ""),
+        String(attrs.curation_updated_at ?? ""),
+      ].join(":");
+    })
+    .join("|");
+
+  const edgeSignature = dataset.edges
+    .map((edge) => {
+      const attrs = edge.attributes ?? {};
+      return [
+        edge.id,
+        edge.source,
+        edge.target,
+        edge.relation,
+        edge.label,
+        String(edge.confidence ?? ""),
+        String(attrs.review_status ?? ""),
+        String(attrs.curation_decision ?? ""),
+        String(attrs.curation_updated_at ?? ""),
+      ].join(":");
+    })
+    .join("|");
+
+  return [dataset.id, nodeSignature, edgeSignature].join("||");
+}
+
+function buildKGStudioDataset(
+  payload: KGStudioPayload | null,
+): UnifiedGraphDataset | null {
+  if (!payload) {
+    return null;
+  }
+
+  const nodeSeed = new Map<string, KGStudioGraphNode>();
+  for (const node of payload.graph_nodes) {
+    nodeSeed.set(node.node_id, node);
+  }
+
+  for (const edge of payload.graph_edges) {
+    if (!nodeSeed.has(edge.head)) {
+      nodeSeed.set(edge.head, {
+        node_id: edge.head,
+        label: edge.head,
+        node_type: "Unknown",
+        scenario: edge.scenario,
+        description: edge.source,
+      });
+    }
+    if (!nodeSeed.has(edge.tail)) {
+      nodeSeed.set(edge.tail, {
+        node_id: edge.tail,
+        label: edge.tail,
+        node_type: "Unknown",
+        scenario: edge.scenario,
+        description: edge.source,
+      });
+    }
+  }
+
+  const inDegree = new Map<string, number>();
+  const outDegree = new Map<string, number>();
+
+  for (const edge of payload.graph_edges) {
+    outDegree.set(edge.head, (outDegree.get(edge.head) ?? 0) + 1);
+    inDegree.set(edge.tail, (inDegree.get(edge.tail) ?? 0) + 1);
+  }
+
+  const nodes: UnifiedGraphNode[] = [...nodeSeed.values()].map((node) => ({
+    id: node.node_id,
+    name: node.label,
+    category: node.scenario,
+    kind: node.node_type,
+    description: node.description,
+    aliases: node.aliases ?? [],
+    degree:
+      (inDegree.get(node.node_id) ?? 0) + (outDegree.get(node.node_id) ?? 0),
+    inDegree: inDegree.get(node.node_id) ?? 0,
+    outDegree: outDegree.get(node.node_id) ?? 0,
+    attributes: {
+      scenario: node.scenario,
+      node_type: node.node_type,
+    },
+    origin: {
+      projectId: "kg-studio",
+      projectLabel: "KG Studio",
+      filePath: payload.nodes_path ?? "kg-studio",
+      layer: "candidate-graph",
+      rowNumber: 0,
+    },
+  }));
+
+  const edges: UnifiedGraphEdge[] = payload.graph_edges.map((edge) => ({
+    id: edge.edge_id,
+    source: edge.head,
+    target: edge.tail,
+    relation: edge.relation,
+    category: edge.scenario,
+    label: edge.relation,
+    confidence: edge.confidence,
+    weight: edge.weight,
+    directed: true,
+    attributes: {
+      source: edge.source,
+      evidence: edge.evidence,
+      review_status: edge.review_status,
+      target_key: edge.edge_id,
+    },
+    origin: {
+      projectId: "kg-studio",
+      projectLabel: "KG Studio",
+      filePath: payload.edges_path ?? "kg-studio",
+      layer: "candidate-graph",
+      rowNumber: 0,
+    },
+  }));
+
+  return {
+    id: payload.graph_id ?? payload.candidate_dir ?? "kg-studio",
+    label: "总图谱",
+    description: payload.note,
+    graphKind: "candidate-graph",
+    projectRoot: payload.candidate_dir ?? "kg-studio",
+    sourceFiles: [],
+    nodes,
+    edges,
+    metadata: {
+      status: payload.status,
+      claim_boundary: payload.claim_boundary,
+    },
+  };
+}
+
+function ensureCaseDraftLoaded(caseId: string) {
+  if (!savedCaseDrafts.value[caseId]) {
+    const loaded = loadGraphCurationCaseDraft(caseId);
+    savedCaseDrafts.value = {
+      ...savedCaseDrafts.value,
+      [caseId]: deepClone(loaded),
+    };
+    workingCaseDrafts.value = {
+      ...workingCaseDrafts.value,
+      [caseId]: deepClone(loaded),
+    };
   }
 }
-function changed() { dirty.value = true; notice.value = '' }
-function setAliases(value: string) { selectedRow.value.aliases = value.split(/[,，;；\n]+/).map((v) => v.trim()).filter(Boolean); changed() }
-async function loadCapabilities() {
-  capabilitiesLoading.value = true; capabilitiesError.value = ''
-  try { capabilities.value = (await api().authoringCapabilities()).capabilities }
-  catch (e) { capabilitiesError.value = e instanceof Error ? e.message : String(e) }
-  finally { capabilitiesLoading.value = false }
-}
-function updatePredicate(next: RecordValue) {
-  Object.assign(selectedRow.value,next)
-  const feature = features.value.find((row) => row.feature_id === next.feature_id)
-  if (feature) registerFeature(knowledge.value,feature)
-  editedConditions.add(text(next.predicate_id)); changed()
-}
-function updateBinding(next: RecordValue) {
-  Object.assign(selectedRow.value,next)
-  const feature = features.value.find((row) => row.feature_id === next.feature_id)
-  if (feature) registerFeature(knowledge.value,feature)
-  editedBindings.add(text(next.binding_id)); changed()
-}
-function addBinding() {
-  const feature = mappingFeatures.value.find((row) => row.feature_id === 'appearance.semantic_candidates') ?? mappingFeatures.value[0]
-  if (!feature) return
-  const binding = newValueBinding(feature.feature_id)
-  knowledge.value.value_bindings = [...rows(knowledge.value.value_bindings),binding]
-  selectedId.value = text(binding.binding_id); editedBindings.add(text(binding.binding_id)); changed()
-}
-function removeBinding() {
-  const id = text(selectedRow.value.binding_id)
-  knowledge.value.value_bindings = rows(knowledge.value.value_bindings).filter((row) => row.binding_id !== id)
-  editedBindings.delete(id); selectedId.value = ''; changed()
-}
-function setSubject(kind: string) {
-  selectedRow.value.subject_selector = kind === 'bound_entity' ? { kind, entity_id: rows(knowledge.value.entities)[0]?.entity_id } : { kind: 'focus' }; changed()
-}
-function setScope(kind: string) { selectedRow.value.scope_selector = kind === 'task_scope' ? { kind } : { kind: 'spatial_zone', zone: 'all_valid', parent: 'task_scope' }; changed() }
-async function save() {
-  if (!pkg.value || !workspace.graphId) return
-  const issues = [
-    ...rows(knowledge.value.observable_definitions).filter((row) => editedConditions.has(text(row.predicate_id))).flatMap((row) => conditionIssues(row,features.value.find((feature) => feature.feature_id === row.feature_id))),
-    ...rows(knowledge.value.value_bindings).filter((row) => editedBindings.has(text(row.binding_id))).flatMap((row) => valueBindingIssues(row,features.value,knowledge.value)),
-  ]
-  if (issues.length) { error.value = `请先完成条件或等价词汇：${[...new Set(issues)].join(' ')}`; return }
-  saving.value = true; error.value = ''
-  try {
-    await api().saveGraph(workspace.graphId, clone(pkg.value)); dirty.value = false; editedConditions.clear(); editedBindings.clear()
-    await refreshGraphs(); notice.value = '修改已保存并生效。后续新分析使用这一版；已有分析保留原图快照。'
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-  finally { saving.value = false }
-}
-async function enable(enabled: boolean) {
-  if (!workspace.graphId) return
-  enabling.value = true; error.value = ''
-  try {
-    await api().enableGraph(workspace.graphId, enabled); await refreshGraphs()
-    notice.value = enabled ? '图谱已投入使用。可携带当前图谱前往分析。' : '图谱已停用，后续分析不能选择它。'
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-  finally { enabling.value = false }
-}
-async function importPackage(value?: WorkingGraphPackage) {
-  importing.value = true; error.value = ''
-  try {
-    const body = value ?? (importFile.value ? JSON.parse(await importFile.value.text()) as WorkingGraphPackage : null)
-    if (!body) throw new Error('请选择完整图谱包。')
-    if (body.schema_version !== 'rootlens-working-graph.v2') throw new Error('请选择 rootlens-working-graph.v2 格式的可执行图谱。')
-    const graph = await api().importGraph(body); await refreshGraphs(); importOpen.value = false; selectGraph(graph.graph_id); await loadGraph(graph.graph_id)
-    notice.value = '图谱已作为新副本导入，尚未投入使用。可以先修改内容。'
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-  finally { importing.value = false }
-}
-async function importPrepared(url: string) {
-  importing.value = true; error.value = ''
-  try {
-    const response = await fetch(apiUrl(workspace.baseUrl, url)); if (!response.ok) throw new Error('无法读取已准备的图谱包。')
-    await importPackage(await response.json() as WorkingGraphPackage)
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e); importing.value = false }
-}
-async function conditionBundleChanged() {
-  const id = workspace.graphId, candidate = text(selectedRow.value.hypothesis_id)
-  await refreshGraphs(); await loadGraph(id); section.value = 'hypotheses'; selectedId.value = candidate
-  notice.value = '候选专属诊断条件已保存。后续新分析使用这一版；已有运行保持原快照。'
-}
-function setGroupField(field: string, value: unknown) { selectedRow.value[field] = value; changed() }
-watch(() => workspace.connected, (connected, previous) => { if (connected && !previous && !pkg.value && !loading.value && workspace.graphId) void loadGraph(workspace.graphId) })
-watch(section, () => { search.value = ''; selectedId.value = '' }, { flush:'sync' })
-watch(() => route.query.graph, (id) => { if (typeof id === 'string' && id !== workspace.graphId) chooseGraph(id) })
-onMounted(async () => {
-  void loadCapabilities()
-  try {
-    await refreshGraphs()
-    const requested = typeof route.query.graph === 'string' ? route.query.graph : workspace.graphId
-    const chosen = executableGraphs.value.find((g) => g.graph_id === requested) ?? executableGraphs.value.find((g) => g.enabled) ?? executableGraphs.value[0]
-    if (chosen) {
-      const origin = typeof route.query.graph === 'string' ? 'explicit' : chosen.graph_id === workspace.graphId ? workspace.graphSelection : 'implicit'
-      selectGraph(chosen.graph_id,origin); await loadGraph(chosen.graph_id)
+
+const activeCase = computed(() => {
+  if (!runDetail.value) {
+    return null;
+  }
+
+  return (
+    runDetail.value.cases.find(
+      (item) => item.case_id === workbenchState.value.selectedCaseId,
+    ) ??
+    runDetail.value.cases[0] ??
+    null
+  );
+});
+
+const activePathGraph = computed(
+  () => activeCase.value?.path_graph ?? runDetail.value?.path_graph ?? null,
+);
+
+const activePath = computed(() => {
+  const graph = activePathGraph.value;
+  if (!graph) {
+    return null;
+  }
+
+  return (
+    graph.paths.find(
+      (item) => item.path_id === workbenchState.value.selectedPathId,
+    ) ??
+    graph.paths[0] ??
+    null
+  );
+});
+
+const activeCandidate = computed(() => {
+  const list =
+    activeCase.value?.ranked_root_causes ??
+    runDetail.value?.ranked_root_causes ??
+    [];
+  return resolveSelectedRootCause(
+    list,
+    workbenchState.value.selectedCandidateId,
+  );
+});
+
+const activeVisualConditions = computed(() => {
+  const matches = activeCandidate.value?.scoring_details?.profile_matches;
+  if (!Array.isArray(matches)) return [];
+  const rows = new Map<string, string>();
+  for (const match of matches) {
+    if (!Array.isArray(match?.conditions)) continue;
+    for (const condition of match.conditions) {
+      if (condition.result !== "matched" || condition.feature === "object") continue;
+      const text = `${match.region_id ?? condition.channel ?? match.obs_id} · ${condition.feature}: ${JSON.stringify(condition.actual)} → ${condition.op} ${JSON.stringify(condition.value)}`;
+      rows.set(text, text);
     }
-  } catch (e) { error.value = e instanceof Error ? e.message : String(e) }
-})
+  }
+  return [...rows.values()];
+});
+
+const activeSavedCaseDraft = computed(() => {
+  const caseId = activeCase.value?.case_id;
+  return caseId ? (savedCaseDrafts.value[caseId] ?? null) : null;
+});
+
+const activeWorkingCaseDraft = computed(() => {
+  const caseId = activeCase.value?.case_id;
+  return caseId ? (workingCaseDrafts.value[caseId] ?? null) : null;
+});
+
+const baseTotalGraphDataset = computed<UnifiedGraphDataset | null>(() => {
+  if (
+    preferences.value.dataSourceMode === "backend" &&
+    getLocalSessionMeta()?.source !== "import"
+  ) {
+    return buildKGStudioDataset(kgStudio.value);
+  }
+
+  const datasetId =
+    resolveCaseGraphDatasetId(activeCase.value) ??
+    resolveBundledDatasetId(
+      activeCase.value?.dataset ?? runDetail.value?.run.dataset ?? null,
+    );
+  return (
+    bundledGraphDatasets.value.find((dataset) => dataset.id === datasetId) ??
+    bundledGraphDatasets.value[0] ??
+    null
+  );
+});
+
+const totalGraphDataset = computed<UnifiedGraphDataset | null>(() => {
+  const dataset = baseTotalGraphDataset.value;
+  if (!dataset) {
+    return null;
+  }
+
+  return applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
+});
+
+const pathSubgraphDataset = computed<UnifiedGraphDataset | null>(() => {
+  if (!activePathGraph.value) {
+    return null;
+  }
+
+  const dataset = buildPathSubgraphDataset(activePathGraph.value);
+  return applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
+});
+
+const neighborhoodGraphDataset = computed<UnifiedGraphDataset | null>(() => {
+  if (!totalGraphDataset.value || !workbenchState.value.selectedGraphNodeId) {
+    return null;
+  }
+
+  return buildNeighborhoodSubgraphDataset(
+    totalGraphDataset.value,
+    workbenchState.value.selectedGraphNodeId,
+  );
+});
+
+const activeSubgraphMode = computed(() => {
+  if (
+    workbenchState.value.subgraphMode === "neighborhood" &&
+    neighborhoodGraphDataset.value
+  ) {
+    return "neighborhood" as const;
+  }
+  return "path" as const;
+});
+
+const activeLocalGraphDataset = computed(() => {
+  if (activeSubgraphMode.value === "neighborhood") {
+    return neighborhoodGraphDataset.value;
+  }
+  return pathSubgraphDataset.value;
+});
+
+const localGraphRenderKey = computed(() =>
+  buildGraphRenderKey(activeLocalGraphDataset.value),
+);
+
+const selectedGraphNode = computed(() => {
+  if (!totalGraphDataset.value || !workbenchState.value.selectedGraphNodeId) {
+    return null;
+  }
+
+  return (
+    totalGraphDataset.value.nodes.find(
+      (node) => node.id === workbenchState.value.selectedGraphNodeId,
+    ) ?? null
+  );
+});
+
+const activeCurationNode = computed(() => {
+  if (
+    !activeLocalGraphDataset.value ||
+    !workbenchState.value.selectedSubgraphNodeId
+  ) {
+    return null;
+  }
+
+  return (
+    activeLocalGraphDataset.value.nodes.find(
+      (node) => node.id === workbenchState.value.selectedSubgraphNodeId,
+    ) ?? null
+  );
+});
+
+const activeCurationEdge = computed(() => {
+  if (
+    !activeLocalGraphDataset.value ||
+    !workbenchState.value.selectedSubgraphEdgeId
+  ) {
+    return null;
+  }
+
+  return (
+    activeLocalGraphDataset.value.edges.find(
+      (edge) => edge.id === workbenchState.value.selectedSubgraphEdgeId,
+    ) ?? null
+  );
+});
+
+const selectedEdgeDraft = computed(() => {
+  if (
+    !activeWorkingCaseDraft.value ||
+    !workbenchState.value.selectedSubgraphEdgeId
+  ) {
+    return null;
+  }
+
+  return (
+    activeWorkingCaseDraft.value.edge_drafts.find(
+      (draft) => draft.edge_id === workbenchState.value.selectedSubgraphEdgeId,
+    ) ?? null
+  );
+});
+
+const selectedNodeDraft = computed(() => {
+  if (
+    !activeWorkingCaseDraft.value ||
+    !workbenchState.value.selectedSubgraphNodeId
+  ) {
+    return null;
+  }
+
+  return (
+    activeWorkingCaseDraft.value.node_drafts.find(
+      (draft) => draft.node_id === workbenchState.value.selectedSubgraphNodeId,
+    ) ?? null
+  );
+});
+
+const activeCurationSuggestions = computed<CurationSuggestion[]>(() => {
+  const draft = activeWorkingCaseDraft.value;
+  if (!draft) {
+    return [];
+  }
+
+  const edgeSuggestions = draft.edge_drafts.map((item) => ({
+    id: item.edge_id,
+    kind: "edge" as const,
+    label: item.relation ?? item.edge_id,
+    subtitle: `${item.review_decision} · ${normalizeText(item.note, "点击进入边策展")}`,
+  }));
+
+  const nodeSuggestions = draft.node_drafts.map((item) => ({
+    id: item.node_id,
+    kind: "node" as const,
+    label: item.display_name ?? item.node_id,
+    subtitle: normalizeText(item.note, "点击进入节点策展"),
+  }));
+
+  return [...edgeSuggestions, ...nodeSuggestions];
+});
+
+const activeTraceEntityLink = computed(() => {
+  if (!selectedTraceStepId.value?.startsWith("entity:")) {
+    return null;
+  }
+
+  return (
+    activeReasoningInspection.value.linkedEntities.find(
+      (item) => `entity:${item.linkId}` === selectedTraceStepId.value,
+    ) ?? null
+  );
+});
+
+const activeSubmitTarget = computed(() => {
+  const reviewTargets =
+    activeCase.value?.review_targets ?? runDetail.value?.review_targets ?? [];
+  const selectedTarget =
+    reviewTargets.find(
+      (item) =>
+        item.target_key === workbenchState.value.selectedReviewTargetKey &&
+        canSubmitReviewTargetType(item.target_type),
+    ) ?? null;
+  const candidateTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "root_cause_candidate",
+      activeCandidate.value?.ranking_id ?? activeCandidate.value?.candidate_id,
+    ) ?? null;
+  const edgeTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "edge",
+      activeCurationEdge.value?.id,
+    ) ?? null;
+  const entityLinkTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "entity_link",
+      activeTraceEntityLink.value?.linkId,
+    ) ?? null;
+  const pathTarget =
+    findReviewTargetInList(reviewTargets, "path", activePath.value?.path_id) ??
+    null;
+
+  if (selectedTarget) {
+    return selectedTarget;
+  }
+
+  if (candidateTarget && canSubmitReviewTargetType(candidateTarget.target_type)) {
+    return candidateTarget;
+  }
+
+  if (edgeTarget && canSubmitReviewTargetType(edgeTarget.target_type)) {
+    return edgeTarget;
+  }
+
+  if (
+    entityLinkTarget &&
+    canSubmitReviewTargetType(entityLinkTarget.target_type)
+  ) {
+    return entityLinkTarget;
+  }
+
+  if (pathTarget && canSubmitReviewTargetType(pathTarget.target_type)) {
+    return pathTarget;
+  }
+
+  return (
+    reviewTargets.find((item) => canSubmitReviewTargetType(item.target_type)) ??
+    null
+  );
+});
+
+const totalGraphFocusedNodeIds = computed(() => {
+  const ids = new Set<string>();
+
+  if (workbenchState.value.selectedGraphNodeId) {
+    ids.add(workbenchState.value.selectedGraphNodeId);
+  }
+  if (workbenchState.value.selectedSubgraphNodeId) {
+    ids.add(workbenchState.value.selectedSubgraphNodeId);
+  }
+  activeTraceStep.value?.focusNodeIds.forEach((id) => ids.add(id));
+  selectedObservationFocus.value.nodeIds.forEach((id) => ids.add(id));
+
+  return [...ids];
+});
+
+const totalGraphFocusedEdgeIds = computed(() => {
+  const ids = new Set<string>();
+
+  if (workbenchState.value.selectedSubgraphEdgeId) {
+    ids.add(workbenchState.value.selectedSubgraphEdgeId);
+  }
+  activeTraceStep.value?.focusEdgeIds.forEach((id) => ids.add(id));
+  selectedObservationFocus.value.edgeIds.forEach((id) => ids.add(id));
+
+  return [...ids];
+});
+
+const localGraphFocusedNodeIds = computed(() => {
+  const ids = new Set<string>();
+
+  if (workbenchState.value.selectedGraphNodeId) {
+    ids.add(workbenchState.value.selectedGraphNodeId);
+  }
+  if (workbenchState.value.selectedSubgraphNodeId) {
+    ids.add(workbenchState.value.selectedSubgraphNodeId);
+  }
+  activeTraceStep.value?.focusNodeIds.forEach((id) => ids.add(id));
+  selectedObservationFocus.value.nodeIds.forEach((id) => ids.add(id));
+
+  return [...ids];
+});
+
+const localGraphFocusedEdgeIds = computed(() => {
+  const ids = new Set<string>();
+
+  if (workbenchState.value.selectedSubgraphEdgeId) {
+    ids.add(workbenchState.value.selectedSubgraphEdgeId);
+  }
+  activeTraceStep.value?.focusEdgeIds.forEach((id) => ids.add(id));
+  selectedObservationFocus.value.edgeIds.forEach((id) => ids.add(id));
+
+  return [...ids];
+});
+
+const graphClaimBoundaryCopy = computed(() =>
+  formatClaimBoundaryCopy(
+    runDetail.value?.claim_boundary ?? kgStudio.value?.claim_boundary,
+  ),
+);
+
+const activeReasoningSummary = computed(() =>
+  resolveRunReasoningSummary(runDetail.value, activeCase.value),
+);
+
+const activeObservationContext = computed(() => {
+  if (!activeCase.value) {
+    return null;
+  }
+
+  return findObservationBrowseItem(
+    buildObservationBrowseItems(activeCase.value),
+    workbenchState.value.selectedObservationId,
+  );
+});
+
+const activeReasoningInspection = computed(() =>
+  buildGraphReasoningInspection({
+    runDetail: runDetail.value,
+    caseDetail: activeCase.value,
+    selectedCandidateId: workbenchState.value.selectedCandidateId,
+    selectedObservationId: workbenchState.value.selectedObservationId,
+    selectedPathId: workbenchState.value.selectedPathId,
+  }),
+);
+
+const activeTraceStep = computed(
+  () =>
+    activeReasoningInspection.value.traceSteps.find(
+      (item) => item.stepId === selectedTraceStepId.value,
+    ) ?? null,
+);
+
+const selectedObservationTraceSteps = computed(() => {
+  const selectedObservationId = workbenchState.value.selectedObservationId;
+  if (!selectedObservationId) {
+    return [] as TraceStep[];
+  }
+
+  return activeReasoningInspection.value.traceSteps.filter(
+    (item) =>
+      item.kind === "observation" &&
+      (item.observationId === selectedObservationId ||
+        item.sharedObservationId === selectedObservationId),
+  );
+});
+
+const selectedObservationFocus = computed(() => {
+  const nodeIds = new Set<string>();
+  const edgeIds = new Set<string>();
+
+  for (const step of selectedObservationTraceSteps.value) {
+    step.focusNodeIds.forEach((id) => nodeIds.add(id));
+    step.focusEdgeIds.forEach((id) => edgeIds.add(id));
+  }
+
+  return {
+    nodeIds: [...nodeIds],
+    edgeIds: [...edgeIds],
+  };
+});
+
+const filteredLedgerRecords = computed(() =>
+  filterReviewLedgerRecords(ledgerRecords.value, ledgerTargetTypeFilter.value),
+);
+
+const ledgerDisplayItems = computed(() =>
+  buildReviewLedgerDisplayItems(filteredLedgerRecords.value, activeCase.value),
+);
+
+const ledgerBoundedTargetOptions = computed(() => [
+  { value: "all", label: "全部 target" },
+  { value: "path", label: formatReviewLedgerTargetType("path") },
+  { value: "edge", label: formatReviewLedgerTargetType("edge") },
+  { value: "entity_link", label: formatReviewLedgerTargetType("entity_link") },
+  { value: "correction", label: formatReviewLedgerTargetType("correction") },
+  { value: "root_cause_candidate", label: formatReviewLedgerTargetType("root_cause_candidate") },
+]);
+
+const ledgerIntroCopy =
+  "本账本包含 path / edge / entity_link / correction / root_cause_candidate 的 append-only review 记录。";
+
+const feedbackCardHintTooltip = computed(() => {
+  if (feedbackCardTab.value === "rca") {
+    return "candidate / path / edge / entity_link / correction 反馈都会进入正式 bounded ledger。";
+  }
+
+  if (feedbackCardTab.value === "curation") {
+    return "当前 tab 只编辑本地 draft overlay，不直接改写原始图谱。";
+  }
+
+  if (feedbackCardTab.value === "ledger") {
+    return ledgerIntroCopy;
+  }
+
+  return "当前 tab 主要用于 evidence → entity → path → candidate 的 linked inspection。";
+});
+
+const feedbackCardBadge = computed(() => {
+  if (feedbackCardTab.value === "rca") {
+    return activeSubmitTarget.value?.label ?? "暂无反馈目标";
+  }
+
+  if (feedbackCardTab.value === "curation") {
+    return "本地 Draft Overlay";
+  }
+
+  if (feedbackCardTab.value === "ledger") {
+    if (ledgerLoading.value) {
+      return "正在加载 ledger";
+    }
+
+    return `${ledgerDisplayItems.value.length} 条 ledger 记录`;
+  }
+
+  return (
+    activeReasoningInspection.value.candidate?.candidateName ??
+    "切到候选后查看链路"
+  );
+});
+
+const hasUnsavedCurationChanges = computed(() => {
+  if (!activeCase.value) {
+    return false;
+  }
+
+  return !areGraphCurationDraftsEqual(
+    activeWorkingCaseDraft.value,
+    activeSavedCaseDraft.value,
+  );
+});
+
+const canRevertCurrentSelection = computed(() => {
+  if (activeCurationEdge.value) {
+    const savedDraft =
+      activeSavedCaseDraft.value?.edge_drafts.find(
+        (draft) => draft.edge_id === activeCurationEdge.value?.id,
+      ) ?? null;
+    return !areGraphCurationDraftsEqual(
+      {
+        case_id: activeCase.value?.case_id ?? "current",
+        edge_drafts: selectedEdgeDraft.value ? [selectedEdgeDraft.value] : [],
+        node_drafts: [],
+      },
+      {
+        case_id: activeCase.value?.case_id ?? "current",
+        edge_drafts: savedDraft ? [savedDraft] : [],
+        node_drafts: [],
+      },
+    );
+  }
+
+  if (activeCurationNode.value) {
+    const savedDraft =
+      activeSavedCaseDraft.value?.node_drafts.find(
+        (draft) => draft.node_id === activeCurationNode.value?.id,
+      ) ?? null;
+    return !areGraphCurationDraftsEqual(
+      {
+        case_id: activeCase.value?.case_id ?? "current",
+        edge_drafts: [],
+        node_drafts: selectedNodeDraft.value ? [selectedNodeDraft.value] : [],
+      },
+      {
+        case_id: activeCase.value?.case_id ?? "current",
+        edge_drafts: [],
+        node_drafts: savedDraft ? [savedDraft] : [],
+      },
+    );
+  }
+
+  return false;
+});
+
+const localGraphDescription = computed(() => {
+  if (activeSubgraphMode.value === "neighborhood") {
+    return selectedGraphNode.value
+      ? `当前展示 ${selectedGraphNode.value.name} 的一阶父子邻域；局部子图中的节点和边可单独选中，点击空白或再次点击当前项可取消局部选择。`
+      : "当前展示总图节点的一阶邻域。";
+  }
+
+  return "默认展示当前 case 的 path_graph union 子图；点击总图节点可切换为邻域子图。";
+});
+
+const totalGraphHelp =
+  "点击总图节点可切到对应的一阶邻域子图；右侧根因候选若能映射到图谱节点，也会复用同一套联动逻辑。";
+
+const showsRegisteredGraph = computed(() =>
+  preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import",
+);
+const totalGraphTitle = computed(() => showsRegisteredGraph.value ? "当前登记知识图谱" : "总图谱");
+const localGraphTitle = computed(() => !showsRegisteredGraph.value ? "局部子图"
+  : activeSubgraphMode.value === "neighborhood" ? "当前节点邻域" : "本次保存推理路径");
+
+const localGraphHelp = computed(() => [localGraphDescription.value]);
+
+const feedbackCardHelp = computed(() => [
+  "在同一卡片中切换 RCA 反馈、图谱策展、推理链路与 Review Ledger。",
+  graphClaimBoundaryCopy.value,
+  feedbackCardHintTooltip.value,
+]);
+
+const graphRootCauseHelp =
+  "顶部保留 Run / Case 切换；点击候选会联动总图与局部子图，再次点击同一项可取消选择。";
+
+const edgeDecisionModel = computed<GraphCurationDecision>({
+  get() {
+    return (
+      selectedEdgeDraft.value?.review_decision ??
+      edgeDecisionFromReviewStatus(activeCurationEdge.value)
+    );
+  },
+  set(value) {
+    updateSelectedEdgeDraft({
+      review_decision: value,
+    });
+  },
+});
+
+const edgeRelationModel = computed({
+  get() {
+    return (
+      selectedEdgeDraft.value?.relation ??
+      activeCurationEdge.value?.relation ??
+      ""
+    );
+  },
+  set(value: string) {
+    updateSelectedEdgeDraft({
+      relation: normalizeNullableText(value),
+    });
+  },
+});
+
+const edgeConfidenceModel = computed<number | undefined>({
+  get() {
+    const currentValue =
+      selectedEdgeDraft.value?.confidence ??
+      activeCurationEdge.value?.confidence ??
+      null;
+    return typeof currentValue === "number" ? currentValue : undefined;
+  },
+  set(value) {
+    updateSelectedEdgeDraft({
+      confidence: typeof value === "number" ? value : null,
+    });
+  },
+});
+
+const edgeNoteModel = computed({
+  get() {
+    return selectedEdgeDraft.value?.note ?? "";
+  },
+  set(value: string) {
+    updateSelectedEdgeDraft({
+      note: normalizeNullableText(value),
+    });
+  },
+});
+
+const nodeDisplayNameModel = computed({
+  get() {
+    return (
+      selectedNodeDraft.value?.display_name ??
+      activeCurationNode.value?.name ??
+      ""
+    );
+  },
+  set(value: string) {
+    updateSelectedNodeDraft({
+      display_name: normalizeNullableText(value),
+    });
+  },
+});
+
+const nodeAliasesModel = computed({
+  get() {
+    return formatAliasInput(
+      selectedNodeDraft.value?.aliases ??
+        activeCurationNode.value?.aliases ??
+        null,
+    );
+  },
+  set(value: string) {
+    updateSelectedNodeDraft({
+      aliases: parseAliasInput(value),
+    });
+  },
+});
+
+const nodeDescriptionModel = computed({
+  get() {
+    return (
+      selectedNodeDraft.value?.description ??
+      activeCurationNode.value?.description ??
+      ""
+    );
+  },
+  set(value: string) {
+    updateSelectedNodeDraft({
+      description: normalizeNullableText(value),
+    });
+  },
+});
+
+const nodeNoteModel = computed({
+  get() {
+    return selectedNodeDraft.value?.note ?? "";
+  },
+  set(value: string) {
+    updateSelectedNodeDraft({
+      note: normalizeNullableText(value),
+    });
+  },
+});
+
+function buildCaseSelection(detail: RunDetail, caseId: string | null) {
+  const nextCase =
+    detail.cases.find((item) => item.case_id === caseId) ??
+    detail.cases[0] ??
+    null;
+  const nextCandidate =
+    nextCase?.ranked_root_causes?.[0] ?? detail.ranked_root_causes[0] ?? null;
+  const nextPathGraph = nextCase?.path_graph ?? detail.path_graph ?? null;
+  const nextPath =
+    findBestPathForCandidateInGraph(nextCandidate, nextPathGraph) ??
+    nextPathGraph?.paths[0] ??
+    null;
+  const reviewTargets = nextCase?.review_targets ?? detail.review_targets ?? [];
+  const nextReviewTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "root_cause_candidate",
+      nextCandidate?.ranking_id ?? nextCandidate?.candidate_id,
+    ) ?? findReviewTargetInList(reviewTargets, "path", nextPath?.path_id);
+
+  return {
+    selectedCaseId: nextCase?.case_id ?? null,
+    selectedCandidateId: nextCandidate?.ranking_id ?? null,
+    selectedPathId: nextPath?.path_id ?? null,
+    selectedReviewTargetKey: nextReviewTarget?.target_key ?? null,
+    selectedGraphNodeId: null,
+    subgraphMode: "path" as const,
+    selectedSubgraphNodeId: null,
+    selectedSubgraphEdgeId: null,
+  };
+}
+
+function findCandidateForPathInCase(
+  caseItem: RunDetail["cases"][number],
+  pathId: string | null,
+) {
+  if (!pathId) {
+    return null;
+  }
+
+  const path =
+    caseItem.path_graph?.paths.find((item) => item.path_id === pathId) ?? null;
+  const candidates = caseItem.ranked_root_causes ?? [];
+
+  return (
+    candidates.find(
+      (candidate) => candidate.ranking_id === `ranking:${pathId}`,
+    ) ??
+    candidates.find(
+      (candidate) => candidate.candidate_id === path?.target_entity_id,
+    ) ??
+    candidates.find((candidate) =>
+      path?.nodes.some(
+        (node) =>
+          node.node_id === candidate.candidate_id ||
+          node.label === candidate.candidate_name ||
+          node.label === candidate.candidate_label,
+      ),
+    ) ??
+    null
+  );
+}
+
+function isReasoningObservationActive(
+  observationId: string,
+  sharedObservationId: string,
+) {
+  return (
+    selectedTraceStepId.value === `observation:${observationId}` ||
+    (!selectedTraceStepId.value &&
+      (workbenchState.value.selectedObservationId === observationId ||
+        workbenchState.value.selectedObservationId === sharedObservationId))
+  );
+}
+
+function selectReasoningTraceStep(step: TraceStep) {
+  selectedTraceStepId.value = step.stepId;
+
+  if (step.kind === "observation") {
+    updateState({
+      selectedObservationId:
+        step.sharedObservationId ?? step.observationId ?? null,
+    });
+    return;
+  }
+
+  if (step.kind === "entity") {
+    if (
+      !step.graphNodeId ||
+      !(
+        totalGraphDataset.value?.nodes.some(
+          (node) => node.id === step.graphNodeId,
+        ) ?? false
+      )
+    ) {
+      return;
+    }
+
+    updateState({
+      selectedGraphNodeId: step.graphNodeId,
+      subgraphMode: "neighborhood",
+      selectedSubgraphNodeId: step.graphNodeId,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  if (step.kind === "path") {
+    updateState({
+      selectedPathId: step.pathId ?? workbenchState.value.selectedPathId,
+      subgraphMode: "path",
+      selectedSubgraphNodeId: null,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  if (step.kind === "candidate" && step.candidateId) {
+    selectCandidate(step.candidateId);
+  }
+}
+
+function activateReasoningStep(stepId: string) {
+  const step = activeReasoningInspection.value.traceSteps.find(
+    (item) => item.stepId === stepId,
+  );
+  if (!step) {
+    return;
+  }
+
+  selectReasoningTraceStep(step);
+}
+
+function isReasoningStepActive(stepId: string) {
+  return selectedTraceStepId.value === stepId;
+}
+
+function openGraphProvenance(state: ProvenanceInspectorState | null) {
+  if (!state) {
+    return;
+  }
+
+  provenanceInspectorState.value = state;
+  provenanceInspectorVisible.value = true;
+}
+
+function openSelectedPathProvenance() {
+  if (!activeCase.value) {
+    return;
+  }
+
+  openGraphProvenance(
+    buildGraphPathProvenance({
+      caseDetail: activeCase.value,
+      pathId:
+        activeReasoningInspection.value.selectedPath?.pathId ??
+        workbenchState.value.selectedPathId,
+      claimBoundary: graphClaimBoundaryCopy.value,
+    }),
+  );
+}
+
+function openEntityLinkProvenance(linkId: string) {
+  if (!activeCase.value) {
+    return;
+  }
+
+  openGraphProvenance(
+    buildGraphEntityLinkProvenance({
+      caseDetail: activeCase.value,
+      linkId,
+      claimBoundary: graphClaimBoundaryCopy.value,
+    }),
+  );
+}
+
+function openSelectedEdgeProvenance() {
+  if (!activeCase.value || !activeCurationEdge.value) {
+    return;
+  }
+
+  openGraphProvenance(
+    buildGraphEdgeProvenance({
+      caseDetail: activeCase.value,
+      edge: activeCurationEdge.value,
+      claimBoundary: graphClaimBoundaryCopy.value,
+    }),
+  );
+}
+
+function openLedgerRecordProvenance(item: ReviewLedgerDisplayItem) {
+  if (!activeCase.value) {
+    return;
+  }
+
+  if (item.target_type === "path") {
+    openGraphProvenance(
+      buildGraphPathProvenance({
+        caseDetail: activeCase.value,
+        pathId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  if (item.target_type === "entity_link") {
+    openGraphProvenance(
+      buildGraphEntityLinkProvenance({
+        caseDetail: activeCase.value,
+        linkId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  if (item.target_type === "correction") {
+    openGraphProvenance(
+      buildGraphCorrectionProvenance({
+        caseDetail: activeCase.value,
+        correctionId: item.target_id,
+        claimBoundary: graphClaimBoundaryCopy.value,
+      }),
+    );
+    return;
+  }
+
+  const sourceEdge =
+    totalGraphDataset.value?.edges.find((edge) => edge.id === item.target_id) ??
+    null;
+  const fallbackEdge = sourceEdge
+    ? sourceEdge
+    : ({
+        id: item.target_id,
+        source: normalizeText(item.metadata?.source),
+        target: normalizeText(item.metadata?.target),
+        relation: normalizeText(item.metadata?.relation),
+        confidence:
+          typeof item.metadata?.confidence === "number"
+            ? item.metadata.confidence
+            : null,
+        origin: undefined,
+        attributes: {
+          source: normalizeText(item.metadata?.source),
+          evidence: normalizeText(item.metadata?.evidence),
+        },
+      } as const);
+
+  openGraphProvenance(
+    buildGraphEdgeProvenance({
+      caseDetail: activeCase.value,
+      edge: fallbackEdge,
+      claimBoundary: graphClaimBoundaryCopy.value,
+    }),
+  );
+}
+
+function focusLedgerEdgeTarget(edgeId: string) {
+  const edge =
+    totalGraphDataset.value?.edges.find((item) => item.id === edgeId) ?? null;
+  if (!edge) {
+    return;
+  }
+
+  const centerNodeId =
+    workbenchState.value.selectedGraphNodeId === edge.source ||
+    workbenchState.value.selectedGraphNodeId === edge.target
+      ? workbenchState.value.selectedGraphNodeId
+      : edge.source;
+
+  updateState({
+    selectedGraphNodeId: centerNodeId,
+    subgraphMode: "neighborhood",
+    selectedSubgraphNodeId: null,
+    selectedSubgraphEdgeId: edge.id,
+  });
+}
+
+function handleLedgerRecordClick(item: ReviewLedgerDisplayItem) {
+  if (!activeCase.value || !item.targetAvailable) {
+    return;
+  }
+
+  selectedTraceStepId.value = null;
+
+  if (item.target_type === "path") {
+    updateState({
+      selectedPathId: item.target_id,
+      subgraphMode: "path",
+      selectedSubgraphNodeId: null,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  if (item.target_type === "edge") {
+    focusLedgerEdgeTarget(item.target_id);
+    return;
+  }
+
+  if (item.target_type === "entity_link") {
+    const link =
+      activeCase.value.linked_entities?.find(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          !Array.isArray(entry) &&
+          entry.link_id === item.target_id,
+      ) ?? null;
+    const nextObservation = resolveObservationForSelection(
+      activeCase.value,
+      typeof link === "object" && link
+        ? ((link as Record<string, unknown>).obs_id as string | null)
+        : null,
+    );
+    selectedTraceStepId.value = `entity:${item.target_id}`;
+    updateState({
+      selectedObservationId:
+        nextObservation?.id ?? workbenchState.value.selectedObservationId,
+      selectedGraphNodeId:
+        typeof link === "object" &&
+        link &&
+        typeof (link as Record<string, unknown>).selected_entity_id === "string"
+          ? ((link as Record<string, unknown>).selected_entity_id as string)
+          : workbenchState.value.selectedGraphNodeId,
+      subgraphMode:
+        typeof link === "object" &&
+        link &&
+        typeof (link as Record<string, unknown>).selected_entity_id === "string"
+          ? "neighborhood"
+          : workbenchState.value.subgraphMode,
+      selectedSubgraphNodeId: null,
+      selectedSubgraphEdgeId: null,
+    });
+    return;
+  }
+
+  const correction =
+    activeCase.value.correction_candidates?.find(
+      (entry) =>
+        typeof entry === "object" &&
+        entry !== null &&
+        !Array.isArray(entry) &&
+        entry.candidate_id === item.target_id,
+    ) ?? null;
+  const nextObservation = resolveObservationForSelection(
+    activeCase.value,
+    typeof correction === "object" && correction
+      ? ((correction as Record<string, unknown>).target_obs_id as string | null)
+      : null,
+  );
+  if (nextObservation) {
+    updateState({ selectedObservationId: nextObservation.id });
+  }
+}
+
+function buildLedgerFriendlyError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (preferences.value.dataSourceMode === "backend") {
+    return message.includes("404") || message.includes("405")
+      ? "当前后端 review ledger 读取失败，请检查接口或当前 case 上下文。"
+      : message;
+  }
+
+  return message;
+}
+
+async function loadReviewLedger() {
+  if (!runDetail.value || !activeCase.value) {
+    ledgerRecords.value = [];
+    ledgerErrorMessage.value = "";
+    return;
+  }
+
+  ledgerLoading.value = true;
+  ledgerErrorMessage.value = "";
+
+  try {
+    const response = await getRootLensService().listReviewLedger({
+      run_id: runDetail.value.run.run_id,
+      case_id: activeCase.value.case_id,
+      limit: 200,
+    });
+    ledgerRecords.value = response.records.filter((item) =>
+      isBoundedReviewTargetType(item.target_type),
+    );
+  } catch (error) {
+    ledgerRecords.value = [];
+    ledgerErrorMessage.value = buildLedgerFriendlyError(error);
+  } finally {
+    ledgerLoading.value = false;
+  }
+}
+
+function openCrossCaseCompare() {
+  if (!activeReasoningInspection.value.candidate) {
+    return;
+  }
+
+  crossCaseCompareOpen.value = true;
+}
+
+function jumpToRecurringCase(hit: RecurrenceCaseHit) {
+  if (!runDetail.value) {
+    return;
+  }
+
+  const nextCase = runDetail.value.cases.find(
+    (item) => item.case_id === hit.caseId,
+  );
+  if (!nextCase) {
+    return;
+  }
+
+  const baseSelection = buildCaseSelection(runDetail.value, hit.caseId);
+  const matchedPathId = hit.matchedPathIds[0] ?? baseSelection.selectedPathId;
+  const matchedCandidate = findCandidateForPathInCase(nextCase, matchedPathId);
+  const reviewTargets =
+    nextCase.review_targets ?? runDetail.value.review_targets ?? [];
+  const nextReviewTarget =
+    findReviewTargetInList(
+      reviewTargets,
+      "root_cause_candidate",
+      matchedCandidate?.ranking_id ?? matchedCandidate?.candidate_id,
+    ) ?? findReviewTargetInList(reviewTargets, "path", matchedPathId);
+  const nextInspection = buildGraphReasoningInspection({
+    runDetail: runDetail.value,
+    caseDetail: nextCase,
+    selectedCandidateId:
+      matchedCandidate?.ranking_id ?? baseSelection.selectedCandidateId,
+    selectedObservationId: hit.matchedObservationIds[0] ?? null,
+    selectedPathId: matchedPathId,
+  });
+  const matchedObservation = hit.matchedObservationIds.length
+    ? (nextInspection.supportingObservations.find(
+        (item) =>
+          hit.matchedObservationIds.includes(item.obsId) ||
+          hit.matchedObservationIds.includes(item.sharedObservationId) ||
+          (item.parentObservationId
+            ? hit.matchedObservationIds.includes(item.parentObservationId)
+            : false),
+      ) ?? null)
+    : null;
+
+  pendingCaseSelectionPatch.value = {
+    selectedCaseId: nextCase.case_id,
+    selectedCandidateId:
+      matchedCandidate?.ranking_id ?? baseSelection.selectedCandidateId,
+    selectedPathId: matchedPathId ?? baseSelection.selectedPathId,
+    selectedReviewTargetKey:
+      nextReviewTarget?.target_key ?? baseSelection.selectedReviewTargetKey,
+    selectedObservationId:
+      matchedObservation?.sharedObservationId ??
+      nextInspection.primaryObservation?.sharedObservationId ??
+      null,
+    selectedGraphNodeId: null,
+    subgraphMode: "path",
+    selectedSubgraphNodeId: null,
+    selectedSubgraphEdgeId: null,
+  };
+
+  updateState({
+    ...baseSelection,
+    ...pendingCaseSelectionPatch.value,
+  });
+  feedbackCardTab.value = "trace";
+  crossCaseCompareOpen.value = false;
+  selectedTraceStepId.value = null;
+  syncRouteQuery(runDetail.value.run.run_id, nextCase.case_id);
+}
+
+function syncRouteQuery(runId: string | null, caseId: string | null) {
+  const nextQuery = {
+    ...route.query,
+    run_id: runId ?? undefined,
+    case_id: caseId ?? undefined,
+  };
+
+  const currentRunId =
+    typeof route.query.run_id === "string" ? route.query.run_id : null;
+  const currentCaseId =
+    typeof route.query.case_id === "string" ? route.query.case_id : null;
+
+  if (currentRunId === runId && currentCaseId === caseId) {
+    return;
+  }
+
+  void router.replace({
+    query: nextQuery,
+  });
+}
+
+function syncQueryContext() {
+  const runId =
+    typeof route.query.run_id === "string" ? route.query.run_id : null;
+  const caseId =
+    typeof route.query.case_id === "string" ? route.query.case_id : null;
+
+  if (runId || caseId) {
+    updateState({
+      selectedRunId: runId ?? workbenchState.value.selectedRunId,
+      selectedCaseId: caseId ?? workbenchState.value.selectedCaseId,
+    });
+  }
+}
+
+function updateWorkingCaseDraft(
+  caseId: string,
+  updater: (draft: MockGraphCurationCaseDraft) => MockGraphCurationCaseDraft,
+) {
+  ensureCaseDraftLoaded(caseId);
+  const current =
+    workingCaseDrafts.value[caseId] ?? buildEmptyGraphCurationCaseDraft(caseId);
+  const nextDraft = updater(deepClone(current));
+  workingCaseDrafts.value = {
+    ...workingCaseDrafts.value,
+    [caseId]: nextDraft,
+  };
+}
+
+function updateSelectedEdgeDraft(patch: Partial<MockGraphEdgeDraft>) {
+  const caseId = activeCase.value?.case_id;
+  const edge = activeCurationEdge.value;
+  if (!caseId || !edge) {
+    return;
+  }
+
+  updateWorkingCaseDraft(caseId, (caseDraft) => {
+    const previous = caseDraft.edge_drafts.find(
+      (draft) => draft.edge_id === edge.id,
+    );
+    const nextDraft: MockGraphEdgeDraft = {
+      edge_id: edge.id,
+      target_key:
+        patch.target_key ??
+        previous?.target_key ??
+        readStringAttribute(edge.attributes, "target_key") ??
+        edge.id,
+      review_decision:
+        patch.review_decision ??
+        previous?.review_decision ??
+        edgeDecisionFromReviewStatus(edge),
+      relation: patch.relation ?? previous?.relation ?? edge.relation,
+      confidence: Object.prototype.hasOwnProperty.call(patch, "confidence")
+        ? (patch.confidence ?? null)
+        : (previous?.confidence ?? edge.confidence ?? null),
+      note: Object.prototype.hasOwnProperty.call(patch, "note")
+        ? (patch.note ?? null)
+        : (previous?.note ?? null),
+      updated_at: new Date().toISOString(),
+    };
+
+    return replaceGraphEdgeDraft(caseDraft, nextDraft);
+  });
+}
+
+function updateSelectedNodeDraft(patch: Partial<MockGraphNodeDraft>) {
+  const caseId = activeCase.value?.case_id;
+  const node = activeCurationNode.value;
+  if (!caseId || !node) {
+    return;
+  }
+
+  updateWorkingCaseDraft(caseId, (caseDraft) => {
+    const previous = caseDraft.node_drafts.find(
+      (draft) => draft.node_id === node.id,
+    );
+    const nextDraft: MockGraphNodeDraft = {
+      node_id: node.id,
+      display_name: Object.prototype.hasOwnProperty.call(patch, "display_name")
+        ? (patch.display_name ?? null)
+        : (previous?.display_name ?? node.name),
+      aliases: Object.prototype.hasOwnProperty.call(patch, "aliases")
+        ? (patch.aliases ?? null)
+        : (previous?.aliases ?? node.aliases ?? null),
+      description: Object.prototype.hasOwnProperty.call(patch, "description")
+        ? (patch.description ?? null)
+        : (previous?.description ?? node.description ?? null),
+      note: Object.prototype.hasOwnProperty.call(patch, "note")
+        ? (patch.note ?? null)
+        : (previous?.note ?? null),
+      updated_at: new Date().toISOString(),
+    };
+
+    return replaceGraphNodeDraft(caseDraft, nextDraft);
+  });
+}
+
+async function saveCurrentCaseDraft() {
+  const caseId = activeCase.value?.case_id;
+  const currentDraft = activeWorkingCaseDraft.value;
+  if (!caseId || !currentDraft) {
+    return;
+  }
+
+  if (editableGraphId.value) {
+    try {
+      const service = getRootLensService();
+      const body = await service.getWorkingGraphPackage(editableGraphId.value);
+      if (body.schema_version === "rootlens-working-graph.v2") {
+        packageText.value = JSON.stringify(body, null, 2);
+        packageDrawerOpen.value = true;
+        throw new Error("此图由可执行知识生成。请在已打开的完整 JSON 中修改概念、绑定与规则；投影边不能单独改写。");
+      }
+      const edgeId = (edge: typeof body.edges[number]) => [edge.head, edge.relation, edge.tail, edge.scenario].join("|");
+      const upsert_nodes = currentDraft.node_drafts.flatMap((draft) => {
+        const node = body.nodes.find((n) => n.id === draft.node_id);
+        return node ? [{ ...node, name: draft.display_name ?? node.name,
+          aliases: draft.aliases ?? node.aliases, description: draft.description ?? node.description }] : [];
+      });
+      const delete_edge_ids: string[] = [];
+      const upsert_edges = currentDraft.edge_drafts.flatMap((draft) => {
+        if (draft.edge_id.startsWith("view:")) {
+          throw new Error("解释反向视图不能直接改写物理关系，请在总图中选择对应源边后编辑。");
+        }
+        const edge = body.edges.find((e) => edgeId(e) === draft.edge_id);
+        if (!edge) throw new Error(`当前工作图不存在 ${draft.edge_id}；请刷新并选择源边。`);
+        const next: typeof body.edges[number] = { ...edge, relation: draft.relation ?? edge.relation,
+          confidence: draft.confidence ?? edge.confidence,
+          review_status: draft.review_decision === "reject" ? "rejected" : edge.review_status };
+        if (next.relation !== edge.relation) { delete_edge_ids.push(edgeId(edge)); next.external_edge_id = ""; }
+        return [next];
+      });
+      await service.mutateWorkingGraph(editableGraphId.value, { upsert_nodes, upsert_edges, delete_edge_ids });
+      kgStudio.value = await service.kgStudio(editableGraphId.value);
+    } catch (error) { errorMessage.value = String(error); return; }
+  }
+  saveGraphCurationCaseDraft(currentDraft);
+  const savedCopy = deepClone(currentDraft);
+  savedCaseDrafts.value = {
+    ...savedCaseDrafts.value,
+    [caseId]: savedCopy,
+  };
+  workingCaseDrafts.value = {
+    ...workingCaseDrafts.value,
+    [caseId]: deepClone(savedCopy),
+  };
+  actionMessage.value = editableGraphId.value ? "工作图已保存，新分析生效；历史结果未重算。" : `已保存 ${caseId} 的本地策展草稿。`;
+}
+
+function revertCurrentSelectionDraft() {
+  const caseId = activeCase.value?.case_id;
+  if (!caseId) {
+    return;
+  }
+
+  updateWorkingCaseDraft(caseId, (caseDraft) => {
+    if (activeCurationEdge.value) {
+      const savedDraft =
+        activeSavedCaseDraft.value?.edge_drafts.find(
+          (draft) => draft.edge_id === activeCurationEdge.value?.id,
+        ) ?? null;
+      return replaceGraphEdgeDraft(
+        caseDraft,
+        savedDraft ? deepClone(savedDraft) : null,
+      );
+    }
+
+    if (activeCurationNode.value) {
+      const savedDraft =
+        activeSavedCaseDraft.value?.node_drafts.find(
+          (draft) => draft.node_id === activeCurationNode.value?.id,
+        ) ?? null;
+      return replaceGraphNodeDraft(
+        caseDraft,
+        savedDraft ? deepClone(savedDraft) : null,
+      );
+    }
+
+    return caseDraft;
+  });
+
+  actionMessage.value = "已撤销当前选中项的未保存修改。";
+}
+
+function resetCurrentCaseDraft() {
+  const caseId = activeCase.value?.case_id;
+  if (!caseId) {
+    return;
+  }
+
+  resetGraphCurationCaseDraft(caseId);
+  const reloaded = loadGraphCurationCaseDraft(caseId);
+  savedCaseDrafts.value = {
+    ...savedCaseDrafts.value,
+    [caseId]: deepClone(reloaded),
+  };
+  workingCaseDrafts.value = {
+    ...workingCaseDrafts.value,
+    [caseId]: deepClone(reloaded),
+  };
+  actionMessage.value = `已重置 ${caseId} 的本地策展草稿。`;
+}
+
+function focusCurationSuggestion(item: CurationSuggestion) {
+  if (!totalGraphDataset.value) {
+    return;
+  }
+
+  if (item.kind === "node") {
+    updateState({
+      selectedGraphNodeId: item.id,
+      subgraphMode: "neighborhood",
+      selectedSubgraphNodeId: item.id,
+      selectedSubgraphEdgeId: null,
+    });
+    feedbackCardTab.value = "curation";
+    return;
+  }
+
+  const edge = totalGraphDataset.value.edges.find(
+    (edgeItem) => edgeItem.id === item.id,
+  );
+  if (!edge) {
+    return;
+  }
+
+  const centerNodeId =
+    workbenchState.value.selectedGraphNodeId === edge.source ||
+    workbenchState.value.selectedGraphNodeId === edge.target
+      ? workbenchState.value.selectedGraphNodeId
+      : edge.source;
+
+  updateState({
+    selectedGraphNodeId: centerNodeId,
+    subgraphMode: "neighborhood",
+    selectedSubgraphNodeId: null,
+    selectedSubgraphEdgeId: edge.id,
+  });
+  feedbackCardTab.value = "curation";
+}
+
+function selectCandidate(candidateId: string) {
+  updateState(
+    buildCandidateSelectionPatch({
+      state: workbenchState.value,
+      candidateId,
+      candidates:
+        activeCase.value?.ranked_root_causes ??
+        runDetail.value?.ranked_root_causes ??
+        [],
+      pathGraph: activePathGraph.value,
+      reviewTargets:
+        activeCase.value?.review_targets ??
+        runDetail.value?.review_targets ??
+        [],
+      totalGraphDataset: totalGraphDataset.value,
+    }),
+  );
+}
+
+function handleTotalGraphSelect(payload: GraphSelectPayload) {
+  if (payload?.type === "edge") {
+    return;
+  }
+
+  updateState(
+    buildTotalGraphSelectionPatch({
+      state: workbenchState.value,
+      payload: payload
+        ? {
+            type: "node",
+            nodeId: payload.item.id,
+          }
+        : null,
+      candidates:
+        activeCase.value?.ranked_root_causes ??
+        runDetail.value?.ranked_root_causes ??
+        [],
+      pathGraph: activePathGraph.value,
+      reviewTargets:
+        activeCase.value?.review_targets ??
+        runDetail.value?.review_targets ??
+        [],
+      totalGraphDataset: totalGraphDataset.value,
+    }),
+  );
+}
+
+function handleLocalGraphSelect(payload: LocalGraphSelectPayload) {
+  updateState(buildLocalGraphSelectionPatch(workbenchState.value, payload));
+
+  if (
+    shouldAutoOpenCurationTabOnLocalGraphSelect({
+      hasActiveCandidate: Boolean(activeCandidate.value),
+      payload,
+    })
+  ) {
+    feedbackCardTab.value = "curation";
+  }
+}
+
+function handleRunChange(value: unknown) {
+  const runId = typeof value === "string" && value.trim().length ? value : null;
+  if (!runId) {
+    return;
+  }
+
+  pendingCaseSelectionPatch.value = null;
+  selectedTraceStepId.value = null;
+  crossCaseCompareOpen.value = false;
+  void loadRun(runId);
+}
+
+function handleCaseChange(value: unknown) {
+  if (!runDetail.value) {
+    return;
+  }
+
+  const caseId =
+    typeof value === "string" && value.trim().length ? value : null;
+  const nextSelection = buildCaseSelection(runDetail.value, caseId);
+
+  pendingCaseSelectionPatch.value = null;
+  selectedTraceStepId.value = null;
+  crossCaseCompareOpen.value = false;
+  updateState(nextSelection);
+  syncRouteQuery(runDetail.value.run.run_id, nextSelection.selectedCaseId);
+}
+
+async function loadRun(runId: string) {
+  const revision = sourceRevision;
+  loading.value = true;
+  errorMessage.value = "";
+
+  try {
+    const detail = await getRootLensService().getRun(runId);
+    if (revision !== sourceRevision) return;
+    runDetail.value = detail;
+    if (preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import") {
+      const graphId = detail.cases?.[0]?.reasoning_metadata?.graph_id
+        ?? detail.reasoning_metadata?.graph_id;
+      if (!kgStudio.value || (graphId ?? null) !== (kgStudio.value.graph_id ?? null)) {
+        try {
+          const studio = await getRootLensService().kgStudio(graphId ?? undefined);
+          if (revision !== sourceRevision) return;
+          kgStudio.value = studio;
+          totalGraphRenderMessage.value = "";
+        } catch (error) {
+          if (revision !== sourceRevision) return;
+          kgStudio.value = null;
+          totalGraphRenderMessage.value = error instanceof Error ? error.message : String(error);
+        }
+      }
+    }
+
+    if (revision !== sourceRevision) return;
+    const routeCaseId =
+      typeof route.query.case_id === "string"
+        ? route.query.case_id
+        : workbenchState.value.selectedCaseId;
+    const nextSelection = buildCaseSelection(detail, routeCaseId);
+    updateState({
+      selectedRunId: runId,
+      ...nextSelection,
+    });
+    syncRouteQuery(runId, nextSelection.selectedCaseId);
+  } catch (error) {
+    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (revision === sourceRevision) loading.value = false;
+  }
+}
+
+async function refreshWorkspace() {
+  const revision = sourceRevision;
+  loading.value = true;
+  errorMessage.value = "";
+  reviewMessage.value = "";
+
+  try {
+    const replayActive = getLocalSessionMeta()?.source === "import";
+    const useLocalGraphs =
+      replayActive || preferences.value.dataSourceMode !== "backend";
+    const graphTask = useLocalGraphs
+      ? loadUnifiedGraphs()
+      : getRootLensService().kgStudio();
+
+    const [runsResult, graphResult] = await Promise.allSettled([
+      getRootLensService().listRuns(),
+      graphTask,
+    ]);
+
+    if (revision !== sourceRevision) return;
+    if (runsResult.status === "fulfilled") {
+      runs.value = runsResult.value;
+    } else {
+      throw runsResult.reason;
+    }
+
+    if (graphResult.status === "fulfilled") {
+      if (useLocalGraphs) {
+        bundledGraphDatasets.value = (
+          graphResult.value as { datasets: UnifiedGraphDataset[] }
+        ).datasets;
+        kgStudio.value = null;
+      } else {
+        kgStudio.value = graphResult.value as KGStudioPayload;
+        bundledGraphDatasets.value = [];
+      }
+    } else {
+      if (useLocalGraphs) {
+        bundledGraphDatasets.value = [];
+        totalGraphRenderMessage.value = replayActive
+          ? "当前回放会话未包含 unified-graphs.json。"
+          : "论文演示图谱加载失败。";
+      } else {
+        kgStudio.value = null;
+        totalGraphRenderMessage.value = "后端总图谱暂不可用。";
+      }
+    }
+
+    const routeRunId =
+      typeof route.query.run_id === "string" ? route.query.run_id : null;
+    const nextRunId =
+      runs.value.find((item) => item.run_id === routeRunId)?.run_id ??
+      runs.value.find(
+        (item) => item.run_id === workbenchState.value.selectedRunId,
+      )?.run_id ??
+      runs.value[0]?.run_id ??
+      null;
+
+    if (nextRunId) {
+      await loadRun(nextRunId);
+      return;
+    }
+
+    runDetail.value = null;
+  } catch (error) {
+    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (revision === sourceRevision) loading.value = false;
+  }
+}
+
+async function handleFeedbackSubmit() {
+  if (!activeCase.value || !activeSubmitTarget.value) {
+    reviewMessage.value = "当前没有可提交的反馈目标。";
+    return;
+  }
+
+  errorMessage.value = "";
+  reviewMessage.value = "";
+
+  try {
+    const response = await getRootLensService().submitReview({
+      run_id: runDetail.value?.run.run_id,
+      case_id: activeCase.value.case_id,
+      target_type: activeSubmitTarget.value.target_type,
+      target_id: activeSubmitTarget.value.target_id,
+      action: feedbackForm.action,
+      note: feedbackForm.note,
+      reviewer: feedbackForm.reviewer,
+      source: feedbackForm.source,
+    });
+
+    reviewMessage.value = `反馈已记录：${String(response.record.feedback_id ?? response.status)}`;
+    await loadReviewLedger();
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error);
+  }
+}
+
+watch(
+  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
+  () => {
+    sourceRevision += 1;
+    runDetail.value = null; runs.value = []; kgStudio.value = null; bundledGraphDatasets.value = [];
+    updateState(sourceSelectionReset());
+    void refreshWorkspace();
+  },
+);
+
+watch(
+  () => route.query,
+  () => {
+    syncQueryContext();
+  },
+);
+
+watch(
+  () => feedbackCardTab.value,
+  (tab) => {
+    if (tab === "ledger") {
+      void loadReviewLedger();
+    }
+  },
+);
+
+watch(
+  () => workbenchState.value.selectedRunId,
+  (runId) => {
+    if (runId && runId !== runDetail.value?.run.run_id) {
+      void loadRun(runId);
+    }
+  },
+);
+
+watch(
+  () => activeCandidate.value?.ranking_id,
+  (candidateId, previousCandidateId) => {
+    if (candidateId === previousCandidateId) {
+      return;
+    }
+
+    selectedTraceStepId.value = null;
+    if (!candidateId) {
+      crossCaseCompareOpen.value = false;
+    }
+  },
+);
+
+watch(
+  [() => runDetail.value?.run.run_id, () => activeCase.value?.case_id],
+  ([runId, caseId], [previousRunId, previousCaseId]) => {
+    if (!runId || !caseId) {
+      ledgerRecords.value = [];
+      ledgerErrorMessage.value = "";
+      return;
+    }
+
+    if (runId !== previousRunId || caseId !== previousCaseId) {
+      ledgerRecords.value = [];
+      ledgerErrorMessage.value = "";
+      if (feedbackCardTab.value === "ledger") {
+        void loadReviewLedger();
+      }
+    }
+  },
+);
+
+watch(
+  () => activeCase.value?.case_id,
+  (caseId, previousCaseId) => {
+    if (!caseId) {
+      return;
+    }
+
+    ensureCaseDraftLoaded(caseId);
+    actionMessage.value = "";
+
+    if (caseId !== previousCaseId) {
+      selectedTraceStepId.value = null;
+      provenanceInspectorVisible.value = false;
+      provenanceInspectorState.value = null;
+      if (feedbackCardTab.value === "curation") {
+        feedbackCardTab.value = "rca";
+      }
+    }
+
+    if (!runDetail.value || caseId === previousCaseId) {
+      return;
+    }
+
+    const pendingSelection =
+      pendingCaseSelectionPatch.value?.selectedCaseId === caseId
+        ? pendingCaseSelectionPatch.value
+        : null;
+    const nextSelection = {
+      ...buildCaseSelection(runDetail.value, caseId),
+      ...(pendingSelection ?? {}),
+    };
+    const nextSelectedObservationId =
+      pendingSelection?.selectedObservationId ??
+      workbenchState.value.selectedObservationId;
+
+    if (
+      nextSelection.selectedCandidateId !==
+        workbenchState.value.selectedCandidateId ||
+      nextSelection.selectedPathId !== workbenchState.value.selectedPathId ||
+      nextSelection.selectedReviewTargetKey !==
+        workbenchState.value.selectedReviewTargetKey ||
+      nextSelection.selectedGraphNodeId !==
+        workbenchState.value.selectedGraphNodeId ||
+      nextSelection.subgraphMode !== workbenchState.value.subgraphMode ||
+      nextSelectedObservationId !== workbenchState.value.selectedObservationId
+    ) {
+      updateState(nextSelection);
+    }
+
+    pendingCaseSelectionPatch.value = null;
+    syncRouteQuery(runDetail.value.run.run_id, caseId);
+  },
+);
+
+watch(
+  [totalGraphDataset, () => workbenchState.value.selectedGraphNodeId],
+  ([dataset, selectedGraphNodeId]) => {
+    if (!selectedGraphNodeId) {
+      return;
+    }
+
+    const hasNode =
+      dataset?.nodes.some((node) => node.id === selectedGraphNodeId) ?? false;
+    if (!hasNode) {
+      updateState({
+        selectedGraphNodeId: null,
+        subgraphMode: "path",
+        selectedSubgraphNodeId: null,
+        selectedSubgraphEdgeId: null,
+      });
+    }
+  },
+);
+
+watch(
+  [
+    activeLocalGraphDataset,
+    () => workbenchState.value.selectedSubgraphNodeId,
+    () => workbenchState.value.selectedSubgraphEdgeId,
+  ],
+  ([dataset, selectedNodeId, selectedEdgeId]) => {
+    const patch: Record<string, string | null> = {};
+
+    if (
+      selectedNodeId &&
+      !(dataset?.nodes.some((node) => node.id === selectedNodeId) ?? false)
+    ) {
+      patch.selectedSubgraphNodeId = null;
+    }
+
+    if (
+      selectedEdgeId &&
+      !(dataset?.edges.some((edge) => edge.id === selectedEdgeId) ?? false)
+    ) {
+      patch.selectedSubgraphEdgeId = null;
+    }
+
+    if (Object.keys(patch).length) {
+      updateState(patch);
+    }
+  },
+);
+
+watch(
+  [activeObservationContext, selectedObservationTraceSteps],
+  ([value, traceSteps]) => {
+    if (
+      !value &&
+      !traceSteps.length &&
+      workbenchState.value.selectedObservationId
+    ) {
+      updateState({ selectedObservationId: null });
+    }
+  },
+);
+
+onMounted(() => {
+  syncQueryContext();
+  void refreshWorkspace();
+});
 </script>
+
 <template>
-  <div class="graphs-page">
-    <div class="page-heading"><div><span class="eyebrow">02 / EXECUTABLE KNOWLEDGE</span><h1>看懂知识，再投入使用</h1><p>从候选解释追到联合现象和观测条件。修改会持久保存，新分析使用当前版本。</p></div><div class="page-heading__actions"><button class="button button--secondary" @click="importOpen = true"><IconUpload /> 导入图谱</button><button v-if="pkg" class="button button--secondary" @click="downloadJson(`${pkg.title || '知识图谱'}.json`, pkg)"><IconDownload /> 导出</button></div></div>
-    <div v-if="error" class="alert alert--error" role="alert"><span class="grow">{{ error }}</span><button class="text-button" @click="error = ''">关闭</button></div>
-    <div v-if="notice" class="alert alert--success"><IconCheck /><span class="grow">{{ notice }}</span><button v-if="currentGraph?.enabled" class="text-button" @click="router.push(newAnalysisRoute(workspace.graphId))">前往推理分析 <IconArrowRight /></button></div>
-    <section v-if="executableGraphs.length" class="graph-toolbar panel"><label class="graph-selector"><span class="section-kicker">当前图谱</span><select :value="workspace.graphId" aria-label="选择知识图谱" @change="chooseGraph(($event.target as HTMLSelectElement).value)"><option v-for="graph in executableGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ friendly(graph.title, '未命名知识图谱') }}{{ graph.enabled ? ' · 已投入使用' : ' · 待启用' }}</option></select></label><div class="graph-toolbar__meta"><span class="tag tag--blue">{{ datasetShort[currentGraph?.dataset || ''] }}</span><span class="status-dot" :class="currentGraph?.enabled ? 'status-dot--green' : 'status-dot--amber'">{{ currentGraph?.enabled ? '已投入使用' : '尚未投入使用' }}</span></div><div class="grow" /><button v-if="dirty" class="button button--secondary" :disabled="saving" @click="save"><IconSave /> {{ saving ? '保存中…' : '保存修改' }}</button><button v-if="currentGraph?.enabled" class="button button--primary" :disabled="dirty" @click="router.push(newAnalysisRoute(workspace.graphId))">使用此图分析 <IconArrowRight /></button><button v-else class="button button--primary" :disabled="!canEnable || enabling" @click="enable(true)"><IconCheck />{{ enabling ? '正在启用…' : '投入使用' }}</button></section>
-    <div v-if="loading" class="loading-inline"><IconRefresh class="is-spinning" /> 读取可执行知识…</div>
-    <div v-else-if="!pkg" class="panel empty-state"><div class="empty-state__icon"><IconRelation /></div><h3>还没有可查看的知识图谱</h3><p>从素材页制作图谱，或导入一个完整、可执行的图谱包。</p><div class="button-row" style="justify-content:center"><button class="button button--primary" @click="router.push('/materials')">从知识资料开始 <IconArrowRight /></button><button class="button button--secondary" @click="importOpen = true">导入已准备图谱</button></div></div>
-    <template v-else-if="pkg.schema_version === 'rootlens-working-graph.v2'">
-      <div v-if="dirty" class="alert alert--warning"><IconEdit /><span>当前有未保存的修改。保存后，新分析才能使用它们。</span><button class="text-button" :disabled="saving" @click="save">保存修改</button></div>
-      <div class="graph-workspace"><div class="graph-overview"><section class="panel"><header class="panel-header"><div><h2>知识关系概览</h2><p>点击任一内容，在右侧理解或修改</p></div><span class="tag">语义视图</span></header><div class="graph-counters"><div v-for="count in summaryCounts" :key="count.label"><strong>{{ count.count }}</strong><span>{{ count.label }}</span></div></div><div class="graph-canvas-wrap"><SemanticGraph :knowledge="knowledge" :selected-id="selectedItem?.id" @select="selectSemantic" /></div><footer class="graph-map-footer"><IconInfoCircle /><span>连线表达图谱中的规则。候选原因仍需实际观测与联合条件支持，不表示已验证根因。</span></footer></section><section class="objects-band"><span class="section-kicker">观测对象与变量</span><div class="tag-row"><button v-for="entity in rows(knowledge.entities)" :key="text(entity.entity_id)" class="object-chip" @click="selectSemantic(text(entity.entity_id))">{{ friendly(entity.label) }}<small v-if="texts(entity.aliases).length">{{ texts(entity.aliases).length }} 个别名</small></button></div></section><details class="technical"><summary>完整可执行图谱与高级操作</summary><div class="button-row" style="margin-top:14px"><button class="button button--secondary button--small" @click="downloadJson(`${pkg.title}.json`, pkg)">下载完整图谱</button><button v-if="currentGraph?.enabled" class="button button--danger button--small" :disabled="enabling || dirty" @click="enable(false)">停止用于新分析</button></div><dl><dt>稳定图谱 ID</dt><dd><code>{{ workspace.graphId }}</code></dd><dt>包格式</dt><dd>{{ pkg.schema_version }}</dd></dl><pre>{{ JSON.stringify(pkg, null, 2) }}</pre></details></div>
-      <aside class="panel knowledge-inspector"><header class="panel-header"><div><h2>查看与修改</h2><p>{{ knowledgeSections.find((s) => s.key === section)?.hint }}</p></div><IconEdit class="subtle" /></header><div class="inspector-picker"><select v-model="section" aria-label="图谱内容类别"><option v-for="item in knowledgeSections" :key="item.key" :value="item.key">{{ item.label }}（{{ catalog(knowledge, item.key).length }}）</option></select><div class="search-wrap"><IconSearch /><input v-model="search" class="search-input" placeholder="查找内容" aria-label="搜索图谱内容" /></div><button v-if="section === 'bindings'" type="button" class="button button--secondary button--small" :disabled="!mappingFeatures.length" @click="addBinding"><IconPlus />添加等价词汇</button><div v-if="section === 'bindings' || section === 'observable_definitions'" class="capability-status"><span>{{ capabilitiesLoading ? '正在读取后端能力目录…' : capability ? '使用后端共用能力目录' : '目录尚未加载' }}</span><button type="button" class="text-button" :disabled="capabilitiesLoading" @click="loadCapabilities"><IconRefresh />重读</button><p v-if="capabilitiesError" class="error-text">{{ capabilitiesError }}</p></div></div><div class="knowledge-item-list"><button v-for="item in filteredItems" :key="item.id" :class="{ active: selectedItem?.id === item.id }" @click="chooseItem(item)"><span class="knowledge-item-dot" :class="section" /><span><strong>{{ item.label }}</strong><small>{{ item.subtitle }}</small></span><IconArrowRight /></button><p v-if="!filteredItems.length" class="muted" style="padding:10px 18px">这里暂无内容。</p></div>
-        <form v-if="selectedItem" class="knowledge-editor" @submit.prevent="save" @input="changed">
-          <template v-if="['entities', 'hypotheses', 'mechanisms', 'pattern_definitions', 'observable_definitions'].includes(selectedItem.group)"><label class="field">名称<input v-model="selectedRow.label" required /></label></template>
-          <template v-if="selectedItem.group === 'entities'"><label class="field">别名<textarea aria-label="别名" :value="texts(selectedRow.aliases).join('\n')" rows="2" placeholder="每行一个别名；用于识别同一观测对象" @input="setAliases(($event.target as HTMLTextAreaElement).value)" /><small>新增别名保留同一主体身份，不创建新的测量值。</small></label><p class="muted">对象类型：{{ friendly(selectedRow.kind) }}</p></template>
-          <template v-else-if="selectedItem.group === 'hypotheses'"><label class="field">假设成本<input v-model.number="selectedRow.assumption_cost" type="number" min="0" step="0.1" required /><small>统一推理中单根假设的显式代价，不是置信率。</small></label><p class="muted">目标：{{ selectedRow.target_role === 'pattern_family' ? '图案类别' : '候选原因机制' }}<br />适用对象：{{ nameOf(knowledge, selectedRow.applies_to_class_id) }}</p><CandidateConditions :key="text(selectedRow.hypothesis_id)" :graph-id="workspace.graphId" :candidate-id="text(selectedRow.hypothesis_id)" :candidate-name="friendly(selectedRow.label)" :knowledge="knowledge" :disabled="dirty || saving" @changed="conditionBundleChanged" /></template>
-          <template v-else-if="selectedItem.group === 'pattern_definitions'"><div class="field">联合条件<ExpressionEditor :model-value="selectedRow.body" :options="expressionOptions" @update:model-value="setGroupField('body', $event)" /><small>同一联合现象需要符合这里的逻辑与范围要求。</small></div><label class="field">联合范围<select v-model="selectedRow.scope_join" @change="changed"><option value="same_subject_same_scope">同一主体、同一区域</option><option value="same_event_same_window">同一事件、同一时间窗</option><option value="same_wafer_parent_scope">同一晶圆的不同区域</option><option value="same_subject_parent_scope">同一主体的父级范围</option></select></label></template>
-          <template v-else-if="selectedItem.group === 'observable_definitions'"><ConditionPredicateEditor :condition="selectedRow" :features="features" @update="updatePredicate" /><label class="field">观测主体<select aria-label="观测主体" :value="record(selectedRow.subject_selector).kind" @change="setSubject(($event.target as HTMLSelectElement).value)"><option value="focus">本次关注的区域 / 对象</option><option value="bound_entity">指定图谱对象或变量</option></select><select v-if="record(selectedRow.subject_selector).kind === 'bound_entity'" v-model="record(selectedRow.subject_selector).entity_id" aria-label="指定观测变量" @change="changed"><option v-for="entity in rows(knowledge.entities)" :key="text(entity.entity_id)" :value="text(entity.entity_id)">{{ friendly(entity.label) }}</option></select></label><label class="field">作用范围<select aria-label="作用范围" :value="record(selectedRow.scope_selector).kind" @change="setScope(($event.target as HTMLSelectElement).value)"><option value="task_scope">当前分析范围</option><option value="spatial_zone">晶圆 / 空间指定区域</option></select><select v-if="record(selectedRow.scope_selector).kind !== 'task_scope'" v-model="record(selectedRow.scope_selector).zone" aria-label="空间区域" @change="changed"><option value="all_valid">全片有效区</option><option value="center">中心区</option><option value="middle">中圈</option><option value="edge">边缘区</option></select></label></template>
-          <template v-else-if="['effect_rules', 'expectation_rules'].includes(selectedItem.group)"><label class="field">起点<select v-model="selectedRow.from_id" @change="changed"><option v-for="node in activeOptions" :key="rowId(node)" :value="rowId(node)">{{ friendly(node.label) }}</option></select></label><label v-if="selectedItem.group === 'effect_rules'" class="field">影响到的机制 / 假设<select v-model="selectedRow.to_id" @change="changed"><option v-for="node in activeOptions" :key="rowId(node)" :value="rowId(node)">{{ friendly(node.label) }}</option></select></label><template v-else><label class="field">预期的联合现象<select v-model="selectedRow.pattern_id" @change="changed"><option v-for="pattern in rows(knowledge.pattern_definitions)" :key="text(pattern.pattern_id)" :value="text(pattern.pattern_id)">{{ friendly(pattern.label) }}</option></select></label><label class="field">关系强度<select v-model="selectedRow.mode" @change="changed"><option value="expected">预期表现</option><option value="necessary">必要条件</option><option value="possible">可能表现</option></select><small>必要条件冲突或缺失会阻止候选进入支持排名。</small></label></template></template>
-          <template v-else-if="selectedItem.group === 'relations'"><label class="field">起点<select v-model="selectedRow.head" @change="changed"><option v-for="entity in rows(knowledge.entities)" :key="text(entity.entity_id)" :value="text(entity.entity_id)">{{ friendly(entity.label) }}</option></select></label><label class="field">关系<input v-model="selectedRow.relation" required /></label><label class="field">终点<select v-model="selectedRow.tail" @change="changed"><option v-for="entity in rows(knowledge.entities)" :key="text(entity.entity_id)" :value="text(entity.entity_id)">{{ friendly(entity.label) }}</option></select></label></template>
-          <template v-else-if="selectedItem.group === 'subject_bindings'"><label class="field">外部命名空间<input v-model="selectedRow.namespace" required /></label><label class="field">外部主体名称<input v-model="selectedRow.external_id" required /></label><label class="field">对应图谱对象<select v-model="selectedRow.target_id" @change="changed"><option v-for="entity in rows(knowledge.entities)" :key="text(entity.entity_id)" :value="text(entity.entity_id)">{{ friendly(entity.label) }}</option></select></label></template>
-          <template v-else-if="selectedItem.group === 'value_bindings'"><ValueBindingEditor :binding="selectedRow" :features="features" :knowledge="knowledge" @update="updateBinding" @remove="removeBinding" /></template>
-          <template v-else-if="selectedItem.group === 'source_assertions'"><span class="tag">{{ friendly(selectedRow.origin) }}</span><p class="source-text">{{ selectedRow.text }}</p><p v-if="selectedRow.locator" class="muted">原文位置：{{ selectedRow.locator }}</p><p class="muted">参数来源：{{ friendly(selectedRow.parameter_origin) }}</p></template>
-          <div v-if="selectedSources.length && selectedItem.group !== 'value_bindings'" class="editor-source"><span class="section-kicker">这项知识的依据</span><details v-for="(source, index) in selectedSources" :key="text(source.assertion_id)"><summary><IconFile /> {{ friendly(source.origin) }}<span v-if="source.locator"> · {{ source.locator }}</span><span v-else> · 来源 {{ index + 1 }}</span></summary><p>{{ source.text }}</p><small>参数：{{ friendly(source.parameter_origin) }}</small></details></div>
-          <details class="technical"><summary>稳定引用与原始字段</summary><p style="margin-top:12px"><code>{{ selectedItem.id }}</code></p><pre>{{ JSON.stringify(selectedRow, null, 2) }}</pre></details>
-          <footer v-if="section !== 'sources'" class="editor-save"><button class="button button--primary button--full" :disabled="!dirty || saving" type="submit"><IconSave />{{ saving ? '保存中…' : dirty ? '保存修改并生效' : '所有修改已保存' }}</button></footer>
-        </form>
-      </aside></div>
-    </template>
-    <div v-else class="panel empty-state"><h3>这份图谱不是当前可执行格式</h3><p>请从素材重新制作，或导入 v2 图谱包。</p><button class="button button--primary" @click="router.push('/materials')">前往素材管理</button></div>
-    <a-modal v-model:visible="importOpen" title="导入可执行知识图谱" :footer="false" width="650px"><div class="form-stack"><p class="muted">导入会创建未启用的新副本。要完整展示资料制作流程，请从素材管理开始。</p><div class="file-drop" role="button" tabindex="0" @click="importInput?.click()" @keydown.enter.prevent="importInput?.click()"><IconUpload /><strong>{{ importFile?.name || '选择图谱 JSON 文件' }}</strong><p>rootlens-working-graph.v2 · 完整知识、条件与来源</p><input ref="importInput" class="native-file" type="file" accept=".json" @change="importFile = ($event.target as HTMLInputElement).files?.[0] ?? null" /></div><button class="button button--primary" :disabled="!importFile || importing" @click="importPackage()">{{ importing ? '正在导入…' : '导入为新图谱' }}</button><div v-if="workspace.demos.demos.length" class="subsection"><span class="section-kicker">或载入已准备的演示图谱（跳过制作）</span><button v-for="demo in workspace.demos.demos" :key="demo.id" class="prepared-graph" :disabled="!demo.working_graph?.available || importing" @click="importPrepared(demo.working_graph.download_url!)"><IconRelation /><div class="grow"><strong>{{ demo.title }}</strong><small>经过演示适配 · 导入后可修改与启用</small></div><IconArrowRight /></button></div><p v-if="error" class="error-text">{{ error }}</p></div></a-modal>
+  <div
+    class="rl-page rl-screen"
+    :class="{ 'rl-page--motion': preferences.enablePageEntranceMotion }"
+  >
+    <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
+
+    <a-drawer v-model:visible="packageDrawerOpen" title="工作图与可执行画像" :width="760" :footer="false">
+      <a-space direction="vertical" fill>
+        <a-select placeholder="选择工作图" :model-value="editableGraphId" @change="(id: string) => selectPackageGraph(id)">
+          <a-option v-for="graph in workingGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }} · {{ graph.dataset }}</a-option>
+        </a-select>
+        <p>编辑节点、关系、别名与条件；v2 包请修改 knowledge 中的实体、绑定和规则。删除被引用对象前须同步修改相关规则；保存影响新分析，历史运行保持原结果。</p>
+        <a-textarea v-model="packageText" :auto-size="{ minRows: 18, maxRows: 28 }" aria-label="完整工作图包 JSON" />
+        <a-space wrap>
+          <a-button type="primary" :loading="packageBusy" :disabled="!editableGraphId" @click="savePackage(false)">保存当前图</a-button>
+          <a-button :disabled="!packageText" @click="downloadPackage">导出完整包</a-button>
+          <a-button :loading="packageBusy" :disabled="!packageText" @click="savePackage(true)">导入为新图</a-button>
+          <a-button v-if="workingGraphs.find(g => g.graph_id === editableGraphId)?.dataset === 'mvtec' && !workingGraphs.find(g => g.graph_id === editableGraphId)?.knowledge" :disabled="!editableGraphId" @click="rebuildGraphProfiles">按关系重建画像</a-button>
+          <label>导入 JSON <input type="file" accept=".json" @change="importPackageFile" /></label>
+        </a-space>
+        <a-alert v-if="errorMessage" type="error">{{ errorMessage }}</a-alert>
+        <a-alert v-if="actionMessage" type="success">{{ actionMessage }}</a-alert>
+      </a-space>
+    </a-drawer>
+    <section class="workspace-shell">
+      <div class="workspace-shell__main workspace-stack">
+        <article class="rl-section-card">
+          <header class="rl-section-card__header">
+            <div>
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle :title="totalGraphTitle" :help="totalGraphHelp">
+                  <icon-relation />
+                </SectionCardTitle>
+              </h3>
+            </div>
+            <div class="rl-panel-actions">
+              <div class="rl-inline-tags">
+                <a-tag color="green">{{ totalGraphDataset?.nodes.length ?? 0 }} 节点</a-tag>
+                <a-tag color="gold">{{ totalGraphDataset?.edges.length ?? 0 }} 边</a-tag>
+              </div>
+              <a-button v-if="preferences.dataSourceMode === 'backend' && getLocalSessionMeta()?.source !== 'import'" @click="openGraphPackage">管理工作图</a-button>
+              <a-button :loading="loading" @click="refreshWorkspace">
+                <template #icon><icon-refresh /></template>
+                刷新视图
+              </a-button>
+              <a-button @click="router.push({ name: 'evidence' })">返回运行与证据</a-button>
+            </div>
+          </header>
+          <div class="rl-section-card__body workspace-graph-stage">
+            <KnowledgeForceGraph
+              v-if="totalGraphDataset"
+              :dataset="totalGraphDataset"
+              :show-labels="false"
+              search-term=""
+              :focused-node-ids="totalGraphFocusedNodeIds"
+              :focused-edge-ids="totalGraphFocusedEdgeIds"
+              :selected-node-id="workbenchState.selectedGraphNodeId"
+              @select="handleTotalGraphSelect"
+              @render-state="(payload) => (totalGraphRenderMessage = payload.message)"
+            />
+            <a-empty v-else>暂无总图谱数据</a-empty>
+          </div>
+          <div class="rl-section-card__footer">
+            <span class="workspace-subtle">{{ totalGraphRenderMessage }}</span>
+          </div>
+        </article>
+
+        <section class="workspace-bottom-grid workspace-bottom-grid--graphs-main">
+          <article class="rl-section-card workspace-graph-bottom-card">
+            <header class="rl-section-card__header">
+              <div>
+                <h3 class="rl-section-card__title">
+                  <SectionCardTitle :title="localGraphTitle" :help="localGraphHelp">
+                    <icon-relation />
+                  </SectionCardTitle>
+                </h3>
+              </div>
+            </header>
+            <div class="rl-section-card__body workspace-graph-stage workspace-graph-stage--local">
+              <RunPathGraph
+                v-if="activeLocalGraphDataset"
+                :dataset="activeLocalGraphDataset"
+                :render-key="localGraphRenderKey"
+                :mode="activeSubgraphMode"
+                :focused-node-ids="localGraphFocusedNodeIds"
+                :focused-edge-ids="localGraphFocusedEdgeIds"
+                :selected-node-id="workbenchState.selectedSubgraphNodeId"
+                :selected-edge-id="workbenchState.selectedSubgraphEdgeId"
+                @select="handleLocalGraphSelect"
+                @render-state="(payload) => (localGraphRenderMessage = payload.message)"
+              />
+              <div v-else class="workspace-graph-stage__empty">
+                <a-empty>暂无局部子图</a-empty>
+              </div>
+            </div>
+            <div class="rl-section-card__footer">
+              <span class="workspace-subtle">{{ localGraphRenderMessage }}</span>
+            </div>
+          </article>
+
+          <article class="rl-section-card workspace-feedback-card workspace-graph-bottom-card">
+            <header class="rl-section-card__header workspace-feedback-card__header">
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle title="审阅与策展卡" :help="feedbackCardHelp">
+                  <icon-info-circle />
+                </SectionCardTitle>
+              </h3>
+              <a-tooltip :content="feedbackCardBadge" position="left">
+                <a-tag color="gold" class="workspace-feedback-card__badge">
+                  {{ feedbackCardBadge }}
+                </a-tag>
+              </a-tooltip>
+            </header>
+            <div class="rl-section-card__body workspace-feedback-card__body">
+              <a-tabs
+                v-model:active-key="feedbackCardTab"
+                lazy-load
+                destroy-on-hide
+                class="workspace-feedback-tabs"
+                aria-label="审阅与策展"
+              >
+                <a-tab-pane key="rca" title="RCA">
+                  <a-form
+                    id="graph-form-1"
+                    :model="feedbackForm"
+                    layout="vertical"
+                    class="workspace-feedback-compact workspace-feedback-compact--dense workspace-form"
+                  >
+                    <div
+                      class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list workspace-feedback-compact__summary"
+                    >
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-bulb />
+                          <span>当前候选</span>
+                        </span>
+                        <strong :title="activeCandidate?.candidate_name ?? '--'">
+                          {{ activeCandidate?.candidate_name ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-relation />
+                          <span>当前路径</span>
+                        </span>
+                        <strong :title="activePath?.path_id ?? '--'">
+                          {{ activePath?.path_id ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-info-circle />
+                          <span>反馈目标</span>
+                        </span>
+                        <strong
+                          :title="
+                            activeSubmitTarget?.label ?? activeSubmitTarget?.target_type ?? '--'
+                          "
+                        >
+                          {{ activeSubmitTarget?.target_type ?? '--' }}
+                        </strong>
+                      </div>
+                      <div class="workspace-summary-list__item">
+                        <span class="workspace-summary-label">
+                          <icon-storage />
+                          <span>得分</span>
+                        </span>
+                        <strong>{{ formatScore(activeCandidate?.score) }}</strong>
+                      </div>
+                    </div>
+
+                    <div class="workspace-feedback-compact__decision-bar">
+                      <a-button
+                        size="small"
+                        :type="feedbackForm.action === 'accept' ? 'primary' : 'outline'"
+                        class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--accept"
+                        @click="feedbackForm.action = 'accept'"
+                      >
+                        接受
+                      </a-button>
+                      <a-button
+                        size="small"
+                        status="danger"
+                        :type="feedbackForm.action === 'reject' ? 'primary' : 'outline'"
+                        class="workspace-feedback-compact__decision-button workspace-feedback-compact__decision-button--reject"
+                        @click="feedbackForm.action = 'reject'"
+                      >
+                        拒绝
+                      </a-button>
+                    </div>
+
+                    <a-form-item
+                      field="note"
+                      label="备注"
+                      :label-attrs="{ for: 'graph-feedbackForm-note-input' }"
+                      class="workspace-form-item workspace-feedback-compact__field workspace-feedback-compact__field--grow"
+                    >
+                      <a-textarea
+                        :textarea-attrs="{
+                          id: 'graph-feedbackForm-note-input',
+                          'aria-label': '备注',
+                        }"
+                        id="graph-feedbackForm-note"
+                        aria-label="备注"
+                        v-model="feedbackForm.note"
+                        class="workspace-feedback-compact__textarea"
+                        placeholder="记录备注"
+                      />
+                    </a-form-item>
+
+                    <div class="workspace-feedback-compact__footer">
+                      <a-button type="primary" @click="handleFeedbackSubmit">
+                        <template #icon>
+                          <icon-send />
+                        </template>
+                        提交反馈
+                      </a-button>
+                    </div>
+
+                    <a-alert
+                      v-if="reviewMessage"
+                      class="workspace-feedback-inline-alert"
+                      :type="reviewMessage.startsWith('反馈已记录') ? 'success' : 'warning'"
+                      :show-icon="false"
+                      :title="reviewMessage"
+                    />
+                  </a-form>
+                </a-tab-pane>
+                <a-tab-pane key="curation" title="策展">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--curation">
+                    <div class="workspace-feedback-pane__section">
+                      <div class="workspace-feedback-pane__section-head">
+                        <strong>
+                          {{
+                            activeCurationEdge
+                              ? '边策展'
+                              : activeCurationNode
+                                ? '节点策展'
+                                : '图谱策展'
+                          }}
+                        </strong>
+                        <span>
+                          {{ activeCurationEdge ? '边' : activeCurationNode ? '节点' : '待选' }}
+                        </span>
+                      </div>
+
+                      <a-form
+                        id="graph-form-2"
+                        :model="selectedEdgeDraft ?? {}"
+                        layout="vertical"
+                        v-if="activeCurationEdge"
+                        class="workspace-curation-panel workspace-form"
+                      >
+                        <div class="workspace-curation-meta">
+                          <a-tooltip
+                            :content="
+                              normalizeText(
+                                readStringAttribute(activeCurationEdge.attributes, 'evidence'),
+                                '当前边没有附带 evidence snippet。',
+                              )
+                            "
+                            position="top"
+                          >
+                            <div class="workspace-claim-note workspace-feedback-snippet-card">
+                              <span class="workspace-summary-label">
+                                <icon-info-circle />
+                                <span>Evidence</span>
+                              </span>
+                              <strong class="workspace-feedback-snippet">
+                                {{
+                                  normalizeText(
+                                    readStringAttribute(activeCurationEdge.attributes, 'evidence'),
+                                    '当前边没有附带 evidence snippet。',
+                                  )
+                                }}
+                              </strong>
+                            </div>
+                          </a-tooltip>
+                          <a-button size="small" @click="openSelectedEdgeProvenance">
+                            Inspect Provenance
+                          </a-button>
+                        </div>
+
+                        <a-form-item
+                          label="审阅决策"
+                          :label-attrs="{ for: 'graph-edgeDecisionModel-input' }"
+                          class="workspace-form-item"
+                        >
+                          <div
+                            id="graph-edgeDecisionModel"
+                            v-control-label="'审阅决策'"
+                            class="workspace-control"
+                          >
+                            <a-select aria-label="审阅决策" v-model="edgeDecisionModel">
+                              <a-option value="accept">accept</a-option>
+                              <a-option value="reject">reject</a-option>
+                              <a-option value="revise">revise</a-option>
+                              <a-option value="needs_completion">needs_completion</a-option>
+                            </a-select>
+                          </div>
+                        </a-form-item>
+
+                        <div class="workspace-form-row workspace-form-row--two">
+                          <a-form-item
+                            label="关系"
+                            :label-attrs="{ for: 'graph-edgeRelationModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-edgeRelationModel-input',
+                                'aria-label': '关系',
+                              }"
+                              id="graph-edgeRelationModel"
+                              aria-label="关系"
+                              v-model="edgeRelationModel"
+                              placeholder="修改 relation 文本"
+                            />
+                          </a-form-item>
+                          <a-form-item
+                            label="置信度"
+                            :label-attrs="{ for: 'graph-edgeConfidenceModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input-number
+                              :input-attrs="{
+                                id: 'graph-edgeConfidenceModel-input',
+                                'aria-label': '置信度',
+                              }"
+                              id="graph-edgeConfidenceModel"
+                              aria-label="置信度"
+                              v-model="edgeConfidenceModel"
+                              :min="0"
+                              :max="1"
+                              :step="0.01"
+                              :precision="2"
+                            />
+                          </a-form-item>
+                        </div>
+
+                        <a-form-item
+                          label="备注"
+                          :label-attrs="{ for: 'graph-edgeNoteModel-input' }"
+                          class="workspace-form-item workspace-curation-panel__field workspace-curation-panel__field--grow"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-edgeNoteModel-input',
+                              'aria-label': '备注',
+                            }"
+                            id="graph-edgeNoteModel"
+                            aria-label="备注"
+                            v-model="edgeNoteModel"
+                            class="workspace-curation-panel__textarea"
+                            placeholder="记录为什么接受、拒绝或修订这条边。"
+                          />
+                        </a-form-item>
+                      </a-form>
+
+                      <a-form
+                        id="graph-form-3"
+                        :model="selectedNodeDraft ?? {}"
+                        layout="vertical"
+                        v-else-if="activeCurationNode"
+                        class="workspace-curation-panel workspace-form"
+                      >
+                        <div
+                          class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
+                        >
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-relation />
+                              <span>节点 ID</span>
+                            </span>
+                            <strong>{{ activeCurationNode.id }}</strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-info-circle />
+                              <span>场景</span>
+                            </span>
+                            <strong>
+                              {{
+                                normalizeText(
+                                  readStringAttribute(activeCurationNode.attributes, 'scenario'),
+                                  activeCurationNode.category,
+                                )
+                              }}
+                            </strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-storage />
+                              <span>Kind</span>
+                            </span>
+                            <strong>{{ normalizeText(activeCurationNode.kind) }}</strong>
+                          </div>
+                          <div class="workspace-summary-list__item">
+                            <span class="workspace-summary-label">
+                              <icon-bulb />
+                              <span>说明</span>
+                            </span>
+                            <strong>{{ normalizeText(activeCurationNode.description) }}</strong>
+                          </div>
+                        </div>
+
+                        <div class="workspace-form-row workspace-form-row--two">
+                          <a-form-item
+                            label="显示名称"
+                            :label-attrs="{ for: 'graph-nodeDisplayNameModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-nodeDisplayNameModel-input',
+                                'aria-label': '显示名称',
+                              }"
+                              id="graph-nodeDisplayNameModel"
+                              aria-label="显示名称"
+                              v-model="nodeDisplayNameModel"
+                              placeholder="节点展示名"
+                            />
+                          </a-form-item>
+                          <a-form-item
+                            label="别名"
+                            :label-attrs="{ for: 'graph-nodeAliasesModel-input' }"
+                            class="workspace-form-item"
+                          >
+                            <a-input
+                              :input-attrs="{
+                                id: 'graph-nodeAliasesModel-input',
+                                'aria-label': '别名',
+                              }"
+                              id="graph-nodeAliasesModel"
+                              aria-label="别名"
+                              v-model="nodeAliasesModel"
+                              placeholder="alias1, alias2"
+                            />
+                          </a-form-item>
+                        </div>
+
+                        <a-form-item
+                          label="描述"
+                          :label-attrs="{ for: 'graph-nodeDescriptionModel-input' }"
+                          class="workspace-form-item workspace-curation-panel__field workspace-curation-panel__field--grow"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-nodeDescriptionModel-input',
+                              'aria-label': '描述',
+                            }"
+                            id="graph-nodeDescriptionModel"
+                            aria-label="描述"
+                            v-model="nodeDescriptionModel"
+                            class="workspace-curation-panel__textarea"
+                            placeholder="补充节点说明或更保守的解释文案。"
+                          />
+                        </a-form-item>
+
+                        <a-form-item
+                          label="备注"
+                          :label-attrs="{ for: 'graph-nodeNoteModel-input' }"
+                          class="workspace-form-item"
+                        >
+                          <a-textarea
+                            :textarea-attrs="{
+                              id: 'graph-nodeNoteModel-input',
+                              'aria-label': '备注',
+                            }"
+                            id="graph-nodeNoteModel"
+                            aria-label="备注"
+                            v-model="nodeNoteModel"
+                            :auto-size="{ minRows: 3, maxRows: 5 }"
+                            placeholder="策展备注（仅保存在本地草稿）"
+                          />
+                        </a-form-item>
+                      </a-form>
+
+                      <div v-else class="workspace-curation-empty">
+                        <p>先在左侧局部子图中点击节点或边，再进入对应的本地策展表单。</p>
+                        <div
+                          v-if="activeCurationSuggestions.length"
+                          class="workspace-curation-suggestions"
+                        >
+                          <button
+                            v-for="item in activeCurationSuggestions"
+                            :key="`${item.kind}:${item.id}`"
+                            type="button"
+                            class="workspace-curation-suggestion"
+                            @click="focusCurationSuggestion(item)"
+                          >
+                            <strong>
+                              {{ item.kind === 'edge' ? '边' : '节点' }} · {{ item.label }}
+                            </strong>
+                            <span>{{ item.subtitle }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="workspace-curation-actions">
+                      <a-button type="primary" @click="saveCurrentCaseDraft">
+                        <template #icon>
+                          <icon-save />
+                        </template>
+                        {{ editableGraphId ? "保存工作图" : "保存草稿" }}
+                      </a-button>
+                      <a-button
+                        :disabled="!canRevertCurrentSelection"
+                        @click="revertCurrentSelectionDraft"
+                      >
+                        撤销修改
+                      </a-button>
+                      <a-button status="warning" @click="resetCurrentCaseDraft">重置草稿</a-button>
+                    </div>
+
+                    <div
+                      class="workspace-feedback-status"
+                      :class="{
+                        'workspace-feedback-status--success':
+                          hasUnsavedCurationChanges === false && !!actionMessage,
+                      }"
+                    >
+                      <div class="workspace-feedback-status__header">
+                        <icon-check-circle v-if="actionMessage" />
+                        <strong>
+                          {{
+                            actionMessage ||
+                            (hasUnsavedCurationChanges
+                              ? '当前有未保存的本地策展修改。'
+                              : '当前 case 没有未保存改动。')
+                          }}
+                        </strong>
+                      </div>
+                      <div class="workspace-feedback-status__meta">
+                        <span>未保存修改：{{ hasUnsavedCurationChanges ? '有' : '无' }}</span>
+                        <span>节点草稿：{{ activeWorkingCaseDraft?.node_drafts.length ?? 0 }}</span>
+                        <span>边草稿：{{ activeWorkingCaseDraft?.edge_drafts.length ?? 0 }}</span>
+                      </div>
+                    </div>
+                  </section>
+                </a-tab-pane>
+                <a-tab-pane key="trace" title="链路">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--trace">
+                    <div
+                      class="workspace-feedback-pane__section workspace-feedback-pane__section--trace"
+                    >
+                      <div
+                        class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                      >
+                        <strong>推理链路</strong>
+                        <a-button
+                          size="mini"
+                          :disabled="!activeReasoningInspection.candidate"
+                          @click="openCrossCaseCompare"
+                        >
+                          Compare
+                        </a-button>
+                      </div>
+
+                      <template v-if="activeReasoningInspection.candidate">
+                        <div class="workspace-reasoning-trace">
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Candidate</strong>
+                              <span
+                                :title="activeReasoningInspection.candidate.selectedPathId ?? '--'"
+                              >
+                                {{ activeReasoningInspection.candidate.selectedPathId ?? '--' }}
+                              </span>
+                            </div>
+                            <div
+                              class="workspace-summary-list workspace-summary-list--two-col workspace-feedback-summary-list"
+                            >
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Candidate</span>
+                                <strong :title="activeReasoningInspection.candidate.candidateName">
+                                  {{ activeReasoningInspection.candidate.candidateName }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Rank / Score</span>
+                                <strong>
+                                  #{{ activeReasoningInspection.candidate.rank ?? '--' }}
+                                  ·
+                                  {{ formatScore(activeReasoningInspection.candidate.score) }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Method / Role</span>
+                                <strong
+                                  :title="`${formatScoringMethodLabel(activeReasoningInspection.candidate.scoringMethod)} · ${normalizeText(activeReasoningInspection.candidate.role, 'candidate')}`"
+                                >
+                                  {{
+                                    formatScoringMethodLabel(
+                                      activeReasoningInspection.candidate.scoringMethod,
+                                    )
+                                  }}
+                                  ·
+                                  {{
+                                    normalizeText(
+                                      activeReasoningInspection.candidate.role,
+                                      'candidate',
+                                    )
+                                  }}
+                                </strong>
+                              </div>
+                              <div class="workspace-summary-list__item">
+                                <span class="workspace-summary-label">Obs / Links</span>
+                                <strong>
+                                  {{
+                                    activeReasoningInspection.candidate.supportingObservationCount
+                                  }}
+                                  /
+                                  {{ activeReasoningInspection.candidate.linkedEntityCount }}
+                                </strong>
+                              </div>
+                            </div>
+                            <p
+                              v-if="typeof activeCandidate?.scoring_details?.reason === 'string'"
+                              class="workspace-visual-profile-reason"
+                            >
+                              {{ activeCandidate.scoring_details.reason }}
+                            </p>
+                            <details v-if="activeVisualConditions.length" class="workspace-visual-profile-details">
+                              <summary>命中条件（{{ activeVisualConditions.length }}）</summary>
+                              <ul>
+                                <li v-for="condition in activeVisualConditions" :key="condition">
+                                  {{ condition }}
+                                </li>
+                              </ul>
+                            </details>
+                          </section>
+
+                          <MeasuredEvidenceDetails :observation="activeObservationContext?.rawObservation" />
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Primary Observation</strong>
+                              <span>
+                                {{
+                                  activeReasoningInspection.primaryObservation?.obsId ?? '未推导出'
+                                }}
+                              </span>
+                            </div>
+                            <button
+                              v-if="activeReasoningInspection.primaryObservation"
+                              type="button"
+                              class="workspace-basic-list-item workspace-basic-list-item--reasoning"
+                              :class="{
+                                'workspace-basic-list-item--active': isReasoningObservationActive(
+                                  activeReasoningInspection.primaryObservation.obsId,
+                                  activeReasoningInspection.primaryObservation.sharedObservationId,
+                                ),
+                              }"
+                              @click="
+                                activateReasoningStep(
+                                  `observation:${activeReasoningInspection.primaryObservation.obsId}`,
+                                )
+                              "
+                            >
+                              <div class="workspace-basic-list-item__primary">
+                                {{ activeReasoningInspection.primaryObservation.title }}
+                              </div>
+                              <div
+                                class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                              >
+                                <span>
+                                  {{ activeReasoningInspection.primaryObservation.obsId }}
+                                </span>
+                                <span>
+                                  {{ activeReasoningInspection.primaryObservation.modality }}
+                                </span>
+                                <span>
+                                  confidence
+                                  {{
+                                    formatScore(
+                                      activeReasoningInspection.primaryObservation.confidence,
+                                    )
+                                  }}
+                                </span>
+                                <span>
+                                  {{
+                                    activeReasoningInspection.primaryObservation.linkedEntityCount
+                                  }}
+                                  linked entity
+                                </span>
+                              </div>
+                            </button>
+                            <a-empty v-else description="当前候选暂无可解释 observation。" />
+                          </section>
+
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Supporting Observations</strong>
+                              <span>
+                                {{ activeReasoningInspection.supportingObservations.length }} 项
+                              </span>
+                            </div>
+                            <div
+                              v-if="activeReasoningInspection.supportingObservations.length"
+                              class="workspace-scroll-list workspace-scroll-list--reasoning"
+                            >
+                              <button
+                                v-for="observation in activeReasoningInspection.supportingObservations.filter(
+                                  (item) =>
+                                    item.obsId !==
+                                    activeReasoningInspection.primaryObservation?.obsId,
+                                )"
+                                :key="observation.obsId"
+                                type="button"
+                                class="workspace-basic-list-item workspace-basic-list-item--reasoning"
+                                :class="{
+                                  'workspace-basic-list-item--active': isReasoningObservationActive(
+                                    observation.obsId,
+                                    observation.sharedObservationId,
+                                  ),
+                                }"
+                                @click="activateReasoningStep(`observation:${observation.obsId}`)"
+                              >
+                                <div class="workspace-basic-list-item__primary">
+                                  {{ observation.title }}
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                                >
+                                  <span>{{ observation.obsId }}</span>
+                                  <span>{{ observation.modality }}</span>
+                                  <span>confidence {{ formatScore(observation.confidence) }}</span>
+                                  <span>{{ observation.linkedEntityCount }} linked entity</span>
+                                </div>
+                              </button>
+                            </div>
+                            <a-empty v-else description="当前候选没有 supporting observations。" />
+                          </section>
+
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Linked entities</strong>
+                              <span>{{ activeReasoningInspection.linkedEntities.length }} 项</span>
+                            </div>
+                            <div
+                              v-if="activeReasoningInspection.linkedEntities.length"
+                              class="workspace-scroll-list workspace-scroll-list--reasoning"
+                            >
+                              <div
+                                v-for="entity in activeReasoningInspection.linkedEntities"
+                                :key="`entity-card:${entity.linkId}`"
+                                class="workspace-basic-list-item workspace-basic-list-item--reasoning"
+                                :class="{
+                                  'workspace-basic-list-item--active': isReasoningStepActive(
+                                    `entity:${entity.linkId}`,
+                                  ),
+                                }"
+                              >
+                                <div class="workspace-basic-list-item__primary">
+                                  {{ entity.entityName }}
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                                >
+                                  <span>{{ entity.field }} · {{ entity.mention }}</span>
+                                  <span>{{ entity.matchType ?? '--' }}</span>
+                                  <span>confidence {{ formatScore(entity.score) }}</span>
+                                </div>
+                                <div
+                                  class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
+                                >
+                                  <a-button
+                                    size="mini"
+                                    type="text"
+                                    @click="activateReasoningStep(`entity:${entity.linkId}`)"
+                                  >
+                                    定位
+                                  </a-button>
+                                  <a-button
+                                    size="mini"
+                                    type="text"
+                                    @click="openEntityLinkProvenance(entity.linkId)"
+                                  >
+                                    Provenance
+                                  </a-button>
+                                </div>
+                              </div>
+                            </div>
+                            <a-empty v-else description="当前候选没有可展示的 linked entities。" />
+                          </section>
+
+                          <section class="workspace-reasoning-trace__section">
+                            <div
+                              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                            >
+                              <strong>Entity / Path / Cause chain</strong>
+                              <span>{{ activeReasoningInspection.traceSteps.length }} steps</span>
+                            </div>
+                            <div class="workspace-reasoning-chain">
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Observations</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <button
+                                    v-for="observation in activeReasoningInspection.supportingObservations"
+                                    :key="`chain-observation:${observation.obsId}`"
+                                    type="button"
+                                    class="workspace-reasoning-chip"
+                                    :class="{
+                                      'workspace-reasoning-chip--active':
+                                        isReasoningObservationActive(
+                                          observation.obsId,
+                                          observation.sharedObservationId,
+                                        ),
+                                    }"
+                                    @click="
+                                      activateReasoningStep(`observation:${observation.obsId}`)
+                                    "
+                                  >
+                                    {{ observation.title }}
+                                  </button>
+                                </div>
+                              </div>
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Linked entities</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <button
+                                    v-for="entity in activeReasoningInspection.linkedEntities"
+                                    :key="entity.linkId"
+                                    type="button"
+                                    class="workspace-reasoning-chip"
+                                    :class="{
+                                      'workspace-reasoning-chip--active': isReasoningStepActive(
+                                        `entity:${entity.linkId}`,
+                                      ),
+                                    }"
+                                    @click="activateReasoningStep(`entity:${entity.linkId}`)"
+                                  >
+                                    {{ entity.entityName }}
+                                  </button>
+                                </div>
+                              </div>
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Path</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <div
+                                    v-if="activeReasoningInspection.selectedPath"
+                                    class="workspace-reasoning-chain__path-block"
+                                  >
+                                    <button
+                                      type="button"
+                                      class="workspace-reasoning-chip workspace-reasoning-chip--wide"
+                                      :class="{
+                                        'workspace-reasoning-chip--active': isReasoningStepActive(
+                                          `path:${activeReasoningInspection.selectedPath.pathId}`,
+                                        ),
+                                      }"
+                                      @click="
+                                        activateReasoningStep(
+                                          `path:${activeReasoningInspection.selectedPath.pathId}`,
+                                        )
+                                      "
+                                    >
+                                      {{ activeReasoningInspection.selectedPath.pathId }}
+                                      ·
+                                      {{
+                                        activeReasoningInspection.selectedPath.relationSequence.join(
+                                          ' → ',
+                                        ) || activeReasoningInspection.selectedPath.targetEntityName
+                                      }}
+                                    </button>
+                                    <a-button
+                                      size="mini"
+                                      type="text"
+                                      class="workspace-reasoning-inline-action"
+                                      @click="openSelectedPathProvenance"
+                                    >
+                                      Inspect Provenance
+                                    </a-button>
+                                  </div>
+                                  <span v-else class="workspace-reasoning-trace__hint">
+                                    当前候选没有显式 path。
+                                  </span>
+                                </div>
+                              </div>
+                              <div class="workspace-reasoning-chain__arrow">→</div>
+                              <div class="workspace-reasoning-chain__group">
+                                <span class="workspace-summary-label">Candidate cause</span>
+                                <div class="workspace-reasoning-chain__items">
+                                  <button
+                                    type="button"
+                                    class="workspace-reasoning-chip workspace-reasoning-chip--wide"
+                                    :class="{
+                                      'workspace-reasoning-chip--active': isReasoningStepActive(
+                                        `candidate:${activeReasoningInspection.candidate.rankingId}`,
+                                      ),
+                                    }"
+                                    @click="
+                                      activateReasoningStep(
+                                        `candidate:${activeReasoningInspection.candidate.rankingId}`,
+                                      )
+                                    "
+                                  >
+                                    #{{ activeReasoningInspection.candidate.rank ?? '--' }}
+                                    {{ activeReasoningInspection.candidate.candidateName }}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </section>
+                        </div>
+                      </template>
+                      <a-empty
+                        v-else
+                        description="先从右侧根因列表中选中一个候选，再查看 evidence → entity → path → candidate 的联动链路。"
+                      />
+                    </div>
+                  </section>
+                </a-tab-pane>
+                <a-tab-pane key="ledger" title="记录">
+                  <section class="workspace-feedback-pane workspace-feedback-pane--ledger">
+                    <div
+                      class="workspace-feedback-pane__section workspace-feedback-pane__section--ledger"
+                    >
+                      <div
+                        class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+                      >
+                        <strong>Review Ledger</strong>
+                        <span :title="activeCase?.case_label ?? activeCase?.case_id ?? '--'">
+                          {{ activeCase?.case_label ?? activeCase?.case_id ?? '--' }}
+                        </span>
+                      </div>
+
+                      <a-form
+                        id="graph-form-4"
+                        :model="{ target: ledgerTargetTypeFilter }"
+                        layout="vertical"
+                        class="workspace-feedback-toolbar workspace-feedback-toolbar--ledger workspace-form"
+                      >
+                        <div class="workspace-feedback-toolbar__group">
+                          <a-tooltip :content="ledgerIntroCopy" position="top">
+                            <span class="workspace-feedback-toolbar__pill">bounded only</span>
+                          </a-tooltip>
+                        </div>
+                        <a-form-item
+                          label="目标"
+                          :label-attrs="{ for: 'graph-ledgerTargetTypeFilter-input' }"
+                          class="workspace-form-item workspace-feedback-toolbar__field"
+                        >
+                          <div
+                            id="graph-ledgerTargetTypeFilter"
+                            v-control-label="'目标'"
+                            class="workspace-control"
+                          >
+                            <a-select
+                              aria-label="目标"
+                              v-model="ledgerTargetTypeFilter"
+                              size="small"
+                            >
+                              <a-option
+                                v-for="option in ledgerBoundedTargetOptions"
+                                :key="option.value"
+                                :value="option.value"
+                              >
+                                {{ option.label }}
+                              </a-option>
+                            </a-select>
+                          </div>
+                        </a-form-item>
+                      </a-form>
+
+                      <a-alert
+                        v-if="ledgerErrorMessage"
+                        type="warning"
+                        :show-icon="false"
+                        :title="ledgerErrorMessage"
+                      />
+
+                      <div v-if="ledgerLoading" class="workspace-build-detail-modal__loading">
+                        <a-spin />
+                      </div>
+                      <div
+                        v-else-if="ledgerDisplayItems.length"
+                        class="workspace-scroll-list workspace-scroll-list--ledger"
+                      >
+                        <div
+                          v-for="item in ledgerDisplayItems"
+                          :key="item.feedback_id"
+                          class="workspace-basic-list-item workspace-basic-list-item--ledger"
+                          @click="handleLedgerRecordClick(item)"
+                        >
+                          <div class="workspace-basic-list-item__primary" :title="item.title">
+                            {{ item.title }}
+                          </div>
+                          <div
+                            class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                          >
+                            <span>{{ item.targetTypeLabel }} · {{ item.target_id }}</span>
+                            <span>{{ item.actionLabel }} · {{ item.reviewer ?? 'anonymous' }}</span>
+                            <span>{{ formatDateTime(item.created_at) }}</span>
+                          </div>
+                          <p class="workspace-ledger-record__subtitle" :title="item.subtitle">
+                            {{ item.subtitle }}
+                          </p>
+                          <p
+                            v-if="item.note"
+                            class="workspace-ledger-record__note"
+                            :title="item.note"
+                          >
+                            {{ item.note }}
+                          </p>
+                          <div
+                            class="workspace-basic-list-item__actions workspace-basic-list-item__actions--reasoning"
+                          >
+                            <a-button
+                              size="mini"
+                              type="text"
+                              :disabled="!item.targetAvailable"
+                              @click.stop="handleLedgerRecordClick(item)"
+                            >
+                              定位
+                            </a-button>
+                            <a-button
+                              size="mini"
+                              type="text"
+                              :disabled="!item.targetAvailable"
+                              @click.stop="openLedgerRecordProvenance(item)"
+                            >
+                              Inspect Provenance
+                            </a-button>
+                          </div>
+                        </div>
+                      </div>
+                      <a-empty
+                        v-else
+                        description="当前 run / case 暂无 bounded review ledger 记录。"
+                      />
+                    </div>
+                  </section>
+                </a-tab-pane>
+              </a-tabs>
+            </div>
+          </article>
+        </section>
+      </div>
+
+      <aside class="workspace-shell__aside workspace-shell__aside--graphs">
+        <article class="rl-section-card workspace-root-cause-aside-card">
+          <header class="rl-section-card__header">
+            <div>
+              <h3 class="rl-section-card__title">
+                <SectionCardTitle title="根因列表" :help="graphRootCauseHelp">
+                  <icon-bulb />
+                </SectionCardTitle>
+              </h3>
+            </div>
+            <a-tag color="green">{{ activeCase?.ranked_root_causes?.length ?? 0 }}</a-tag>
+          </header>
+          <div class="rl-section-card__body workspace-root-cause-aside-card__body">
+            <a-form
+              id="graph-form-5"
+              :model="workbenchState"
+              layout="vertical"
+              class="workspace-root-cause-aside-card__context workspace-stack workspace-stack--tight workspace-form"
+            >
+              <a-form-item
+                label="运行"
+                :label-attrs="{ for: 'graph-run-input' }"
+                class="workspace-form-item"
+              >
+                <div id="graph-run" v-control-label="'运行'" class="workspace-control">
+                  <a-select
+                    aria-label="运行"
+                    :model-value="runDetail?.run.run_id"
+                    @change="handleRunChange"
+                  >
+                    <a-option v-for="run in runs" :key="run.run_id" :value="run.run_id">
+                      {{ run.label }}
+                    </a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
+              <a-form-item
+                label="案例"
+                :label-attrs="{ for: 'graph-case-input' }"
+                class="workspace-form-item"
+              >
+                <div id="graph-case" v-control-label="'案例'" class="workspace-control">
+                  <a-select
+                    aria-label="案例"
+                    :model-value="activeCase?.case_id"
+                    @change="handleCaseChange"
+                  >
+                    <a-option
+                      v-for="caseItem in runDetail?.cases ?? []"
+                      :key="caseItem.case_id"
+                      :value="caseItem.case_id"
+                    >
+                      {{ caseItem.case_label ?? caseItem.case_id }}
+                    </a-option>
+                  </a-select>
+                </div>
+              </a-form-item>
+
+              <a-alert
+                v-if="activeReasoningSummary.fallbackApplied"
+                type="info"
+                :show-icon="false"
+                :title="
+                  activeReasoningSummary.fallbackReason
+                    ? `当前结果已回退到通用路径推理：${activeReasoningSummary.fallbackReason}`
+                    : '当前结果已回退到通用路径推理'
+                "
+              />
+            </a-form>
+
+            <section class="workspace-root-cause-aside-card__list">
+              <div class="workspace-root-cause-aside-card__section-header">
+                <strong>候选根因</strong>
+                <UnifiedReasoningDetails :metadata="activeCase?.reasoning_metadata" :candidate-id="activeCandidate?.candidate_id" :query-id="activeCandidate?.scoring_details?.query_id" />
+                <span>{{ activeCandidate ? '已选中 1 项' : '当前未选中' }}</span>
+              </div>
+              <div class="workspace-scroll-list workspace-scroll-list--fill">
+                <button
+                  v-for="candidate in activeCase?.ranked_root_causes ?? []"
+                  :key="candidate.ranking_id"
+                  type="button"
+                  class="workspace-list-item"
+                  :class="{
+                    'workspace-list-item--active':
+                      candidate.ranking_id === activeCandidate?.ranking_id,
+                  }"
+                  @click="selectCandidate(candidate.ranking_id)"
+                >
+                  <div class="workspace-list-item__head">
+                    <strong>#{{ candidate.rank }} {{ candidate.candidate_name }}</strong>
+                    <span>{{ formatScore(candidate.score) }}</span>
+                  </div>
+                  <div class="workspace-list-item__meta">
+                    <span>{{ formatScoringMethodLabel(candidate.scoring_method) }}</span>
+                    <span>{{ normalizeText(candidate.candidate_role, 'candidate') }}</span>
+                  </div>
+                </button>
+                <a-empty v-if="!activeCase?.ranked_root_causes?.length">暂无候选根因</a-empty>
+              </div>
+            </section>
+          </div>
+        </article>
+      </aside>
+
+      <ProvenanceInspectorDrawer
+        v-model:visible="provenanceInspectorVisible"
+        :state="provenanceInspectorState"
+      />
+
+      <a-drawer
+        v-model:visible="crossCaseCompareOpen"
+        width="420px"
+        title="Cross-case Compare"
+        :footer="false"
+      >
+        <div class="workspace-recurrence-drawer">
+          <div class="workspace-claim-note workspace-claim-note--compact">
+            <span class="workspace-summary-label">
+              <icon-info-circle />
+              <span>Compare scope</span>
+            </span>
+            <strong>
+              {{
+                activeReasoningInspection.crossCaseRecurrence?.currentCaseLabel ??
+                activeCase?.case_label ??
+                activeCase?.case_id ??
+                '--'
+              }}
+              · same run only
+            </strong>
+          </div>
+
+          <section class="workspace-feedback-pane__section">
+            <div
+              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+            >
+              <strong>Recurring entities</strong>
+              <span>
+                {{ activeReasoningInspection.crossCaseRecurrence?.recurringEntities.length ?? 0 }}
+                项
+              </span>
+            </div>
+            <div
+              v-if="activeReasoningInspection.crossCaseRecurrence?.recurringEntities.length"
+              class="workspace-recurrence-list"
+            >
+              <article
+                v-for="entity in activeReasoningInspection.crossCaseRecurrence?.recurringEntities ??
+                []"
+                :key="entity.entityId"
+                class="workspace-recurrence-card"
+              >
+                <div class="workspace-recurrence-card__head">
+                  <strong>{{ entity.entityName }}</strong>
+                  <span>{{ entity.occurrenceCount }} case(s)</span>
+                </div>
+                <div class="workspace-recurrence-card__meta">
+                  <span>{{ entity.entityId }}</span>
+                  <span>
+                    当前 observation: {{ entity.currentObservationIds.join(', ') || '--' }}
+                  </span>
+                </div>
+                <div class="workspace-recurrence-card__hits">
+                  <button
+                    v-for="hit in entity.caseHits"
+                    :key="`${entity.entityId}:${hit.caseId}`"
+                    type="button"
+                    class="workspace-basic-list-item workspace-basic-list-item--recurrence"
+                    @click="jumpToRecurringCase(hit)"
+                  >
+                    <div class="workspace-basic-list-item__primary">
+                      {{ hit.caseLabel }}
+                    </div>
+                    <div
+                      class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                    >
+                      <span>{{ hit.caseId }}</span>
+                      <span>{{ hit.matchedPathIds.join(', ') || 'entity recurrence' }}</span>
+                    </div>
+                  </button>
+                </div>
+              </article>
+            </div>
+            <a-empty
+              v-else
+              description="当前候选的实体在同 run 其他 case 中没有显式 recurrence。"
+            />
+          </section>
+
+          <section class="workspace-feedback-pane__section">
+            <div
+              class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
+            >
+              <strong>Recurring paths</strong>
+              <span>
+                {{ activeReasoningInspection.crossCaseRecurrence?.recurringPaths.length ?? 0 }} 项
+              </span>
+            </div>
+            <div
+              v-if="activeReasoningInspection.crossCaseRecurrence?.recurringPaths.length"
+              class="workspace-recurrence-list"
+            >
+              <article
+                v-for="pathSummary in activeReasoningInspection.crossCaseRecurrence
+                  ?.recurringPaths ?? []"
+                :key="pathSummary.signature"
+                class="workspace-recurrence-card"
+              >
+                <div class="workspace-recurrence-card__head">
+                  <strong>{{ pathSummary.targetEntityName }}</strong>
+                  <span>{{ pathSummary.occurrenceCount }} case(s)</span>
+                </div>
+                <div class="workspace-recurrence-card__meta">
+                  <span>{{ pathSummary.signature }}</span>
+                  <span>{{ pathSummary.relationSequence.join(' → ') || '--' }}</span>
+                </div>
+                <div class="workspace-recurrence-card__hits">
+                  <button
+                    v-for="hit in pathSummary.caseHits"
+                    :key="`${pathSummary.signature}:${hit.caseId}`"
+                    type="button"
+                    class="workspace-basic-list-item workspace-basic-list-item--recurrence"
+                    @click="jumpToRecurringCase(hit)"
+                  >
+                    <div class="workspace-basic-list-item__primary">
+                      {{ hit.caseLabel }}
+                    </div>
+                    <div
+                      class="workspace-basic-list-item__meta workspace-basic-list-item__meta--reasoning"
+                    >
+                      <span>{{ hit.caseId }}</span>
+                      <span>{{ hit.matchedPathIds.join(', ') || 'path recurrence' }}</span>
+                    </div>
+                  </button>
+                </div>
+              </article>
+            </div>
+            <a-empty v-else description="当前候选路径在同 run 其他 case 中没有显式 recurrence。" />
+          </section>
+        </div>
+      </a-drawer>
+    </section>
   </div>
 </template>
-<style scoped>
-.graph-toolbar{padding:17px 20px;display:flex;align-items:center;gap:16px;margin-bottom:22px;}.graph-selector{min-width:230px;max-width:450px;flex:1;}.graph-selector .section-kicker{display:block;font-size:11px;margin-bottom:6px;}.graph-selector select{border:0;background:none;color:#2c3d58;font-size:14px;max-width:100%;width:100%;padding:0 24px 0 0;outline-color:#7f8ca1;}.graph-toolbar__meta{display:flex;gap:12px;align-items:center;}.graph-workspace{display:grid;grid-template-columns:minmax(0,1fr) 345px;gap:22px;align-items:start;}.graph-overview{min-width:0;}.graph-counters{display:flex;gap:30px;padding:21px 24px;border-bottom:1px solid #edf0f5;}.graph-counters>div{display:flex;gap:9px;align-items:baseline;}.graph-counters strong{font-size:20px;font-weight:500;color:#405674;}.graph-counters span{font-size:12px;color:var(--muted);}.graph-canvas-wrap{padding:8px 12px 0;}.graph-map-footer{padding:15px 24px 19px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid #f0f2f6;color:#8d98aa;font-size:12px;line-height:1.7;}.graph-map-footer svg{font-size:12px;margin-top:2px;flex-shrink:0;}.objects-band{padding:24px 0;}.objects-band>.section-kicker{display:block;}.object-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #e0e6f0;background:#fff;border-radius:5px;padding:6px 10px;font-size:13px;color:#5f718e;}.object-chip:hover{border-color:#7f8ca1;}.object-chip small{font-size:11px;color:#7f8ca1;}.knowledge-inspector{overflow:hidden;}.capability-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:11px;color:#8a9ab2;}.capability-status>.text-button{font-size:11px;margin-left:auto;}.capability-status>.error-text{font-size:11px;margin:3px 0 0;width:100%;}.knowledge-inspector .panel-header{padding:19px;}.knowledge-inspector .panel-header p{font-size:12px;}.inspector-picker{padding:15px 18px;display:flex;flex-direction:column;gap:11px;border-bottom:1px solid var(--border);}.inspector-picker>select{width:100%;padding:8px 10px;font-size:12px;border:1px solid #e0e6f0;border-radius:5px;color:#526a8e;background:#fff;}.inspector-picker .search-input{min-height:32px;font-size:13px;padding-top:6px;padding-bottom:6px;}.inspector-picker .search-wrap svg{top:9px;font-size:12px;}.knowledge-item-list{max-height:205px;overflow:auto;background:#fcfdff;border-bottom:1px solid var(--border);}.knowledge-item-list>button{display:flex;align-items:flex-start;gap:8px;text-align:left;border:0;background:none;width:100%;padding:11px 18px;border-bottom:1px solid #f0f3f8;color:#687a96;}.knowledge-item-list>button.active{background:#edf3ff;color:var(--blue);box-shadow:inset 3px 0 var(--blue);}.knowledge-item-list>button>span:nth-child(2){flex:1;min-width:0;}.knowledge-item-list strong{display:block;font-size:13px;font-weight:500;line-height:1.7;}.knowledge-item-list small{display:block;font-size:11px;color:#7f8ca1;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin-top:4px;}.knowledge-item-list>button>svg{font-size:12px;margin-top:4px;opacity:0;}.knowledge-item-list>button.active>svg{opacity:1;}.knowledge-item-dot{width:5px;height:5px;background:#7597d7;border-radius:50%;margin-top:6px;flex-shrink:0;}.knowledge-item-dot.mechanisms{background:#aa8bcc;}.knowledge-item-dot.pattern_definitions{background:#dfad6f;}.knowledge-editor{padding:19px;display:flex;flex-direction:column;gap:18px;}.knowledge-editor .field{font-size:13px;gap:6px;}.knowledge-editor .field>input,.knowledge-editor .field>select,.knowledge-editor .field>textarea{font-size:12px;min-height:34px;padding:7px 9px;}.knowledge-editor .field small{font-size:12px;}.knowledge-editor .form-grid{gap:12px;}.knowledge-editor .technical{margin-top:0;}.editor-source{border-top:1px solid var(--border);padding-top:16px;}.editor-source .section-kicker{font-size:11px;display:block;}.editor-source details{font-size:12px;color:#7e8ba0;padding:8px 0;line-height:1.7;}.editor-source summary{cursor:pointer;}.editor-source details p{font-size:13px;color:#68768d;margin:9px 0;line-height:1.9;}.editor-source details small{font-size:11px;color:#7f8ca1;}.editor-save{margin:0 -19px -19px;padding:15px 19px;border-top:1px solid var(--border);background:#fafbfe;}.source-text{font-size:12px;line-height:1.9;color:#5e6c82;}.prepared-graph{display:flex;align-items:center;gap:12px;padding:15px 0;background:none;border:0;border-bottom:1px solid var(--border);width:100%;text-align:left;}.prepared-graph>svg{font-size:22px;color:var(--blue);}.prepared-graph strong{display:block;font-size:12px;color:#4b6183;}.prepared-graph small{display:block;color:#7f8ca1;font-size:12px;margin-top:5px;}.prepared-graph>svg:last-child{font-size:13px;color:#7f8ca1;}
-@media(max-width:1350px){.graph-workspace{grid-template-columns:minmax(0,1fr) 310px;gap:16px;}.graph-counters{gap:18px;padding:17px 20px;}.graph-counters>div{display:block;}.graph-counters strong{display:block;font-size:18px;margin-bottom:3px;}.graph-toolbar__meta{display:none;}}@media(max-width:1100px){.graph-workspace{grid-template-columns:1fr;}.knowledge-inspector{display:grid;grid-template-columns:280px minmax(0,1fr);}.knowledge-inspector .panel-header{grid-column:1/-1;}.inspector-picker{grid-column:1;}.knowledge-item-list{grid-column:1;max-height:420px;grid-row:3/5;}.knowledge-editor{grid-column:2;grid-row:2/5;border-left:1px solid var(--border);}.graph-counters>div{display:flex;gap:8px;align-items:baseline;}.graph-counters strong{display:inline-block;}.graph-toolbar{flex-wrap:wrap;}.graph-selector{max-width:none;}}@media(max-width:650px){.knowledge-inspector{display:block;}.knowledge-item-list{max-height:180px;}.knowledge-editor{border-left:0;}.graph-toolbar .grow{display:none;}.graph-toolbar{gap:12px;}.graph-selector{width:100%;min-width:0;flex:auto;}.graph-counters{justify-content:space-between;gap:8px;}.graph-counters>div{display:block;}.graph-counters span{font-size:11px;}}
-</style>

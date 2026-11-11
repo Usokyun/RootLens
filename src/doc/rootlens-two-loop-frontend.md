@@ -202,3 +202,56 @@ const page = await context.newPage()
 - 最后源码候选完整 `npm test`：**18 文件 / 97 项通过**（04:58）；`npm run build` 类型 / 生产构建通过，tracked diff-check 和两个新增 helper / 测试的 whitespace check 通过。前端源码冻结交独立审核，5186 保持运行。
 
 独立审核亦已在全新 context、GET-only guard 下复核 fresh 配对、真实下拉与图页携图两种明确意图、手动切换不丢输入、普通历史恢复；13 个 sample refs 均对应正确三图，错误与写请求为空。独立证据为 `backend/runs/two_loop_demo/system-assessment/kg/incremental/demo-graph-intent-after-check.json`、同名 `.mjs` 及 13/14/15 截图。当前前端无待修阻塞。
+
+## 原版 UI 恢复（2026-11-11）
+
+用户要求先恢复大幅重做前的界面。本轮在 `codex/restore-original-frontend` 以精确基准 `471e1aaa1dabd22fdb0dd7f00590e7e4cf08ab26` 的前端为主体恢复，不继续调整新工作台。后端、数据库、资料、模型、运行快照和新知识字段不回滚；根后端／Shell 安全启动脚本保留。
+
+### 原来的页面与真实图网络已经回来
+
+- 默认 `/` → `/evidence`，导航顺序为 **运行与证据 → 根因与图谱 → 素材与构图**。恢复 RL 顶栏、220／56px 折叠侧栏、小控件密度、浅灰蓝卡面、原字体和间距。
+- 恢复原 `KnowledgeForceGraph`、`RunPathGraph` 的有向力导向网络、总图／局部子图、右侧候选和审阅／策展／来源详情；撤下替代主图的 `SemanticGraph` 层级卡片及相应新工作台组件。不是在新布局旁边增加旧皮肤。
+- 原 App、全局样式、路由、main 和两个图组件与基准逐字节相同。直接读取基准源码核对共 56 个文件完全相同，没有基准前端文件缺失；必要薄改 16 处、额外 4 个桥接、声明及测试文件，详见 `.playwright-mcp/restore-original/baseline-source-comparison.json`。
+- D3 渲染器仍使用原 API／布局／样式，只把 CDN 注入 loader 换成项目内锁定 `d3@7.9.0` 动态模块。既有依赖版本未随安装升级；不依赖演示现场外网，也没有树状 fallback。
+
+### 原 API 与新保存结果的薄衔接
+
+旧上传、素材、完整包及图谱入口继续走已有后端接口：`/api/dashboard/bootstrap`、`/api/runs`、`/api/kg/materials`、`/api/kg/studio?graph_id=...`。总图是该接口返回的真实 `graph_nodes/graph_edges` 网络，不拿树目录生成假边。
+
+运行列表额外合并 `/api/analyses` 的新双闭环保存结果，标题以“已保存分析”区分。此类详情直接读取 `/api/analyses/{id}`，不先请求旧 Run 后 404，再回退 Demo。桥接只改展示结构，不测量、grounding、排序或重跑模型。
+
+- 每个问题按 `case_id` 精确配对其 EvidenceFrame，分开保留窗口／ROI；原 case ID 另保留，不拿第一帧覆盖所有结果。缺少对应 Frame 时明确报错。
+- 候选 rank、并列、score、cost 和 null confidence 原样保留。统一推理仍显示 `J`／`score = −J`；RootKGD 显示余弦、覆盖／熵惩罚和原结构分数，不转成概率，也不套用逻辑代价公式。
+- 局部路径使用保存的连续节点与实际源边 ID／方向。Root 保存的源关系原样使用；Unified 仅存源边视图而没有关系文本时，如实标“源边（类型见原快照）”，不臆造关系。路径和原始 typed Frame 可在原“推理依据”抽屉读取。
+- 原图与共享媒体保留；ROI 预览按保存的 scope／obs 关联，不把另一 ROI 图贴过来。各外层 case 的原始字段、完整 result 与原始 working graph snapshot 保留在展示数据中。
+- **总图与历史局部图的范围不同**：原总图仍从当前登记工作图的 Studio 投影读取；历史局部路径／推理依据来自该次保存结果。Backend 原卡片分别标“当前登记知识图谱”和“本次保存推理路径”；点总图节点转邻域时改标“当前节点邻域”，不将当前邻域说成保存路径。本轮没有把 typed knowledge 快照重新编译成第二个浏览器总图。
+
+原 Demo／Replay 只展示成品快照。恢复的服务层明确阻止在 Demo 中执行素材解析、LLM 制作、构图、校验／发布等处理，不恢复浏览器推理／构图／what-if。连接 Backend 出错时清除旧来源的运行／图谱／素材上下文，显示实际错误；迟到的前一来源响应不能把已返回的 Demo 选择覆盖。
+
+v2 工作图仍用完整 GET 包 → 原 JSON 修改 → PUT，不根据旧 TS 类型或 Studio 投影重建子集。原策展页保留 v2 投影边保护，并引导完整 JSON；后端 owner 已用独立内存 registry 验证新 binding、semantic_role、有限值和 source locator 精确保留。本轮没有改写 live 图谱。
+
+### 实屏、对照与最终验证
+
+独立 Chrome／context，不使用用户 Chrome/profile、不清其 storage。渲染与检查文件位于 `/Users/hhm/code/RootLens/.playwright-mcp/restore-original/`：
+
+- `01-baseline-evidence.png`：刚恢复精确基准、尚未加桥时的原页面。
+- `03-restored-evidence.png`、`04-restored-force-network.png`：恢复候选原页与原网络。
+- `05-original-edge-inspector.png`：实际局部源边选中与原策展 inspector。
+- `06-{glass,root}-saved-analysis-network.png`、`07-root-preserved-score-semantics.png`：新保存结果在原网络／原抽屉里的显示；Root 实际分数 `0.5854474293642782` 未改变。
+- `08-source-error-not-demo.png`：只读 503 注入后不残留 Demo 成功结果。
+- `09-baseline-current-comparison.png`：同 viewport 的基准与当前主页面并排对照；已亲自查看恢复页面、真实网络及 Root 分数抽屉。
+
+`restored-ui-check.json` 记录原 Demo 总图 **36 节点／29 边**、局部图、总图节点选中、实际 wheel zoom、node drag、候选 → 路径联动、局部边 → 原 inspector。所有外部网络被阻断，显式 jsdelivr 请求被拒绝，但本地 D3 网络与交互仍工作；没有 JS 错误。`final-readonly-check.json` 进一步记录来源错误清空、真实 Backend 响应延迟到返回 Demo 后也不覆盖、Root 保存分数及抽屉语义；无写请求。
+
+复用入口为 `/private/tmp/rootlens-original-restored-check.mjs`、`/private/tmp/rootlens-original-final-readonly.mjs`，使用已安装 Playwright 和独立 Chrome。GET-only 与外网阻断在同一最后路由 handler 中执行，不把 mock 成功替换实际后端。页面仍为 `http://127.0.0.1:5186/{evidence,graphs,materials}`，API 为 `http://127.0.0.1:8012`；5186 保持运行。
+
+- 最终原生 `npm test`：**22 文件／109 项通过**（11:42，包含最终来源标题）；基准原有 95 项保留，未加 skip／xfail。
+- `npm run build` 类型与生产构建通过。原全量 Arco 主 chunk 约 796KB，仍有 >500KB 警告；本轮不为消除警告改变原布局或依赖体系。
+- tracked 与恢复后 untracked 前端文件 whitespace 检查均通过。日志为 `final-vitest.log`、`final-build.log`；没有 stage／commit／push。
+- 未重跑后端数学验收、模型或 LLM；本轮实屏为保存结果读取与输入故障注入。
+
+### 本轮展示边界
+
+第一阶段恢复熟悉的旧 UI，不把新工作台全部增强硬塞回来。新异步任务进度、候选专属条件向导／等价词表单、推荐样例配套图入口、全52通道曲线／晶圆网格区域联动等后端能力和数据仍保留，但本轮原页面未重新接入这些现代控件。新 analysis 的旧 Session 导出也明确提示当前只读展示范围，不伪称导出成功；原 legacy Run 的回放／导出保持。
+
+Backend 总图采用当前登记图，历史局部路径和解释采用保存快照，不能把两者说成完全相同的历史全图展示。后续渐进改进应在这套原界面上单独授权，优先修基本逻辑，不再替换视觉语言或把网络图改成树。

@@ -1,54 +1,285 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-import zhCN from '@arco-design/web-vue/es/locale/lang/zh-cn'
-import { IconBook, IconRelation, IconExperiment, IconArrowRight, IconSettings, IconRefresh, IconCheckCircle, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
-import { workspace, currentGraph, refreshWorkspace, setBackend } from '@/services/workspace'
-import { newAnalysisRoute } from '@/services/analysis-entry'
-import { friendly } from '@/services/presentation'
-const route = useRoute()
-const settingsOpen = ref(false)
-const backendUrl = ref(workspace.baseUrl)
-const settingsError = ref('')
-const navigation = [
-  { name: 'materials', path: '/materials', number: '01', title: '素材管理', description: '导入资料，制作知识', icon: IconBook },
-  { name: 'graphs', path: '/graphs', number: '02', title: '知识图谱', description: '理解、修改与启用', icon: IconRelation },
-  { name: 'evidence', path: '/evidence', number: '03', title: '推理分析', description: '从样本找到解释', icon: IconExperiment },
-]
-const activeTasks = computed(() => workspace.tasks.filter((t) => ['running', 'queued'].includes(t.status)).length)
-async function connect() {
-  settingsError.value = ''
-  try {
-    const url = new URL(backendUrl.value)
-    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('请输入 HTTP 或 HTTPS 服务地址。')
-    setBackend(url.origin); await refreshWorkspace()
-    if (workspace.connected) settingsOpen.value = false
-    else settingsError.value = workspace.error
-  } catch (error) { settingsError.value = error instanceof Error ? error.message : String(error) }
+import {
+  IconCloud,
+  IconBulb,
+  IconDashboard,
+  IconExperiment,
+  IconInfoCircle,
+  IconMenuFold,
+  IconMenuUnfold,
+  IconRelation,
+  IconStorage,
+} from '@arco-design/web-vue/es/icon'
+import type { Component } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+
+import { useAppPreferences } from '@/services/app-preferences'
+import { useWorkbenchState } from '@/services/workbench-state'
+
+interface NavItem {
+  name: 'materials' | 'evidence' | 'graphs'
+  label: string
+  icon: Component
 }
-onMounted(refreshWorkspace)
+
+const navItems: NavItem[] = [
+  {
+    name: 'evidence',
+    label: '运行与证据',
+    icon: IconDashboard,
+  },
+  {
+    name: 'graphs',
+    label: '根因与图谱',
+    icon: IconRelation,
+  },
+  {
+    name: 'materials',
+    label: '素材与构图',
+    icon: IconExperiment,
+  },
+]
+
+const router = useRouter()
+const route = useRoute()
+const collapsed = ref(false)
+const backendConfigModalVisible = ref(false)
+const backendConfigForm = reactive({
+  host: '127.0.0.1',
+  port: '8000',
+})
+const { preferences, updatePreferences } = useAppPreferences()
+const { state: workbenchState } = useWorkbenchState()
+
+const sourceModeOptions = [
+  { value: 'mock', label: 'Demo', icon: IconStorage },
+  { value: 'backend', label: 'Backend', icon: IconCloud },
+] as const
+
+const activeMenuKey = computed(() => {
+  const matched = navItems.find((item) => item.name === route.name)
+  return matched?.name ?? 'evidence'
+})
+
+const currentPageLabel = computed(() => {
+  return typeof route.meta.label === 'string' ? route.meta.label : 'RootLens 工作台'
+})
+
+const currentContextLabel = computed(() => {
+  return [workbenchState.value.selectedRunId, workbenchState.value.selectedCaseId].filter(Boolean).join(' / ') || '未选择上下文'
+})
+
+const apiBaseLabel = computed(() => {
+  if (preferences.value.dataSourceMode === 'mock') {
+    return '内置资产'
+  }
+
+  return preferences.value.apiBaseUrl.replace(/^https?:\/\//, '')
+})
+
+const backendConfigPreview = computed(() => {
+  const host = backendConfigForm.host.trim() || '127.0.0.1'
+  const port = backendConfigForm.port.trim() || '8000'
+  return `http://${host}:${port}`
+})
+
+function parseApiBaseUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return {
+      host: url.hostname || '127.0.0.1',
+      port: url.port || '8000',
+    }
+  } catch {
+    return {
+      host: '127.0.0.1',
+      port: '8000',
+    }
+  }
+}
+
+function handleNavigate(key: string | number) {
+  const target = String(key) as NavItem['name']
+  void router.push({
+    name: target,
+  })
+}
+
+function handleSourceModeChange(mode: 'mock' | 'backend') {
+  updatePreferences({
+    dataSourceMode: mode,
+  })
+}
+
+function openBackendConfigModal() {
+  const parsed = parseApiBaseUrl(preferences.value.apiBaseUrl)
+  backendConfigForm.host = parsed.host
+  backendConfigForm.port = parsed.port
+  backendConfigModalVisible.value = true
+}
+
+function handleBackendConfigReset() {
+  backendConfigForm.host = '127.0.0.1'
+  backendConfigForm.port = '8000'
+}
+
+function handleBackendConfigSave() {
+  const host = backendConfigForm.host.trim() || '127.0.0.1'
+  const parsedPort = Number.parseInt(backendConfigForm.port.trim(), 10)
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : '8000'
+
+  updatePreferences({
+    apiBaseUrl: `http://${host}:${port}`,
+  })
+  backendConfigModalVisible.value = false
+}
 </script>
+
 <template>
-  <a-config-provider size="medium" :locale="zhCN">
+  <a-config-provider size="small">
     <div class="app-shell">
-      <aside class="app-rail">
-        <RouterLink to="/materials" class="brand" aria-label="RootLens 首页"><span class="brand-mark"><span /><span /><span /></span><span>RootLens<small>知识与证据工作台</small></span></RouterLink>
-        <div class="rail-label">工作空间</div>
-        <nav class="main-nav" aria-label="主导航">
-          <RouterLink v-for="item in navigation" :key="item.name" :to="item.path" :class="{ active: route.name === item.name }"><component :is="item.icon" /><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><span class="nav-number">{{ item.number }}</span></RouterLink>
-        </nav>
-        <section class="rail-guide"><span class="eyebrow">两条路径，一个工作台</span><p>资料 <IconArrowRight /> 可用知识</p><p>样本 <IconArrowRight /> 可追溯解释</p></section>
-        <div class="rail-bottom"><span class="rail-label">当前工作图</span><strong>{{ currentGraph ? friendly(currentGraph.title, '当前知识图谱') : '尚未选择图谱' }}</strong><span v-if="currentGraph" class="status-dot" :class="currentGraph.enabled ? 'status-dot--green' : 'status-dot--amber'">{{ currentGraph.enabled ? '已投入使用' : '待投入使用' }}</span><RouterLink :to="currentGraph?.enabled ? newAnalysisRoute(currentGraph.graph_id) : '/graphs'" class="text-button">{{ currentGraph?.enabled ? '使用此图分析' : '前往知识图谱' }} <IconArrowRight /></RouterLink></div>
-      </aside>
-      <div class="app-main">
-        <header class="app-topbar"><div class="topbar-context"><span class="context-dot" />工业异常分析<span class="context-divider">/</span><strong>{{ route.meta.label }}</strong></div><div class="topbar-actions"><span v-if="activeTasks" class="running-label"><IconRefresh class="is-spinning" /> {{ activeTasks }} 项任务处理中</span><button class="connection-button" @click="backendUrl = workspace.baseUrl; settingsOpen = true"><IconCheckCircle v-if="workspace.connected" class="success-text" /><IconExclamationCircle v-else class="warning-text" /><span>{{ workspace.connected ? '后端已连接' : workspace.loading ? '正在连接…' : '后端未连接' }}</span><IconSettings /></button></div></header>
-        <main class="app-content">
-          <div v-if="workspace.error && !settingsOpen" class="alert alert--error global-connection-error"><IconExclamationCircle /><span>无法连接工作台服务：{{ workspace.error }}</span><button class="text-button" :disabled="workspace.loading" @click="refreshWorkspace">重新连接</button><button class="text-button" @click="settingsOpen = true">设置地址</button></div>
+      <header class="ocean-header">
+        <div class="ocean-header__left">
+          <div class="ocean-header__logo">
+            <span class="ocean-header__logo-mark">RL</span>
+            <span class="ocean-header__logo-text">RootLens</span>
+          </div>
+          <div class="ocean-header__divider" />
+          <h1 class="ocean-header__title">
+            <icon-dashboard />
+            <span>{{ currentPageLabel }}</span>
+          </h1>
+        </div>
+        <div class="ocean-header__right">
+          <a-radio-group
+            :model-value="preferences.dataSourceMode"
+            type="button"
+            aria-label="数据源模式"
+            @change="handleSourceModeChange"
+          >
+            <a-radio v-for="item in sourceModeOptions" :key="item.value" :value="item.value">
+              <component :is="item.icon" />
+              {{ item.label }}
+            </a-radio>
+          </a-radio-group>
+
+          <a-button
+            v-if="preferences.dataSourceMode === 'backend'"
+            type="text"
+            class="ocean-header__api-base-trigger"
+            aria-label="修改后端地址"
+            @click="openBackendConfigModal"
+          >
+            <template #icon><icon-cloud /></template>
+            {{ apiBaseLabel }}
+          </a-button>
+          <a-tag v-else size="small" color="green">
+            <icon-bulb />
+            <span>{{ apiBaseLabel }}</span>
+          </a-tag>
+        </div>
+        <a-tooltip :content="currentContextLabel">
+          <div class="ocean-header__profile" aria-label="当前上下文">{{ currentContextLabel }}</div>
+        </a-tooltip>
+      </header>
+
+      <a-layout class="ads-brain-workbench-layout" has-sider>
+        <a-layout-sider
+          class="app-sider-menu"
+          :width="220"
+          :collapsed-width="56"
+          :collapsed="collapsed"
+          hide-trigger
+          breakpoint="xl"
+        >
+          <a-menu
+            class="app-sider-menu__menu"
+            :selected-keys="[activeMenuKey]"
+            :collapse="collapsed"
+            @menu-item-click="handleNavigate"
+          >
+            <a-menu-item v-for="item in navItems" :key="item.name">
+              <template #icon>
+                <component :is="item.icon" />
+              </template>
+              {{ item.label }}
+            </a-menu-item>
+          </a-menu>
+
+          <a-button
+            type="text"
+            shape="square"
+            class="app-sider-menu__collapse-btn"
+            :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
+            @click="collapsed = !collapsed"
+          >
+            <IconMenuUnfold v-if="collapsed" />
+            <IconMenuFold v-else />
+          </a-button>
+        </a-layout-sider>
+
+        <a-layout-content class="ads-brain-workbench-layout__content">
           <RouterView />
-        </main>
-      </div>
-      <a-modal v-model:visible="settingsOpen" title="连接后端服务" :footer="false" width="520px">
-        <form class="form-stack" @submit.prevent="connect"><p class="muted">资料解析、知识制作、模型测量与推理均在后端执行。</p><label class="field">服务地址<input v-model="backendUrl" type="url" required placeholder="http://127.0.0.1:8000" /></label><p v-if="settingsError" class="error-text">{{ settingsError }}</p><div class="button-row justify-end"><button type="button" class="button button--ghost" @click="settingsOpen = false">取消</button><button class="button button--primary" :disabled="workspace.loading">{{ workspace.loading ? '正在连接…' : '连接服务' }}</button></div></form>
+        </a-layout-content>
+      </a-layout>
+
+      <a-modal
+        v-model:visible="backendConfigModalVisible"
+        title="修改后端地址"
+        width="420px"
+        @ok="handleBackendConfigSave"
+      >
+        <a-form
+          id="app-form-1"
+          :model="backendConfigForm"
+          layout="vertical"
+          class="ocean-header__modal-stack workspace-form"
+        >
+          <a-form-item
+            field="host"
+            label="域名 / IP"
+            :label-attrs="{ for: 'backend-backendConfigForm-host-input' }"
+            class="workspace-form-item"
+          >
+            <a-input
+              :input-attrs="{
+                id: 'backend-backendConfigForm-host-input',
+                'aria-label': '域名 / IP',
+              }"
+              id="backend-backendConfigForm-host"
+              aria-label="域名 / IP"
+              v-model="backendConfigForm.host"
+              placeholder="127.0.0.1"
+            />
+          </a-form-item>
+          <a-form-item
+            field="port"
+            label="端口"
+            :label-attrs="{ for: 'backend-backendConfigForm-port-input' }"
+            class="workspace-form-item"
+          >
+            <a-input
+              :input-attrs="{ id: 'backend-backendConfigForm-port-input', 'aria-label': '端口' }"
+              id="backend-backendConfigForm-port"
+              aria-label="端口"
+              v-model="backendConfigForm.port"
+              placeholder="8000"
+            />
+          </a-form-item>
+          <div class="workspace-claim-note workspace-claim-note--compact">
+            <span class="workspace-summary-label">
+              <icon-info-circle />
+              <span>预览</span>
+            </span>
+            <strong>{{ backendConfigPreview }}</strong>
+          </div>
+          <div class="rl-form-actions rl-form-actions--dual">
+            <a-button size="small" @click="handleBackendConfigReset">
+              恢复默认 127.0.0.1:8000
+            </a-button>
+          </div>
+        </a-form>
       </a-modal>
     </div>
   </a-config-provider>
