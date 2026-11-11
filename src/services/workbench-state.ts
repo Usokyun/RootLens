@@ -1,9 +1,11 @@
 import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 
+import type { RunSourceContract } from '@/api/contracts'
 import type { ObservationConfidenceBand, ObservationModality } from '@/services/evidence-observation'
 
 export interface WorkbenchState {
   selectedRunId: string | null
+  selectedRunSource: RunSourceContract | null
   selectedCaseId: string | null
   selectedObservationId: string | null
   selectedPathId: string | null
@@ -30,12 +32,15 @@ interface WorkbenchStateApi {
 }
 
 /** Refreshing or returning from Graphs must keep the same case and proof focus. */
-export function loadedRunSelectionPatch(state: WorkbenchState, runId: string, caseIds: string[]): Partial<WorkbenchState> {
-  if (state.selectedRunId === runId && state.selectedCaseId && caseIds.includes(state.selectedCaseId)) {
-    return { selectedRunId: runId }
+export function loadedRunSelectionPatch(state: WorkbenchState, runId: string, caseIds: string[], options: { source?: RunSourceContract; frameId?: string | null } = {}): Partial<WorkbenchState> {
+  const sameRun = state.selectedRunId === runId
+  const selectedRunSource = options.source ?? (sameRun ? state.selectedRunSource : null)
+  if (sameRun && state.selectedCaseId && caseIds.includes(state.selectedCaseId)
+    && (!options.frameId || options.frameId === state.selectedCaseId)) {
+    return { selectedRunId: runId, selectedRunSource }
   }
   return {
-    selectedRunId: runId, selectedCaseId: caseIds[0] ?? null,
+    selectedRunId: runId, selectedRunSource, selectedCaseId: options.frameId ?? caseIds[0] ?? null,
     selectedObservationId: null, selectedCandidateId: null, selectedPathId: null,
     selectedReviewTargetKey: null, selectedGraphNodeId: null, subgraphMode: 'path',
     selectedSubgraphNodeId: null, selectedSubgraphEdgeId: null,
@@ -44,7 +49,7 @@ export function loadedRunSelectionPatch(state: WorkbenchState, runId: string, ca
 
 /** Source changes must not leave a Demo run under a Backend heading. Filters are user preferences. */
 export function sourceSelectionReset():Partial<WorkbenchState> {
-  return {selectedRunId:null,selectedCaseId:null,selectedObservationId:null,selectedCandidateId:null,
+  return {selectedRunId:null,selectedRunSource:null,selectedCaseId:null,selectedObservationId:null,selectedCandidateId:null,
     selectedPathId:null,selectedReviewTargetKey:null,selectedGraphNodeId:null,subgraphMode:'path',
     selectedSubgraphNodeId:null,selectedSubgraphEdgeId:null,selectedConstructionRunId:null}
 }
@@ -54,6 +59,7 @@ const WORKBENCH_STATE_UPDATED_EVENT = 'rootlens:workbench-state-updated'
 
 const DEFAULT_WORKBENCH_STATE: WorkbenchState = {
   selectedRunId: null,
+  selectedRunSource: null,
   selectedCaseId: null,
   selectedObservationId: null,
   selectedPathId: null,
@@ -99,6 +105,7 @@ function normalizeConfidenceBand(value: unknown): ObservationConfidenceBand {
 function normalizeWorkbenchState(candidate?: Partial<WorkbenchState> | null): WorkbenchState {
   return {
     selectedRunId: normalizeString(candidate?.selectedRunId),
+    selectedRunSource: candidate?.selectedRunSource === 'analysis-v2' || candidate?.selectedRunSource === 'legacy-run' ? candidate.selectedRunSource : null,
     selectedCaseId: normalizeString(candidate?.selectedCaseId),
     selectedObservationId: normalizeString(candidate?.selectedObservationId),
     selectedPathId: normalizeString(candidate?.selectedPathId),
@@ -154,8 +161,10 @@ export function getWorkbenchState() {
 }
 
 export function updateWorkbenchState(patch: Partial<WorkbenchState>) {
+  const previous = readStoredWorkbenchState()
   const nextState = normalizeWorkbenchState({
-    ...readStoredWorkbenchState(),
+    ...previous,
+    ...(patch.selectedRunId !== undefined && patch.selectedRunId !== previous.selectedRunId ? { selectedRunSource: null } : {}),
     ...patch,
   })
   writeStoredWorkbenchState(nextState)

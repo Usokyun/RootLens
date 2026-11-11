@@ -34,6 +34,7 @@ import type {
   ReviewLedgerListResponse,
   ReviewRequest,
   RunDetail,
+  RunSourceContract,
   RunSummary,
   UploadRequest,
   WorkingGraphSummary,
@@ -51,10 +52,11 @@ export interface RootLensService {
   saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
+  enableWorkingGraph: (graphId: string, enabled: boolean) => Promise<WorkingGraphSummary>;
   activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep", targetContract?: "legacy" | "unified-v2") => Promise<WorkingGraphSummary>;
   exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
-  getRun: (runId: string) => Promise<RunDetail>;
+  getRun: (runId: string, source?: RunSourceContract) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
   submitReview: (
     request: ReviewRequest,
@@ -148,6 +150,9 @@ async function requiresBackendProcessing():Promise<never> {
 function buildMockService(): RootLensService {
   return {
     ...mockBackend,
+    getRun: (id, source) => source === "analysis-v2"
+      ? Promise.reject(new Error("已保存分析属于 Backend；请退出回放并连接保存本次分析的服务。"))
+      : mockBackend.getRun(id),
     uploadKGMaterial:requiresBackendProcessing,
     registerKGMaterialUrl:requiresBackendProcessing,
     extractKGMaterial:requiresBackendProcessing,
@@ -163,6 +168,7 @@ function buildMockService(): RootLensService {
     saveWorkingGraphPackage: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
     importWorkingGraphPackage: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
     mutateWorkingGraph: async () => { throw new Error("工作图管理需要 Backend 模式。"); },
+    enableWorkingGraph: async () => { throw new Error("启用工作图需要 Backend 模式。"); },
     activateWorkingGraph: async () => { throw new Error("装载工作图需要 Backend 模式。"); },
     artifactUrl: (_runId: string, artifactName: string) => artifactName,
   };

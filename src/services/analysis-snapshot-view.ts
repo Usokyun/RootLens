@@ -25,7 +25,8 @@ function candidateId(path: Row, result: Row) {
   const direct = text(path.candidate_id ?? path.target_entity_id)
   if (direct) return direct
   const ids = strings(path.nodes)
-  return rows(result.ranked_root_causes).map(candidate => text(candidate.candidate_id)).find(id => ids.includes(id)) ?? ''
+  const matched = rows(result.ranked_root_causes).map(candidate => text(candidate.candidate_id)).filter(id => ids.includes(id))
+  return matched.length === 1 ? matched[0]! : ''
 }
 
 function savedPath(path: Row, result: Row): PathGraphPath {
@@ -35,12 +36,16 @@ function savedPath(path: Row, result: Row): PathGraphPath {
   if (views.length && views.length !== Math.max(0,ids.length-1)) throw new Error(`保存路径 ${text(path.path_id)} 的源边与节点数量不一致。`)
   const sourceId=ids[0]===target?ids.at(-1):ids[0]
   const edges = views.map((view,index) => {
+    const edgeId = text(view.edge_id)
+    const head = view.reverse === true ? ids[index+1] : ids[index]
+    const tail = view.reverse === true ? ids[index] : ids[index+1]
     const edge = sourceEdges.find(item => item.edge_id === view.edge_id)
-    const head = text(edge?.head, view.reverse ? ids[index+1] : ids[index])
-    const tail = text(edge?.tail, view.reverse ? ids[index] : ids[index+1])
+    if (!edgeId || typeof view.reverse !== 'boolean' || !head || !tail || (edge && (edge.head !== head || edge.tail !== tail))) {
+      throw new Error(`保存路径 ${text(path.path_id)} 的源边与原方向不一致。`)
+    }
     return {
-      edge_id:text(view.edge_id), target_key:text(view.edge_id), source_node_id:head, target_node_id:tail,
-      relation:text(edge?.relation,'源边（类型见原快照）'), source:text(edge?.source) || null,
+      edge_id:edgeId, target_key:edgeId, source_node_id:head, target_node_id:tail,
+      relation:text(edge?.relation,'源边（类型未保存）'), source:text(edge?.source) || null,
       evidence:text(edge?.evidence) || null, confidence:numeric(edge?.confidence), review_status:text(edge?.review_status) || null,
     }
   })
@@ -68,19 +73,28 @@ function queryCase(source:Row, outerCase:Row, result:Row, frame:Row, index:numbe
     candidate_name:text(candidate.candidate_name,text(row(result.display_labels)[text(candidate.candidate_id)],text(candidate.candidate_id))),
     scoring_method:text(result.scoring_method), supporting_evidence:strings(candidate.support_obs_ids),
   })) as unknown as RankedRootCause[]
+  const frameObservations = rows(frame.observations)
+  const observationIds = new Set(frameObservations.map(item => item.obs_id))
+  const locations = rows(outerCase.observation_locations).filter(item => observationIds.has(item.obs_id))
+  const locationsById = new Map(locations.map(item => [item.obs_id, item]))
   const media = rows(outerCase.visual_evidence).filter(item => {
     const metadata=row(item.metadata)
     // Scope-specific previews require an explicit association; shared original media remain available.
     if (metadata.scope_id && metadata.scope_id !== scope.scope_id) return false
-    if (item.source_key==='roi_path' && metadata.obs_id) return rows(frame.observations).some(observation=>observation.obs_id===metadata.obs_id || text(observation.obs_id).startsWith(`${text(metadata.obs_id)}:`))
+    if (item.source_key==='roi_path' && metadata.obs_id) return frameObservations.some(observation=>observation.obs_id===metadata.obs_id || text(observation.obs_id).startsWith(`${text(metadata.obs_id)}:`))
     return item.source_key!=='roi_path' || rows(outerCase.results).length<=1 || !!metadata.scope_id
   }) as unknown as VisualEvidenceItem[]
-  const observations = rows(frame.observations).map(observation => {
+  const observations = frameObservations.map(observation => {
     const subject = rows(frame.subjects).find(item => item.subject_id === observation.subject_id)
+    const location = locationsById.get(observation.obs_id)
+    const obsScope = location?.scope ?? rows(frame.scopes).find(item => item.scope_id === observation.scope_id)
+    const externalId = text(location?.subject_external_id, text(subject?.external_id))
     return {...observation,
-      display_name:[text(subject?.external_id),text(observation.feature_id)].filter(Boolean).join(' · '),
+      display_name:[externalId,text(observation.feature_id)].filter(Boolean).join(' · '),
+      subject_external_id:externalId || null,
       facet:source.dataset==='tep'?'variable':source.dataset==='wafer'?'wafer_measurements':'visual_region',
-      time_window:scope.kind==='time_window'?scope:undefined, linked_entity_hints:[],
+      observation_location:location ?? (obsScope ? { obs_id:observation.obs_id, scope:obsScope, subject_external_id:externalId || null } : null),
+      time_window:row(obsScope).kind==='time_window'?obsScope:undefined, linked_entity_hints:[],
       raw_evidence_refs:strings(observation.raw_refs).map(id=>{const asset=rows(frame.assets).find(item=>item.asset_id===id);return{ref_id:id,label:id,role:text(asset?.kind),file_path:text(asset?.uri),line:null}}),
     }
   })
@@ -89,7 +103,7 @@ function queryCase(source:Row, outerCase:Row, result:Row, frame:Row, index:numbe
     dataset:text(source.dataset), label:context, case_label:context, source:'已保存分析快照',
     generated_evidence:{case_id:result.case_id,dataset:source.dataset,graph_dataset_id:source.graph_id,source:'已保存分析快照',observations},
     linked_entities:[], correction_candidates:[], ranked_root_causes:ranked, top_k_paths:pathRows,
-    path_graph:pathGraph, source_edge_provenance:pathRows.flatMap(path=>rows(path.source_edges)), review_targets:[], visual_evidence:media,
+    path_graph:pathGraph, source_edge_provenance:pathRows.flatMap(path=>rows(path.source_edges)), review_targets:[], visual_evidence:media, observation_locations:locations,
     reasoning_metadata:{graph_id:text(source.graph_id),reasoner_adapter:text(source.reasoner_id),reasoning_profile_id:text(source.reasoner_id),selection_mode:'explicit',fallback_applied:false,
       outcome:text(result.outcome),query_results:[result],evidence_frames:[frame]},
   }
@@ -110,7 +124,7 @@ export function analysisSnapshotView(value:unknown):RunDetail {
     workflow_steps:[{step_id:'saved-analysis',title:'打开已保存分析',status:'completed',summary:'只读显示后端保存的候选、原始分数与源路径；不重新测量或推理。',details:{source_contract:'analysis-v2',run_id:source.run_id,reasoner_id:source.reasoner_id}}],
     claim_boundary:'已保存分析快照；候选与路径为解释依据，分数不是根因概率。',
     evidence:null,evidence_summary:null,evidence_with_analysis:null,analysis:{reasoning_metadata:reasoning},
-    summary:{source_contract:'analysis-v2',working_graph_snapshot:source.working_graph_snapshot,evidence_download_url:source.evidence_download_url,source_case_count:source.case_count},
+    summary:{source_contract:'analysis-v2',graph_title:source.graph_title,working_graph_snapshot:source.working_graph_snapshot,evidence_download_url:source.evidence_download_url,source_case_count:source.case_count},
     reasoning_metadata:reasoning,linked_entities:[],correction_candidates:[],top_k_paths:cases.flatMap(item=>item.top_k_paths??[]),
     ranked_root_causes:cases.flatMap(item=>item.ranked_root_causes??[]),path_graph:unionPaths(cases.flatMap(item=>item.path_graph?.paths??[])),
     source_edge_provenance:cases.flatMap(item=>item.source_edge_provenance??[]),review_targets:[],

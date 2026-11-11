@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MeasuredEvidenceDetails from "@/components/evidence/MeasuredEvidenceDetails.vue"
+import NewAnalysisDialog from '@/components/evidence/NewAnalysisDialog.vue'
 import UnifiedReasoningDetails from '@/components/evidence/UnifiedReasoningDetails.vue'
 import {
   IconBulb,
@@ -11,7 +12,7 @@ import {
   IconUpload,
 } from '@arco-design/web-vue/es/icon'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import type {
   DashboardBootstrap,
@@ -19,10 +20,15 @@ import type {
   RankedRootCause,
   RunCaseDetail,
   RunDetail,
+  RunSourceContract,
   RunSummary,
   UploadMode,
+  VisualEvidenceItem,
 } from '@/api/contracts'
+import { backendResourceUrl, type WorkTask } from '@/api/two-loop'
 import SectionCardTitle from '@/components/layout/SectionCardTitle.vue'
+import { isAnalysisDataset, type AnalysisDraftSeed } from '@/services/analysis-draft'
+import { newAnalysisIntent, savedAnalysisIntent, savedAnalysisRoute } from '@/services/analysis-entry'
 import { useAppPreferences } from '@/services/app-preferences'
 import { buildLocalImportResult } from '@/services/browser-runtime'
 import { clearImportedSession, getImportedSessionSummary, getLocalSessionEventName, getLocalSessionMeta, saveImportedSession } from '@/services/rootlens-data'
@@ -30,6 +36,7 @@ import { getRootLensService } from '@/services/rootlens-service'
 import { restoreSessionImportFile } from '@/services/session-export'
 import { filterObservationBrowseItems, buildObservationBrowseItems, collectObservationModalities, collectObservationSources, findObservationBrowseItem, selectVisualEvidenceForObservation, type ObservationBrowseItem, type ObservationConfidenceBand, type ObservationModality } from '@/services/evidence-observation'
 import { extractFirstFileFromDataTransfer, markDragEventHandled } from '@/services/file-drop'
+import { taskStatusLabels } from '@/services/task-observer'
 import {
   formatClaimBoundaryCopy,
   formatReasonerAdapterLabel,
@@ -58,12 +65,18 @@ interface CaseEvidenceEntry {
 }
 
 const router = useRouter()
+const route = useRoute()
 const { preferences } = useAppPreferences()
 const { state: workbenchState, updateState } = useWorkbenchState()
 const isMockMode = computed(() => preferences.value.dataSourceMode === 'mock')
 
 let sourceRevision = 0
-const loading = ref(false)
+let workspaceRevision = 0
+let runReadRevision = 0
+let suppressDefaultRun = false
+const workspaceLoading = ref(false)
+const runLoading = ref(false)
+const loading = computed(() => workspaceLoading.value || runLoading.value)
 const uploadLoading = ref(false)
 const bootstrap = ref<DashboardBootstrap | null>(null)
 const runs = ref<RunSummary[]>([])
@@ -90,6 +103,9 @@ const replayImportForm = reactive({
 })
 
 const observationDetailModalVisible = ref(false)
+const analysisDialogVisible = ref(false)
+const analysisSeed = ref<AnalysisDraftSeed | null>(null)
+const analysisTask = ref<WorkTask | null>(null)
 
 const uploadForm = reactive({
   mode: 'records' as UploadMode,
@@ -117,6 +133,7 @@ const evidenceFilter = reactive({
 })
 
 const isReplaySessionActive = computed(() => importedSessionMeta.value?.source === 'import')
+const canStartBackendAnalysis = computed(() => !isMockMode.value && !isReplaySessionActive.value)
 const replaySourceModeLabel = computed(() => {
   switch (importedSessionSummary.value?.sourceMode) {
     case 'graphs+evidence':
@@ -147,6 +164,11 @@ const normalizedObservationFilters = computed(() => ({
 const selectedRunId = computed(() => workbenchState.value.selectedRunId)
 const activeCaseId = computed(() => workbenchState.value.selectedCaseId)
 const activeRun = computed(() => runDetail.value?.run ?? null)
+const analysisEvidenceUrl = computed(() => {
+  const path = runDetail.value?.summary?.evidence_download_url
+  return activeRun.value?.source_contract === 'analysis-v2' && canStartBackendAnalysis.value && typeof path === 'string'
+    ? backendResourceUrl(preferences.value.apiBaseUrl, path) : null
+})
 const activeCase = computed(() => {
   if (!runDetail.value) {
     return null
@@ -217,6 +239,12 @@ const observationSourceOptions = computed(() => collectObservationSources(caseEv
 const selectedObservationVisualEvidence = computed(() =>
   selectVisualEvidenceForObservation(activeObservation.value, activeCase.value?.visual_evidence ?? []),
 )
+
+function evidenceMediaUrl(item: VisualEvidenceItem) {
+  const url = resolveVisualEvidenceUrl(item)
+  return activeRun.value?.source_contract === 'analysis-v2' && url?.startsWith('/api/')
+    ? backendResourceUrl(preferences.value.apiBaseUrl, url) : url
+}
 
 const uploadAccept = computed(() => {
   const modeConfig = bootstrap.value?.upload_modes.find((item) => item.mode === uploadForm.mode)
@@ -508,7 +536,9 @@ function syncImportedSessionState() {
 }
 
 function handleLocalSessionChange() {
+  clearSourceView()
   syncImportedSessionState()
+  if (savedAnalysisIntent(route.query) || newAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
   void refreshWorkspace()
 }
 
@@ -646,7 +676,7 @@ function openObservationDetail(observationId: string | null) {
   observationDetailModalVisible.value = true
 }
 
-function setSelectedCase(caseId: string | null) {
+function setSelectedCase(caseId: string | null, syncUrl = true) {
   updateState({
     selectedCaseId: caseId,
     selectedObservationId: null,
@@ -658,6 +688,10 @@ function setSelectedCase(caseId: string | null) {
     selectedSubgraphNodeId: null,
     selectedSubgraphEdgeId: null,
   })
+  const saved = savedAnalysisIntent(route.query)
+  if (syncUrl && saved && saved.runId === activeRun.value?.run_id && caseId !== saved.frameId) {
+    void router.replace(savedAnalysisRoute('evidence', saved.runId, caseId))
+  }
 }
 
 function findBestPathId(caseItem: RunCaseDetail | null, candidate: RankedRootCause | null) {
@@ -694,21 +728,116 @@ function selectCandidate(candidateId: string) {
   })
 }
 
-async function loadRun(runId: string) {
-  const revision = sourceRevision
-  loading.value = true
+async function loadRun(runId: string, source?: RunSourceContract, frameId?: string | null) {
+  const revision = ++runReadRevision
+  const fromSource = sourceRevision
+  const isCurrent = () => revision === runReadRevision && fromSource === sourceRevision
+  runLoading.value = true
   errorMessage.value = ''
+  if (activeRun.value?.run_id !== runId) runDetail.value = null
 
   try {
-    const detail = await getRootLensService().getRun(runId)
-    if (revision !== sourceRevision) return
+    const detail = await getRootLensService().getRun(runId, source)
+    if (!isCurrent()) return
+    const caseIds = detail.cases.map((item) => item.case_id)
+    if (frameId && !caseIds.includes(frameId)) throw new Error('本次保存分析不包含指定的 Evidence 范围。')
     runDetail.value = detail
-    updateState(loadedRunSelectionPatch(workbenchState.value, runId, detail.cases.map((item) => item.case_id)))
+    const actualSource = detail.run.source_contract ?? source
+    if (actualSource === 'analysis-v2' && !runs.value.some((run) => run.run_id === runId)) runs.value = [detail.run, ...runs.value]
+    updateState(loadedRunSelectionPatch(workbenchState.value, runId, caseIds, { source: actualSource, frameId }))
+    if (savedAnalysisIntent(route.query)?.runId === runId && !frameId && workbenchState.value.selectedCaseId) {
+      void router.replace(savedAnalysisRoute('evidence', runId, workbenchState.value.selectedCaseId))
+    }
   } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error)
+    if (isCurrent()) errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
-    if (revision === sourceRevision) loading.value = false
+    if (isCurrent()) runLoading.value = false
   }
+}
+
+function clearSourceView() {
+  sourceRevision += 1
+  runReadRevision += 1
+  runLoading.value = false
+  suppressDefaultRun = false
+  runDetail.value = null
+  runs.value = []
+  bootstrap.value = null
+  workingGraphOptions.value = []
+  analysisDialogVisible.value = false
+  analysisTask.value = null
+  analysisSeed.value = null
+}
+
+function openNewAnalysis(graphId?: string) {
+  if (!canStartBackendAnalysis.value) return
+  uploadMessage.value = ''
+  if (graphId !== undefined) {
+    // Consume the explicit route before any catalog or old Run request can answer.
+    suppressDefaultRun = true
+    runReadRevision += 1
+    runLoading.value = false
+    runDetail.value = null
+    updateState(sourceSelectionReset())
+    analysisSeed.value = { graphId, graphOrigin: 'explicit' }
+  } else {
+    const previous = activeRun.value?.source_contract === 'analysis-v2' ? runDetail.value : null
+    const dataset = previous?.run.dataset
+    const reasoner = previous?.reasoning_metadata?.reasoner_adapter
+    analysisSeed.value = {
+      dataset: isAnalysisDataset(dataset) ? dataset : undefined,
+      graphId: previous?.reasoning_metadata?.graph_id ?? undefined,
+      reasonerId: reasoner === 'unified_abduction' || reasoner === 'tep_rootkgd' ? reasoner : undefined,
+      topK: previous?.run.top_k ?? undefined,
+    }
+  }
+  analysisDialogVisible.value = true
+}
+
+function showAnalysisTask() {
+  analysisSeed.value = null
+  analysisDialogVisible.value = true
+}
+
+function openSavedAnalysis(runId: string) {
+  analysisDialogVisible.value = false
+  suppressDefaultRun = true
+  const saved = savedAnalysisIntent(route.query)
+  if (saved?.runId === runId) void loadRun(runId, 'analysis-v2', saved.frameId)
+  else void router.push(savedAnalysisRoute('evidence', runId))
+}
+
+function openRunFromList(run: RunSummary) {
+  if (run.source_contract === 'analysis-v2') return openSavedAnalysis(run.run_id)
+  suppressDefaultRun = false
+  if (savedAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
+  void loadRun(run.run_id, run.source_contract)
+}
+
+function handleAnalysisRoute(): boolean {
+  if (route.name !== 'evidence') return false
+  const newIntent = newAnalysisIntent(route.query)
+  const saved = savedAnalysisIntent(route.query)
+  if (!newIntent && !saved) return false
+  suppressDefaultRun = true
+  if (!canStartBackendAnalysis.value) {
+    errorMessage.value = '请切换到 Backend 并退出回放，再打开该分析入口。'
+    return true
+  }
+  if (newIntent) {
+    errorMessage.value = ''
+    openNewAnalysis(newIntent.graphId)
+    void router.replace({ name: 'evidence' })
+  } else if (saved) {
+    analysisDialogVisible.value = false
+    if (activeRun.value?.run_id === saved.runId && activeRun.value.source_contract === 'analysis-v2'
+      && (!saved.frameId || runDetail.value?.cases.some((item) => item.case_id === saved.frameId))) {
+      if (saved.frameId && activeCaseId.value !== saved.frameId) setSelectedCase(saved.frameId, false)
+    } else {
+      void loadRun(saved.runId, 'analysis-v2', saved.frameId)
+    }
+  }
+  return true
 }
 
 async function exportBackendReplay() {
@@ -721,54 +850,64 @@ async function exportBackendReplay() {
   } catch (error) { errorMessage.value = String(error) }
 }
 
-async function refreshWorkspace() {
-  const revision = sourceRevision
+async function refreshWorkspace(options: { keepError?: boolean } = {}) {
+  const revision = ++workspaceRevision
+  const fromSource = sourceRevision
+  const selectedAtStart = runReadRevision
+  const isCurrent = () => revision === workspaceRevision && fromSource === sourceRevision
   syncImportedSessionState()
-  loading.value = true
-  errorMessage.value = ''
+  workspaceLoading.value = true
+  if (!options.keepError) errorMessage.value = ''
 
   try {
     const [bootstrapPayload, runSummaries] = await Promise.all([
       getRootLensService().bootstrap(),
       getRootLensService().listRuns(),
     ])
-    if (revision !== sourceRevision) return
+    if (!isCurrent()) return
     bootstrap.value = bootstrapPayload
-    runs.value = runSummaries
+    const shown = activeRun.value
+    runs.value = shown?.source_contract === 'analysis-v2' && !runSummaries.some((run) => run.run_id === shown.run_id)
+      ? [shown, ...runSummaries] : runSummaries
     uploadForm.mode = bootstrapPayload.upload_modes[0]?.mode ?? 'records'
     workingGraphError.value = ''
     try {
       const result = await getRootLensService().listWorkingGraphs()
-      if (revision !== sourceRevision) return
+      if (!isCurrent()) return
       workingGraphOptions.value = result.graphs.map((graph) => ({
         profile_id: `working:${graph.graph_id}`, label: graph.title,
         reasoner_adapter: graph.knowledge ? 'unified_working_graph' : graph.dataset === 'mvtec' ? 'visual_profile_match' : graph.dataset === 'tep' ? 'process_graph_rbc' : 'wafer_spatial_profile', default: false,
       }))
     } catch (error) {
-      if (revision !== sourceRevision) return
+      if (!isCurrent()) return
       workingGraphOptions.value = []
       workingGraphError.value = error instanceof Error ? error.message : String(error)
     }
 
-    const nextRunId =
-      runSummaries.find((item) => item.run_id === selectedRunId.value)?.run_id ?? runSummaries[0]?.run_id ?? null
+    if (suppressDefaultRun || selectedAtStart !== runReadRevision) return
+    const saved = runSummaries.find((item) => item.run_id === selectedRunId.value)
+    if (!saved && selectedRunId.value && canStartBackendAnalysis.value && workbenchState.value.selectedRunSource === 'analysis-v2') {
+      await loadRun(selectedRunId.value, 'analysis-v2', activeCaseId.value)
+      return
+    }
+    const nextRun = saved ?? runSummaries[0]
 
-    if (nextRunId) {
-      await loadRun(nextRunId)
+    if (nextRun) {
+      await loadRun(nextRun.run_id, nextRun.source_contract)
       return
     }
 
     runDetail.value = null
   } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error)
+    if (isCurrent()) errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
-    if (revision === sourceRevision) loading.value = false
+    if (isCurrent()) workspaceLoading.value = false
   }
 }
 
 async function handleUpload() {
-  if (isMockMode.value) {
-    uploadMessage.value = '内置 Demo 模式不开放上传，请切换到 backend 模式后再提交真实数据。'
+  if (!canStartBackendAnalysis.value) {
+    uploadMessage.value = '请切换到 Backend 并退出回放后再上传。'
     return
   }
 
@@ -780,6 +919,7 @@ async function handleUpload() {
   uploadLoading.value = true
   uploadMessage.value = ''
   errorMessage.value = ''
+  const revision = sourceRevision
 
   try {
     const detail = await getRootLensService().uploadRun({
@@ -794,11 +934,14 @@ async function handleUpload() {
       top_k: uploadForm.topK,
     })
 
+    if (revision !== sourceRevision) return
+    suppressDefaultRun = false
+    if (savedAnalysisIntent(route.query)) void router.replace({ name: 'evidence' })
     uploadMessage.value = `已生成运行：${detail.run.run_id}`
     await refreshWorkspace()
-    await loadRun(detail.run.run_id)
+    if (revision === sourceRevision) await loadRun(detail.run.run_id, 'legacy-run')
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
     uploadLoading.value = false
   }
@@ -812,6 +955,7 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
 
   updateState({
     selectedRunId: runId,
+    selectedRunSource: activeRun.value?.source_contract ?? workbenchState.value.selectedRunSource,
     selectedCaseId: caseId,
     selectedObservationId:
       observationId ?? (caseId === activeCase.value?.case_id ? selectedObservationId.value : null),
@@ -821,6 +965,10 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
     selectedSubgraphEdgeId: null,
   })
 
+  if (activeRun.value?.source_contract === 'analysis-v2') {
+    void router.push(savedAnalysisRoute('graphs', runId, caseId))
+    return
+  }
   void router.push({
     name: 'graphs',
     query: {
@@ -832,19 +980,25 @@ function openGraphExplore(caseId: string, observationId: string | null = null) {
 
 watch(
   () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
-  () => {
-    sourceRevision += 1
-    runDetail.value = null; runs.value = []; bootstrap.value = null; workingGraphOptions.value = []
+  ([mode, address], [previousMode, previousAddress]) => {
+    clearSourceView()
     updateState(sourceSelectionReset())
-    void refreshWorkspace()
+    if (savedAnalysisIntent(route.query) && previousMode === 'backend' && (mode !== 'backend' || address !== previousAddress)) {
+      void router.replace({ name: 'evidence' })
+      void refreshWorkspace()
+    } else {
+      void refreshWorkspace({ keepError: handleAnalysisRoute() })
+    }
   },
 )
+
+watch(() => [route.name, route.query.intent, route.query.graph, route.query.source, route.query.run_id, route.query.case_id], handleAnalysisRoute)
 
 watch(
   () => workbenchState.value.selectedRunId,
   (runId) => {
-    if (runId && runId !== runDetail.value?.run.run_id) {
-      void loadRun(runId)
+    if (!suppressDefaultRun && runId && runId !== runDetail.value?.run.run_id) {
+      void loadRun(runId, workbenchState.value.selectedRunSource ?? runs.value.find((item) => item.run_id === runId)?.source_contract)
     }
   },
 )
@@ -899,10 +1053,12 @@ watch(activeObservationItems, (items) => {
 onMounted(() => {
   syncImportedSessionState()
   window.addEventListener(getLocalSessionEventName(), handleLocalSessionChange as EventListener)
-  void refreshWorkspace()
+  void refreshWorkspace({ keepError: handleAnalysisRoute() })
 })
 
 onBeforeUnmount(() => {
+  sourceRevision += 1
+  runReadRevision += 1
   window.removeEventListener(getLocalSessionEventName(), handleLocalSessionChange as EventListener)
 })
 </script>
@@ -914,6 +1070,12 @@ onBeforeUnmount(() => {
   >
     <a-alert v-if="errorMessage" class="rl-alert" type="error" :title="errorMessage" />
     <a-alert v-if="uploadMessage" class="rl-alert" type="success" :title="uploadMessage" />
+
+    <NewAnalysisDialog
+      v-if="canStartBackendAnalysis" :key="preferences.apiBaseUrl" v-model:visible="analysisDialogVisible"
+      :base-url="preferences.apiBaseUrl" :seed="analysisSeed"
+      @task-change="analysisTask = $event" @open-result="openSavedAnalysis"
+    />
 
     <section class="workspace-shell workspace-shell--evidence">
       <div class="workspace-evidence-layout">
@@ -937,7 +1099,7 @@ onBeforeUnmount(() => {
                         : formatUploadModeLabel(uploadForm.mode)
                   }}
                 </a-tag>
-                <a-button :loading="loading" @click="refreshWorkspace">
+                <a-button :loading="loading" @click="refreshWorkspace({ keepError: handleAnalysisRoute() })">
                   <template #icon><icon-refresh /></template>
                   刷新视图
                 </a-button>
@@ -964,7 +1126,8 @@ onBeforeUnmount(() => {
                   </a-button>
                 </a-button-group>
 
-                <a-button v-if="preferences.dataSourceMode === 'backend' && !isReplaySessionActive && selectedRunId" @click="exportBackendReplay">导出本次运行回放</a-button>
+                <a-button v-if="analysisEvidenceUrl" :href="analysisEvidenceUrl" download>下载本次 Evidence</a-button>
+                <a-button v-else-if="canStartBackendAnalysis && selectedRunId && activeRun?.source_contract !== 'analysis-v2'" @click="exportBackendReplay">导出本次运行回放</a-button>
                 <div v-if="isReplaySessionActive" class="rl-section-card workspace-session-card">
                   <div class="rl-section-card__body workspace-stack workspace-stack--tight">
                     <div class="workspace-summary-list workspace-summary-list--two-col">
@@ -1254,7 +1417,7 @@ onBeforeUnmount(() => {
                         'workspace-basic-list-item--active': run.run_id === activeRun?.run_id,
                       }"
                       :title="`${run.run_id} · ${formatDateTime(run.created_at)}`"
-                      @click="loadRun(run.run_id)"
+                      @click="openRunFromList(run)"
                     >
                       <strong class="workspace-basic-list-item__primary">{{ run.label }}</strong>
                       <div
@@ -1277,11 +1440,13 @@ onBeforeUnmount(() => {
                     </a-button>
                   </template>
                   <template v-else-if="!isMockMode">
-                    <a-button type="primary" :loading="uploadLoading" @click="handleUpload">
+                    <a-button type="primary" @click="openNewAnalysis()">新建分析</a-button>
+                    <a-button v-if="analysisTask" @click="showAnalysisTask">分析任务 · {{ taskStatusLabels[analysisTask.status] }}</a-button>
+                    <a-button :loading="uploadLoading" @click="handleUpload">
                       <template #icon>
                         <icon-upload />
                       </template>
-                      上传并生成 Run
+                      旧接口上传
                     </a-button>
                   </template>
                 </div>
@@ -1851,8 +2016,8 @@ onBeforeUnmount(() => {
             class="rl-visual-card"
           >
             <img
-              v-if="resolveVisualEvidenceUrl(item)"
-              :src="resolveVisualEvidenceUrl(item) ?? undefined"
+              v-if="evidenceMediaUrl(item)"
+              :src="evidenceMediaUrl(item) ?? undefined"
               :alt="item.title"
             />
             <div>

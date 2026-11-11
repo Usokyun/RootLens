@@ -7,12 +7,12 @@ import {
   IconStorage,
   IconUpload,
 } from "@arco-design/web-vue/es/icon";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import type {
   KGDraftListRequest,
   KGDraftRecord,
-  KGMaterialBuildSourcesResponse,
   KGMaterialChunkRecord,
   KGMaterialExtractionArtifactRecord,
   KGMaterialExtractionRunRecord,
@@ -25,11 +25,16 @@ import type {
   KGConstructionReviewQueueResponse,
   KGStudioPayload,
 } from "@/api/contracts";
+import { materialBuildBlocker, materialCapabilities, type MaterialBuildOptions } from "@/api/material-tasks";
+import type { WorkTask } from "@/api/two-loop";
 import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
+import TaskStatusPanel from "@/components/tasks/TaskStatusPanel.vue";
 import { useAppPreferences } from "@/services/app-preferences";
 import { extractFilesFromDataTransfer, markDragEventHandled } from "@/services/file-drop";
 import { uploadKGMaterialFiles } from "@/services/material-upload";
+import { useMaterialSourceTasks } from "@/services/material-source-tasks";
+import { getLocalSessionEventName, getLocalSessionMeta } from "@/services/rootlens-data";
 import { getRootLensService } from "@/services/rootlens-service";
 import {
   buildMaterialsBuildEdgeProvenance,
@@ -38,6 +43,7 @@ import {
   type ProvenanceSourceMaterial,
 } from "@/services/provenance-inspector";
 import { downloadJsonFile } from "@/services/session-export";
+import { taskCanRetry, taskIsActive, taskStatusLabels } from "@/services/task-observer";
 import { formatClaimBoundaryCopy } from "@/services/ui-copy";
 import { sourceSelectionReset, useWorkbenchState } from "@/services/workbench-state";
 
@@ -53,6 +59,11 @@ interface RootLensKGBuildExportV1 {
 
 const { preferences } = useAppPreferences();
 const { state: workbenchState, updateState } = useWorkbenchState();
+const router = useRouter();
+const replayActive = ref(getLocalSessionMeta()?.source === "import");
+const backendUrl = computed(() => preferences.value.dataSourceMode === "backend" && !replayActive.value
+  ? preferences.value.apiBaseUrl : null);
+const canUseBackend = computed(() => backendUrl.value !== null);
 
 let sourceRevision = 0;
 const loading = ref(false);
@@ -64,7 +75,6 @@ const activationDataset = ref<"mvtec" | "wafer" | "tep">("mvtec");
 const materials = ref<KGMaterialRecord[]>([]);
 const builds = ref<KGConstructionBuildListResponse | null>(null);
 const buildDetail = ref<KGConstructionBuildDetail | null>(null);
-const buildSourcesPreview = ref<KGMaterialBuildSourcesResponse | null>(null);
 const kgStudio = ref<KGStudioPayload | null>(null);
 const draftHistory = ref<KGDraftRecord[]>([]);
 
@@ -86,7 +96,6 @@ const materialSourceTab = ref("upload");
 const materialSourceTriggerRef = ref<{ $el: HTMLButtonElement } | null>(null);
 const materialSourcePanelRef = ref<HTMLElement | null>(null);
 
-const materialExtractLoading = ref(false);
 const sourceDraftLoading = ref(false);
 
 const buildDetailModalVisible = ref(false);
@@ -131,10 +140,10 @@ const sourceDraftForm = reactive({
   confidence: 0.55,
 });
 
-const buildForm = reactive({
-  output_name: "workspace-build",
-  source_type: "structured_records" as "structured_records" | "manual_table",
-  capability: "legacy",
+const buildForm = reactive<MaterialBuildOptions>({
+  title: "工作图",
+  dataset: "mvtec",
+  allowRepair: true,
 });
 
 const uploadInputRef = ref<HTMLInputElement | null>(null);
@@ -157,6 +166,17 @@ const selectedMaterials = computed(() =>
   materials.value.filter((item) => selectedMaterialIds.value.includes(item.material_id)),
 );
 
+const sourceTasks = useMaterialSourceTasks(() => backendUrl.value, refreshParsedMaterials);
+const {
+  task: sourceTask, history: sourceTaskHistory, historyError: sourceHistoryError,
+  submitError: sourceSubmitError, submitting: sourceSubmitting, busy: sourceBusy,
+  resultGraphId: sourceGraphId, connectionError: sourceConnectionError, retrying: sourceRetrying,
+} = sourceTasks;
+const materialExtractLoading = computed(() => sourceSubmitting.value === "material_parse"
+  || (sourceTask.value?.kind === "material_parse" && taskIsActive(sourceTask.value)));
+const buildBlocker = computed(() => materialBuildBlocker(selectedMaterials.value, buildForm));
+const materialProcessingHint = "Demo / Replay 只展示成品。请切换 Backend 并退出回放后处理素材。";
+
 const materialClaimBoundaryCopy = computed(() =>
   formatClaimBoundaryCopy(
     materialDetail.value?.claim_boundary ??
@@ -168,7 +188,7 @@ const materialClaimBoundaryCopy = computed(() =>
 const canExportBuild = computed(() => !!buildDetail.value);
 
 const materialsLibraryHelp =
-  "backend mode 下优先展示真实素材库，再从 extract 推进到 build-sources。";
+  "勾选用于构图的资料。未解析的资料会在制作任务中先解析。";
 
 const selectedMaterialHelp = computed(() => [
   "聚合展示 detail / chunks / extractions / artifacts / draft history。",
@@ -176,15 +196,15 @@ const selectedMaterialHelp = computed(() => [
 ]);
 
 const uploadSourceHelp = [
-  "优先走 material library，再进入 extract / build-sources。",
-  "将远程来源先登记到 material library，再单独执行抽取。",
+  "上传或登记资料后，可先解析并查看来源片段，也可直接勾选制作。",
+  "登记 URL 不会立即抓取；解析时由 Backend 获取内容。",
 ];
 
 const buildResultsHelp =
-  "保留现有 candidate KG build / QA / review queue 能力。";
+  "查看真实制作任务、失败阶段及原有构图记录。";
 
 const buildRecipeHelp = computed(() => [
-  "先走 build-sources，再复用现有 construction build。",
+  "提交后由 Backend 解析、生成并校验。完成后打开工作图编辑和启用。",
   materialClaimBoundaryCopy.value,
 ]);
 
@@ -339,10 +359,41 @@ function handleUploadDrop(event: DragEvent) {
 function toggleMaterialSelection(materialId: string, checked: boolean) {
   if (checked) {
     selectedMaterialIds.value = [...new Set([...selectedMaterialIds.value, materialId])];
-    return;
+  } else {
+    selectedMaterialIds.value = selectedMaterialIds.value.filter((item) => item !== materialId);
   }
+  const scenarios = new Set(selectedMaterials.value.map(({ scenario }) => scenario).filter((s) => s !== "shared"));
+  if (scenarios.size === 1) {
+    const scenario = [...scenarios][0]!;
+    if (Object.hasOwn(materialCapabilities, scenario)) buildForm.dataset = scenario as MaterialBuildOptions["dataset"];
+  }
+}
 
-  selectedMaterialIds.value = selectedMaterialIds.value.filter((item) => item !== materialId);
+function materialTaskSourceCount(task: WorkTask) {
+  const ids = task.request?.material_ids;
+  return Array.isArray(ids) ? ids.length : "—";
+}
+
+function materialTaskGraphSize(task: WorkTask) {
+  const graph = task.result?.graph as { node_count?: number; edge_count?: number } | undefined;
+  return typeof graph?.node_count === "number" && typeof graph.edge_count === "number"
+    ? `${graph.node_count} / ${graph.edge_count}` : "—";
+}
+
+function openSourceTask(task: WorkTask) {
+  actionMessage.value = "";
+  sourceTasks.viewTask(task);
+}
+
+function openGeneratedGraph() {
+  if (!canUseBackend.value || !sourceGraphId.value) return;
+  void router.push({ name: "graphs", query: { graph: sourceGraphId.value } });
+}
+
+function selectLegacyBuild(runId: string) {
+  sourceTasks.clear();
+  sourceSubmitError.value = "";
+  void loadBuildDetail(runId);
 }
 
 async function loadBuildDetail(runId: string) {
@@ -396,7 +447,7 @@ async function loadBuildDetailModalState(runId: string) {
     const [detailResult, validationResult, reviewQueueResult] =
       await Promise.allSettled([
         getRootLensService().getKGConstructionBuild(runId),
-        getRootLensService().validateKGConstructionBuild(runId),
+        canUseBackend.value ? getRootLensService().validateKGConstructionBuild(runId) : Promise.resolve(null),
         getRootLensService().getKGConstructionReviewQueue(runId, { limit: 12 }),
       ]);
 
@@ -439,7 +490,7 @@ async function handleBuildReviewAction(
   targetKey: string,
   action: "accept" | "reject",
 ) {
-  if (!buildDetail.value) {
+  if (!buildDetail.value || !canUseBackend.value) {
     return;
   }
 
@@ -497,7 +548,7 @@ async function loadSelectedMaterialState(materialId: string) {
 }
 
 async function handleActivateBuild() {
-  if (!buildDetail.value || preferences.value.dataSourceMode !== "backend") return;
+  if (!buildDetail.value || !canUseBackend.value) return;
   activationLoading.value = true;
   errorMessage.value = "";
   try {
@@ -505,7 +556,7 @@ async function handleActivateBuild() {
       buildDetail.value.build.run_id, `${activationDataset.value} · ${buildDetail.value.build.run_id}`, activationDataset.value,
       buildDetail.value.summary.target_contract === "unified-v2" ? "unified-v2" : "legacy",
     );
-    actionMessage.value = `已装载 ${graph.title}。在 Evidence 页的推理配置中选择它。`;
+    actionMessage.value = `已装载 ${graph.title}。可在图谱页查看；v2 工作图启用后才可用于新分析。`;
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
   } finally {
@@ -571,6 +622,23 @@ async function refreshWorkspace() {
   }
 }
 
+async function refreshMaterialsView() {
+  await Promise.all([refreshWorkspace(), sourceTasks.refreshHistory(true), sourceTasks.refresh()]);
+}
+
+async function refreshParsedMaterials(materialIds: string[]) {
+  const revision = sourceRevision;
+  if (!canUseBackend.value || !materialIds.length) return;
+  const response = await getRootLensService().listKGMaterials();
+  if (revision !== sourceRevision || !canUseBackend.value) return;
+  materials.value = response.materials;
+  const selected = selectedMaterialId.value;
+  if (selected && materialIds.includes(selected)) {
+    await loadSelectedMaterialState(selected);
+    if (revision === sourceRevision && selectedMaterialId.value === selected) selectedMaterialTab.value = "chunks";
+  }
+}
+
 function handleMaterialSourceKeydown(event: KeyboardEvent) {
   if (event.key !== "Tab" || !materialSourceDrawerVisible.value) return;
 
@@ -597,6 +665,7 @@ function handleMaterialSourceKeydown(event: KeyboardEvent) {
 }
 
 async function handleMaterialUpload() {
+  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
   if (materialMutationLoading.value) return;
   if (!uploadForm.files.length) {
     actionMessage.value = "请选择待上传的素材文件。";
@@ -649,6 +718,7 @@ async function handleMaterialUpload() {
 }
 
 async function handleRegisterUrl() {
+  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
   if (!registerUrlForm.url.trim()) {
     actionMessage.value = "请输入待注册的 URL。";
     return;
@@ -683,33 +753,15 @@ async function handleRegisterUrl() {
 }
 
 async function handleMaterialExtract() {
-  if (!selectedMaterial.value) {
-    actionMessage.value = "请先选择一份素材。";
-    return;
-  }
-
-  materialExtractLoading.value = true;
+  const material = selectedMaterial.value;
+  if (!material || !canUseBackend.value || sourceBusy.value) return;
   actionMessage.value = "";
   errorMessage.value = "";
-
-  try {
-    const response = await getRootLensService().extractKGMaterial(
-      selectedMaterial.value.material_id,
-      { overwrite: true },
-    );
-    actionMessage.value = `解析完成：${response.record_count} 个实际片段，可在 Chunks 查看内容与定位。`;
-    await refreshWorkspace();
-    selectedMaterialId.value = response.material.material_id;
-    await loadSelectedMaterialState(response.material.material_id);
-    selectedMaterialTab.value = "chunks";
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    materialExtractLoading.value = false;
-  }
+  await sourceTasks.parse(material.material_id, material.extraction_status === "extracted");
 }
 
 async function handleGenerateSourceDraftPreview() {
+  if (!canUseBackend.value) { errorMessage.value = materialProcessingHint; return; }
   if (!selectedMaterial.value) {
     actionMessage.value = "请先选择一份素材。";
     return;
@@ -745,36 +797,10 @@ async function handleGenerateSourceDraftPreview() {
 }
 
 async function handleBuild() {
-  if (!selectedMaterials.value.length) {
-    actionMessage.value = "请先勾选至少一份已抽取素材。";
-    return;
-  }
-
+  if (!canUseBackend.value || sourceBusy.value || buildBlocker.value) return;
   actionMessage.value = "";
   errorMessage.value = "";
-
-  try {
-    const baseName = buildForm.output_name.trim();
-    const outputName = (builds.value?.builds ?? []).some(build => build.output_dir.endsWith(`/${baseName}`))
-      ? `${baseName}-${Date.now()}` : baseName;
-    const buildSourcesResponse = await getRootLensService().buildKGMaterialSources({
-      material_ids: selectedMaterials.value.map((item) => item.material_id),
-      output_name: outputName,
-      overwrite: false,
-      source_type: buildForm.source_type,
-      target_contract: buildForm.capability === "legacy" ? "legacy" : "unified-v2",
-      ...(buildForm.capability !== "legacy" ? { capability_id: buildForm.capability } : {}),
-    });
-    buildSourcesPreview.value = buildSourcesResponse;
-    const response = await getRootLensService().buildKGConstruction(
-      buildSourcesResponse.construction_request,
-    );
-    actionMessage.value = `图谱已生成：${response.run_id}`;
-    await refreshWorkspace();
-    await loadBuildDetail(response.run_id);
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
-  }
+  await sourceTasks.build(selectedMaterials.value, buildForm);
 }
 
 function handleExportBuild() {
@@ -800,13 +826,14 @@ function handleExportBuild() {
 }
 
 watch(
-  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
+  () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl, replayActive.value],
   () => {
     sourceRevision += 1;
     materials.value = []; builds.value = null; buildDetail.value = null; kgStudio.value = null; draftHistory.value = [];
     selectedMaterialId.value = null; selectedMaterialIds.value = []; materialDetail.value = null; sourceDraftPreview.value = null;
-    materialChunks.value = []; materialExtractions.value = []; materialArtifacts.value = []; buildSourcesPreview.value = null;
+    materialChunks.value = []; materialExtractions.value = []; materialArtifacts.value = [];
     buildDetailModalVisible.value = false;
+    actionMessage.value = "";
     updateState(sourceSelectionReset());
     void refreshWorkspace();
   },
@@ -849,8 +876,16 @@ watch(buildDetailModalVisible, (visible) => {
   }
 });
 
+function updateReplayState() { replayActive.value = getLocalSessionMeta()?.source === "import"; }
+
 onMounted(() => {
+  window.addEventListener(getLocalSessionEventName(), updateReplayState);
+  updateReplayState();
   void refreshWorkspace();
+});
+onBeforeUnmount(() => {
+  sourceRevision += 1;
+  window.removeEventListener(getLocalSessionEventName(), updateReplayState);
 });
 </script>
 
@@ -879,6 +914,7 @@ onMounted(() => {
                 <a-button
                   ref="materialSourceTriggerRef"
                   type="primary"
+                  :disabled="!canUseBackend"
                   :aria-expanded="materialSourceDrawerVisible"
                   aria-controls="material-source-drawer"
                   @click="materialSourceDrawerVisible = true"
@@ -886,7 +922,7 @@ onMounted(() => {
                   <template #icon><icon-upload /></template>
                   上传 / 注册素材
                 </a-button>
-                <a-button :loading="loading" @click="refreshWorkspace">
+                <a-button :loading="loading" @click="refreshMaterialsView">
                   <template #icon><icon-refresh /></template>
                   刷新视图
                 </a-button>
@@ -1146,15 +1182,15 @@ onMounted(() => {
                   <a-button
                     type="primary"
                     size="small"
-                    :disabled="!selectedMaterial"
+                    :disabled="!selectedMaterial || !canUseBackend || sourceBusy"
                     :loading="materialExtractLoading"
                     @click="handleMaterialExtract"
                   >
-                    执行抽取
+                    {{ selectedMaterial?.extraction_status === 'extracted' ? '重新解析' : '解析资料' }}
                   </a-button>
                   <a-button
                     size="small"
-                    :disabled="!selectedMaterial || !materialChunks.length"
+                    :disabled="!canUseBackend || !selectedMaterial || !materialChunks.length"
                     :loading="sourceDraftLoading"
                     @click="handleGenerateSourceDraftPreview"
                   >
@@ -1234,21 +1270,25 @@ onMounted(() => {
             <header class="rl-section-card__header">
               <div>
                 <h3 class="rl-section-card__title">
-                  <SectionCardTitle title="构图结果 / 已生成图谱" :help="buildResultsHelp">
+                  <SectionCardTitle title="制作任务 / 构图结果" :help="buildResultsHelp">
                     <icon-relation />
                   </SectionCardTitle>
                 </h3>
               </div>
-              <a-tag color="gold">{{ builds?.builds.length ?? 0 }} 次</a-tag>
+              <a-tag color="gold">{{ sourceTaskHistory.length + (builds?.builds.length ?? 0) }} 次</a-tag>
             </header>
             <div class="rl-section-card__body workspace-table-card workspace-table-card--fill">
+              <a-alert v-if="sourceHistoryError" type="warning">
+                无法读取制作任务：{{ sourceHistoryError }}
+                <a-button type="text" size="mini" @click="sourceTasks.refreshHistory(true)">重读任务</a-button>
+              </a-alert>
               <div
                 class="workspace-table-wrap workspace-table-wrap--builds workspace-table-wrap--fill"
               >
                 <table class="workspace-table">
                   <thead>
                     <tr>
-                      <th>图谱名</th>
+                      <th>任务 / 图谱名</th>
                       <th>来源素材数</th>
                       <th>节点/边</th>
                       <th>状态</th>
@@ -1256,14 +1296,28 @@ onMounted(() => {
                       <th>操作</th>
                     </tr>
                   </thead>
-                  <tbody v-if="builds?.builds.length ?? 0">
+                  <tbody v-if="sourceTaskHistory.length || builds?.builds.length">
+                    <tr
+                      v-for="task in sourceTaskHistory"
+                      :key="task.task_id"
+                      :data-task-id="task.task_id"
+                      :class="{ 'workspace-table__row--active': task.task_id === sourceTask?.task_id }"
+                      @click="openSourceTask(task)"
+                    >
+                      <td><strong>{{ task.title }}</strong></td>
+                      <td>{{ materialTaskSourceCount(task) }}</td>
+                      <td>{{ materialTaskGraphSize(task) }}</td>
+                      <td>{{ taskStatusLabels[task.status] }}</td>
+                      <td>{{ formatDateTime(task.updated_at) }}</td>
+                      <td><a-button size="mini" type="text" @click.stop="openSourceTask(task)">查看任务</a-button></td>
+                    </tr>
                     <tr
                       v-for="build in builds?.builds ?? []"
                       :key="build.run_id"
                       :class="{
-                        'workspace-table__row--active': build.run_id === buildDetail?.build.run_id,
+                        'workspace-table__row--active': !sourceTask && build.run_id === buildDetail?.build.run_id,
                       }"
-                      @click="loadBuildDetail(build.run_id)"
+                      @click="selectLegacyBuild(build.run_id)"
                     >
                       <td>
                         <strong>{{ build.run_id }}</strong>
@@ -1325,15 +1379,15 @@ onMounted(() => {
                 <div class="workspace-summary-list__item">
                   <span class="workspace-summary-label">
                     <icon-storage />
-                    <span>默认图谱</span>
+                    <span>当前结果</span>
                   </span>
-                  <strong>{{ buildDetail?.build.run_id ?? '未选择' }}</strong>
+                  <strong>{{ sourceTask ? (sourceGraphId ? sourceTask.title : taskStatusLabels[sourceTask.status]) : (buildDetail?.build.run_id ?? '未选择') }}</strong>
                 </div>
               </div>
 
               <div class="workspace-form-row workspace-form-row--two">
                 <a-form-item
-                  field="output_name"
+                  field="title"
                   label="输出图谱名"
                   :label-attrs="{ for: 'material-buildForm-output_name-input' }"
                   class="workspace-form-item"
@@ -1345,39 +1399,69 @@ onMounted(() => {
                     }"
                     id="material-buildForm-output_name"
                     aria-label="输出图谱名"
-                    v-model="buildForm.output_name"
+                    v-model="buildForm.title"
                   />
                 </a-form-item>
                 <a-form-item
-                  field="source_type"
-                  label="来源类型"
+                  field="dataset"
+                  label="构图场景"
                   :label-attrs="{ for: 'material-buildForm-source_type-input' }"
                   class="workspace-form-item"
                 >
                   <div
                     id="material-buildForm-source_type"
-                    v-control-label="'来源类型'"
+                    v-control-label="'构图场景'"
                     class="workspace-control"
                   >
-                    <a-select aria-label="来源类型" v-model="buildForm.source_type">
-                      <a-option value="structured_records">structured_records</a-option>
-                      <a-option value="manual_table">manual_table</a-option>
+                    <a-select aria-label="构图场景" v-model="buildForm.dataset">
+                      <a-option value="mvtec">视觉缺陷 · MVTec</a-option>
+                      <a-option value="tep">过程监测 · TEP</a-option>
+                      <a-option value="wafer">晶圆图案 · Wafer</a-option>
                     </a-select>
                   </div>
                 </a-form-item>
               </div>
 
               <div class="rl-form-actions rl-form-actions--dual">
-                <a-select v-model="buildForm.capability" aria-label="构图执行契约" style="width: 190px">
-                  <a-option value="legacy">现有画像契约</a-option>
-                  <a-option value="visual-region-v2">统一推理 · 图像 ROI</a-option>
-                  <a-option value="process-window-v2">统一推理 · 过程窗口</a-option>
-                  <a-option value="spatial-grid-v2">统一推理 · 空间网格</a-option>
-                </a-select>
-                <a-button type="primary" @click="handleBuild">生成构图</a-button>
+                <a-button
+                  type="primary"
+                  :disabled="!canUseBackend || !!buildBlocker || sourceBusy"
+                  :loading="sourceSubmitting === 'material_build'"
+                  @click="handleBuild"
+                >生成构图</a-button>
+                <a-checkbox v-model="buildForm.allowRepair" :disabled="!canUseBackend || sourceBusy">
+                  允许一次自动修复
+                </a-checkbox>
+              </div>
+              <small v-if="!canUseBackend">{{ materialProcessingHint }}</small>
+              <small v-else-if="buildBlocker">{{ buildBlocker }}</small>
+              <small v-else>提交后由 Backend 解析与校验，共最多 {{ buildForm.allowRepair ? 2 : 1 }} 次模型调用。</small>
+              <a-alert v-if="sourceSubmitError" type="error">{{ sourceSubmitError }}</a-alert>
+              <TaskStatusPanel
+                v-if="sourceTask"
+                :task="sourceTask"
+                :connection-error="sourceConnectionError"
+                :retrying="sourceRetrying"
+                @refresh="sourceTasks.refresh"
+                @retry="canUseBackend && sourceTasks.retry()"
+              >
+                <template #actions>
+                  <a-button v-if="sourceGraphId" type="primary" size="small" @click="openGeneratedGraph">打开并编辑此图</a-button>
+                </template>
+              </TaskStatusPanel>
+              <small v-if="sourceTask?.kind === 'material_build' && taskCanRetry(sourceTask)">
+                重试会保留原输入和修复额度，另建任务并可能再次调用模型。
+              </small>
+              <small v-if="sourceGraphId">工作图已保存。打开图谱编辑和启用后，可用这张图分析。</small>
+              <a-alert v-else-if="sourceTask?.kind === 'material_build' && sourceTask.status === 'completed'" type="error">
+                制作任务未返回工作图编号，无法打开结果。请重读任务状态。
+                <a-button type="text" size="mini" @click="sourceTasks.refresh">重新读取状态</a-button>
+              </a-alert>
+
+              <div v-if="!sourceTask && buildDetail" class="rl-form-actions rl-form-actions--dual">
                 <a-button :disabled="!canExportBuild" @click="handleExportBuild">导出本地</a-button>
                 <a-select v-model="activationDataset" style="width: 105px" aria-label="工作图场景"><a-option value="mvtec">MVTec</a-option><a-option value="wafer">Wafer</a-option><a-option value="tep">TEP</a-option></a-select>
-                <a-button :disabled="!buildDetail || preferences.dataSourceMode !== 'backend'"
+                <a-button :disabled="!buildDetail || !canUseBackend"
                   :loading="activationLoading" @click="handleActivateBuild">装载工作图</a-button>
                 <a-button
                   :disabled="!buildDetail"
@@ -1388,8 +1472,6 @@ onMounted(() => {
                   构图详情
                 </a-button>
               </div>
-
-              <pre class="rl-json-preview">{{ formatJsonPreview(buildSourcesPreview) }}</pre>
             </a-form>
           </article>
         </section>

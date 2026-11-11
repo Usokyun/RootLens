@@ -66,6 +66,13 @@ describe('workbench state persistence', () => {
     expect(loadedRunSelectionPatch(state, 'other-run', ['window-1', 'window-2'])).toMatchObject({ selectedCaseId: 'window-1', selectedCandidateId: null, selectedPathId: null })
     expect(loadedRunSelectionPatch(state, 'run', [])).toMatchObject({ selectedCaseId: null, selectedPathId: null })
   })
+
+  it('records the saved-analysis source and selects the exact requested Frame, clearing old proof focus', () => {
+    const state = { ...getWorkbenchState(), selectedRunId: 'saved', selectedCaseId: 'window-1', selectedPathId: 'old-path' }
+    const patch = loadedRunSelectionPatch(state, 'saved', ['window-1', 'window-2'], { source: 'analysis-v2', frameId: 'window-2' })
+    expect(updateWorkbenchState(patch)).toMatchObject({ selectedRunId: 'saved', selectedRunSource: 'analysis-v2', selectedCaseId: 'window-2', selectedPathId: null })
+    expect(updateWorkbenchState({ selectedRunId: 'old-run' }).selectedRunSource).toBeNull()
+  })
 })
 
 it('clears only source-bound selection while preserving user filters',()=>{

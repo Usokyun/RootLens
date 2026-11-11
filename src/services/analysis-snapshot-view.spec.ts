@@ -12,7 +12,7 @@ describe('saved analysis shape bridge',()=>{
     const view=analysisSnapshotView(source);expect(view.cases[0]!.ranked_root_causes?.map(item=>[item.rank,item.score,item.confidence,item.scoring_details?.total_cost])).toEqual([[1,-.25,null,.25],[1,-.25,null,.25]])
   })
   it('preserves canonical source-edge identity and orientation from saved views',()=>{
-    const path=analysisSnapshotView(saved()).cases[0]!.path_graph!.paths[0]!;expect(path.edges[0]).toMatchObject({edge_id:'edge-original',source_node_id:'cause',target_node_id:'predicate'});expect(path.edges[0]!.relation).toContain('类型见原快照')
+    const path=analysisSnapshotView(saved()).cases[0]!.path_graph!.paths[0]!;expect(path.edges[0]).toMatchObject({edge_id:'edge-original',source_node_id:'cause',target_node_id:'predicate'});expect(path.edges[0]!.relation).toContain('类型未保存')
   })
   it('uses actual Root edge records and keeps structural score as-is',()=>{
     const source=saved();const r=source.cases[0]!.results[0]! as Record<string,unknown>;r.scoring_method='tep_rootkgd_propagation_v2';r.ranked_root_causes=[{candidate_id:'cause',rank:1,score:.5854474293642782,confidence:null}];r.top_k_paths=[{path_id:'root-path',nodes:['cause','var'],node_names:['冷却扰动','阀'],source_edge_views:[{edge_id:'real-edge',reverse:false}],source_edges:[{edge_id:'real-edge',head:'cause',tail:'var',relation:'OBSERVES'}]}]
@@ -32,5 +32,23 @@ describe('saved analysis shape bridge',()=>{
   })
   it('keeps shared media but does not attach a different ROI preview to this Frame',()=>{
     const source=saved() as Record<string,unknown>;const outer=(source.cases as Record<string,unknown>[])[0]!;outer.evidence_frames=[{...frame('q-a',1),observations:[{obs_id:'roi:1:feature'}]},{...frame('q-b',161),observations:[{obs_id:'roi:2:feature'}]}];outer.visual_evidence=[{artifact_id:'shared',source_key:'image_path',metadata:{}},{artifact_id:'one',source_key:'roi_path',metadata:{obs_id:'roi:1'}},{artifact_id:'two',source_key:'roi_path',metadata:{obs_id:'roi:2'}}];const cases=analysisSnapshotView(source).cases;expect(cases[0]!.visual_evidence?.map(item=>item.artifact_id)).toEqual(['shared','two']);expect(cases[1]!.visual_evidence?.map(item=>item.artifact_id)).toEqual(['shared','one'])
+  })
+  it('uses only the selected Frame observation IDs when attaching saved locations', () => {
+    const source = saved()
+    const outer = source.cases[0]! as Record<string, unknown>
+    const location = { obs_id: 'obs-q-b', scope: frame('q-b', 161).scopes[0], subject_external_id: 'xmv_10' }
+    outer.observation_locations = [{ obs_id: 'obs-q-a', scope: frame('q-a', 1).scopes[0] }, location]
+    const selected = analysisSnapshotView(source).cases[0]!
+    expect(selected.observation_locations).toEqual([location])
+    expect(selected.generated_evidence?.observations).toMatchObject([
+      { obs_id: 'obs-q-b', subject_external_id: 'xmv_10', observation_location: location, time_window: { sample_start: 161 } },
+    ])
+    expect(selected.reasoning_metadata?.evidence_frames?.[0]).toEqual(frame('q-b', 161))
+  })
+  it('rejects a saved edge record whose endpoints contradict its stored direction', () => {
+    const source = saved()
+    const p = source.cases[0]!.results[0]!.top_k_paths[0]! as Record<string, unknown>
+    p.source_edges = [{ edge_id: 'edge-original', head: 'predicate', tail: 'cause', relation: 'SAVED' }]
+    expect(() => analysisSnapshotView(source)).toThrow('源边与原方向不一致')
   })
 })

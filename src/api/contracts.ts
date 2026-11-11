@@ -24,11 +24,13 @@ export interface WorkflowStep {
   details: Record<string, unknown>;
 }
 
+export type RunSourceContract = "legacy-run" | "analysis-v2";
+
 export interface RunSummary {
   run_id: string;
   created_at: string;
   mode: UploadMode | "process" | "wafer";
-  source_contract?: "legacy-run" | "analysis-v2";
+  source_contract?: RunSourceContract;
   source_filename: string;
   top_k: number | null;
   run_dir: string;
@@ -132,6 +134,7 @@ export interface WorkingGraphSummary {
   dataset: "mvtec" | "wafer" | "tep";
   build_id: string;
   status: "loading" | "ready" | "failed";
+  enabled?: boolean;
   node_count: number;
   edge_count: number;
   knowledge?: Record<string, unknown> | null;

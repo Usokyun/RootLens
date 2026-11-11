@@ -81,6 +81,22 @@ describe('working graph API', () => {
 })
 
 describe('distinct saved-analysis endpoint bridge',()=>{
+  it('opens an explicit saved analysis before any catalog response, without probing legacy runs', async () => {
+    const id = 'saved-before-catalog'
+    const body = { run_id: id, title: '保存结果', created_at: '2026-11-11', status: 'completed', dataset: 'tep', input_mode: 'evidence', cases: [] }
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => body })
+    vi.stubGlobal('fetch', fetch)
+    const detail = await createApiClient('https://exact.example').getRun(id, 'analysis-v2')
+    expect(detail.run).toMatchObject({ run_id: id, source_contract: 'analysis-v2' })
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual([`https://exact.example/api/analyses/${id}`])
+  })
+  it('uses the explicit v2 enable endpoint instead of legacy build activation', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ enabled: true }) })
+    vi.stubGlobal('fetch', fetch)
+    await expect(createApiClient('https://exact.example').enableWorkingGraph('id/1', true)).resolves.toMatchObject({ enabled: true })
+    expect(fetch.mock.calls[0]![0]).toBe('https://exact.example/api/kg/working-graphs/id%2F1/enable')
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({ enabled: true })
+  })
   it('merges explicit source summaries and reads new details directly from analyses across client instances',async()=>{
     const body={run_id:'new-analysis',title:'新结果',created_at:'2026-11-11',status:'completed',dataset:'mvtec',input_mode:'evidence',case_count:1,cases:[{case_id:'source',results:[{case_id:'query',ranked_root_causes:[],top_k_paths:[]}],evidence_frames:[{case_id:'query',observations:[],scopes:[]}]}]}
     const fetch=vi.fn(async(url:string)=>({ok:true,json:async()=>url.endsWith('/api/runs')?[{run_id:'old-run',created_at:'2026-11-10'}]:url.endsWith('/api/analyses')?{runs:[body]}:body}));vi.stubGlobal('fetch',fetch)

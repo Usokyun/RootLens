@@ -255,3 +255,43 @@ v2 工作图仍用完整 GET 包 → 原 JSON 修改 → PUT，不根据旧 TS �
 第一阶段恢复熟悉的旧 UI，不把新工作台全部增强硬塞回来。新异步任务进度、候选专属条件向导／等价词表单、推荐样例配套图入口、全52通道曲线／晶圆网格区域联动等后端能力和数据仍保留，但本轮原页面未重新接入这些现代控件。新 analysis 的旧 Session 导出也明确提示当前只读展示范围，不伪称导出成功；原 legacy Run 的回放／导出保持。
 
 Backend 总图采用当前登记图，历史局部路径和解释采用保存快照，不能把两者说成完全相同的历史全图展示。后续渐进改进应在这套原界面上单独授权，优先修基本逻辑，不再替换视觉语言或把网络图改成树。
+
+## 在原三页接回真实双闭环（2026-11-11）
+
+保留还原后的导航、Arco 卡片、总图／局部图和 Demo／成品 Replay。新操作接在原页面内，不另建工作台。
+
+### 运行与证据：新建、看进度、打开保存结果
+
+在 **Backend → 运行与证据 → 新建分析** 打开紧凑弹窗。先选已启用的 v2 工作图，再选该场景兼容的推理器；TEP 提供统一条件溯因和 RootKGD，视觉／晶圆只提供适用引擎。
+
+- **原始样本**：MVTec 选择原图、对象和异常定位模型，ROI 外观语义默认关闭；勾选才请求外部视觉模型。TEP 选择完整 52 通道序列、正常参考、一基闭区间窗口和采样间隔。Wafer 可直接选择原生 JSON／JSONL 网格。
+- **中间 Evidence**：选择后端生成的 EvidenceFrame JSON，不再运行原始测量。打开保存分析后用 **下载本次 Evidence** 获取原生 `evidence-frames.json`，可从同一文件入口普通上传。保留同图、同引擎和保留候选数才能比较同一配置；弹窗从当前保存结果带入这些可用默认值。
+- **公开样例**只填入真实输入，不自动提交。默认优先选择有保存测量的 Evidence；切到原始样本时显示是否按资料库调用 ROI 视觉模型。只有隐式选图才使用 `graph_ref` 精确匹配的已启用图；图页携入或用户手选的图保留，差异有提示和明确切换动作。配套图缺失／未启用不以同场景最新图代替。
+- **开始分析**提交真实异步任务。弹窗显示实际阶段、单位计数、失败与阶段记录；无总量时只显示进行中。断连可重读任务，失败／中断须点击 **按原输入重试** 才创建新任务。提交未获确认不会自动再发。关闭弹窗后可在原 Run 卡片重新查看本页已提交任务。
+
+完成后直接按 `source=analysis-v2` 的真实编号读 `/api/analyses/{id}`；进入图页及返回运行页继续携带同一 Frame `case_id`。已保存分析保留原分数和来源；旧接口上传和成品 Replay 保留原合同。工作图→新建分析携独立显式意图，先清旧运行上下文；晚到的目录或旧详情不会重置正在填写的文件、模式和工作图。
+
+### 共用客户端与实屏证据
+
+`src/api/two-loop.ts` 使用现有 API 地址解析和代理，`src/services/task-observer.ts` 按任务原服务读取增量事件，素材与分析各持一份观察实例；`src/components/tasks/TaskStatusPanel.vue` 共用阶段、断连和重试呈现。`src/services/analysis-entry.ts` 约定 `newAnalysisRoute(graphId)` 与 `savedAnalysisRoute(page, runId, frameId)`，不复制路由或结果适配。
+
+分析线针对性原生测试 **6 文件／37 项通过**。独立 Chrome 实屏记录在 `/Users/hhm/code/RootLens/.playwright-mcp/original-two-loop/`：
+
+- `01-new-analysis-native.png`、`02-demo-paired-graph.png`、`03-explicit-graph-preserved.png`：原版小弹窗、推荐 006 精确配套与指定严格图不被覆盖。
+- `04-root-evidence-upload.png`：目录延迟响应期间选择真实 Frame 后，文件、图和 RootKGD 选择保持。
+- `05-task-failure-explicit-retry.png`：使用受控任务响应验证失败和仅显式重试；此截图不代表新后端任务运行。
+- `06-saved-analysis-native-evidence.png`：真实 `f0cca0c7-f7f7-4f1f-8e12-ec8f13296acf` 保存分析按准确 ID／源／`process_window_161_260/query/window` 打开；实际下载 `evidence-frames.json` 与原 Frame 逐字段一致，无旧 `/api/runs/{id}` 探测。
+
+- `07-native-wafer-jsonl.png`：实际白名单下载的 `wafer-nearfull-248536.jsonl` 经中文文件选择进入原生晶圆模式。另核对 MVTec ROI 默认关闭、TEP 的正常参考、两引擎与 180 秒／1–100 默认；见 `analysis-file-chooser.json`。
+
+证据索引 `analysis-dialog-check.json`，复用入口 `/private/tmp/rootlens-original-analysis-dialog-check.mjs`。此脚本只发送真实 GET；测试提交、失败、重试全部在隔离浏览器拦截。实际新任务链由串联验收另记，不把受控任务响应记为模型调用成功。
+
+本机原 Vite 用既有 npm/mise 恢复，未占用其他服务。入口 `http://127.0.0.1:5186/evidence`，经同端口 `/api/health` 指向 8012 并返回 `ok`。如前端开发进程退出，从仓库根目录执行：
+
+```sh
+VITE_API_BASE_URL=http://127.0.0.1:8012 VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8012 npm run dev -- --host 127.0.0.1 --port 5186 --strictPort
+```
+
+最终三线源码的原生 `npm test` **28 文件／147 项通过**；`npm run build` 类型与生产构建通过，原全量 Arco 主 chunk 约 771KB 仍有体积警告。Tracked 及新增前端文件 whitespace 检查通过。实际日志为 `.playwright-mcp/original-two-loop/final-vitest.log`、`final-build.log`。未安装新工具或修改 D3、主题、根依赖。
+
+同一候选的实际构图 → 编辑／启用 → 原始样本 → 下载 Evidence → 普通上传复算，及三场景的实屏边界，见 [原界面真实闭环验收](../../backend/docs/original-ui-loop-acceptance.md)。

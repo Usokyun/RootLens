@@ -11,7 +11,7 @@ import {
   IconSend,
   IconStorage,
 } from "@arco-design/web-vue/es/icon";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import type {
@@ -19,12 +19,14 @@ import type {
   WorkingGraphPackage,
   WorkingGraphSummary,
   KGStudioPayload,
+  PathGraphPath,
   ReviewLedgerRecord,
   RunDetail,
   RunSummary,
 } from "@/api/contracts";
 import KnowledgeForceGraph from "@/components/graphs/KnowledgeForceGraph.vue";
 import RunPathGraph from "@/components/graphs/RunPathGraph.vue";
+import SavedObservationLocation from "@/components/graphs/SavedObservationLocation.vue";
 import SectionCardTitle from "@/components/layout/SectionCardTitle.vue";
 import ProvenanceInspectorDrawer from "@/components/provenance/ProvenanceInspectorDrawer.vue";
 import {
@@ -44,6 +46,7 @@ import {
   type MockGraphNodeDraft,
 } from "@/services/graph-curation";
 import { useAppPreferences } from "@/services/app-preferences";
+import { newAnalysisRoute, savedAnalysisIntent, savedAnalysisRoute } from "@/services/analysis-entry";
 import {
   buildCandidateSelectionPatch,
   buildLocalGraphSelectionPatch,
@@ -91,6 +94,8 @@ import {
   formatScoringMethodLabel,
   resolveRunReasoningSummary,
 } from "@/services/ui-copy";
+import { buildSavedPathProvenance, savedPathForEdge, savedPathObservation, savedPathsForCandidate } from "@/services/saved-analysis-graph";
+import { traceOutcome } from "@/services/unified-reasoning-display";
 import {
   sourceSelectionReset,
   useWorkbenchState,
@@ -124,45 +129,106 @@ const router = useRouter();
 const { preferences } = useAppPreferences();
 const { state: workbenchState, updateState } = useWorkbenchState();
 
-let sourceRevision = 0;
+let workspaceRevision = 0;
+let packageRevision = 0;
 const loading = ref(false);
 const runs = ref<RunSummary[]>([]);
 const runDetail = ref<RunDetail | null>(null);
 const kgStudio = ref<KGStudioPayload | null>(null);
 const packageDrawerOpen = ref(false);
 const packageText = ref("");
+const packageBaseline = ref("");
+const packageGraphId = ref<string | null>(null);
 const packageBusy = ref(false);
 const workingGraphs = ref<WorkingGraphSummary[]>([]);
 const editableGraphId = computed(() => preferences.value.dataSourceMode === "backend"
   && getLocalSessionMeta()?.source !== "import" ? kgStudio.value?.graph_id : undefined);
+const currentWorkingGraph = computed(() => workingGraphs.value.find(item => item.graph_id === editableGraphId.value));
+const packageGraph = computed(() => workingGraphs.value.find(item => item.graph_id === packageGraphId.value));
+const packageDirty = computed(() => packageText.value !== packageBaseline.value);
+const currentGraphEnabled = computed(() => currentWorkingGraph.value?.status === "ready"
+  && currentWorkingGraph.value.enabled === true && !!currentWorkingGraph.value.knowledge);
+
+function rememberWorkingGraph(graph: WorkingGraphSummary) {
+  workingGraphs.value = [...workingGraphs.value.filter(item => item.graph_id !== graph.graph_id), graph];
+}
 
 async function openGraphPackage() {
   packageDrawerOpen.value = true;
+  const revision = ++packageRevision;
   try {
-    workingGraphs.value = (await getRootLensService().listWorkingGraphs()).graphs;
-    if (editableGraphId.value) await selectPackageGraph(editableGraphId.value);
-  } catch (error) { errorMessage.value = String(error); }
+    const registry = await getRootLensService().listWorkingGraphs();
+    if (revision !== packageRevision) return;
+    workingGraphs.value = registry.graphs;
+    if (editableGraphId.value && editableGraphId.value !== packageGraphId.value) await selectPackageGraph(editableGraphId.value);
+  } catch (error) { if (revision === packageRevision) errorMessage.value = String(error); }
 }
 async function selectPackageGraph(id: string) {
+  const revision = ++packageRevision;
   packageBusy.value = true;
+  packageGraphId.value = null;
+  packageText.value = "";
+  packageBaseline.value = "";
+  errorMessage.value = "";
+  actionMessage.value = "";
   try {
-    packageText.value = JSON.stringify(await getRootLensService().getWorkingGraphPackage(id), null, 2);
-    kgStudio.value = await getRootLensService().kgStudio(id);
-  } catch (error) { errorMessage.value = String(error); }
-  finally { packageBusy.value = false; }
+    const service = getRootLensService();
+    const [body, studio] = await Promise.all([service.getWorkingGraphPackage(id), service.kgStudio(id)]);
+    if (revision !== packageRevision) return;
+    if (studio.graph_id !== id) throw new Error("后端没有返回所选工作图。");
+    packageText.value = JSON.stringify(body, null, 2);
+    packageBaseline.value = packageText.value;
+    packageGraphId.value = id;
+    kgStudio.value = studio;
+    if (!runDetail.value && route.query.graph !== id) void router.replace({ name: "graphs", query: { graph: id } });
+  } catch (error) { if (revision === packageRevision) errorMessage.value = String(error); }
+  finally { if (revision === packageRevision) packageBusy.value = false; }
 }
 async function savePackage(importNew = false) {
+  const id = packageGraphId.value;
+  if (!importNew && !id) return;
+  const revision = ++packageRevision;
   packageBusy.value = true;
+  errorMessage.value = "";
+  actionMessage.value = "";
   try {
     const body = JSON.parse(packageText.value) as WorkingGraphPackage;
     const service = getRootLensService();
     const result = importNew ? await service.importWorkingGraphPackage(body)
-      : await service.saveWorkingGraphPackage(editableGraphId.value!, body);
+      : await service.saveWorkingGraphPackage(id!, body);
+    if (revision !== packageRevision) return;
+    rememberWorkingGraph(result);
     await selectPackageGraph(result.graph_id);
-    workingGraphs.value = (await service.listWorkingGraphs()).graphs;
-    actionMessage.value = "工作图已保存；新分析使用当前知识，历史运行保持原结果。";
-  } catch (error) { errorMessage.value = String(error); }
-  finally { packageBusy.value = false; }
+    if (packageGraphId.value === result.graph_id) {
+      actionMessage.value = importNew ? "已导入为新图。确认内容后可投入使用。" : "工作图已保存；历史运行保持原结果。";
+    }
+  } catch (error) { if (revision === packageRevision) errorMessage.value = String(error); }
+  finally { if (revision === packageRevision) packageBusy.value = false; }
+}
+async function enablePackageGraph() {
+  const graph = packageGraph.value;
+  if (!graph?.knowledge || graph.status !== "ready" || packageDirty.value || packageBusy.value) return;
+  const revision = ++packageRevision;
+  packageBusy.value = true;
+  errorMessage.value = "";
+  try {
+    const enabled = await getRootLensService().enableWorkingGraph(graph.graph_id, true);
+    if (revision !== packageRevision) return;
+    rememberWorkingGraph(enabled);
+    actionMessage.value = "工作图已投入使用，可携图新建分析。";
+  } catch (error) { if (revision === packageRevision) errorMessage.value = String(error); }
+  finally { if (revision === packageRevision) packageBusy.value = false; }
+}
+function useCurrentGraph() {
+  if (!currentGraphEnabled.value || !editableGraphId.value
+    || (packageGraphId.value === editableGraphId.value && packageDirty.value)) return;
+  void router.push(newAnalysisRoute(editableGraphId.value));
+}
+function returnToEvidence() {
+  const detail = runDetail.value;
+  void router.push(detail?.run.source_contract === "analysis-v2"
+    ? savedAnalysisRoute("evidence", detail.run.run_id, activeCase.value?.case_id)
+    : { name: "evidence" });
 }
 function downloadPackage() {
   const url = URL.createObjectURL(new Blob([packageText.value], { type: "application/json" }));
@@ -170,8 +236,15 @@ function downloadPackage() {
   URL.revokeObjectURL(url);
 }
 async function importPackageFile(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (file) { packageText.value = await file.text(); await savePackage(true); }
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file || packageBusy.value) return;
+  const revision = packageRevision;
+  const body = await file.text();
+  if (revision !== packageRevision) return;
+  packageText.value = body;
+  await savePackage(true);
 }
 async function rebuildGraphProfiles() {
   if (!editableGraphId.value) return;
@@ -471,8 +544,9 @@ const activeCase = computed(() => {
   );
 });
 
+const isSavedAnalysis = computed(() => runDetail.value?.run.source_contract === "analysis-v2");
 const activePathGraph = computed(
-  () => activeCase.value?.path_graph ?? runDetail.value?.path_graph ?? null,
+  () => activeCase.value?.path_graph ?? (isSavedAnalysis.value ? null : runDetail.value?.path_graph) ?? null,
 );
 
 const activePath = computed(() => {
@@ -485,7 +559,7 @@ const activePath = computed(() => {
     graph.paths.find(
       (item) => item.path_id === workbenchState.value.selectedPathId,
     ) ??
-    graph.paths[0] ??
+    (isSavedAnalysis.value ? null : graph.paths[0]) ??
     null
   );
 });
@@ -493,12 +567,21 @@ const activePath = computed(() => {
 const activeCandidate = computed(() => {
   const list =
     activeCase.value?.ranked_root_causes ??
-    runDetail.value?.ranked_root_causes ??
+    (isSavedAnalysis.value ? [] : runDetail.value?.ranked_root_causes) ??
     [];
   return resolveSelectedRootCause(
     list,
     workbenchState.value.selectedCandidateId,
   );
+});
+
+const savedCandidatePaths = computed(() => isSavedAnalysis.value
+  ? savedPathsForCandidate(activeCase.value, activeCandidate.value?.candidate_id) : []);
+const savedOutcome = computed(() => {
+  if (!isSavedAnalysis.value) return null;
+  const result = activeCase.value?.reasoning_metadata?.query_results?.[0];
+  return result?.reason === "normal_reference_gate_is_false" ? "正常参考门未触发，不排名"
+    : result?.outcome ? traceOutcome(result.outcome) : null;
 });
 
 const activeVisualConditions = computed(() => {
@@ -552,16 +635,16 @@ const totalGraphDataset = computed<UnifiedGraphDataset | null>(() => {
     return null;
   }
 
-  return applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
+  return isSavedAnalysis.value ? dataset : applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
 });
 
 const pathSubgraphDataset = computed<UnifiedGraphDataset | null>(() => {
-  if (!activePathGraph.value) {
+  if (!activePathGraph.value || (isSavedAnalysis.value && !activePathGraph.value.paths.length)) {
     return null;
   }
 
   const dataset = buildPathSubgraphDataset(activePathGraph.value);
-  return applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
+  return isSavedAnalysis.value ? dataset : applyGraphCurationToDataset(dataset, activeWorkingCaseDraft.value);
 });
 
 const neighborhoodGraphDataset = computed<UnifiedGraphDataset | null>(() => {
@@ -584,6 +667,8 @@ const activeSubgraphMode = computed(() => {
   }
   return "path" as const;
 });
+
+const inspectingSavedPath = computed(() => isSavedAnalysis.value && activeSubgraphMode.value === "path");
 
 const activeLocalGraphDataset = computed(() => {
   if (activeSubgraphMode.value === "neighborhood") {
@@ -801,6 +886,7 @@ const localGraphFocusedNodeIds = computed(() => {
   }
   activeTraceStep.value?.focusNodeIds.forEach((id) => ids.add(id));
   selectedObservationFocus.value.nodeIds.forEach((id) => ids.add(id));
+  if (inspectingSavedPath.value) activePath.value?.nodes.forEach(node => ids.add(node.node_id));
 
   return [...ids];
 });
@@ -813,6 +899,7 @@ const localGraphFocusedEdgeIds = computed(() => {
   }
   activeTraceStep.value?.focusEdgeIds.forEach((id) => ids.add(id));
   selectedObservationFocus.value.edgeIds.forEach((id) => ids.add(id));
+  if (inspectingSavedPath.value) activePath.value?.edges.forEach(edge => ids.add(edge.edge_id));
 
   return [...ids];
 });
@@ -837,6 +924,17 @@ const activeObservationContext = computed(() => {
     workbenchState.value.selectedObservationId,
   );
 });
+
+const savedPathOptions = computed(() => {
+  if (!activeCase.value) return [];
+  const observationLabels = new Map(buildObservationBrowseItems(activeCase.value).map(item => [item.id, item.title]));
+  return savedCandidatePaths.value.map((path, index) => ({
+    value: path.path_id,
+    label: `路径 ${index + 1} · ${observationLabels.get(savedPathObservation(path) ?? "") ?? path.nodes[0]?.label ?? path.path_id}`,
+  }));
+});
+const savedPathReason = computed(() => isSavedAnalysis.value
+  ? normalizeNullableText(activeCase.value?.top_k_paths?.find(path => path.path_id === activePath.value?.path_id)?.reason) : null);
 
 const activeReasoningInspection = computed(() =>
   buildGraphReasoningInspection({
@@ -1143,13 +1241,19 @@ function buildCaseSelection(detail: RunDetail, caseId: string | null) {
     detail.cases.find((item) => item.case_id === caseId) ??
     detail.cases[0] ??
     null;
-  const nextCandidate =
-    nextCase?.ranked_root_causes?.[0] ?? detail.ranked_root_causes[0] ?? null;
-  const nextPathGraph = nextCase?.path_graph ?? detail.path_graph ?? null;
-  const nextPath =
-    findBestPathForCandidateInGraph(nextCandidate, nextPathGraph) ??
-    nextPathGraph?.paths[0] ??
-    null;
+  const saved = detail.run.source_contract === "analysis-v2";
+  const keepFocus = workbenchState.value.selectedRunId === detail.run.run_id
+    && workbenchState.value.selectedCaseId === nextCase?.case_id;
+  const candidates = nextCase?.ranked_root_causes ?? (saved ? [] : detail.ranked_root_causes);
+  const nextCandidate = (keepFocus ? candidates.find(item => item.ranking_id === workbenchState.value.selectedCandidateId) : null)
+    ?? candidates[0] ?? null;
+  const nextPathGraph = nextCase?.path_graph ?? (saved ? null : detail.path_graph);
+  const previousObservationId = keepFocus ? workbenchState.value.selectedObservationId : null;
+  const savedPaths = savedPathsForCandidate(nextCase, nextCandidate?.candidate_id);
+  const nextPath = saved
+    ? (keepFocus ? savedPaths.find(path => path.path_id === workbenchState.value.selectedPathId) : null)
+      ?? savedPaths.find(path => path.supporting_evidence.includes(previousObservationId)) ?? savedPaths[0] ?? null
+    : findBestPathForCandidateInGraph(nextCandidate, nextPathGraph) ?? nextPathGraph?.paths[0] ?? null;
   const reviewTargets = nextCase?.review_targets ?? detail.review_targets ?? [];
   const nextReviewTarget =
     findReviewTargetInList(
@@ -1162,6 +1266,9 @@ function buildCaseSelection(detail: RunDetail, caseId: string | null) {
     selectedCaseId: nextCase?.case_id ?? null,
     selectedCandidateId: nextCandidate?.ranking_id ?? null,
     selectedPathId: nextPath?.path_id ?? null,
+    ...(saved ? { selectedObservationId: nextCase && previousObservationId
+      && findObservationBrowseItem(buildObservationBrowseItems(nextCase), previousObservationId)
+      ? previousObservationId : savedPathObservation(nextPath) } : {}),
     selectedReviewTargetKey: nextReviewTarget?.target_key ?? null,
     selectedGraphNodeId: null,
     subgraphMode: "path" as const,
@@ -1181,6 +1288,8 @@ function findCandidateForPathInCase(
   const path =
     caseItem.path_graph?.paths.find((item) => item.path_id === pathId) ?? null;
   const candidates = caseItem.ranked_root_causes ?? [];
+
+  if (isSavedAnalysis.value) return candidates.find(candidate => candidate.candidate_id === path?.target_entity_id) ?? null;
 
   return (
     candidates.find(
@@ -1217,9 +1326,14 @@ function selectReasoningTraceStep(step: TraceStep) {
   selectedTraceStepId.value = step.stepId;
 
   if (step.kind === "observation") {
+    const observationId = step.sharedObservationId ?? step.observationId ?? null;
+    if (isSavedAnalysis.value && observationId) {
+      const path = activePath.value?.supporting_evidence.includes(observationId) ? activePath.value
+        : savedCandidatePaths.value.find(item => item.supporting_evidence.includes(observationId));
+      if (path) { focusSavedPath(path, observationId); return; }
+    }
     updateState({
-      selectedObservationId:
-        step.sharedObservationId ?? step.observationId ?? null,
+      selectedObservationId: observationId,
     });
     return;
   }
@@ -1246,6 +1360,7 @@ function selectReasoningTraceStep(step: TraceStep) {
   }
 
   if (step.kind === "path") {
+    if (isSavedAnalysis.value) { chooseSavedPath(step.pathId); return; }
     updateState({
       selectedPathId: step.pathId ?? workbenchState.value.selectedPathId,
       subgraphMode: "path",
@@ -1289,12 +1404,15 @@ function openSelectedPathProvenance() {
     return;
   }
 
+  const pathId = activeReasoningInspection.value.selectedPath?.pathId ?? workbenchState.value.selectedPathId;
+  if (isSavedAnalysis.value && pathId) {
+    openGraphProvenance(buildSavedPathProvenance(activeCase.value, pathId, graphClaimBoundaryCopy.value, preferences.value.apiBaseUrl));
+    return;
+  }
   openGraphProvenance(
     buildGraphPathProvenance({
       caseDetail: activeCase.value,
-      pathId:
-        activeReasoningInspection.value.selectedPath?.pathId ??
-        workbenchState.value.selectedPathId,
+      pathId,
       claimBoundary: graphClaimBoundaryCopy.value,
     }),
   );
@@ -1611,10 +1729,12 @@ function jumpToRecurringCase(hit: RecurrenceCaseHit) {
 }
 
 function syncRouteQuery(runId: string | null, caseId: string | null) {
+  const source = runDetail.value?.run.source_contract === "analysis-v2" ? "analysis-v2" : null;
   const nextQuery = {
     ...route.query,
     run_id: runId ?? undefined,
     case_id: caseId ?? undefined,
+    source: source ?? undefined,
   };
 
   const currentRunId =
@@ -1622,7 +1742,7 @@ function syncRouteQuery(runId: string | null, caseId: string | null) {
   const currentCaseId =
     typeof route.query.case_id === "string" ? route.query.case_id : null;
 
-  if (currentRunId === runId && currentCaseId === caseId) {
+  if (currentRunId === runId && currentCaseId === caseId && queryText(route.query.source) === source) {
     return;
   }
 
@@ -1631,18 +1751,8 @@ function syncRouteQuery(runId: string | null, caseId: string | null) {
   });
 }
 
-function syncQueryContext() {
-  const runId =
-    typeof route.query.run_id === "string" ? route.query.run_id : null;
-  const caseId =
-    typeof route.query.case_id === "string" ? route.query.case_id : null;
-
-  if (runId || caseId) {
-    updateState({
-      selectedRunId: runId ?? workbenchState.value.selectedRunId,
-      selectedCaseId: caseId ?? workbenchState.value.selectedCaseId,
-    });
-  }
+function queryText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function updateWorkingCaseDraft(
@@ -1728,6 +1838,7 @@ function updateSelectedNodeDraft(patch: Partial<MockGraphNodeDraft>) {
 }
 
 async function saveCurrentCaseDraft() {
+  if (inspectingSavedPath.value) return;
   const caseId = activeCase.value?.case_id;
   const currentDraft = activeWorkingCaseDraft.value;
   if (!caseId || !currentDraft) {
@@ -1739,8 +1850,7 @@ async function saveCurrentCaseDraft() {
       const service = getRootLensService();
       const body = await service.getWorkingGraphPackage(editableGraphId.value);
       if (body.schema_version === "rootlens-working-graph.v2") {
-        packageText.value = JSON.stringify(body, null, 2);
-        packageDrawerOpen.value = true;
+        await openGraphPackage();
         throw new Error("此图由可执行知识生成。请在已打开的完整 JSON 中修改概念、绑定与规则；投影边不能单独改写。");
       }
       const edgeId = (edge: typeof body.edges[number]) => [edge.head, edge.relation, edge.tail, edge.scenario].join("|");
@@ -1871,7 +1981,47 @@ function focusCurationSuggestion(item: CurationSuggestion) {
   feedbackCardTab.value = "curation";
 }
 
+function focusSavedPath(path: PathGraphPath, observationId?: string | null, edgeId?: string | null) {
+  const candidate = activeCase.value?.ranked_root_causes?.find(item => item.candidate_id === path.target_entity_id);
+  const sameGraph = !!kgStudio.value?.graph_id && kgStudio.value.graph_id === activeCase.value?.reasoning_metadata?.graph_id;
+  updateState({
+    selectedPathId: path.path_id,
+    selectedCandidateId: candidate?.ranking_id ?? null,
+    selectedObservationId: savedPathObservation(path, observationId),
+    selectedGraphNodeId: sameGraph && totalGraphDataset.value?.nodes.some(node => node.id === candidate?.candidate_id)
+      ? candidate?.candidate_id ?? null : null,
+    selectedReviewTargetKey: null,
+    subgraphMode: "path", selectedSubgraphNodeId: null, selectedSubgraphEdgeId: edgeId ?? null,
+  });
+}
+
+function chooseSavedPath(value: unknown) {
+  const path = savedCandidatePaths.value.find(item => item.path_id === value);
+  if (!path) return;
+  selectedTraceStepId.value = null;
+  focusSavedPath(path, workbenchState.value.selectedObservationId);
+}
+
 function selectCandidate(candidateId: string) {
+  if (isSavedAnalysis.value) {
+    selectedTraceStepId.value = null;
+    if (workbenchState.value.selectedCandidateId === candidateId) {
+      updateState({ selectedCandidateId: null, selectedPathId: null, selectedObservationId: null,
+        selectedGraphNodeId: null, selectedReviewTargetKey: null, subgraphMode: "path",
+        selectedSubgraphNodeId: null, selectedSubgraphEdgeId: null });
+      return;
+    }
+    const candidate = activeCase.value?.ranked_root_causes?.find(item => item.ranking_id === candidateId);
+    if (!candidate) return;
+    const paths = savedPathsForCandidate(activeCase.value, candidate.candidate_id);
+    const path = paths.find(item => item.supporting_evidence.includes(workbenchState.value.selectedObservationId)) ?? paths[0];
+    if (path) focusSavedPath(path, workbenchState.value.selectedObservationId);
+    else updateState({ selectedCandidateId: candidateId, selectedPathId: null, selectedObservationId: null,
+      selectedGraphNodeId: null, selectedReviewTargetKey: null, subgraphMode: "path",
+      selectedSubgraphNodeId: null, selectedSubgraphEdgeId: null });
+    feedbackCardTab.value = "trace";
+    return;
+  }
   updateState(
     buildCandidateSelectionPatch({
       state: workbenchState.value,
@@ -1892,6 +2042,15 @@ function selectCandidate(candidateId: string) {
 
 function handleTotalGraphSelect(payload: GraphSelectPayload) {
   if (payload?.type === "edge") {
+    updateState({ selectedGraphNodeId: payload.item.source, subgraphMode: "neighborhood",
+      selectedSubgraphNodeId: null, selectedSubgraphEdgeId: payload.item.id });
+    feedbackCardTab.value = "curation";
+    return;
+  }
+  if (isSavedAnalysis.value && payload?.type === "node") {
+    const id = payload.item.id === workbenchState.value.selectedGraphNodeId ? null : payload.item.id;
+    updateState({ selectedGraphNodeId: id, subgraphMode: id ? "neighborhood" : "path",
+      selectedSubgraphNodeId: id, selectedSubgraphEdgeId: null });
     return;
   }
 
@@ -1919,7 +2078,17 @@ function handleTotalGraphSelect(payload: GraphSelectPayload) {
 }
 
 function handleLocalGraphSelect(payload: LocalGraphSelectPayload) {
-  updateState(buildLocalGraphSelectionPatch(workbenchState.value, payload));
+  const patch = buildLocalGraphSelectionPatch(workbenchState.value, payload);
+  if (inspectingSavedPath.value && payload?.type === "edge" && patch.selectedSubgraphEdgeId) {
+    const path = savedPathForEdge(activeCase.value, payload.id, activeCandidate.value?.candidate_id, activePath.value?.path_id);
+    if (path) {
+      selectedTraceStepId.value = null;
+      focusSavedPath(path, workbenchState.value.selectedObservationId, payload.id);
+      feedbackCardTab.value = "trace";
+      return;
+    }
+  }
+  updateState(patch);
 
   if (
     shouldAutoOpenCurationTabOnLocalGraphSelect({
@@ -1940,7 +2109,9 @@ function handleRunChange(value: unknown) {
   pendingCaseSelectionPatch.value = null;
   selectedTraceStepId.value = null;
   crossCaseCompareOpen.value = false;
-  void loadRun(runId);
+  const summary = runs.value.find(item => item.run_id === runId);
+  void router.replace(summary?.source_contract === "analysis-v2"
+    ? savedAnalysisRoute("graphs", runId) : { name: "graphs", query: { run_id: runId } });
 }
 
 function handleCaseChange(value: unknown) {
@@ -1959,118 +2130,112 @@ function handleCaseChange(value: unknown) {
   syncRouteQuery(runDetail.value.run.run_id, nextSelection.selectedCaseId);
 }
 
-async function loadRun(runId: string) {
-  const revision = sourceRevision;
-  loading.value = true;
-  errorMessage.value = "";
-
-  try {
-    const detail = await getRootLensService().getRun(runId);
-    if (revision !== sourceRevision) return;
-    runDetail.value = detail;
-    if (preferences.value.dataSourceMode === "backend" && getLocalSessionMeta()?.source !== "import") {
-      const graphId = detail.cases?.[0]?.reasoning_metadata?.graph_id
-        ?? detail.reasoning_metadata?.graph_id;
-      if (!kgStudio.value || (graphId ?? null) !== (kgStudio.value.graph_id ?? null)) {
-        try {
-          const studio = await getRootLensService().kgStudio(graphId ?? undefined);
-          if (revision !== sourceRevision) return;
-          kgStudio.value = studio;
-          totalGraphRenderMessage.value = "";
-        } catch (error) {
-          if (revision !== sourceRevision) return;
-          kgStudio.value = null;
-          totalGraphRenderMessage.value = error instanceof Error ? error.message : String(error);
-        }
-      }
-    }
-
-    if (revision !== sourceRevision) return;
-    const routeCaseId =
-      typeof route.query.case_id === "string"
-        ? route.query.case_id
-        : workbenchState.value.selectedCaseId;
-    const nextSelection = buildCaseSelection(detail, routeCaseId);
-    updateState({
-      selectedRunId: runId,
-      ...nextSelection,
-    });
-    syncRouteQuery(runId, nextSelection.selectedCaseId);
-  } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    if (revision === sourceRevision) loading.value = false;
-  }
-}
-
 async function refreshWorkspace() {
-  const revision = sourceRevision;
+  const revision = ++workspaceRevision;
   loading.value = true;
   errorMessage.value = "";
   reviewMessage.value = "";
+  runDetail.value = null;
+  kgStudio.value = null;
+  bundledGraphDatasets.value = [];
+  selectedTraceStepId.value = null;
+  provenanceInspectorVisible.value = false;
+  provenanceInspectorState.value = null;
+  pendingCaseSelectionPatch.value = null;
+  totalGraphRenderMessage.value = "正在准备总图谱...";
+  localGraphRenderMessage.value = "";
 
   try {
     const replayActive = getLocalSessionMeta()?.source === "import";
     const useLocalGraphs =
       replayActive || preferences.value.dataSourceMode !== "backend";
+    const savedIntent = savedAnalysisIntent(route.query);
+    const requestedGraph = queryText(route.query.graph);
+    const requestedRun = savedIntent?.runId ?? queryText(route.query.run_id);
+    const requestedFrame = savedIntent?.frameId ?? queryText(route.query.case_id);
+    if (useLocalGraphs && (savedIntent || requestedGraph)) {
+      runs.value = [];
+      throw new Error("此链接指向后端保存结果或工作图，请切换 Backend 后查看。");
+    }
+    const service = getRootLensService();
     const graphTask = useLocalGraphs
       ? loadUnifiedGraphs()
-      : getRootLensService().kgStudio();
+      : requestedGraph ? service.kgStudio(requestedGraph) : Promise.resolve(null);
+    const runSource = savedIntent ? "analysis-v2" : !useLocalGraphs && requestedRun === workbenchState.value.selectedRunId
+      ? workbenchState.value.selectedRunSource ?? undefined : undefined;
 
-    const [runsResult, graphResult] = await Promise.allSettled([
-      getRootLensService().listRuns(),
+    const [runsResult, graphResult, registryResult, explicitRunResult] = await Promise.allSettled([
+      service.listRuns(),
       graphTask,
-    ]);
+      useLocalGraphs ? Promise.resolve({ graphs: [] }) : service.listWorkingGraphs(),
+      requestedRun ? service.getRun(requestedRun, runSource) : Promise.resolve(null),
+    ] as const);
 
-    if (revision !== sourceRevision) return;
-    if (runsResult.status === "fulfilled") {
-      runs.value = runsResult.value;
-    } else {
-      throw runsResult.reason;
-    }
+    if (revision !== workspaceRevision) return;
+    runs.value = runsResult.status === "fulfilled" ? runsResult.value : [];
+    workingGraphs.value = registryResult.status === "fulfilled" ? registryResult.value.graphs : [];
+    if (runsResult.status === "rejected" && !requestedRun && !requestedGraph) throw runsResult.reason;
 
     if (graphResult.status === "fulfilled") {
-      if (useLocalGraphs) {
+      if (useLocalGraphs && graphResult.value) {
         bundledGraphDatasets.value = (
           graphResult.value as { datasets: UnifiedGraphDataset[] }
         ).datasets;
-        kgStudio.value = null;
-      } else {
+      } else if (requestedGraph) {
+        if ((graphResult.value as KGStudioPayload | null)?.graph_id !== requestedGraph) throw new Error("后端没有返回所选工作图。");
         kgStudio.value = graphResult.value as KGStudioPayload;
-        bundledGraphDatasets.value = [];
       }
     } else {
       if (useLocalGraphs) {
-        bundledGraphDatasets.value = [];
         totalGraphRenderMessage.value = replayActive
           ? "当前回放会话未包含 unified-graphs.json。"
           : "论文演示图谱加载失败。";
       } else {
-        kgStudio.value = null;
-        totalGraphRenderMessage.value = "后端总图谱暂不可用。";
+        totalGraphRenderMessage.value = graphResult.reason instanceof Error ? graphResult.reason.message : "所选登记图不可用。";
       }
     }
 
-    const routeRunId =
-      typeof route.query.run_id === "string" ? route.query.run_id : null;
-    const nextRunId =
-      runs.value.find((item) => item.run_id === routeRunId)?.run_id ??
-      runs.value.find(
-        (item) => item.run_id === workbenchState.value.selectedRunId,
-      )?.run_id ??
-      runs.value[0]?.run_id ??
-      null;
-
-    if (nextRunId) {
-      await loadRun(nextRunId);
-      return;
+    // A material task opens its exact graph without adopting an older run.
+    if (requestedGraph && !requestedRun) return;
+    if (explicitRunResult.status === "rejected") throw explicitRunResult.reason;
+    let detail = explicitRunResult.value;
+    if (!detail) {
+      const next = runs.value.find(item => item.run_id === workbenchState.value.selectedRunId) ?? runs.value[0];
+      if (next) detail = await service.getRun(next.run_id, next.source_contract);
+    }
+    if (revision !== workspaceRevision) return;
+    if (savedIntent?.frameId && !detail?.cases.some(item => item.case_id === savedIntent.frameId)) {
+      throw new Error("该保存分析不包含所选 EvidenceFrame。");
+    }
+    if (detail) {
+      runDetail.value = detail;
+      if (!runs.value.some(item => item.run_id === detail.run.run_id)) runs.value = [detail.run, ...runs.value];
+      const caseId = requestedFrame ?? (workbenchState.value.selectedRunId === detail.run.run_id ? workbenchState.value.selectedCaseId : null);
+      const nextSelection = buildCaseSelection(detail, caseId);
+      updateState({ selectedRunId: detail.run.run_id, selectedRunSource: detail.run.source_contract ?? runSource ?? null, ...nextSelection });
+      syncRouteQuery(detail.run.run_id, nextSelection.selectedCaseId);
     }
 
-    runDetail.value = null;
+    if (!useLocalGraphs && !requestedGraph) {
+      const graphId = detail?.reasoning_metadata?.graph_id ?? detail?.cases[0]?.reasoning_metadata?.graph_id;
+      if (detail?.run.source_contract === "analysis-v2" && !graphId) {
+        totalGraphRenderMessage.value = "保存结果未记录登记图；本次路径仍可独立查看。";
+        return;
+      }
+      try {
+        const studio = await service.kgStudio(graphId ?? undefined);
+        if (revision !== workspaceRevision) return;
+        if (graphId && studio.graph_id !== graphId) throw new Error("后端没有返回所选登记图。");
+        kgStudio.value = studio;
+      } catch (error) {
+        if (revision !== workspaceRevision) return;
+        totalGraphRenderMessage.value = error instanceof Error ? error.message : String(error);
+      }
+    }
   } catch (error) {
-    if (revision === sourceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
+    if (revision === workspaceRevision) errorMessage.value = error instanceof Error ? error.message : String(error);
   } finally {
-    if (revision === sourceRevision) loading.value = false;
+    if (revision === workspaceRevision) loading.value = false;
   }
 }
 
@@ -2105,7 +2270,10 @@ async function handleFeedbackSubmit() {
 watch(
   () => [preferences.value.dataSourceMode, preferences.value.apiBaseUrl],
   () => {
-    sourceRevision += 1;
+    packageRevision += 1;
+    packageBusy.value = false;
+    packageDrawerOpen.value = false;
+    packageGraphId.value = null;
     runDetail.value = null; runs.value = []; kgStudio.value = null; bundledGraphDatasets.value = [];
     updateState(sourceSelectionReset());
     void refreshWorkspace();
@@ -2113,9 +2281,16 @@ watch(
 );
 
 watch(
-  () => route.query,
-  () => {
-    syncQueryContext();
+  () => [queryText(route.query.run_id), queryText(route.query.case_id), queryText(route.query.source), queryText(route.query.graph)] as const,
+  ([runId, caseId, source, graphId], [, , , previousGraphId]) => {
+    if (route.name !== "graphs") return;
+    if (!runId && graphId && kgStudio.value?.graph_id === graphId && !runDetail.value) return;
+    if (runId && runId === runDetail.value?.run.run_id && graphId === previousGraphId
+        && (source === "analysis-v2") === isSavedAnalysis.value) {
+      if (!caseId || caseId === activeCase.value?.case_id) return;
+      if (runDetail.value.cases.some(item => item.case_id === caseId)) { handleCaseChange(caseId); return; }
+    }
+    void refreshWorkspace();
   },
 );
 
@@ -2124,15 +2299,6 @@ watch(
   (tab) => {
     if (tab === "ledger") {
       void loadReviewLedger();
-    }
-  },
-);
-
-watch(
-  () => workbenchState.value.selectedRunId,
-  (runId) => {
-    if (runId && runId !== runDetail.value?.run.run_id) {
-      void loadRun(runId);
     }
   },
 );
@@ -2287,9 +2453,9 @@ watch(
 );
 
 onMounted(() => {
-  syncQueryContext();
   void refreshWorkspace();
 });
+onBeforeUnmount(() => { workspaceRevision += 1; packageRevision += 1; });
 </script>
 
 <template>
@@ -2301,18 +2467,22 @@ onMounted(() => {
 
     <a-drawer v-model:visible="packageDrawerOpen" title="工作图与可执行画像" :width="760" :footer="false">
       <a-space direction="vertical" fill>
-        <a-select placeholder="选择工作图" :model-value="editableGraphId" @change="(id: string) => selectPackageGraph(id)">
+        <a-select placeholder="选择工作图" :model-value="packageGraphId ?? undefined" :disabled="packageBusy" @change="(id: string) => selectPackageGraph(id)">
           <a-option v-for="graph in workingGraphs" :key="graph.graph_id" :value="graph.graph_id">{{ graph.title }} · {{ graph.dataset }}</a-option>
         </a-select>
         <p>编辑节点、关系、别名与条件；v2 包请修改 knowledge 中的实体、绑定和规则。删除被引用对象前须同步修改相关规则；保存影响新分析，历史运行保持原结果。</p>
-        <a-textarea v-model="packageText" :auto-size="{ minRows: 18, maxRows: 28 }" aria-label="完整工作图包 JSON" />
+        <a-textarea v-model="packageText" :disabled="packageBusy" :auto-size="{ minRows: 18, maxRows: 28 }" aria-label="完整工作图包 JSON" />
         <a-space wrap>
-          <a-button type="primary" :loading="packageBusy" :disabled="!editableGraphId" @click="savePackage(false)">保存当前图</a-button>
+          <a-button type="primary" :loading="packageBusy" :disabled="!packageGraphId || !packageDirty" @click="savePackage(false)">保存当前图</a-button>
+          <a-button v-if="packageGraph?.knowledge && !packageGraph.enabled" :loading="packageBusy"
+            :disabled="packageGraph.status !== 'ready' || packageDirty" @click="enablePackageGraph">投入使用</a-button>
+          <a-button v-if="currentGraphEnabled && packageGraphId === editableGraphId" :disabled="packageDirty || packageBusy" @click="useCurrentGraph">用这张图分析</a-button>
           <a-button :disabled="!packageText" @click="downloadPackage">导出完整包</a-button>
           <a-button :loading="packageBusy" :disabled="!packageText" @click="savePackage(true)">导入为新图</a-button>
           <a-button v-if="workingGraphs.find(g => g.graph_id === editableGraphId)?.dataset === 'mvtec' && !workingGraphs.find(g => g.graph_id === editableGraphId)?.knowledge" :disabled="!editableGraphId" @click="rebuildGraphProfiles">按关系重建画像</a-button>
-          <label>导入 JSON <input type="file" accept=".json" @change="importPackageFile" /></label>
+          <label>导入 JSON <input type="file" accept=".json" :disabled="packageBusy" @change="importPackageFile" /></label>
         </a-space>
+        <a-tag v-if="packageGraph" :color="packageGraph.enabled ? 'green' : 'gray'">{{ packageGraph.enabled ? '已投入使用' : '未启用' }}</a-tag>
         <a-alert v-if="errorMessage" type="error">{{ errorMessage }}</a-alert>
         <a-alert v-if="actionMessage" type="success">{{ actionMessage }}</a-alert>
       </a-space>
@@ -2334,11 +2504,12 @@ onMounted(() => {
                 <a-tag color="gold">{{ totalGraphDataset?.edges.length ?? 0 }} 边</a-tag>
               </div>
               <a-button v-if="preferences.dataSourceMode === 'backend' && getLocalSessionMeta()?.source !== 'import'" @click="openGraphPackage">管理工作图</a-button>
+              <a-button v-if="currentGraphEnabled" :disabled="loading || (packageGraphId === editableGraphId && packageDirty)" @click="useCurrentGraph">用这张图分析</a-button>
               <a-button :loading="loading" @click="refreshWorkspace">
                 <template #icon><icon-refresh /></template>
                 刷新视图
               </a-button>
-              <a-button @click="router.push({ name: 'evidence' })">返回运行与证据</a-button>
+              <a-button @click="returnToEvidence">返回运行与证据</a-button>
             </div>
           </header>
           <div class="rl-section-card__body workspace-graph-stage">
@@ -2356,6 +2527,9 @@ onMounted(() => {
             <a-empty v-else>暂无总图谱数据</a-empty>
           </div>
           <div class="rl-section-card__footer">
+            <span v-if="currentWorkingGraph" class="workspace-subtle" :title="currentWorkingGraph.graph_id">
+              {{ currentWorkingGraph.title }} · {{ currentWorkingGraph.enabled ? '已启用' : '未启用' }}
+            </span>
             <span class="workspace-subtle">{{ totalGraphRenderMessage }}</span>
           </div>
         </article>
@@ -2370,6 +2544,8 @@ onMounted(() => {
                   </SectionCardTitle>
                 </h3>
               </div>
+              <a-button v-if="isSavedAnalysis && activeSubgraphMode === 'neighborhood' && pathSubgraphDataset" type="text" size="small"
+                @click="updateState({ subgraphMode: 'path', selectedSubgraphNodeId: null, selectedSubgraphEdgeId: null })">回到保存路径</a-button>
             </header>
             <div class="rl-section-card__body workspace-graph-stage workspace-graph-stage--local">
               <RunPathGraph
@@ -2385,10 +2561,13 @@ onMounted(() => {
                 @render-state="(payload) => (localGraphRenderMessage = payload.message)"
               />
               <div v-else class="workspace-graph-stage__empty">
-                <a-empty>暂无局部子图</a-empty>
+                <a-empty>{{ isSavedAnalysis ? '本窗口没有保存的推理路径' : '暂无局部子图' }}</a-empty>
               </div>
             </div>
             <div class="rl-section-card__footer">
+              <span v-if="inspectingSavedPath" class="workspace-subtle" :title="activeCase?.reasoning_metadata?.graph_id ?? undefined">
+                {{ runDetail?.summary?.graph_title ?? '分析时的知识快照' }} · 只读
+              </span>
               <span class="workspace-subtle">{{ localGraphRenderMessage }}</span>
             </div>
           </article>
@@ -2522,7 +2701,16 @@ onMounted(() => {
                   </a-form>
                 </a-tab-pane>
                 <a-tab-pane key="curation" title="策展">
-                  <section class="workspace-feedback-pane workspace-feedback-pane--curation">
+                  <section v-if="inspectingSavedPath" class="workspace-feedback-pane workspace-feedback-pane--curation">
+                    <div class="workspace-claim-note workspace-claim-note--compact">
+                      <strong>本次保存路径 · 只读</strong>
+                      <span>编辑当前登记图不会改写这些边和节点。</span>
+                    </div>
+                    <p v-if="activeCurationNode" :title="activeCurationNode.id">节点 · {{ activeCurationNode.name }}</p>
+                    <p v-if="activeCurationEdge" :title="activeCurationEdge.id">源边 · {{ activeCurationEdge.relation }}</p>
+                    <a-button v-if="activePath" size="small" @click="openSelectedPathProvenance">查看保存来源</a-button>
+                  </section>
+                  <section v-else class="workspace-feedback-pane workspace-feedback-pane--curation">
                     <div class="workspace-feedback-pane__section">
                       <div class="workspace-feedback-pane__section-head">
                         <strong>
@@ -2853,6 +3041,8 @@ onMounted(() => {
                         </a-button>
                       </div>
 
+                      <SavedObservationLocation v-if="isSavedAnalysis && activeCase && activeObservationContext"
+                        :case-detail="activeCase" :observation="activeObservationContext" :api-base="preferences.apiBaseUrl" />
                       <template v-if="activeReasoningInspection.candidate">
                         <div class="workspace-reasoning-trace">
                           <section class="workspace-reasoning-trace__section">
@@ -2927,9 +3117,15 @@ onMounted(() => {
                                 </li>
                               </ul>
                             </details>
+                            <a-select v-if="savedPathOptions.length" size="small" aria-label="保存路径"
+                              :model-value="activePath?.path_id" placeholder="选择保存路径" @change="chooseSavedPath">
+                              <a-option v-for="option in savedPathOptions" :key="option.value" :value="option.value">{{ option.label }}</a-option>
+                            </a-select>
+                            <p v-if="savedPathReason" class="workspace-visual-profile-reason">{{ savedPathReason }}</p>
+                            <p v-if="inspectingSavedPath && activeCurationEdge" :title="activeCurationEdge.id" class="workspace-subtle">选中源边 · {{ activeCurationEdge.relation }}</p>
                           </section>
 
-                          <MeasuredEvidenceDetails :observation="activeObservationContext?.rawObservation" />
+                          <MeasuredEvidenceDetails v-if="!isSavedAnalysis" :observation="activeObservationContext?.rawObservation" />
                           <section class="workspace-reasoning-trace__section">
                             <div
                               class="workspace-feedback-pane__section-head workspace-feedback-pane__section-head--compact"
@@ -3412,6 +3608,7 @@ onMounted(() => {
                     : '当前结果已回退到通用路径推理'
                 "
               />
+              <a-tag v-if="savedOutcome" color="arcoblue">{{ savedOutcome }}</a-tag>
             </a-form>
 
             <section class="workspace-root-cause-aside-card__list">
@@ -3434,7 +3631,7 @@ onMounted(() => {
                 >
                   <div class="workspace-list-item__head">
                     <strong>#{{ candidate.rank }} {{ candidate.candidate_name }}</strong>
-                    <span>{{ formatScore(candidate.score) }}</span>
+                    <span :title="String(candidate.score ?? '')">{{ formatScore(candidate.score) }}</span>
                   </div>
                   <div class="workspace-list-item__meta">
                     <span>{{ formatScoringMethodLabel(candidate.scoring_method) }}</span>

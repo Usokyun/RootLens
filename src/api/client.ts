@@ -34,6 +34,7 @@ import type {
   ReviewLedgerListResponse,
   ReviewRequest,
   RunDetail,
+  RunSourceContract,
   RunSummary,
   UploadRequest,
   WorkingGraphSummary,
@@ -108,7 +109,7 @@ export function resolveApiBaseUrl(
   return currentUrl.origin;
 }
 
-function buildUrl(
+export function buildUrl(
   baseUrl: string,
   path: string,
   search?: URLSearchParams,
@@ -119,23 +120,44 @@ function buildUrl(
   return `${normalizedBase}${normalizedPath}${query ? `?${query}` : ""}`;
 }
 
-async function requestJson<T>(
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export async function requestJson<T>(
   baseUrl: string,
   path: string,
   init?: RequestInit,
   search?: URLSearchParams,
 ): Promise<T> {
-  const response = await fetch(buildUrl(baseUrl, path, search), init);
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(baseUrl, path, search), init);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new ApiError(`无法连接后端服务，请确认地址和服务状态。${detail ? `（${detail}）` : ""}`, 0);
+  }
 
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Request failed with ${response.status}`);
+    const body = await response.text();
+    let message = body || `请求失败（${response.status}）`;
+    try {
+      const detail = JSON.parse(body)?.detail;
+      if (typeof detail === "string") message = detail;
+      else if (Array.isArray(detail)) message = detail.map((item) => item?.msg ?? String(item)).join("；");
+    } catch { /* Non-JSON errors retain their original response text. */ }
+    throw new ApiError(message, response.status);
   }
 
   return (await response.json()) as T;
 }
 
-function jsonInit(method: string, body: unknown): RequestInit {
+export function jsonInit(method: string, body: unknown): RequestInit {
   return {
     method,
     headers: {
@@ -153,10 +175,11 @@ export interface ApiClient {
   saveWorkingGraphPackage: (graphId: string, body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   importWorkingGraphPackage: (body: WorkingGraphPackage) => Promise<WorkingGraphSummary>;
   mutateWorkingGraph: (graphId: string, body: Record<string, unknown>) => Promise<WorkingGraphSummary>;
+  enableWorkingGraph: (graphId: string, enabled: boolean) => Promise<WorkingGraphSummary>;
   activateWorkingGraph: (buildId: string, title: string, dataset?: "mvtec" | "wafer" | "tep", targetContract?: "legacy" | "unified-v2") => Promise<WorkingGraphSummary>;
   exportRunReplay: (runId: string) => Promise<import("@/services/session-export").RootLensSessionExport>;
   listRuns: () => Promise<RunSummary[]>;
-  getRun: (runId: string) => Promise<RunDetail>;
+  getRun: (runId: string, source?: RunSourceContract) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
   submitReview: (
     request: ReviewRequest,
@@ -249,6 +272,7 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
     saveWorkingGraphPackage: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/package`, jsonInit("PUT", body)),
     importWorkingGraphPackage: (body) => requestJson(baseUrl, "/api/kg/working-graphs/import", jsonInit("POST", body)),
     mutateWorkingGraph: (id, body) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}`, jsonInit("PATCH", body)),
+    enableWorkingGraph: (id, enabled) => requestJson(baseUrl, `/api/kg/working-graphs/${encodeURIComponent(id)}/enable`, jsonInit("POST", { enabled })),
     activateWorkingGraph: (buildId, title, dataset = "mvtec", target_contract = "legacy") => requestJson(baseUrl,
       `/api/kg/construction/builds/${encodeURIComponent(buildId)}/activate`,
       jsonInit("POST", { title, dataset, compact_runtime: true, ...(target_contract !== "legacy" ? { target_contract } : {}) })),
@@ -266,7 +290,7 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
       current.runs.forEach(run=>merged.set(String(run.run_id),analysisRunSummary(run)));
       return [...merged.values()].sort((left,right)=>right.created_at.localeCompare(left.created_at));
     },
-    getRun: (runId) => isAnalysis(runId)
+    getRun: (runId, source) => (source === "analysis-v2" || (!source && isAnalysis(runId)))
       ? requestJson<unknown>(baseUrl, `/api/analyses/${encodeURIComponent(runId)}`).then(analysisSnapshotView)
       : requestJson<RunDetail>(baseUrl, `/api/runs/${encodeURIComponent(runId)}`),
     uploadRun: (request) => {
