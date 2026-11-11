@@ -10,6 +10,13 @@ export function traceRows(value: unknown): TraceRecord[] {
   return Array.isArray(value) ? value.filter((v) => v !== null && typeof v === 'object' && !Array.isArray(v)) as TraceRecord[] : []
 }
 
+/** Optional on new saved results; never derive tentative items from old unranked rows. */
+export function savedTentativeCandidates(result: unknown) {
+  return traceRows(traceRecord(result).tentative_candidates).filter(
+    (row): row is TraceRecord & { candidate_id: string } => typeof row.candidate_id === 'string' && row.candidate_id.length > 0,
+  )
+}
+
 export function unifiedQueries(metadata: unknown) {
   const data = traceRecord(metadata)
   const frames = Array.isArray(data.evidence_frames) ? data.evidence_frames : []

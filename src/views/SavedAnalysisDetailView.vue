@@ -8,11 +8,12 @@ import SavedRunProducts from '@/components/saved-analysis/SavedRunProducts.vue'
 import SavedRunEvidence from '@/components/saved-analysis/SavedRunEvidence.vue'
 import SavedRunReasoning from '@/components/saved-analysis/SavedRunReasoning.vue'
 import SavedRunGraph from '@/components/saved-analysis/SavedRunGraph.vue'
-import { chooseSavedPath, datasetLabel, detailTab, detailTabs, factOnPath, getPathObs, inputLabel, pathForFact, reasonerLabel, savedCandidateRanks, stageForTab, text, type DetailTab, type PathFocus } from '@/components/saved-analysis/presentation'
+import { chooseSavedPath, datasetLabel, detailTab, detailTabs, factOnPath, getPathObs, inputLabel, pathForFact, reasonerLabel, savedCandidateRanks, stageForTab, strings, text, type DetailTab, type PathFocus } from '@/components/saved-analysis/presentation'
 import { savedAnalysisRoute } from '@/services/analysis-entry'
 import { useAppPreferences } from '@/services/app-preferences'
 import { getLocalSessionEventName, getLocalSessionMeta } from '@/services/rootlens-data'
 import { readSavedAnalysis, type SavedAnalysis } from '@/services/saved-analysis-reader'
+import { savedTentativeCandidates, traceRows } from '@/services/unified-reasoning-display'
 
 const route = useRoute(), router = useRouter()
 const { preferences, updatePreferences } = useAppPreferences()
@@ -38,7 +39,7 @@ const candidate = computed(() => frame.value?.candidatesById.get(candidateId.val
 let revision = 0
 
 function emptyFocus() {
-  return { candidateId: '', pathId: '', edgeId: '', nodeId: '', obsId: '', factId: '' }
+  return { candidateId: '', pathId: '', edgeId: '', nodeId: '', obsId: '', factId: '', tentativeCandidateId: '' }
 }
 const status = computed(() => {
   const value = run.value?.status
@@ -135,7 +136,7 @@ function onTabKey(event: KeyboardEvent) {
   void nextTick(() => document.getElementById(`saved-analysis-tab-${item.id}`)?.focus())
 }
 function selectCandidate(id: string) {
-  if (frame.value?.candidatesById.has(id) && id !== candidateId.value) selected.value = { ...emptyFocus(), candidateId: id }
+  if (frame.value?.candidatesById.has(id) && (id !== candidateId.value || selected.value.tentativeCandidateId)) selected.value = { ...emptyFocus(), candidateId: id }
 }
 function selectPath(focus: PathFocus, to?: DetailTab, nodeId = focus.nodeId ?? '') {
   const active = frame.value, path = active?.pathsById.get(focus.pathId)
@@ -144,13 +145,18 @@ function selectPath(focus: PathFocus, to?: DetailTab, nodeId = focus.nodeId ?? '
   const obs = getPathObs(active, path)
   const obsId = obs.includes(focus.obsId ?? '') ? focus.obsId! : obs.includes(selected.value.obsId) ? selected.value.obsId : obs[0] ?? ''
   const fact = factOnPath(active, path, obsId, edgeId)
-  selected.value = { candidateId: text(path.target_entity_id) || candidateId.value, pathId: path.path_id, edgeId, nodeId,
+  selected.value = { ...emptyFocus(), candidateId: text(path.target_entity_id) || candidateId.value, pathId: path.path_id, edgeId, nodeId,
     obsId, factId: text(fact?.fact_id) }
   if (to) showTab(to)
 }
-function selectObservation(id: string, toEvidence = false) {
+function selectObservation(id: string, toEvidence = false, explicitGraph = false) {
   const active = frame.value
   if (!active?.observationsById.has(id)) return
+  if (selected.value.tentativeCandidateId && !explicitGraph) {
+    selected.value = { ...selected.value, obsId: id }
+    if (toEvidence) showTab('evidence')
+    return
+  }
   const observedPaths = active.pathsByObsId.get(id) ?? []
   const paths = candidateId.value ? observedPaths.filter(path => path.target_entity_id === candidateId.value) : observedPaths
   const path = chooseSavedPath(paths, selected.value.pathId, candidateId.value)
@@ -172,7 +178,7 @@ function onGraphSelect(pick: { type: 'edge' | 'node'; id: string } | null) {
 }
 function graphFocus(focus: PathFocus) { selectPath(focus, 'graph') }
 function graphForObservation(id: string) {
-  selectObservation(id)
+  selectObservation(id, false, true)
   if (selected.value.pathId) showTab('graph')
 }
 function observeFromGraph(id: string) {
@@ -184,6 +190,14 @@ function reasonFromGraph() { showTab('reasoning') }
 function observeFromReason(id: string, focus?: PathFocus) {
   if (focus && frame.value?.observationsById.has(id)) selectPath({ ...focus, obsId: id }, 'evidence')
   else selectObservation(id, true)
+}
+function observeTentative(candidate: string, id: string) {
+  const current = frame.value
+  const row = savedTentativeCandidates(current?.result).find(item => item.candidate_id === candidate)
+  if (!current?.observationsById.has(id) || !traceRows(row?.condition_checks).some(check =>
+    ['support_obs_ids', 'counter_obs_ids', 'unknown_obs_ids'].some(key => strings(check[key]).includes(id)))) return
+  selected.value = { ...emptyFocus(), obsId: id, tentativeCandidateId: candidate }
+  showTab('evidence')
 }
 function toList() { void router.push({ name: 'evidence' }) }
 </script>
@@ -252,9 +266,9 @@ function toList() { void router.push({ name: 'evidence' }) }
           <div class="saved-run-content" :key="frame.id">
             <SavedRunOverview v-if="tab === 'overview'" :analysis="saved" :frame="frame" :candidate="candidate" @tab="showTab" @observation="id => selectObservation(id, true)" />
             <SavedRunProducts v-else-if="tab === 'input' || tab === 'backbone'" :tab="tab" :analysis="saved" :frame="frame" @tab="showTab" />
-            <SavedRunEvidence v-else-if="tab === 'evidence'" :analysis="saved" :frame="frame" :candidate="candidate" :observation-id="selected.obsId" @observation="selectObservation" @graph="graphForObservation" @reasoning="showTab('reasoning')" />
+            <SavedRunEvidence v-else-if="tab === 'evidence'" :analysis="saved" :frame="frame" :candidate="selected.tentativeCandidateId ? null : candidate" :observation-id="selected.obsId" @observation="selectObservation" @graph="graphForObservation" @reasoning="showTab('reasoning')" />
             <SavedRunReasoning v-else-if="tab === 'reasoning'" :analysis="saved" :frame="frame" :candidate="candidate" :fact-id="selected.factId" :path-id="selected.pathId"
-              @candidate="selectCandidate" @observation="observeFromReason" @graph="graphFocus" @tab="showTab" />
+              :tentative-candidate-id="selected.tentativeCandidateId" @candidate="selectCandidate" @observation="observeFromReason" @tentative-observation="observeTentative" @graph="graphFocus" @tab="showTab" />
             <SavedRunGraph v-else :analysis="saved" :frame="frame" :candidate="candidate" :path-id="selected.pathId" :edge-id="selected.edgeId" :node-id="selected.nodeId" :observation-id="selected.obsId"
               @select="onGraphSelect" @path="selectPath" @observation="observeFromGraph" @reasoning="reasonFromGraph" />
           </div>

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from itertools import product
 
 from kgtracevis.core.unified_grounding import GroundedFact, Grounding
+from kgtracevis.core.unified_tentative import tentative_evidence
 from kgtracevis.kg.unified_compiler import (
     KnowledgeProgram,
     ProofBranch,
@@ -153,6 +154,9 @@ class UnifiedReasoner:
             outcome = "insufficient_evidence"
         else:
             outcome = "no_match"
+        tentative = tentative_evidence(grounding, rows, worlds, evaluated, pattern_truth)
+        if tentative and not eligible:
+            outcome = "insufficient_evidence"
         bound_ids = {o for f in facts for o in f.obs_ids}
         return self._envelope(
             frame,
@@ -193,6 +197,7 @@ class UnifiedReasoner:
                 if o.obs_id not in bound_ids
             ],
             execution_policy=policy.model_dump(mode="json"),
+            **tentative,
         )
 
     @staticmethod

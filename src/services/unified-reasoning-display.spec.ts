@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { queryLabel, selectTraceCandidate, traceQueryIndex, traceTruth, traceValue, unifiedQueries } from './unified-reasoning-display'
+import { queryLabel, savedTentativeCandidates, selectTraceCandidate, traceQueryIndex, traceTruth, traceValue, unifiedQueries } from './unified-reasoning-display'
 
 describe('stored unified reasoning traces', () => {
   it('keeps legacy results hidden and pairs each focused query with its own frame', () => {
@@ -23,6 +23,12 @@ describe('stored unified reasoning traces', () => {
     expect(selectTraceCandidate(result, null)?.candidate_id).toBe('support')
     expect(selectTraceCandidate(result, 'conflict')?.candidate_id).toBe('conflict')
     expect(rows[0]?.eligible_for_ranking).toBe(false)
+  })
+  it('reads only saved tentative items and does not promote strict failures or old snapshots', () => {
+    const strict = { candidate_id: 'no-match', eligible_for_ranking: false }
+    const saved = { candidate_id: 'tentative', rule_id: 'saved-rule', counter_obs_ids: ['stored-observation'] }
+    expect(savedTentativeCandidates({ candidate_evaluations: [strict] })).toEqual([])
+    expect(savedTentativeCandidates({ candidate_evaluations: [strict], tentative_candidates: [null, {}, saved] })).toEqual([saved])
   })
   it('labels actual process windows from their scope', () => {
     expect(queryLabel({ task: { scope_id: 'window' }, scopes: [{ scope_id: 'window', kind: 'time_window', sample_start: 161, sample_end: 260 }] }, 0)).toBe('窗口 161–260')

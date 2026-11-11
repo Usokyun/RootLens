@@ -142,6 +142,12 @@ RootKGD `scoring_details` 固定给出 `cosine_similarity / covered_contribution
 
 当前`scoring_method=tep_rootkgd_propagation_v2`，`propagation.projection_version=rootkgd-host-channel.v2`。`propagation.projection`给出显式effect边数、规范host／通道集合边数、上游冗余链接数及每条链接的主来源／备选来源；保留真实effect方向和原传播／评分函数。主路径`source_edge_views`始终是实际源边组成的连续路径，`top_k_paths[].source_path_alternatives`单独保留等价或上游冗余声明的完整候选→通道源路径，不伪接到主路径。旧run保持原投影与分数；没有版本字段时仅显示“未记录”。
 
+### 待验证分支与完整证明分开
+
+统一引擎可在新结果中保存 `tentative_candidates[]` 和 `tentative_diagnostic_context`。入选者未获完整支持，必要条件成立，且同一可连接的分支上有明确、成立的异常门和至少两项不同的实测诊断量支持。没有完整候选但有此类分支时，`outcome` 为 `insufficient_evidence`；原 `candidate_evaluations`、完整榜、证明和源路径不变。RootKGD 不生成待验证分支。
+
+`condition_checks[]` 指向保存的真／假／未知观测与来源，`scoring_details` 使用共用的已判定诊断量为分母（`shared_observed_diagnostics_v1`）：同一特征、主体和范围只计一次，先计算各依赖组未覆盖和反证比例，再分别平均得 U 和 C。缺测不作反证；待验证 J 不与完整榜代价混排。结果未保存这两项时不从旧未入榜行补算。
+
 ### 本次知识可分辨性与观测覆盖
 
 新任务的每项`cases[].results[]`保存`authoring_diagnostics`（`schema_version=rootlens-candidate-discriminability.v1`），严格由该run的知识快照、Frame和实际推理结果生成，不改变候选或分数。历史run没有此字段时显示“未生成”，GET不会拿当前工作图补算。
