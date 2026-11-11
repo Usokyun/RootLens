@@ -74,7 +74,7 @@ RootKGD不执行这些条件的阈值、AND/OR或mode惩罚。v2投影将同host
 - `POST /api/tasks/material-parse`，JSON `{"material_ids":["id"],"force":false}`。
 - `POST /api/tasks/material-build`，JSON `{"material_ids":["id"],"dataset":"tep","title":"过程知识","capability_id":"process-window-v2","enable_when_ready":false,"max_repairs":1,"candidate_limit":null}`。每任务最多两次客户端模型请求（含一次自动修复），`max_repairs=0` 可关闭修复；首次校验错误与第二次调用均写入真实事件。source客户端关闭SDK自动传输重发；连接失败按原阶段终止，不进入知识修复，也不自动新建任务。视觉／过程建议紧凑≤16候选，默认硬上限32，`candidate_limit`可明确设1–64；wafer仍只允许声明的8个图案类。超建议只警示并完整保留，超硬限明确失败；不截断／自动合并。
 - `POST /api/tasks/inference`，multipart：`file`、可选 `reference_file`、`graph_id`、`reasoner_id`、`input_mode`、`dataset`、`object_name`、`model_preset`、`semantic_mode`、`windows`、`title`、`top_k`。`windows` 为 JSON `[[1,100],[161,260]]`；一基闭区间。
-- `POST /api/tasks/inference/demo`，JSON `{"sample_id":"...","graph_id":"...","reasoner_id":"unified_abduction","input_variant":"raw","top_k":5}`。`input_variant` 可选 `raw/evidence`，默认 raw。
+- `POST /api/tasks/inference/demo`，JSON `{"sample_id":"...","graph_id":"...","reasoner_id":"unified_abduction","input_variant":"raw","top_k":5}`。`input_variant` 可选 `raw/evidence`，默认 raw。Evidence 模式只要求清单登记的 Frame；原图、网格、曲线等本地附件缺失时仍可推理，媒体状态如实返回。`supporting_assets` 的通用附件用 `frame_asset_id`；单帧附件用 `frame_case_id` 加 `case_asset_id`，避免多个窗口误共享一份数组。路径越界或把目录登记成文件仍拒绝；raw 模式仍要求原件及 TEP 正常参考。
 
 `input_mode`：`evidence`=原生 EvidenceFrame JSON（单个／数组／`{frames:[...]}`）或旧结构化 Evidence；`records`=adapter records JSON/JSONL；`image`=MVTec 原图；`process`=52通道 dat/csv + 正常 `reference_file`；`wafer`=原生 0/1/2 网格 JSON（单个网格或带 `wafer_map` 的对象）。不允许用文件名／原生标签当推理答案。
 

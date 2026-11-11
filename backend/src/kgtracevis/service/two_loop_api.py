@@ -348,7 +348,7 @@ def read_library():
             path = (BACKEND_ROOT / item["path"]).resolve()
             if not path.is_relative_to(BACKEND_ROOT):
                 raise ValueError("演示资产路径越出后端目录。")
-            result["available"] = path.exists()
+            result["available"] = path.is_file()
             result["download_url"] = "/api/demo-library/assets/" + item["asset_id"]
         if "reasoner_ids" in result:
             result["reasoner_ids"] = [
@@ -384,11 +384,15 @@ def library_assets():
     return assets
 
 
-def asset_path(asset):
+def asset_path(asset, *, missing_ok=False):
     path = (BACKEND_ROOT / asset["path"]).resolve()
-    if not path.is_relative_to(BACKEND_ROOT) or not path.is_file():
-        raise ValueError("演示资产不可用，请先运行公开演示准备脚本。")
-    return path
+    if not path.is_relative_to(BACKEND_ROOT):
+        raise ValueError("演示资产路径越出后端目录。")
+    if path.is_file():
+        return path
+    if missing_ok and not path.exists():
+        return None
+    raise ValueError("演示资产不可用，请先运行公开演示准备脚本。")
 
 
 def demo_graph_reference(asset, records):
@@ -532,6 +536,48 @@ def demo_materials(demo_id: str):
     return call(register)
 
 
+def demo_evidence_media(sample, frames):
+    """Only bind existing manifest files, optionally to one saved Frame."""
+    raw_path = asset_path(sample["raw_input"], missing_ok=True)
+    frame_ids = {frame.get("case_id") for frame in frames}
+    seen = set()
+    supporting: dict[str | None, dict[str, str]] = {}
+    for attachment in sample.get("supporting_assets", []):
+        case_id = attachment.get("frame_case_id")
+        global_asset, case_asset = attachment.get("frame_asset_id"), attachment.get("case_asset_id")
+        if (case_id is None) != (case_asset is None) or (case_id is not None and global_asset):
+            raise ValueError("指定单个 Frame 附件时需要 frame_case_id 与 case_asset_id。")
+        if not (asset_id := case_asset if case_id is not None else global_asset):
+            continue
+        key = (case_id, asset_id)
+        if key in seen or (case_id is not None and case_id not in frame_ids):
+            raise ValueError("演示附件的 Frame 标识未知或同一 Frame 附件重复。")
+        seen.add(key)
+        media = asset_path(attachment, missing_ok=True)
+        if media is not None:
+            supporting.setdefault(case_id, {})[asset_id] = str(media)
+    bindings = {}
+    for frame in frames:
+        scoped = {**supporting.get(None, {}), **supporting.get(frame.get("case_id"), {})}
+        for asset in frame.get("assets", []):
+            media_path = None
+            if asset["asset_id"] in scoped:
+                media_path = scoped[asset["asset_id"]]
+            elif raw_path is not None and (
+                asset["kind"] == "image"
+                or (sample["dataset"] == "wafer" and asset["asset_id"] == "grid")
+            ):
+                media_path = str(raw_path)
+            elif (base_uri := asset["uri"].split("#", 1)[0]) in scoped.values():
+                media_path = base_uri
+            if (
+                media_path is not None
+                and bindings.setdefault(asset["uri"], media_path) != media_path
+            ):
+                raise ValueError("同一 Evidence 资源引用被绑定到不同演示附件。")
+    return bindings
+
+
 @router.post("/tasks/inference/demo", status_code=202)
 def demo_inference(body: DemoInferenceRequest):
     def submit():
@@ -552,6 +598,22 @@ def demo_inference(body: DemoInferenceRequest):
             **options,
         )
         path = asset_path(asset)
+        reference = None
+        if body.input_variant == "raw":
+            if sample.get("normal_reference"):
+                reference = asset_path(sample["normal_reference"])
+            elif sample["input_mode"] == "process":
+                raise ValueError("过程原始数据需要配套正常参考。")
+        else:
+            payload = json.loads(path.read_text())
+            frames = payload.get("frames", [payload]) if isinstance(payload, dict) else payload
+            if (
+                not isinstance(frames, list)
+                or not frames
+                or not all(isinstance(frame, dict) for frame in frames)
+            ):
+                raise ValueError("演示 Evidence 必须包含至少一个 Frame 对象。")
+            request["media_bindings"] = demo_evidence_media(sample, frames)
         root = TASK_ROOT / "inputs" / uuid.uuid4().hex
         root.mkdir(parents=True)
         destination = root / safe_name(path.name)
@@ -559,32 +621,7 @@ def demo_inference(body: DemoInferenceRequest):
         request.update(
             input_path=str(destination), sample_id=body.sample_id, input_variant=body.input_variant
         )
-        if body.input_variant == "evidence":
-            payload = json.loads(destination.read_text())
-            frames = payload.get("frames", [payload]) if isinstance(payload, dict) else payload
-            raw_path = asset_path(sample["raw_input"])
-            request["media_bindings"] = {
-                asset["uri"]: str(raw_path)
-                for frame in frames
-                for asset in frame.get("assets", [])
-                if (
-                    asset["kind"] == "image"
-                    or (sample["dataset"] == "wafer" and asset["asset_id"] == "grid")
-                )
-            }
-            supporting = {
-                a["frame_asset_id"]: str(asset_path(a))
-                for a in sample.get("supporting_assets", [])
-                if a.get("frame_asset_id")
-            }
-            for frame in frames:
-                for asset in frame.get("assets", []):
-                    if asset["asset_id"] in supporting:
-                        request["media_bindings"][asset["uri"]] = supporting[asset["asset_id"]]
-                    elif asset["uri"].split("#", 1)[0] in supporting.values():
-                        request["media_bindings"][asset["uri"]] = asset["uri"].split("#", 1)[0]
-        if body.input_variant == "raw" and sample.get("normal_reference"):
-            reference = asset_path(sample["normal_reference"])
+        if reference is not None:
             reference_path = root / ("reference_" + safe_name(reference.name))
             shutil.copyfile(reference, reference_path)
             request["reference_path"] = str(reference_path)

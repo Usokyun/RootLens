@@ -4,13 +4,16 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from test_two_loop_tasks import MemoryStore, finish
 
 from kgtracevis.kg.unified_working_package import UnifiedWorkingGraphPackage
 from kgtracevis.service import two_loop_api as api
 from kgtracevis.service import two_loop_runtime as runtime
+from kgtracevis.service import visual_evidence
 from kgtracevis.service.api import create_app
 from kgtracevis.service.two_loop_tasks import TaskManager
 
@@ -213,3 +216,205 @@ def test_demo_download_preserves_real_filename_extension(
     assert response.headers["content-disposition"] == f'attachment; filename="{filename}"'
     assert response.headers["content-type"] == media_type
     assert response.content == b"public-demo-asset"
+
+
+def write_demo_manifest(tmp_path, monkeypatch, sample):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"demos": [{"id": "test", "samples": [sample]}]}))
+    monkeypatch.setattr(api, "BACKEND_ROOT", tmp_path)
+    monkeypatch.setattr(api, "DEMO_MANIFEST", manifest)
+
+
+@pytest.mark.parametrize(
+    "dataset,mode,package_stem,frame_stem,support_id",
+    [
+        ("mvtec", "image", "bottle", "mvtec-chipped", "mask"),
+        ("tep", "process", "tep", "tep-cooling-window", "window"),
+        ("wafer", "wafer", "wafer", "wafer-nearfull", "grid"),
+    ],
+)
+def test_demo_native_evidence_can_run_without_optional_media(
+    client_runtime, tmp_path, monkeypatch, dataset, mode, package_stem, frame_stem, support_id
+):
+    client, manager, record = client_runtime
+    package = UnifiedWorkingGraphPackage.model_validate_json(
+        Path(f"data/kg/unified/{package_stem}-working-graph.v2.json").read_text()
+    )
+    record.dataset = dataset
+    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    frame = Path(f"data/examples/unified/{frame_stem}.json").read_bytes()
+    (tmp_path / "evidence.json").write_bytes(frame)
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "sample",
+            "title": "无原件的公开 Frame",
+            "dataset": dataset,
+            "input_mode": mode,
+            "evidence": {"asset_id": "frame", "path": "evidence.json"},
+            "raw_input": {"asset_id": "original", "path": "not-downloaded.dat"},
+            "supporting_assets": [
+                {"asset_id": "support", "path": "not-downloaded.json", "frame_asset_id": support_id}
+            ],
+        },
+    )
+    args = {"sample_id": "sample", "graph_id": "g", "input_variant": "evidence"}
+    response = client.post("/api/tasks/inference/demo", json=args)
+    assert response.status_code == 202, response.text
+    task = finish(manager, response.json())
+    assert task["status"] == "completed", task["error"]
+    assert task["request"]["media_bindings"] == {}
+    run = client.get("/api/analyses/" + task["result"]["run_id"]).json()
+    assert run["input_mode"] == "evidence"
+    assert run["cases"][0]["evidence_frames"][0]["case_id"] == json.loads(frame)["case_id"]
+    assert run["cases"][0]["results"][0]["ranked_root_causes"]
+    assert run["cases"][0]["media_status"] == "not_attached"
+    assert run["media_assets"] == {}
+
+    rejected = client.post("/api/tasks/inference/demo", json={**args, "input_variant": "raw"})
+    assert rejected.status_code == 400
+    assert "演示资产不可用" in rejected.json()["detail"]
+    assert len(manager.store.tasks) == 1
+
+
+def test_demo_native_evidence_preserves_prepared_image_attachment(
+    client_runtime, tmp_path, monkeypatch
+):
+    client, manager, _ = client_runtime
+    frame = Path("data/examples/unified/mvtec-chipped.json").read_text()
+    (tmp_path / "evidence.json").write_text(json.dumps({"frames": [json.loads(frame)]}))
+    image = tmp_path / "original.png"
+    Image.new("RGB", (16, 16), "white").save(image)
+    monkeypatch.setattr(visual_evidence, "PROJECT_ROOT", tmp_path)
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "sample",
+            "title": "有原图的公开 Frame",
+            "dataset": "mvtec",
+            "input_mode": "image",
+            "evidence": {"asset_id": "frame", "path": "evidence.json"},
+            "raw_input": {"asset_id": "original", "path": image.name},
+            "supporting_assets": [
+                {"asset_id": "support", "path": "optional-mask.json", "frame_asset_id": "mask"}
+            ],
+        },
+    )
+    response = client.post(
+        "/api/tasks/inference/demo",
+        json={"sample_id": "sample", "graph_id": "g", "input_variant": "evidence"},
+    )
+    assert response.status_code == 202, response.text
+    task = finish(manager, response.json())
+    assert task["status"] == "completed", task["error"]
+    assert list(task["request"]["media_bindings"].values()) == [str(image)]
+    run = client.get("/api/analyses/" + task["result"]["run_id"]).json()
+    assert run["cases"][0]["media_status"] == "available"
+    assert any(
+        item["kind"] == "image" and item["available"] for item in run["cases"][0]["visual_evidence"]
+    )
+
+
+def test_demo_process_media_is_scoped_to_the_actual_frame(client_runtime, tmp_path, monkeypatch):
+    client, manager, record = client_runtime
+    package = UnifiedWorkingGraphPackage.model_validate_json(
+        Path("data/kg/unified/tep-working-graph.v2.json").read_text()
+    )
+    record.dataset = "tep"
+    monkeypatch.setattr(api, "export_working_graph", lambda _: package)
+    frames, supporting = [], []
+    for value in (1, 2):
+        frame = json.loads(Path("data/examples/unified/tep-cooling-window.json").read_text())
+        frame["case_id"] = f"window_{value}/query/window"
+        asset = next(item for item in frame["assets"] if item["asset_id"] == "window")
+        asset["uri"] = f"evidence://window_{value}"
+        filename = f"window-{value}.npy"
+        np.save(tmp_path / filename, np.full(asset["shape"], value), allow_pickle=False)
+        frames.append(frame)
+        supporting.append(
+            {
+                "asset_id": f"media-{value}",
+                "path": filename,
+                "case_asset_id": "window",
+                "frame_case_id": frame["case_id"],
+            }
+        )
+    (tmp_path / "evidence.json").write_text(json.dumps({"frames": frames}))
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "sample",
+            "title": "两个保存窗口",
+            "dataset": "tep",
+            "input_mode": "process",
+            "evidence": {"asset_id": "frame", "path": "evidence.json"},
+            "raw_input": {"asset_id": "original", "path": "not-downloaded.dat"},
+            "supporting_assets": supporting,
+        },
+    )
+    response = client.post(
+        "/api/tasks/inference/demo",
+        json={"sample_id": "sample", "graph_id": "g", "input_variant": "evidence"},
+    )
+    assert response.status_code == 202, response.text
+    task = finish(manager, response.json())
+    assert task["status"] == "completed", task["error"]
+    run = client.get("/api/analyses/" + task["result"]["run_id"]).json()
+    assert [case["media_status"] for case in run["cases"]] == ["available", "available"]
+    assert [case["process_trends"][0]["samples"][0] for case in run["cases"]] == [1.0, 2.0]
+
+
+@pytest.mark.parametrize(
+    "asset_location,message", [("../outside.png", "越出"), ("directory", "不可用")]
+)
+def test_demo_evidence_rejects_invalid_optional_attachment(
+    client_runtime, tmp_path, monkeypatch, asset_location, message
+):
+    client, manager, _ = client_runtime
+    (tmp_path / "evidence.json").write_text("{}")
+    (tmp_path / "directory").mkdir()
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "sample",
+            "title": "错误的资源路径",
+            "dataset": "mvtec",
+            "input_mode": "image",
+            "evidence": {"asset_id": "frame", "path": "evidence.json"},
+            "raw_input": {"asset_id": "original", "path": asset_location},
+        },
+    )
+    response = client.post(
+        "/api/tasks/inference/demo",
+        json={"sample_id": "sample", "graph_id": "g", "input_variant": "evidence"},
+    )
+    assert response.status_code == 400
+    assert message in response.json()["detail"]
+    assert not manager.store.tasks
+
+
+def test_demo_raw_process_still_requires_a_normal_reference(client_runtime, tmp_path, monkeypatch):
+    client, manager, record = client_runtime
+    record.dataset = "tep"
+    (tmp_path / "raw.dat").write_text("placeholder")
+    write_demo_manifest(
+        tmp_path,
+        monkeypatch,
+        {
+            "sample_id": "sample",
+            "title": "缺正常参考的过程原始输入",
+            "dataset": "tep",
+            "input_mode": "process",
+            "raw_input": {"asset_id": "original", "path": "raw.dat"},
+        },
+    )
+    response = client.post(
+        "/api/tasks/inference/demo", json={"sample_id": "sample", "graph_id": "g"}
+    )
+    assert response.status_code == 400
+    assert "正常参考" in response.json()["detail"]
+    assert not manager.store.tasks
