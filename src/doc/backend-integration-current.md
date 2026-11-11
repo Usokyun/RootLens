@@ -4,7 +4,7 @@
 
 RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后端在同一仓库维护：
 
-- 前端 `src/`：恢复 `471e1aa` 的原三页布局、Demo／Backend、成品回放和有向力导向图；当前还原范围见 §1.7。
+- 前端 `src/`：保留 `471e1aa` 原三页布局、Demo／Backend、成品回放和有向力导向图，并在原入口接通两个后端闭环，见 §1.8。
 - 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、统一推理和 TEP RootKGD、任务及完整分析持久化。
 - 前后端通过 API 协作；**后端代码放在同仓，不等于浏览器执行后端算法**。
 - RootLens **不再**在浏览器端执行图谱构建、Evidence 临时组装或 RCA 本地推理。
@@ -23,7 +23,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 ### 1.2 历史：迁移验证摘要（2026-11-10）
 
-§1.2–1.6 保留各阶段当时的结果与入口背景；当前前端以 §1.7、§2–3 为准，后端双闭环能力继续保留。
+§1.2–1.7 保留各阶段当时的结果与入口背景；当前前端以 §1.8、§2–3 为准。
 
 本节仅保留集成边界所需摘要；过程与证据见[完整核验记录](../../backend/docs/rootlens-monorepo-migration.md)及当时的机器报告路径 `.rootlens-cache/backend-migration-verification.json`（Git 忽略，当前工作树未提供）。以下结果限定于本次迁移，不代表未来每次启动状态：
 
@@ -103,7 +103,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 该版源码完整原生pytest为 **572 passed／4既有optional skipped**，前端Vitest **18文件／97项通过**、类型与生产构建通过；阶段日志与独立消费见[系统评估](../../backend/docs/two-loop-system-assessment.md)。4项跳过为3项指定隔离数据库opt-in和1项缺本机原TEP_KG对照，不是新屏蔽失败。较早阶段的失败与566／84等结果按原候选保留，不改写为本次复测。
 
-### 1.7 当前：恢复原前端基础，保留增强后的后端
+### 1.7 历史：先恢复原前端基础（`f5e93aa`）
 
 用户明确要求先恢复大改前的界面，知识图谱应呈现图网络而非层级树。恢复分支为 `codex/restore-original-frontend`，从已推送的 `8cf4d0b` 创建；精确前端基准是 `471e1aaa1dabd22fdb0dd7f00590e7e4cf08ab26`。重大UI提交 `3b3cf76` 的父 `8052e8b` 与此基准在前端源码／依赖／配置上相同。没有回滚整个仓库。
 
@@ -116,15 +116,26 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 恢复版前端完整原生Vitest为22文件／109项通过，类型与生产构建通过；原全量Arco约796KB主chunk大小警告保留。D3改为项目内锁定7.9.0依赖，不依赖现场CDN。记录与实屏证据见 [前端还原记录](rootlens-original-frontend-restoration.md)。后端源码未更改，复用572／4有效测试；还原前18文件／97项前端测试是历史候选证据，不冒充恢复版检查。
 
+### 1.8 当前：原界面接通素材和分析闭环
+
+- **资料 → 可用工作图**：原素材库勾选资料，Build Recipe 提交真实异步制作；解析进度有实际计数，LLM不定阶段没有虚构百分比。失败保留原阶段与输入，显式重试另建任务。完成只选 `result.graph_id`；打开原图谱页编辑完整包并投入使用。
+- **工作图 → 新分析**：只有已启用、就绪的v2工作图可用于新任务。“用这张图分析”携精确图ID与显式新建意图，不加载旧结果。用户明确选图优先；公开样例配套仅适用隐式默认，缺图不回退。
+- **原始输入／Frame → 保存解释**：原运行页“新建分析”提交后端任务，保留原接口上传。完成读取确切分析ID与Frame；原图谱展示该次保存路径、条件与观测定位，而当前登记总图仍是另一数据来源。下载本次Evidence可作为中间入口复算，不重跑模型测量。
+- **本轮后端仅改source文本请求额度**：SDK传输重发关闭，失败终止；保留最多一次的编译修复与用户显式重试。推理、图存储、默认图与历史数据不回滚。
+
+前端28文件／147项原生Vitest及build通过，原Arco主chunk警告保留。后端575通过／4既有optional skip，Ruff通过。真实任务、受控失败、界面验证与服务恢复见[原界面双闭环记录](rootlens-restored-two-loops.md)。
+
+实际验收复用了已登记公开Emhart PDF的两个片段，唯一制作任务实际1次文本调用，新图完整包保存后启用并精准携图。原图关闭外部语义后得到证据不足；同图下载Frame再普通上传，完整结果精确一致。另用已存外观Frame与d04分别验证真实保存路径和两种引擎；独立短摘上传／解析未参与构图。可打开的图、运行、Frame和限制见[实际操作验收](../../backend/docs/original-ui-loop-acceptance.md)。
+
 ## 2. 当前输入与分析入口
 
 ### 2.1 原始样本入口
 
-恢复版保留原Backend上传的 `evidence/records/image` 合同；原始图片仍由后端执行模型。完整过程序列＋正常参考、原生晶圆网格的新入口保留在 `/api/tasks/inference`，不在浏览器补算。缺模型或参考时明确失败，不用演示结果替代。TEP窗口采用一基闭区间、完整52通道，Wafer原生标签不传分类器。
+Backend的“新建分析”支持原图、过程序列＋正常参考与原生晶圆网格，经 `/api/tasks/inference` 执行；真实模型仍只在后端。缺模型或参考明确失败，不以演示结果替代。TEP窗口一基闭区间、完整52通道，Wafer原生标签不传分类器。旧入口仍保留 `evidence/records/image` 合同。
 
 ### 2.2 中间 Evidence 入口
 
-原生 EvidenceFrame（单个、数组或frames外壳）通过双闭环API验证、绑定并重新推理；旧上传入口仍按自身Evidence／records schema处理，不混称两种文件相同。Frame原值和范围保留，缺媒体不阻止标量推理。Frame导出与原生重传属于新分析，Session／runtime导入则只回放已保存内容。
+选择“中间 Evidence”上传原生EvidenceFrame（单个、数组或frames外壳），后端验证、绑定并重新推理。Frame原值和范围保留，缺媒体不阻止标量推理。“下载本次Evidence”供中间入口复算，Session／runtime导入则只回放已保存内容。旧上传仍按自身Evidence／records schema处理。
 
 ### 2.3 历史快照的边界
 
@@ -134,17 +145,17 @@ Demo快照、`rootlens-runtime`／`rootlens-session-export` Replay和原页面�
 
 ### `/materials` · 素材与构图
 
-恢复原素材库、文件／URL登记、抽取与原文定位、构图结果及来源查看。真实解析／LLM仍在后端。待分析样本与知识资料仍需区分；异步新任务API不因恢复前端而删除。
+原素材库、文件／URL登记、原文定位与历史构图记录保留。解析与“生成构图”走真实异步任务；使用返回图ID进入原图谱页，编辑后启用。待分析样本不混作知识资料。
 
 ### `/graphs` · 根因与图谱
 
-恢复原总图、局部子图、方向箭头、路径高亮和来源／反馈联动。Backend图来自 `/api/kg/studio?graph_id=...` 的真实节点与边；共享节点不复制成树枝。完整工作图包可导入／导出／保存，v2须编辑完整canonical JSON，派生投影不是第二份可独立改写的真值。
+原总图、局部子图、方向箭头、路径高亮和来源／反馈联动保留。当前登记图读取 `/api/kg/studio?graph_id=...` 的真实节点与边，不复制共享节点；历史路径只读取保存快照。v2编辑基于完整canonical包，保存后可投入使用并携这张图新建分析。
 
 增强后的词汇绑定、有限目录与候选专属条件operator保留在后端；本次原界面恢复不等于全部新表单和向导已移植。
 
 ### `/evidence` · 运行与证据
 
-恢复原运行列表、上传区、case／observation、媒体详情和成品Replay入口。Backend旧run与新双闭环分析的保存外壳不同，兼容层只读映射已有结果；不在浏览器推理或改变原候选／数值。
+原运行列表、上传区、case／observation、媒体详情和成品Replay保留。“新建分析”使用启用工作图与明确推理器，完成打开该次保存Run并可下载Frame。旧Run与新分析分别按自己的接口读取，展示映射不改原候选／分数。
 
 顶部Demo／Backend切换与“修改后端地址”设置完整服务地址。本地偏好／策展草稿不是后端持久知识或分析真值。
 
@@ -219,7 +230,7 @@ npm run backend:check
 当前优先阅读顺序：
 
 1. 本文档 `backend-integration-current.md`
-2. 根 `README.md`（当前用法）、`rootlens-original-frontend-restoration.md`（本次界面恢复）、`rootlens-two-loop-backend-contract.md`（保留的API）与 `rootlens-two-loop-demo-assets.md`（资产）
+2. 根 `README.md`（当前用法）、`rootlens-restored-two-loops.md`（当前界面闭环）、`rootlens-two-loop-backend-contract.md`（API）与 `rootlens-two-loop-demo-assets.md`（资产）
 3. `backend/docs/two-loop-demo.md`（双闭环API演示／服务恢复）、前端历史交付与 `source-projects.md`；其他后端设计／schema依其版本解读，旧Web／论文路径只作背景
 4. 需要理解历史设计背景时，再看：
    - `module-1-graph-construction.md`

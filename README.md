@@ -2,12 +2,12 @@
 
 RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。当前前端按用户要求恢复到 `471e1aa` 的原布局与交互基础：**运行与证据 → 根因与图谱 → 素材与构图**，知识图谱恢复有向力导向网络，不以层级树代替。
 
-本次还原在 `codex/restore-original-frontend` 独立演进，保留 `8cf4d0b` 已验证的 Python 后端、数据库、知识与分析结果。后端继续提供两个可执行闭环：
+`codex/restore-original-frontend` 保留 `8cf4d0b` 的后端、数据库、知识与分析结果，并在原三页接通两个可执行闭环：
 
 1. **资料 → 可用知识**：导入原始资料，实际解析和调用 LLM，自动校验／编译，再由使用者修改并启用工作图。
 2. **样本 → 可追溯解释**：原始图片、过程时序或晶圆网格经过真实模型／adapter 生成 Evidence；也可直接上传中间 Evidence，选择推理器，查看候选、条件、来源与原始数据对应。
 
-页面顶部恢复 **Demo / Backend** 切换；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。还原范围与实际验证见[前端还原记录](src/doc/rootlens-original-frontend-restoration.md)。
+页面顶部可切换 **Demo / Backend**；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。当前操作与验收见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)。
 
 ## 演示数据与后端复演
 
@@ -15,7 +15,7 @@ RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。�
 
 推荐场景为玻璃边缘缺损、TEP 冷却回路和晶圆近全片失效。原始入口真实运行模型；中间入口重新执行推理。玻璃原图拍摄部位未确认，不能称为已确认瓶口；Emhart Finish 指南是演示迁移的知识来源，制造原因仍是待区分的候选。
 
-恢复版的 Demo 模式读取原有成品快照。双闭环公开素材与实际 Frame 仍由受管 API 提供；`graph_ref` 保留精确配套图状态，不在 GET 自动导图。上一版的“推荐输入 → 配套图 → 异步分析”整套新控件不作为本次还原目标。
+Demo 模式读取原有成品快照。要真实复演，在 Backend 的“新建分析”中选择受管公开样本和原始／中间入口，再点击“开始分析”。配套图只填入隐式默认；明确携带或手选的图保留，切换需用户确认。缺配套图时说明状态，不按最新同场景图猜测，也不自动导图。图像原始样例如使用外部ROI模型会明示；手动图像上传默认关闭外部ROI语义。
 
 ```bash
 cd backend
@@ -106,13 +106,13 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 本轮演示验收使用独立前端 5186／API 8012、PG 55433／Neo4j bolt 57687，与日常默认库分开。开发命令不是开机或登录自启配置；服务恢复见演示手册。
 
-## 恢复后的三页
+## 在原三页完成两个闭环
 
 ### 1. 运行与证据 · `/evidence`
 
-恢复原运行列表、上传区、case／observation 浏览、媒体详情与成品回放导入。Backend 模式保留原 Evidence／records／image 上传合同；真实模型执行仍在后端。双闭环原始过程＋正常参考、晶圆网格、原生 Frame 及两个明确引擎的完整任务入口继续由[双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)提供，不在浏览器转换或重算。
+保留原运行列表、case／observation 浏览与成品回放。Backend 点 **新建分析**，选择原图、52通道过程文件＋正常参考、晶圆网格，或上传原生EvidenceFrame；选择已启用的同场景工作图及推理器后提交真实任务。原 Evidence／records／image 仍可经“旧接口上传”使用。
 
-运行列表只读合并新双闭环结果，以“已保存分析”区分，原候选、每Frame、分数与源路径保留；这类新分析的旧Session导出明确不支持，原Run导出保持。之后改图不重算历史；无匹配、证据不足与同分候选均是有效结果，分数不是概率。
+成功后载入该次“已保存分析”。原候选、每Frame、分数和源路径保留；**下载本次 Evidence** 后可直接作为中间入口复算。新分析的旧Session导出不支持，原Run导出保持。之后改图不重算历史；无匹配、证据不足与同分候选均是有效结果，分数不是概率。
 
 ### 2. 根因与图谱 · `/graphs`
 
@@ -120,11 +120,11 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 总图读取当前登记图；历史局部路径与推理依据读取该次保存结果，两者不是同一份历史全图。D3改为项目内锁定依赖，不再依赖现场CDN。
 
-完整工作图包支持导入、导出与保存。v2 知识必须在完整 JSON 中修改；投影边不是第二份真值。保留未展示的绑定、有限值、语义角色、规则与来源字段，不用旧视图字段重建知识包。更细的词汇绑定表单、候选专属条件向导仍是已保留后端能力，本次不重新设计其界面。
+完整工作图包支持导入、导出与保存。v2 知识在完整 JSON 中修改，保留未展示的绑定、有限值、语义角色、规则与来源，不从投影边重建。保存后点 **投入使用**，再点 **用这张图分析**，以确切图ID打开新建分析，不沿用历史结果或换成另一张图。独立候选条件向导仍以保留的后端API为准。
 
 ### 3. 素材与构图 · `/materials`
 
-恢复原素材库、文件／URL 登记、抽取与定位、构图结果及来源查看。真实解析与 LLM 构图仍走当前 Python 服务；新制作图可能要求当前样本未观测的细节，制作成功不等于诊断成功。新任务服务的异步阶段、一次有界修复、编译校验与 enabled 状态全部保留。
+保留原素材库、文件／URL 登记和片段定位。勾选资料后在原 Build Recipe 点 **生成构图**，读取实际解析、LLM、校验和保存阶段。默认每次任务最多两个文本请求（首次＋一次修复）；失败停住，重试须明确点击。完成后点 **打开并编辑此图**，沿原图谱页保存并启用。制作成功不等于当前观测足以诊断。
 
 ## 保留的后端推理能力
 
@@ -143,7 +143,7 @@ Demo 成品快照、Session／runtime Replay 与原页面工作区已随原前�
 
 U0–U5 的结果保留为历史：32 份同输入的独立平坦对照完全等价，TEP 首位有明确错误；当时前端 95 项／build 通过，后端 442 通过／5 项既有失败／1 跳过。统一架构不等于准确率提升。见 [U5 历史验收](backend/docs/unified-reasoning-u5.md)。M1–M6 的迁移、模型接入和旧回放走查见 [渐进重构历史](backend/docs/progressive-demo-2026-11-10.md)，其旧模式入口说明不覆盖当前产品。
 
-前端本轮原生Vitest **22文件／109项通过**，类型与生产构建通过；原全量Arco约796KB主chunk的大小警告保留。后端未回滚，复用 **572 passed／4 既有可选跳过** 的有效检查；4项分别是3项隔离数据库 opt-in 和1项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实屏检查见[还原记录](src/doc/rootlens-original-frontend-restoration.md)；`8cf4d0b` 的18文件／97项与之前各阶段结果按历史保留，见[系统评估](backend/docs/two-loop-system-assessment.md)。
+本轮前端原生Vitest **28文件／147项通过**，类型与生产构建通过；保留Arco主chunk大小警告。后端原生pytest **575 passed／4 既有可选跳过**：3项隔离数据库 opt-in 和1项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实跑见[原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)；`f5e93aa` 的22文件／109项和 `8cf4d0b` 的18文件／97项按各自历史候选保留。
 
 ## 仓库与数据安全
 
@@ -165,7 +165,8 @@ backend/runs/local_runtime/  预置本机数据库与工具（忽略）
 - [当前集成边界](src/doc/backend-integration-current.md)：当前行为真值，含迁移／U0–U5 历史摘要。
 - [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：任务、图启用与完整分析合同。
 - [演示资产索引](src/doc/rootlens-two-loop-demo-assets.md)与[现场手册](backend/docs/two-loop-demo.md)。
-- [前端还原记录](src/doc/rootlens-original-frontend-restoration.md)与[独立实屏验收](backend/docs/frontend-restoration-acceptance.md)：当前布局、兼容范围与实际检查。
+- [原界面双闭环记录](src/doc/rootlens-restored-two-loops.md)与[实际操作验收](backend/docs/original-ui-loop-acceptance.md)：当前操作、真实运行和保留限制。
+- [前端还原记录](src/doc/rootlens-original-frontend-restoration.md)与[独立实屏验收](backend/docs/frontend-restoration-acceptance.md)：原布局恢复阶段的兼容与检查。
 - [双闭环历史独立验收](backend/docs/two-loop-acceptance.md)与[重构前端交付](src/doc/rootlens-two-loop-frontend.md)：还原前的界面验收、后端消费证据和保留限制。
 - [来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。
 
