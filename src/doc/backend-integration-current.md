@@ -4,7 +4,7 @@
 
 RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后端在同一仓库维护：
 
-- 前端 `src/`：素材管理、知识语义编辑与启用、样本／Evidence 上传、任务和解释联动。
+- 前端 `src/`：恢复 `471e1aa` 的原三页布局、Demo／Backend、成品回放和有向力导向图；当前还原范围见 §1.7。
 - 后端 `backend/src/kgtracevis/`：真实资料解析／LLM 构图、模型／adapter 测量、统一推理和 TEP RootKGD、任务及完整分析持久化。
 - 前后端通过 API 协作；**后端代码放在同仓，不等于浏览器执行后端算法**。
 - RootLens **不再**在浏览器端执行图谱构建、Evidence 临时组装或 RCA 本地推理。
@@ -23,7 +23,7 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 ### 1.2 历史：迁移验证摘要（2026-11-10）
 
-§1.2–1.5 保留各阶段当时的结果与入口背景；当前产品入口以 §1.6、§2–3 为准。
+§1.2–1.6 保留各阶段当时的结果与入口背景；当前前端以 §1.7、§2–3 为准，后端双闭环能力继续保留。
 
 本节仅保留集成边界所需摘要；过程与证据见[完整核验记录](../../backend/docs/rootlens-monorepo-migration.md)及当时的机器报告路径 `.rootlens-cache/backend-migration-verification.json`（Git 忽略，当前工作树未提供）。以下结果限定于本次迁移，不代表未来每次启动状态：
 
@@ -77,9 +77,11 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 使用／实际 JSON／图谱制作／API／回放见 [统一推理 v2](/Users/hhm/code/RootLens/backend/docs/unified-reasoning.md)，比较与负结果见 [U5 验收](/Users/hhm/code/RootLens/backend/docs/unified-reasoning-u5.md)，提交与分期证据见 [执行记录](rootlens-unified-reasoning-execution.md)。本机仍使用 5186／8012 与独立 55433／57687 测试库；日常默认地址未变，原数据未重建。
 
-### 1.6 当前：资料与分析的两个完整闭环
+### 1.6 历史：双闭环重构与验收（还原前）
 
-当前界面只连接后端，保留“素材管理 → 知识图谱 → 推理分析”三页；旧 Mock／Replay／runtime 入口从产品界面移除。公开演示按钮提供原始资料、样本或真实 Frame，并实际提交任务，不打开预制根因答案。
+本节记录已推送的 `codex/demo-two-loops@8cf4d0b` 所对应界面及验收；本次还原只改变前端，以下后端能力和真实数据继续保留。旧界面的当前恢复边界见下一节。
+
+该版界面只连接后端，保留“素材管理 → 知识图谱 → 推理分析”三页；旧 Mock／Replay／runtime 入口从产品界面移除。公开演示按钮提供原始资料、样本或真实 Frame，并实际提交任务，不打开预制根因答案。
 
 - **闭环 A**：资料上传／URL → 真实解析与定位 → LLM 领域蓝图 → 自动校验与一次有界修复 → 确定性编译 → 持久语义编辑 → “投入使用”。ready 与 enabled 分开；新分析只使用已启用的 v2 工作图。
 - **制作与编辑合同**：LLM、adapter 和编辑器共用特征类型／单位／有限值目录；开放外观词汇不伪造枚举。视觉／过程候选软建议16、硬限默认32，不静默截断；晶圆仍限8种图案。presence gate 只作前置，具体支持分支还需诊断原子；source 编译收紧原 ANY 时显式记录语义变化，canonical退化分支拒绝执行。等价词汇绑定保留实际来源与应用记录，不由粗外观补成未知部位。候选专属新增／撤销条件创建独立小束，不改共享机制；无来源的作者阈值明确标人工启发式。
@@ -99,39 +101,52 @@ RootLens 当前是一个 **backend-first 工作台**，Vue 前端与 Python 后�
 
 本次新公开PDF任务实际2调用后因当时硬16失败；从捕获的17候选最终响应离线恢复时，分别修正预算配置与泛presence充分分支，明确记录 `semantic_change=true`，原task仍失败、无新模型调用。恢复图正式导入／启用后，006 Frame执行为不足而非诊断成功：细Finish条件未知，未加粗→细等价绑定。原始响应、编译变化、当前API事实及尚未覆盖的有限值／binding分支见演示手册；可入库完整对照包在 `backend/data/demo/two_loop/graphs/source-finish-recovered.json`，恢复provenance同目录。独立验证图不替换默认演示图。
 
-当前源码完整原生pytest为 **572 passed／4既有optional skipped**，前端Vitest **18文件／97项通过**、类型与生产构建通过；阶段日志与独立消费见[系统评估](../../backend/docs/two-loop-system-assessment.md)。4项跳过为3项指定隔离数据库opt-in和1项缺本机原TEP_KG对照，不是新屏蔽失败。较早阶段的失败与566／84等结果按原候选保留，不改写为本次复测。
+该版源码完整原生pytest为 **572 passed／4既有optional skipped**，前端Vitest **18文件／97项通过**、类型与生产构建通过；阶段日志与独立消费见[系统评估](../../backend/docs/two-loop-system-assessment.md)。4项跳过为3项指定隔离数据库opt-in和1项缺本机原TEP_KG对照，不是新屏蔽失败。较早阶段的失败与566／84等结果按原候选保留，不改写为本次复测。
+
+### 1.7 当前：恢复原前端基础，保留增强后的后端
+
+用户明确要求先恢复大改前的界面，知识图谱应呈现图网络而非层级树。恢复分支为 `codex/restore-original-frontend`，从已推送的 `8cf4d0b` 创建；精确前端基准是 `471e1aaa1dabd22fdb0dd7f00590e7e4cf08ab26`。重大UI提交 `3b3cf76` 的父 `8052e8b` 与此基准在前端源码／依赖／配置上相同。没有回滚整个仓库。
+
+- 恢复原“运行与证据／根因与图谱／素材与构图”布局、卡片、分栏与交互，以及 `KnowledgeForceGraph`／`RunPathGraph` 的有向网络、共享节点与路径高亮。
+- Demo／Backend 切换及成品 Session／runtime Replay 恢复；Demo默认读取成品快照，Backend才调用真实服务。浏览器仍不构图、不执行RCA，也不从原始节点／边／Evidence临时拼runtime。
+- 保留当前Python后端、双闭环任务、Evidence／知识schema、RootKGD v2、数据库及历史素材／模型／结果。不是把所有新工作台控件重新移进原布局；目录绑定表单、候选局部向导与完整新任务交互仍以已保留的API合同为准。
+- 当前旧上传／构图入口与新 `/api/tasks`、`/api/analyses` 各有合同。后者的 `cases[].results/evidence_frames` 不能假装是旧 `RunDetail`；恢复版的兼容仅映射后端已保存结果，不重新推理或修改分数。
+- 新分析在原运行列表以“已保存分析”区分；每Frame、原分数／路径和完整快照保留，旧Session导出对新分析明确不支持。Backend总图仍是当前登记图，历史局部路径／依据来自保存结果；不把typed快照重新编译为浏览器总图。
+- 工作图完整JSON保存继续保留新字段；typed图不能把投影边当成独立可执行知识改写。PUT为完整包替换，须基于完整GET结果修改，不可从旧视图字段子集重建。
+
+恢复版前端完整原生Vitest为22文件／109项通过，类型与生产构建通过；原全量Arco约796KB主chunk大小警告保留。D3改为项目内锁定7.9.0依赖，不依赖现场CDN。记录与实屏证据见 [前端还原记录](rootlens-original-frontend-restoration.md)。后端源码未更改，复用572／4有效测试；还原前18文件／97项前端测试是历史候选证据，不冒充恢复版检查。
 
 ## 2. 当前输入与分析入口
 
 ### 2.1 原始样本入口
 
-上传真实图片、过程序列＋正常参考、原生晶圆网格。后端运行已配置模型／测量算子和 adapter；缺模型或参考时明确失败，不用演示结果替代。TEP 窗口采用一基闭区间，保留全52通道；Wafer 原生标签不传分类器。
+恢复版保留原Backend上传的 `evidence/records/image` 合同；原始图片仍由后端执行模型。完整过程序列＋正常参考、原生晶圆网格的新入口保留在 `/api/tasks/inference`，不在浏览器补算。缺模型或参考时明确失败，不用演示结果替代。TEP窗口采用一基闭区间、完整52通道，Wafer原生标签不传分类器。
 
 ### 2.2 中间 Evidence 入口
 
-上传原生 EvidenceFrame（单个、数组或 frames 外壳）或结构化 Evidence，经后端验证和绑定后重新推理。模型 records 由显式 records 适配入口消费。Frame 原值和范围保留；没有媒体附件时仍可计算标量依据，界面显示附件缺失。“下载本次 Evidence”用于这一入口，不是旧 Session 回放。
+原生 EvidenceFrame（单个、数组或frames外壳）通过双闭环API验证、绑定并重新推理；旧上传入口仍按自身Evidence／records schema处理，不混称两种文件相同。Frame原值和范围保留，缺媒体不阻止标量推理。Frame导出与原生重传属于新分析，Session／runtime导入则只回放已保存内容。
 
 ### 2.3 历史快照的边界
 
-旧 Mock、Demo 快照、`rootlens-runtime`／`rootlens-session-export` Replay、workspace 恢复与浏览器 runtime 构造不再是当前界面入口。历史文件和后端模块可保留，不据此承诺新界面继续兼容。演示清单加载输入并提交真实后端任务，不恢复本地建图或推理。
+Demo快照、`rootlens-runtime`／`rootlens-session-export` Replay和原页面工作区随原前端恢复；它们只消费成品。双闭环演示清单及真实任务仍由后端提供，不能把快照回放当作新分析。原始nodes／edges／Evidence的浏览器runtime构造仍不支持。
 
 ## 3. 当前三页职责
 
-### `/materials` · 素材管理
+### `/materials` · 素材与构图
 
-知识资料库、文件／URL 导入、真实解析与原文定位、多选 LLM 制作和任务阶段。原始待分析图片／时序／网格到推理页上传，不混作知识资料。
+恢复原素材库、文件／URL登记、抽取与原文定位、构图结果及来源查看。真实解析／LLM仍在后端。待分析样本与知识资料仍需区分；异步新任务API不因恢复前端而删除。
 
-### `/graphs` · 知识图谱
+### `/graphs` · 根因与图谱
 
-查看候选、机制、联合现象和条件的语义图及来源；持久编辑实体／别名、关系、绑定、条件和规则。完整 v2 包导入默认创建新副本，保存后“投入使用”；启用后可携图前往分析。图的派生投影不是第二份可独立改写的真值。
+恢复原总图、局部子图、方向箭头、路径高亮和来源／反馈联动。Backend图来自 `/api/kg/studio?graph_id=...` 的真实节点与边；共享节点不复制成树枝。完整工作图包可导入／导出／保存，v2须编辑完整canonical JSON，派生投影不是第二份可独立改写的真值。
 
-“新增诊断条件”仅作用于选中候选并支持撤销；过程变量从已有真实通道绑定选择。它不是任意工业因果关系创建器，条件真也不等于已经区分出唯一原因。
+增强后的词汇绑定、有限目录与候选专属条件operator保留在后端；本次原界面恢复不等于全部新表单和向导已移植。
 
-### `/evidence` · 推理分析
+### `/evidence` · 运行与证据
 
-选择原始样本或 Evidence JSON、场景、已启用图及两个明确引擎；跟踪真实任务，查看媒体／变量／网格、候选条件和路径联动；下载本次 Evidence，重新打开服务端“已保存分析”。浏览器只显示后端结果。
+恢复原运行列表、上传区、case／observation、媒体详情和成品Replay入口。Backend旧run与新双闭环分析的保存外壳不同，兼容层只读映射已有结果；不在浏览器推理或改变原候选／数值。
 
-右上角连接按钮设置完整 Backend URL。浏览器仅保存服务地址与选择状态，不把 localStorage 草稿当作持久图谱或分析真值。
+顶部Demo／Backend切换与“修改后端地址”设置完整服务地址。本地偏好／策展草稿不是后端持久知识或分析真值。
 
 ## 4. 运行、数据库与数据保留边界
 
@@ -189,25 +204,23 @@ npm run backend:check
 - 后端配置优先级：**进程环境变量 > `backend/.env.local` > `backend/.env` > 配置 YAML > 默认值**。
 - 自定义 API 端口必须同时统一 `ROOTLENS_API_PORT` 与前端 `VITE_API_BASE_URL` / `VITE_BACKEND_PROXY_TARGET`；修改后重启相关进程，并确认页面顶部的 Backend 地址与实际服务一致。根 Vite 模板与后端私有模板的职责不可混用。
 
-## 5. 已下线的前端能力
+## 5. 模式与浏览器计算边界
 
-当前界面不再提供：
+当前恢复的界面提供Demo／Backend、成品Session／runtime Replay和原工作区；仍不提供：
 
-- Mock／Backend 模式切换与旧演示快照读取；
-- Session／runtime Replay 和 workspace JSON 恢复；
 - 浏览器从 nodes／edges／Evidence 组装 runtime；
 - 浏览器本地构图、RCA／what-if 重算；
-- 以旧 v1 图包或默认 generic 策略代替明确的 v2 图和所选推理器。
+- 把快照、旧v1默认策略或视图映射冒充当前v2双闭环新推理。
 
-历史 public 快照、旧后端记录与源码资产不因入口移除而删除。原始 records 的后端适配仍可显式使用；`backend/scripts/` 是后端客户端，不属于已移除的浏览器生成路径。
+历史public快照、后端记录、素材、模型和数据库均保留。原始records仍可由后端adapter显式消费；`backend/scripts/`是后端客户端，不是浏览器生成路径。
 
 ## 6. 文档真值
 
 当前优先阅读顺序：
 
 1. 本文档 `backend-integration-current.md`
-2. 根 `README.md`（当前用法）、`rootlens-two-loop-backend-contract.md`（API）与 `rootlens-two-loop-demo-assets.md`（资产）
-3. `backend/docs/two-loop-demo.md`（当前演示／恢复）、前后端交付与 `source-projects.md`；其他后端设计／schema 依其版本解读，旧 Web／论文路径只作背景
+2. 根 `README.md`（当前用法）、`rootlens-original-frontend-restoration.md`（本次界面恢复）、`rootlens-two-loop-backend-contract.md`（保留的API）与 `rootlens-two-loop-demo-assets.md`（资产）
+3. `backend/docs/two-loop-demo.md`（双闭环API演示／服务恢复）、前端历史交付与 `source-projects.md`；其他后端设计／schema依其版本解读，旧Web／论文路径只作背景
 4. 需要理解历史设计背景时，再看：
    - `module-1-graph-construction.md`
    - `module-2-unified-evidence.md`

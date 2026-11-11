@@ -216,3 +216,15 @@ URL测试在实际`urlopen`边界注入404和随后成功的响应流，继续�
 核对95项已存任务均无进行中后，专用API手动重载为PID10919且health=ok。真实GET已确认三组配套都ready、13个平铺sample都有graph_ref；严格源图538仍启用，不是靠删图／禁用掩盖。前端随后消费此live合同验证隐式配对和显式保留。
 
 前端与独立审核已分别完成GET-only实屏消费：fresh严格图538→推荐006改为配套7718，三场景配对、手选／携图保留、明确切换不清输入和普通历史恢复通过，无JS错误或写请求。前端最终完整Vitest为18文件／97项及build通过；backend最终572／4证据复用。后端／前端修复分别提交`b2ae8aa`／`ebbb322`，不重跑模型、改动默认图或追加推送。
+
+## 用户要求恢复原前端后的后端边界
+
+`8cf4d0b`随后按用户明确授权正常快进推送；后续用户要求先恢复大改前的界面，因此从该提交创建`codex/restore-original-frontend`。恢复基准为`471e1aa`，与重大UI提交`3b3cf76`之父`8052e8b`的前端范围相同。本轮不推送、不回滚后端，不修改数据库／模型／运行结果。
+
+旧bootstrap、run、素材和KG studio接口继续存在，实际8012只读GET通过；工作图studio提供真实graph_nodes／graph_edges，可供恢复的力导向网络显示。新双闭环分析仍使用`/api/analyses`不同外壳，不能误认旧run存储或重算来补展示。
+
+对恢复的完整JSON保存与typed图策展guard做了直接内存API核对：含value_bindings、semantic_role／allowed_values、期待、effect、pattern及source定位的包，单label修改／PUT／回读仅改变目标；实体PATCH保留其余全部知识，投影边upsert明确拒绝且知识不变。证据`/private/tmp/rootlens-restored-frontend-roundtrip.json`，无数据库访问或模型调用。PUT为完整替换，不为旧字段子集做默默合并；原UI从完整GET包编辑，因而无需后端兼容修复。
+
+本轮后端源码／测试未改，572／4有效证据复用，不进行相同全矩阵或模型检查；API不重载。当前界面边界与前端实际检查见[还原记录](../../src/doc/rootlens-original-frontend-restoration.md)。
+
+前端候选已完成22文件／109项原生Vitest和类型／生产构建，原Arco大chunk警告保留。只读桥将新analyses显示在原布局中，每Frame、原分数与连续源路径保留；Backend总图是当前登记图，历史局部图来自保存结果，二者不混称历史全图。D3使用项目内锁定依赖，未为恢复界面增加任何后端兼容路由。

@@ -1,19 +1,21 @@
 # RootLens
 
-RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。Vue 前端与 Python 后端同仓维护，当前产品有两个可执行闭环：
+RootLens 是工业异常分析的 **backend-first 知识与证据工作台**。当前前端按用户要求恢复到 `471e1aa` 的原布局与交互基础：**运行与证据 → 根因与图谱 → 素材与构图**，知识图谱恢复有向力导向网络，不以层级树代替。
+
+本次还原在 `codex/restore-original-frontend` 独立演进，保留 `8cf4d0b` 已验证的 Python 后端、数据库、知识与分析结果。后端继续提供两个可执行闭环：
 
 1. **资料 → 可用知识**：导入原始资料，实际解析和调用 LLM，自动校验／编译，再由使用者修改并启用工作图。
 2. **样本 → 可追溯解释**：原始图片、过程时序或晶圆网格经过真实模型／adapter 生成 Evidence；也可直接上传中间 Evidence，选择推理器，查看候选、条件、来源与原始数据对应。
 
-前端只有 **素材管理 → 知识图谱 → 推理分析** 三页。浏览器不执行构图、Evidence 临时组装或 RCA。演示按钮加载公开输入，不是预制候选答案。
+页面顶部恢复 **Demo / Backend** 切换；Demo 显示成品快照，Backend 连接真实服务。浏览器不执行构图、Evidence 临时组装或 RCA。还原范围与实际验证见[前端还原记录](src/doc/rootlens-original-frontend-restoration.md)。
 
-## 从现有演示开始
+## 演示数据与后端复演
 
 完整步骤、实际正负结果、许可与恢复命令见 [双闭环演示手册](backend/docs/two-loop-demo.md)。受管清单是 `backend/data/demo/two_loop/manifest.json`，由后端 `/api/demo-library` 提供。
 
 推荐场景为玻璃边缘缺损、TEP 冷却回路和晶圆近全片失效。原始入口真实运行模型；中间入口重新执行推理。玻璃原图拍摄部位未确认，不能称为已确认瓶口；Emhart Finish 指南是演示迁移的知识来源，制造原因仍是待区分的候选。
 
-加载推荐样例时，尚未明确选图的工作空间会选择它的配套就绪图；已手选或从图谱页携带的图保留，并提供明确切换动作。配套图缺失、未启用或有歧义时显示具体状态，不用最新同场景图替代，也不会自动导图。
+恢复版的 Demo 模式读取原有成品快照。双闭环公开素材与实际 Frame 仍由受管 API 提供；`graph_ref` 保留精确配套图状态，不在 GET 自动导图。上一版的“推荐输入 → 配套图 → 异步分析”整套新控件不作为本次还原目标。
 
 ```bash
 cd backend
@@ -89,7 +91,7 @@ npm run dev:all
 | `npm run backend:db:status` / `start` / `stop` | 仅预置 `runs/local_runtime/` 实例 |
 | `npm run build` / `npm test` | 前端类型／构建检查和测试 |
 
-页面右上角“后端已连接／未连接”可设置完整服务地址。当前界面没有 Mock／Demo／Replay 模式切换。
+页面顶部选择 **Backend** 后，可通过“修改后端地址”设置完整服务地址；Demo 模式与成品 Replay 不会发起新模型推理。
 
 自定义端口需同步后端与前端配置，再重启对应进程：
 
@@ -104,45 +106,49 @@ VITE_BACKEND_PROXY_TARGET=http://127.0.0.1:8100 \
 
 本轮演示验收使用独立前端 5186／API 8012、PG 55433／Neo4j bolt 57687，与日常默认库分开。开发命令不是开机或登录自启配置；服务恢复见演示手册。
 
-## 在三页完成工作
+## 恢复后的三页
 
-### 1. 素材管理
+### 1. 运行与证据 · `/evidence`
 
-上传 TXT／Markdown、CSV、JSON／JSONL、HTML、文本层 PDF，或登记真实网址。检查原文与定位后，选择场景制作知识图谱。任务展示实际解析、LLM、校验、编译和保存阶段；默认允许一次明确的有界修复。没有人工逐边审核门。
+恢复原运行列表、上传区、case／observation 浏览、媒体详情与成品回放导入。Backend 模式保留原 Evidence／records／image 上传合同；真实模型执行仍在后端。双闭环原始过程＋正常参考、晶圆网格、原生 Frame 及两个明确引擎的完整任务入口继续由[双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)提供，不在浏览器转换或重算。
 
-新制作图可能要求已有样本未观测的细节，执行成功仍可返回证据不足。主演示的就绪适配图与新源图分开保存，不以旧图回退补出结果。
+运行列表只读合并新双闭环结果，以“已保存分析”区分，原候选、每Frame、分数与源路径保留；这类新分析的旧Session导出明确不支持，原Run导出保持。之后改图不重算历史；无匹配、证据不足与同分候选均是有效结果，分数不是概率。
 
-### 2. 知识图谱
+### 2. 根因与图谱 · `/graphs`
 
-查看“候选解释 → 联合现象 → 可测条件”的语义图与来源，编辑实体／别名、绑定、条件和规则，保存后点 **投入使用**。ready 只是包已校验保存，enabled 才允许新分析选择。完整 `rootlens-working-graph.v2` 包支持导入／导出；导入默认创建未启用的新副本。
+恢复原总图、局部子图、方向箭头、路径高亮和来源／反馈联动。Backend 工作图来自 `/api/kg/studio?graph_id=...` 的真实节点与边，不把共享节点复制成树枝。
 
-条件使用与 LLM 共用的类型／单位／有限值目录；等价词汇绑定保留来源，不把相似外观补成未观测部位。对某一个候选，可用 **新增诊断条件** 创建独立条件并撤销；没有来源的阈值明确标为人工启发式，不修改共享机制。
+总图读取当前登记图；历史局部路径与推理依据读取该次保存结果，两者不是同一份历史全图。D3改为项目内锁定依赖，不再依赖现场CDN。
 
-### 3. 推理分析
+完整工作图包支持导入、导出与保存。v2 知识必须在完整 JSON 中修改；投影边不是第二份真值。保留未展示的绑定、有限值、语义角色、规则与来源字段，不用旧视图字段重建知识包。更细的词汇绑定表单、候选专属条件向导仍是已保留后端能力，本次不重新设计其界面。
 
-明确选择原始样本或 Evidence JSON、已启用的同场景图，以及推理器：
+### 3. 素材与构图 · `/materials`
+
+恢复原素材库、文件／URL 登记、抽取与定位、构图结果及来源查看。真实解析与 LLM 构图仍走当前 Python 服务；新制作图可能要求当前样本未观测的细节，制作成功不等于诊断成功。新任务服务的异步阶段、一次有界修复、编译校验与 enabled 状态全部保留。
+
+## 保留的后端推理能力
 
 - **统一约束推理** `unified_abduction`：三个场景共用类型、作用域、联合条件、冲突／缺失与 U/C/A/J 代价。
 - **TEP RootKGD** `tep_rootkgd`：当前图的有向传播与完整 52 维残差贡献结构比较，复用原 RootKGD 传播、余弦／覆盖／熵评分及路径回溯，不使用 fault 标签或固定旧图记忆。当前 v2 投影按 host／稳定通道合并重复逻辑期待，避免重复条件制造传播票；真正新增通道或 effect 仍可改变结构。它不执行条件阈值／AND-OR／期待模式的惩罚。
 
 原始 TEP 需要配套正常参考，窗口是一基闭区间。Wafer 接收 0 背景／1 正常／2 失效的原生网格，分类器不接收原生图案标签。图像使用对应对象的模型；缺模型或必要参考时明确失败。
 
-分析保存原始输入、Frame、图快照、候选与解释。每条路径可追到 observation、scope、来源和媒体／曲线。分数不是概率；无匹配、证据不足与同分候选都是有效结果。之后改图不重算历史分析。“下载本次 Evidence”可从中间入口复算；纯标量 Frame 未附媒体时仍能推理，界面会说明缺附件。
+分析 API 保存原始输入、Frame、图快照、候选与解释；每条路径可追到 observation、scope、来源和媒体／曲线。Frame 导出可从中间入口复算，纯标量 Frame 未附媒体时仍能推理。
 
 “本次知识诊断”区分条件真／假／未知、排名资格、同签名候选组与成本先验；读取本次保存的知识，不用当前图重写历史。当前4个TEP×RootKGD v2已完成API／CLI精确复演，并验证d04原始输入→下载Frame→普通上传的三窗口结果及52曲线一致；原17项验证作为历史保留，其余13项统一引擎未重复运行。版本、实际正负结果与记录位置见演示手册。
 
 ## 当前边界与历史资产
 
-新界面不再提供旧 Mock 快照、Session／runtime Replay、workspace JSON 恢复、浏览器本地建图／Evidence 组装／what-if，也不以旧 v1 图或默认 generic 策略驱动新分析。历史后端模块、记录与成品文件保留，不构成新的界面兼容承诺。原始测量 records 可通过明确的后端 adapter 入口使用，不在浏览器中转换。
+Demo 成品快照、Session／runtime Replay 与原页面工作区已随原前端恢复；回放不执行新的推理。仍不支持从 nodes／edges／Evidence 在浏览器临时组装 runtime，也不执行本地构图或 RCA／what-if。Backend 保留旧接口与新双闭环接口各自的合同，不能用旧 run 外壳冒充重算的新结果。
 
 U0–U5 的结果保留为历史：32 份同输入的独立平坦对照完全等价，TEP 首位有明确错误；当时前端 95 项／build 通过，后端 442 通过／5 项既有失败／1 跳过。统一架构不等于准确率提升。见 [U5 历史验收](backend/docs/unified-reasoning-u5.md)。M1–M6 的迁移、模型接入和旧回放走查见 [渐进重构历史](backend/docs/progressive-demo-2026-11-10.md)，其旧模式入口说明不覆盖当前产品。
 
-当前源码完整原生测试为后端 **572 passed／4 既有可选跳过**、前端 **18 文件／97 项通过**，类型与生产构建通过。4项跳过分别是3项指定隔离数据库的显式 opt-in 检查和1项未安装的原 TEP_KG 对照；没有新增 skip／xfail。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实际双闭环、负结果及测试阶段区别见[系统评估](backend/docs/two-loop-system-assessment.md)。
+前端本轮原生Vitest **22文件／109项通过**，类型与生产构建通过；原全量Arco约796KB主chunk的大小警告保留。后端未回滚，复用 **572 passed／4 既有可选跳过** 的有效检查；4项分别是3项隔离数据库 opt-in 和1项未安装的原 TEP_KG 对照。正式 `npm run backend:test` 使用现有后端 `.venv`，不会同步移除模型依赖。实屏检查见[还原记录](src/doc/rootlens-original-frontend-restoration.md)；`8cf4d0b` 的18文件／97项与之前各阶段结果按历史保留，见[系统评估](backend/docs/two-loop-system-assessment.md)。
 
 ## 仓库与数据安全
 
 ```text
-src/                         Vue 三页工作台
+src/                         恢复原布局的 Vue 三页前端
 src/doc/                     当前边界、契约与历史设计
 backend/src/kgtracevis/       Python 核心、adapter、模型客户端与 FastAPI
 backend/scripts/             开发、准备与复算命令
@@ -159,7 +165,8 @@ backend/runs/local_runtime/  预置本机数据库与工具（忽略）
 - [当前集成边界](src/doc/backend-integration-current.md)：当前行为真值，含迁移／U0–U5 历史摘要。
 - [双闭环 API](src/doc/rootlens-two-loop-backend-contract.md)：任务、图启用与完整分析合同。
 - [演示资产索引](src/doc/rootlens-two-loop-demo-assets.md)与[现场手册](backend/docs/two-loop-demo.md)。
-- [最终独立验收](backend/docs/two-loop-acceptance.md)：实际双闭环、六项修复的消费证据与保留限制。
-- [前端交付](src/doc/rootlens-two-loop-frontend.md)、[来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。
+- [前端还原记录](src/doc/rootlens-original-frontend-restoration.md)与[独立实屏验收](backend/docs/frontend-restoration-acceptance.md)：当前布局、兼容范围与实际检查。
+- [双闭环历史独立验收](backend/docs/two-loop-acceptance.md)与[重构前端交付](src/doc/rootlens-two-loop-frontend.md)：还原前的界面验收、后端消费证据和保留限制。
+- [来源项目与资产](src/doc/source-projects.md)、[迁移记录](backend/docs/rootlens-monorepo-migration.md)。
 
 `module-1/2/3`、`frontend_handoff` 与旧 roadmap 是语义来源和历史背景，不覆盖当前边界。
