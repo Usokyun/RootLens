@@ -188,3 +188,12 @@ def test_runtime_nonpositive_preview_limit_keeps_full_counts(limit: int) -> None
     )
     assert payload.edge_count == 84
     assert payload.graph_nodes == payload.graph_edges == payload.review_targets == []
+
+
+def test_complete_runtime_snapshot_retains_isolated_entities() -> None:
+    graph = KnowledgeGraph([KGNode("isolated", "Independent concept", "Concept", "mvtec", ())], [])
+    payload = kg_studio.kg_studio_payload(
+        repository=SnapshotRepository(graph), graph_edge_limit=2000
+    )
+    assert [node.node_id for node in payload.graph_nodes] == ["isolated"]
+    assert payload.graph_edges == []

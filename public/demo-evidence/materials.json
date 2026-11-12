@@ -1,0 +1,105 @@
+{
+  "materials": [
+    {
+      "material_id": "demo-source-mvtec",
+      "title": "视觉缺陷 · 来源与知识边界",
+      "scenario": "mvtec",
+      "status": "extracted",
+      "source_type": "markdown",
+      "source_kind": "bundled_reference",
+      "source_uri": "docs/sources/mvtec_sources.md",
+      "path": "docs/sources/mvtec_sources.md",
+      "source_id": "manual_curation",
+      "processing_status": "已打包",
+      "extraction_status": "extracted",
+      "chunk_count": 1,
+      "notes": "随演示打包的仓库来源说明；不是私有原始文档或已验证根因。",
+      "metadata": {
+        "bundled": true
+      },
+      "claim_boundary": "reference notes only; not verified factory RCA"
+    },
+    {
+      "material_id": "demo-source-tep",
+      "title": "过程故障 · 知识来源索引",
+      "scenario": "tep",
+      "status": "extracted",
+      "source_type": "markdown",
+      "source_kind": "bundled_reference",
+      "source_uri": "docs/sources/tep_sources.md",
+      "path": "docs/sources/tep_sources.md",
+      "source_id": "tep_kg_variable_mapping",
+      "processing_status": "已打包",
+      "extraction_status": "extracted",
+      "chunk_count": 1,
+      "notes": "随演示打包的仓库来源说明；不是私有原始文档或已验证根因。",
+      "metadata": {
+        "bundled": true
+      },
+      "claim_boundary": "reference notes only; not verified factory RCA"
+    },
+    {
+      "material_id": "demo-source-wafer",
+      "title": "晶圆缺陷 · 参考与排查规则",
+      "scenario": "wafer",
+      "status": "extracted",
+      "source_type": "markdown",
+      "source_kind": "bundled_reference",
+      "source_uri": "docs/sources/wafer_sources.md",
+      "path": "docs/sources/wafer_sources.md",
+      "source_id": "wafer_thesis",
+      "processing_status": "已打包",
+      "extraction_status": "extracted",
+      "chunk_count": 1,
+      "notes": "随演示打包的仓库来源说明；不是私有原始文档或已验证根因。",
+      "metadata": {
+        "bundled": true
+      },
+      "claim_boundary": "reference notes only; not verified factory RCA"
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "demo-source-mvtec:document",
+      "material_id": "demo-source-mvtec",
+      "chunk_index": 0,
+      "source_locator": "docs/sources/mvtec_sources.md:1-38",
+      "text_content": "# MVTec / Defect Spectrum Sources\n\nRecord source excerpts or links used for KG construction here. Do not commit\nlarge copyrighted PDFs or raw datasets.\n\n## Coverage-First Candidate KG Sources\n\n- `caption_mask_stats`: development reference descriptors derived from captions\n  and mask geometry. Used only for visual morphology constraints, not RCA.\n- `manual_curation`: manually curated development KG rows for plausible visual\n  mechanism and reference-layer edges. These are not native MVTec factory\n  root-cause labels.\n- `mvtec_calibrated_source_label`: local calibrated MVTec producer records under\n  `runs/mvtec_calibrated_pipeline/mvtec_calibrated_records.jsonl`. Used for\n  object and defect-label coverage. These labels are observed/source labels, not\n  verified factory root causes.\n- `mvtec_mask_geometry`: local adapter/KGTrace table under\n  `runs/mvtec_calibrated_pipeline/adapter_pipeline/adapter_pipeline_table.csv`.\n  Used for deterministic morphology/location constraints derived from masks and\n  adapters.\n- `mvtec_plausible_visual_mechanism`: low-confidence curated visual mechanism\n  rules used only for candidate explanation paths. These edges must remain\n  reviewable and should not be described as MVTec ground-truth RCA.\n- `mvtec_ad_official_page`: downloaded official MVTec AD dataset page under\n  `docs/sources/mvtec_source_bundle/`. Used to support dataset-scope claims:\n  industrial inspection benchmark, 15 categories, defect-free training images,\n  defect and good test images, and anomaly annotations.\n- `mvtec_ad_paper_pdf`: optional MVTec AD paper PDF under the ignored\n  `docs/sources/mvtec_source_bundle/raw/` directory when\n  `scripts/download_mvtec_sources.py --include-binary` succeeds. Used as local\n  provenance for MVTec AD benchmark context and claim-boundary wording.\n- `patchcore_arxiv_abs` / `patchcore_arxiv_pdf`: downloaded PatchCore abstract\n  page plus optional PDF under `docs/sources/mvtec_source_bundle/`. Used to\n  support the model evidence boundary: PatchCore provides anomaly\n  detection/localization evidence, not KG root-cause labels.\n- `mvtec_object_specific_visual_rule`: deterministic object/label-specific\n  candidate mechanism rules. These improve path specificity, but remain\n  `review_status=auto` and must be described as candidate investigation targets.\n",
+      "char_start": 0,
+      "char_end": 2320,
+      "metadata": {
+        "scope": "document",
+        "bundled": true
+      },
+      "created_at": null
+    },
+    {
+      "chunk_id": "demo-source-tep:document",
+      "material_id": "demo-source-tep",
+      "chunk_index": 0,
+      "source_locator": "docs/sources/tep_sources.md:1-34",
+      "text_content": "# TEP Sources\n\nRecord source excerpts, table references, or links used for TEP KG construction here.\n\n## Local Project Artifacts Used for the Curated Seed KG\n\nThe first checked-in TEP seed layer is intentionally small and reviewable. It\nuses local sibling-project artifacts as provenance, not as automatic ground\ntruth.\n\n- `tep_kg_variable_mapping`\n  - Local path: `/Users/hhm/code/TEP_KG/data/processed/kg/tep_variable_mapping.jsonl`\n  - Use: XMEAS/XMV channel aliases and canonical TEP variable nodes.\n  - Boundary: channel mapping only; it does not provide root-cause labels.\n\n- `tep_kg_fault_labels_v3`\n  - Local path: `/Users/hhm/code/TEP_KG/data/processed/rca/fault_root_cause_labels.json`\n  - Use: TEP IDV(1-19) fault anchors and semantic proxy lists.\n  - Boundary: KGTraceVis stores derived variable-support edges as\n    `review_status=auto`; they are candidate RCA support, not online causal\n    proof.\n\n- `rootlens_tep_runtime_projection`\n  - Local path: `/Users/hhm/code/RootLens/scripts/build-runtime.py`\n  - Use: cross-check that RootLens route2 runtime expects TEP fault anchors,\n    variable contribution evidence, and examples such as Fault 06 with\n    `XMEAS_1` / `XMV_3`.\n  - Boundary: visualization/runtime alignment only; no direct KG mutation.\n\n- `kgtracevis_tep_producer_contract`\n  - Local path: `docs/dataset_record_producers.md`\n  - Use: documents that the KGTraceVis TEP producer emits residual contribution\n    records and `morphology=\"multivariate_residual_shift\"`.\n  - Boundary: evidence-production contract, not an external industrial fact.\n",
+      "char_start": 0,
+      "char_end": 1571,
+      "metadata": {
+        "scope": "document",
+        "bundled": true
+      },
+      "created_at": null
+    },
+    {
+      "chunk_id": "demo-source-wafer:document",
+      "material_id": "demo-source-wafer",
+      "chunk_index": 0,
+      "source_locator": "docs/sources/wafer_sources.md:1-62",
+      "text_content": "# Wafer Sources\n\nRecord source excerpts or private-source summaries used for wafer KG construction here.\nDo not commit confidential raw data.\n\n## Coverage-First Candidate KG Sources\n\n- `wm811k_public_pattern_classes`: WM811K public defect-pattern vocabulary used\n  by the local producer/model path: Center, Donut, Edge-Loc, Edge-Ring, Loc,\n  Random, Scratch, and Near-full. These classes are defect-pattern evidence, not\n  process root-cause labels.\n- `wm811k_pattern_semantics`: deterministic class-to-location/morphology rules\n  aligned with the wafer-map descriptor helper in `src/kgtracevis/mask/`.\n- `wm811k_low_confidence_investigation_rule`: conservative candidate mechanism\n  mappings used to generate plausible investigation paths. These default to\n  `review_status=auto` and low/medium confidence unless separately reviewed.\n- `wafer_thesis`: base wafer development reference for a plausible nearfull\n  investigation mechanism. This is not a verified factory root-cause label\n  unless separately reviewed against private incident evidence.\n- `wafer_factory_sop_private_summary`: private wet-clean SOP summary used only\n  for low-confidence WM811K investigation targets. Short evidence snippets are\n  copied into generated edge evidence; raw private files are not committed.\n- `wafer_wet_bench_manual_private_summary`: private wet-bench and WTS manuals\n  summarized only for equipment, alarm, process-unit, and transfer vocabulary.\n- `wafer_wet_bench_component_naming_private_summary`: private naming workbook\n  summarized only for component/HMI/program aliases.\n- `wafer_machine_log_private_summary`: private machine-log collection\n  summarized only for observed event/alarm vocabulary after decoding and case\n  alignment.\n- `wafer_recipe_private_summary`: private recipe-file collection summarized\n  only for recipe-step and parameter vocabulary; not used as RCA evidence\n  without paired defect labels.\n\n## Private Source Audit\n\nPrivate files were reviewed only to create safe source summaries. Do not copy\nraw private documents into the repository or generated paper artifacts.\n\n| Private file | Usefulness | Safe KG use | Short evidence snippets |\n| --- | --- | --- | --- |\n| `异常SOP.txt` | High | Wet-clean SOP summary for low-confidence WM811K investigation mechanisms. | `未开启纯水会导致nearfull缺陷`; `未开启兆声水会导致nearfull缺陷`; `水阻率异常导致晶圆near full缺陷`; `去胶不充分导致边缘环缺陷`; `掉片导致晶圆划痕缺陷` |\n| `EN-05-D77-150 8寸WTS 设备通讯手册.pdf` | Medium | Equipment communication, alarm, and log-event vocabulary; not defect RCA. | Use summarized alarm/event names only. |\n| `EN-05-D77-151 8寸 WTS 设备手册.pdf` | Medium | Equipment module and operation vocabulary for entity aliases; not defect RCA. | Use summarized equipment terms only. |\n| `湿法设备零部件&电气元件&程序&HMI&上位软件命名规范 V2024-01.xlsx` | Medium-low | Component, HMI, and program aliases for entity linking. | Naming aliases only; no RCA claims. |\n| `1599#陪片 说明书-最终版.docx` | Low | Recipe or carrier/context vocabulary only unless paired with defect labels. | No defect-RCA snippets used. |\n| `本1.pdf` | Low/no | OCR-heavy or unreadable PDF source; avoid direct KG claims. | No snippets used. |\n| `本1_1-200.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `本1_201-400.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `本1_401-576.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `本2.pdf` | Low/no | OCR-heavy or unreadable PDF source; avoid direct KG claims. | No snippets used. |\n| `本2.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `本3.pdf` | Low/no | OCR-heavy or unreadable PDF source; avoid direct KG claims. | No snippets used. |\n| `本3.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `本4.pdf` | Low/no | OCR-heavy or unreadable PDF source; avoid direct KG claims. | No snippets used. |\n| `本4.docx` | Medium | Equipment/manual vocabulary extracted from readable converted pages. | No defect-RCA snippets used. |\n| `机台日志/` | Medium | Operator/run-state logs can support event and alarm vocabulary after decoding and case alignment. | Use summarized alarm/event names only; no defect-RCA snippets used. |\n| `设备配方/RecipeFile` | Low | Recipe-step and parameter vocabulary only unless paired with defect evidence. | Use summarized modes/parameters only; no RCA claims. |\n\nMachine logs and recipe files are present but are not currently used to create\nRCA edges. They may become observed evidence sources after schema parsing and\ncase alignment; until then, use them only for event, alarm, recipe, and\nparameter vocabulary.\n",
+      "char_start": 0,
+      "char_end": 4808,
+      "metadata": {
+        "scope": "document",
+        "bundled": true
+      },
+      "created_at": null
+    }
+  ]
+}

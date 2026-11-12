@@ -74,6 +74,7 @@ def normalize_visual_evidence_items(
     normalized: list[dict[str, Any]] = []
     for item in items:
         row = dict(item)
+        row["metadata"] = {"scope": "case", **dict(row.get("metadata") or {})}
         _normalize_browser_preview_reference(row)
         _apply_visual_item_classification(row)
         normalized.append(row)
@@ -182,7 +183,7 @@ def _path_item(
                 source_path=str(source),
                 note=f"Unsupported visual artifact format: {source.suffix or 'none'}.",
             )
-        metadata = _array_metadata(destination)
+        metadata = {**_array_metadata(destination), "scope": "case"}
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
         return _unavailable_item(
             artifact_id=artifact_id,

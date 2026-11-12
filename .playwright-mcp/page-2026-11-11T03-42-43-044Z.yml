@@ -1,0 +1,25 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - generic [ref=f1e7]: RL
+        - generic [ref=f1e8]: RootLens
+      - heading "RootLens 工作台" [level=1] [ref=f1e10]
+    - generic [ref=f1e15]:
+      - generic "数据源模式" [ref=f1e16]:
+        - generic [ref=f1e17] [cursor=pointer]:
+          - radio "Demo" [checked]
+          - generic [ref=f1e18]: Demo
+        - generic [ref=f1e24] [cursor=pointer]:
+          - radio "Backend"
+          - generic [ref=f1e25]: Backend
+      - generic [ref=f1e28]: 内置资产
+    - generic "当前上下文" [ref=f1e32]: paper-demo-curated / mvtec_fixture_clean_scratch
+  - generic [ref=f1e33]:
+    - generic [ref=f1e35]:
+      - generic [ref=f1e37]:
+        - generic [ref=f1e38] [cursor=pointer]: 运行与证据
+        - generic [ref=f1e44] [cursor=pointer]: 根因与图谱
+        - generic [ref=f1e50] [cursor=pointer]: 素材与构图
+      - button "收起侧边栏" [ref=f1e55] [cursor=pointer]
+    - main [ref=f1e58]

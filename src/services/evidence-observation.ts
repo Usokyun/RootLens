@@ -1,156 +1,196 @@
-import type { RunCaseDetail, VisualEvidenceItem } from '@/api/contracts'
+import type { RunCaseDetail, VisualEvidenceItem } from "@/api/contracts";
 
-export type ObservationModality = 'image' | 'time_series' | 'log' | 'document'
-export type ObservationConfidenceBand = 'all' | 'high' | 'medium' | 'low'
+export type ObservationModality = "image" | "time_series" | "log" | "document";
+export type ObservationConfidenceBand = "all" | "high" | "medium" | "low";
 
 export interface ObservationBrowseFilters {
-  graph: string | null
-  modality: ObservationModality | null
-  source: string | null
-  keyword: string | null
-  confidenceBand: ObservationConfidenceBand
-  timeFrom: string | null
-  timeTo: string | null
+  graph: string | null;
+  modality: ObservationModality | null;
+  source: string | null;
+  keyword: string | null;
+  confidenceBand: ObservationConfidenceBand;
+  timeFrom: string | null;
+  timeTo: string | null;
 }
 
 export interface ObservationBrowseItem {
-  id: string
-  caseId: string
-  caseLabel: string
-  dataset: string
-  graphDatasetId: string
-  facet: string
-  modality: ObservationModality
-  source: string
-  timestamp: string | null
-  timeLabel: string
-  confidence: number | null
-  confidenceBand: Exclude<ObservationConfidenceBand, 'all'> | null
-  title: string
-  linkedEntityCount: number
-  rawRefCount: number
-  linkedEntityHints: string[]
+  id: string;
+  caseId: string;
+  caseLabel: string;
+  dataset: string;
+  graphDatasetId: string;
+  facet: string;
+  modality: ObservationModality;
+  source: string;
+  timestamp: string | null;
+  timeLabel: string;
+  confidence: number | null;
+  confidenceBand: Exclude<ObservationConfidenceBand, "all"> | null;
+  title: string;
+  linkedEntityCount: number;
+  rawRefCount: number;
+  linkedEntityHints: string[];
   rawEvidenceRefs: Array<{
-    refId: string
-    label: string
-    role: string
-    filePath: string
-    line: number | null
-  }>
-  rawObservation: Record<string, unknown>
+    refId: string;
+    label: string;
+    role: string;
+    filePath: string;
+    line: number | null;
+  }>;
+  rawObservation: Record<string, unknown>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeText(value: unknown, fallback = '--') {
-  return typeof value === 'string' && value.trim().length ? value.trim() : fallback
+function normalizeText(value: unknown, fallback = "--") {
+  return typeof value === "string" && value.trim().length
+    ? value.trim()
+    : fallback;
 }
 
 function normalizeNullableText(value: unknown) {
-  return typeof value === 'string' && value.trim().length ? value.trim() : null
+  return typeof value === "string" &&
+    value.trim().length &&
+    !["None", "null"].includes(value.trim())
+    ? value.trim()
+    : null;
 }
 
 function normalizeNumber(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function getGraphDatasetId(caseItem: RunCaseDetail) {
-  const evidence = isRecord(caseItem.generated_evidence) ? caseItem.generated_evidence : null
-  const graphDatasetId = evidence ? normalizeNullableText(evidence.graph_dataset_id) : null
-  return graphDatasetId ?? 'default-graph'
+  const evidence = isRecord(caseItem.generated_evidence)
+    ? caseItem.generated_evidence
+    : null;
+  const graphDatasetId = evidence
+    ? normalizeNullableText(evidence.graph_dataset_id)
+    : null;
+  return graphDatasetId ?? "default-graph";
 }
 
 function getEvidenceSource(caseItem: RunCaseDetail) {
-  const evidence = isRecord(caseItem.generated_evidence) ? caseItem.generated_evidence : null
-  return normalizeText(evidence?.source ?? caseItem.source, 'unknown')
+  const evidence = isRecord(caseItem.generated_evidence)
+    ? caseItem.generated_evidence
+    : null;
+  return normalizeText(evidence?.source ?? caseItem.source, "unknown");
 }
 
 function getEvidenceTimestamp(caseItem: RunCaseDetail) {
-  const evidence = isRecord(caseItem.generated_evidence) ? caseItem.generated_evidence : null
-  return normalizeNullableText(evidence?.timestamp)
+  const evidence = isRecord(caseItem.generated_evidence)
+    ? caseItem.generated_evidence
+    : null;
+  return normalizeNullableText(evidence?.timestamp);
 }
 
 function getObservations(caseItem: RunCaseDetail) {
-  const evidence = isRecord(caseItem.generated_evidence) ? caseItem.generated_evidence : null
-  return Array.isArray(evidence?.observations) ? evidence.observations.filter(isRecord) : []
+  const evidence = isRecord(caseItem.generated_evidence)
+    ? caseItem.generated_evidence
+    : null;
+  return Array.isArray(evidence?.observations)
+    ? evidence.observations.filter(isRecord)
+    : [];
 }
 
 function toModality(facet: string): ObservationModality {
   switch (facet) {
-    case 'image_defect':
-      return 'image'
-    case 'variable':
-      return 'time_series'
-    case 'log_event':
-      return 'log'
+    case "image_defect":
+      return "image";
+    case "variable":
+      return "time_series";
+    case "log_event":
+      return "log";
     default:
-      return 'document'
+      return "document";
   }
 }
 
-function toConfidenceBand(value: number | null): Exclude<ObservationConfidenceBand, 'all'> | null {
-  if (typeof value !== 'number') {
-    return null
+function toConfidenceBand(
+  value: number | null,
+): Exclude<ObservationConfidenceBand, "all"> | null {
+  if (typeof value !== "number") {
+    return null;
   }
 
   if (value >= 0.75) {
-    return 'high'
+    return "high";
   }
 
   if (value >= 0.4) {
-    return 'medium'
+    return "medium";
   }
 
-  return 'low'
+  return "low";
 }
 
-function buildObservationTitle(observation: Record<string, unknown>, facet: string) {
+function buildObservationTitle(
+  observation: Record<string, unknown>,
+  facet: string,
+) {
   switch (facet) {
-    case 'variable':
-      return `${normalizeText(observation.variable_name)} / ${normalizeText(observation.direction, 'unknown')}`
-    case 'image_defect':
-      return `${normalizeText(observation.object)} / ${normalizeText(observation.anomaly_type)}`
-    case 'log_event':
-      return `${normalizeText(observation.event_code, normalizeText(observation.event_type))} / ${normalizeText(observation.equipment)}`
+    case "variable":
+      return `${normalizeText(observation.variable_name)} / ${normalizeText(observation.direction, "unknown")}`;
+    case "image_defect":
+      return `${normalizeText(observation.object)} / ${normalizeText(observation.anomaly_type)}`;
+    case "log_event":
+      return `${normalizeText(observation.event_code, normalizeText(observation.event_type))} / ${normalizeText(observation.equipment)}`;
     default:
-      return normalizeText(observation.obs_id, '未命名 observation')
+      return `${({ object: "对象", anomaly_type: "异常类型", location: "位置", morphology: "形态", severity: "异常强度", variable: "变量" } as Record<string, string>)[facet] ?? "观察"} / ${normalizeText(observation.display_name, normalizeText(observation.name, typeof observation.value === "string" ? observation.value : "内容未提供"))}`;
   }
 }
 
-function buildTimeLabel(observation: Record<string, unknown>, caseTimestamp: string | null) {
+function buildTimeLabel(
+  observation: Record<string, unknown>,
+  caseTimestamp: string | null,
+) {
   if (isRecord(observation.time_window)) {
-    const start = normalizeNullableText(observation.time_window.start)
-    const end = normalizeNullableText(observation.time_window.end)
+    const start = normalizeNullableText(observation.time_window.start);
+    const end = normalizeNullableText(observation.time_window.end);
     if (start && end) {
-      return `${start} → ${end}`
+      return `${start} → ${end}`;
     }
     if (start || end) {
-      return start ?? end ?? '--'
+      return start ?? end ?? "--";
     }
   }
 
-  return caseTimestamp ?? '--'
+  return caseTimestamp ?? "--";
 }
 
-function buildTimestamp(observation: Record<string, unknown>, caseTimestamp: string | null) {
+function buildTimestamp(
+  observation: Record<string, unknown>,
+  caseTimestamp: string | null,
+) {
   if (isRecord(observation.time_window)) {
-    return normalizeNullableText(observation.time_window.start) ?? normalizeNullableText(observation.time_window.end)
+    return (
+      normalizeNullableText(observation.time_window.start) ??
+      normalizeNullableText(observation.time_window.end)
+    );
   }
 
-  return caseTimestamp
+  return caseTimestamp;
 }
 
 function buildRawEvidenceRefs(observation: Record<string, unknown>) {
-  const rawRefs = Array.isArray(observation.raw_evidence_refs) ? observation.raw_evidence_refs.filter(isRecord) : []
-  return rawRefs.map((item) => ({
-    refId: normalizeText(item.ref_id),
-    label: normalizeText(item.label),
-    role: normalizeText(item.role),
-    filePath: normalizeText(item.file_path),
-    line: typeof item.line === 'number' ? item.line : null,
-  }))
+  const rawRefs = Array.isArray(observation.raw_evidence_refs)
+    ? observation.raw_evidence_refs.filter(isRecord)
+    : [];
+  return rawRefs
+    .filter(
+      (item) =>
+        normalizeNullableText(item.file_path) ||
+        normalizeNullableText(item.label),
+    )
+    .map((item) => ({
+      refId: normalizeText(item.ref_id),
+      label: normalizeText(item.label),
+      role: normalizeText(item.role),
+      filePath: normalizeText(item.file_path),
+      line: typeof item.line === "number" ? item.line : null,
+    }));
 }
 
 function toSearchText(item: ObservationBrowseItem) {
@@ -162,36 +202,56 @@ function toSearchText(item: ObservationBrowseItem) {
     item.modality,
     item.source,
     item.timeLabel,
-    item.linkedEntityHints.join(' '),
-    item.rawEvidenceRefs.map((entry) => `${entry.label} ${entry.filePath} ${entry.role}`).join(' '),
+    item.linkedEntityHints.join(" "),
+    item.rawEvidenceRefs
+      .map((entry) => `${entry.label} ${entry.filePath} ${entry.role}`)
+      .join(" "),
   ]
-    .join(' ')
-    .toLowerCase()
+    .join(" ")
+    .toLowerCase();
 }
 
-export function buildObservationBrowseItems(caseItem: RunCaseDetail): ObservationBrowseItem[] {
-  const caseLabel = caseItem.case_label ?? caseItem.label ?? caseItem.case_id
-  const dataset = normalizeText(caseItem.dataset, '--')
-  const graphDatasetId = getGraphDatasetId(caseItem)
-  const source = getEvidenceSource(caseItem)
-  const caseTimestamp = getEvidenceTimestamp(caseItem)
+export function buildObservationBrowseItems(
+  caseItem: RunCaseDetail,
+): ObservationBrowseItem[] {
+  const caseLabel = caseItem.case_label ?? caseItem.label ?? caseItem.case_id;
+  const dataset = normalizeText(caseItem.dataset, "--");
+  const graphDatasetId = getGraphDatasetId(caseItem);
+  const source = getEvidenceSource(caseItem);
+  const caseTimestamp = getEvidenceTimestamp(caseItem);
 
   return getObservations(caseItem).map((observation, index) => {
-    const facet = normalizeText(observation.facet, 'unknown')
+    const facet = normalizeText(observation.facet, "unknown");
     const linkedEntityHints = Array.isArray(observation.linked_entity_hints)
-      ? observation.linked_entity_hints.map((item) => String(item)).filter(Boolean)
-      : []
-    const rawEvidenceRefs = buildRawEvidenceRefs(observation)
-    const confidence = normalizeNumber(observation.confidence)
+      ? observation.linked_entity_hints
+          .map((item) => String(item))
+          .filter((item) => item && !["None", "null"].includes(item))
+      : [];
+    const rawEvidenceRefs = buildRawEvidenceRefs(observation);
+    const confidence = normalizeNumber(observation.confidence);
 
     const item: ObservationBrowseItem = {
-      id: normalizeText(observation.obs_id, `${caseItem.case_id}-obs-${index + 1}`),
+      id: normalizeText(
+        observation.obs_id,
+        `${caseItem.case_id}-obs-${index + 1}`,
+      ),
       caseId: caseItem.case_id,
       caseLabel,
       dataset,
       graphDatasetId,
       facet,
-      modality: toModality(facet),
+      modality:
+        [
+          "object",
+          "anomaly_type",
+          "location",
+          "morphology",
+          "severity",
+        ].includes(facet) && ["image", "wafer"].includes(source)
+          ? "image"
+          : facet === "image_defect" && source === "time_series"
+            ? "document"
+            : toModality(facet),
       source,
       timestamp: buildTimestamp(observation, caseTimestamp),
       timeLabel: buildTimeLabel(observation, caseTimestamp),
@@ -203,108 +263,142 @@ export function buildObservationBrowseItems(caseItem: RunCaseDetail): Observatio
       linkedEntityHints,
       rawEvidenceRefs,
       rawObservation: observation,
-    }
+    };
 
-    return item
-  })
+    return item;
+  });
 }
 
 function matchesKeyword(item: ObservationBrowseItem, keyword: string | null) {
   if (!keyword) {
-    return true
+    return true;
   }
 
-  return toSearchText(item).includes(keyword.trim().toLowerCase())
+  return toSearchText(item).includes(keyword.trim().toLowerCase());
 }
 
-function matchesConfidenceBand(item: ObservationBrowseItem, band: ObservationConfidenceBand) {
-  if (band === 'all') {
-    return true
+function matchesConfidenceBand(
+  item: ObservationBrowseItem,
+  band: ObservationConfidenceBand,
+) {
+  if (band === "all") {
+    return true;
   }
 
-  return item.confidenceBand === band
+  return item.confidenceBand === band;
 }
 
-function matchesTimeRange(item: ObservationBrowseItem, timeFrom: string | null, timeTo: string | null) {
+function matchesTimeRange(
+  item: ObservationBrowseItem,
+  timeFrom: string | null,
+  timeTo: string | null,
+) {
   if (!timeFrom && !timeTo) {
-    return true
+    return true;
   }
 
   if (!item.timestamp) {
-    return false
+    return false;
   }
 
-  const timestamp = Date.parse(item.timestamp)
+  const timestamp = Date.parse(item.timestamp);
   if (Number.isNaN(timestamp)) {
-    return false
+    return false;
   }
 
   if (timeFrom) {
-    const start = Date.parse(timeFrom)
+    const start = Date.parse(timeFrom);
     if (!Number.isNaN(start) && timestamp < start) {
-      return false
+      return false;
     }
   }
 
   if (timeTo) {
-    const end = Date.parse(timeTo)
+    const end = Date.parse(timeTo);
     if (!Number.isNaN(end) && timestamp > end) {
-      return false
+      return false;
     }
   }
 
-  return true
+  return true;
 }
 
-export function filterObservationBrowseItems(items: ObservationBrowseItem[], filters: ObservationBrowseFilters) {
+export function filterObservationBrowseItems(
+  items: ObservationBrowseItem[],
+  filters: ObservationBrowseFilters,
+) {
   return items.filter((item) => {
     if (filters.graph && item.graphDatasetId !== filters.graph) {
-      return false
+      return false;
     }
 
     if (filters.modality && item.modality !== filters.modality) {
-      return false
+      return false;
     }
 
     if (filters.source && item.source !== filters.source) {
-      return false
+      return false;
     }
 
     if (!matchesConfidenceBand(item, filters.confidenceBand)) {
-      return false
+      return false;
     }
 
     if (!matchesTimeRange(item, filters.timeFrom, filters.timeTo)) {
-      return false
+      return false;
     }
 
-    return matchesKeyword(item, filters.keyword)
-  })
+    return matchesKeyword(item, filters.keyword);
+  });
 }
 
-export function findObservationBrowseItem(items: ObservationBrowseItem[], observationId: string | null | undefined) {
+export function findObservationBrowseItem(
+  items: ObservationBrowseItem[],
+  observationId: string | null | undefined,
+) {
   if (!observationId) {
-    return null
+    return null;
   }
 
-  return items.find((item) => item.id === observationId) ?? null
+  return items.find((item) => item.id === observationId) ?? null;
 }
 
 export function collectObservationSources(items: ObservationBrowseItem[]) {
-  return [...new Set(items.map((item) => item.source).filter(Boolean))]
+  return [...new Set(items.map((item) => item.source).filter(Boolean))];
 }
 
 export function collectObservationModalities(items: ObservationBrowseItem[]) {
-  return [...new Set(items.map((item) => item.modality))]
+  return [...new Set(items.map((item) => item.modality))];
 }
 
 export function selectVisualEvidenceForObservation(
   observation: ObservationBrowseItem | null,
   visualEvidence: VisualEvidenceItem[] | null | undefined,
 ) {
-  if (!observation || observation.modality !== 'image') {
-    return []
+  if (!observation || observation.modality !== "image") {
+    return [];
   }
 
-  return (visualEvidence ?? []).filter((item) => item.available !== false).slice(0, 3)
+  return (visualEvidence ?? []).filter((item) => {
+    if (item.available === false || item.case_id !== observation.caseId)
+      return false;
+    const ids = item.metadata?.observation_ids;
+    if (Array.isArray(ids)) return ids.includes(observation.id);
+    if (item.metadata?.observation_id)
+      return item.metadata.observation_id === observation.id;
+    if (
+      item.source_key === observation.id ||
+      item.source_key === `obs:${observation.id}`
+    )
+      return true;
+    if (
+      observation.rawEvidenceRefs.some(
+        (ref) =>
+          ref.filePath &&
+          [item.source_path, item.source_key].includes(ref.filePath),
+      )
+    )
+      return true;
+    return item.metadata?.scope === "case";
+  });
 }

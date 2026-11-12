@@ -1,0 +1,253 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - banner [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - generic [ref=f1e6]:
+          - generic [ref=f1e7]: RL
+          - generic [ref=f1e8]: RootLens
+        - heading "运行与证据" [level=1] [ref=f1e59]
+      - generic [ref=f1e15]:
+        - generic "数据源模式" [ref=f1e16]:
+          - generic [ref=f1e17] [cursor=pointer]:
+            - radio "Demo" [checked]
+            - generic [ref=f1e18]: Demo
+          - generic [ref=f1e24] [cursor=pointer]:
+            - radio "Backend"
+            - generic [ref=f1e25]: Backend
+        - generic [ref=f1e28]: 内置资产
+      - generic "当前上下文" [ref=f1e32]: paper-demo-curated / mvtec_fixture_clean_scratch
+    - generic [ref=f1e33]:
+      - generic [ref=f1e35]:
+        - generic [ref=f1e37]:
+          - generic [ref=f1e38] [cursor=pointer]: 运行与证据
+          - generic [ref=f1e44] [cursor=pointer]: 根因与图谱
+          - generic [ref=f1e50] [cursor=pointer]: 素材与构图
+        - button "收起侧边栏" [ref=f1e55] [cursor=pointer]
+      - main [ref=f1e58]:
+        - generic [ref=f1e62]:
+          - generic [ref=f1e63]:
+            - article [ref=f1e64]:
+              - generic [ref=f1e65]:
+                - heading "上传与运行状态 查看上传与运行状态说明" [level=3] [ref=f1e67]:
+                  - generic [ref=f1e68]:
+                    - generic [ref=f1e69]: 上传与运行状态
+                    - button "查看上传与运行状态说明" [ref=f1e73]
+                - generic [ref=f1e77]:
+                  - generic [ref=f1e78]: 内置 Demo
+                  - button "刷新视图" [ref=f1e79] [cursor=pointer]
+              - generic [ref=f1e83]:
+                - generic [ref=f1e84]:
+                  - generic "切换 Evidence 会话来源" [ref=f1e85]:
+                    - button "实时上传" [pressed] [ref=f1e86] [cursor=pointer]
+                    - button "回放资产" [ref=f1e87] [cursor=pointer]
+                  - alert [ref=f1e88]:
+                    - generic [ref=f1e92]: Demo 为内置快照；上传文件请切换至 Backend。
+                - generic [ref=f1e94]:
+                  - generic [ref=f1e95]:
+                    - strong [ref=f1e96]:
+                      - generic [ref=f1e102]: Run 列表
+                    - generic [ref=f1e103]: "1"
+                  - button "论文演示预设案例 paper-demo-curated RCA 结果就绪 已完成 4 case" [ref=f1e106] [cursor=pointer]:
+                    - strong [ref=f1e107]: 论文演示预设案例
+                    - generic [ref=f1e108]:
+                      - generic [ref=f1e109]: paper-demo-curated
+                      - generic [ref=f1e110]: RCA 结果就绪
+                      - generic [ref=f1e111]: 已完成
+                      - generic [ref=f1e112]: 4 case
+            - article [ref=f1e114]:
+              - generic [ref=f1e115]:
+                - heading "Case / Evidence 列表 查看Case / Evidence 列表说明" [level=3] [ref=f1e117]:
+                  - generic [ref=f1e118]:
+                    - generic [ref=f1e119]: Case / Evidence 列表
+                    - button "查看Case / Evidence 列表说明" [ref=f1e124]
+                - generic [ref=f1e128]: "4"
+              - generic [ref=f1e129]:
+                - generic [ref=f1e130]:
+                  - generic [ref=f1e131]:
+                    - generic [ref=f1e132]: 图谱
+                    - generic "图谱" [ref=f1e138] [cursor=pointer]:
+                      - textbox "图谱"
+                      - generic [ref=f1e139]: 全部图谱
+                  - generic [ref=f1e144]:
+                    - generic [ref=f1e145]: 模态
+                    - generic "模态" [ref=f1e151] [cursor=pointer]:
+                      - textbox "模态"
+                      - generic [ref=f1e152]: 全部
+                  - generic [ref=f1e157]:
+                    - generic [ref=f1e158]: 来源
+                    - generic "来源" [ref=f1e164] [cursor=pointer]:
+                      - textbox "来源"
+                      - generic [ref=f1e165]: 全部来源
+                  - generic [ref=f1e170]:
+                    - generic [ref=f1e171]: 置信度
+                    - generic "置信度" [ref=f1e177] [cursor=pointer]:
+                      - textbox "置信度"
+                      - generic [ref=f1e178]: 全部
+                  - generic [ref=f1e183]:
+                    - generic [ref=f1e184]: 时间范围
+                    - generic [ref=f1e189]:
+                      - generic "开始时间" [ref=f1e190]:
+                        - textbox "开始时间" [ref=f1e191]
+                      - generic "结束时间" [ref=f1e192]:
+                        - textbox "结束时间" [ref=f1e193]
+                  - generic [ref=f1e194]:
+                    - generic [ref=f1e195]: 关键字
+                    - generic "关键字" [ref=f1e200]:
+                      - textbox "关键字" [ref=f1e201]:
+                        - /placeholder: 搜索 obs / source / hint / ref / variable / event
+                - generic [ref=f1e202]:
+                  - generic [ref=f1e203]:
+                    - button "选择 Case MVTEC / bottle / scratch" [pressed] [ref=f1e204] [cursor=pointer]:
+                      - strong [ref=f1e205]: MVTEC / bottle / scratch
+                      - generic [ref=f1e206]:
+                        - generic [ref=f1e207]: mvtec
+                        - generic [ref=f1e208]: bottle / scratch
+                        - generic "Mechanical contact" [ref=f1e209]
+                        - generic [ref=f1e210]: 可审阅
+                    - button "查看 MVTEC / bottle / scratch 的根因与图谱" [ref=f1e211] [cursor=pointer]: 根因与图谱
+                  - generic [ref=f1e215]:
+                    - button "选择 Case MVTec Noisy Demo / bottle / scratch" [ref=f1e216] [cursor=pointer]:
+                      - strong [ref=f1e217]: MVTec Noisy Demo / bottle / scratch
+                      - generic [ref=f1e218]:
+                        - generic [ref=f1e219]: mvtec
+                        - generic [ref=f1e220]: bottle / scratch
+                        - generic "Mechanical contact" [ref=f1e221]
+                        - generic [ref=f1e222]: 可审阅
+                    - button "查看 MVTec Noisy Demo / bottle / scratch 的根因与图谱" [ref=f1e223] [cursor=pointer]: 根因与图谱
+                  - generic [ref=f1e227]:
+                    - button "选择 Case tep_0001" [ref=f1e228] [cursor=pointer]:
+                      - strong [ref=f1e229]: tep_0001
+                      - generic [ref=f1e230]:
+                        - generic [ref=f1e231]: tep
+                        - generic [ref=f1e232]: XMEAS_1 / unknown 等 2 条
+                        - generic "Stream 1 A-feed loss disturbance" [ref=f1e233]
+                        - generic [ref=f1e234]: 可审阅
+                    - button "查看 tep_0001 的根因与图谱" [ref=f1e235] [cursor=pointer]: 根因与图谱
+                  - generic [ref=f1e239]:
+                    - button "选择 Case wafer_0001" [ref=f1e240] [cursor=pointer]:
+                      - strong [ref=f1e241]: wafer_0001
+                      - generic [ref=f1e242]:
+                        - generic [ref=f1e243]: wafer
+                        - generic [ref=f1e244]: wafer / nearfull 等 2 条
+                        - generic "Glue removal insufficient" [ref=f1e245]
+                        - generic [ref=f1e246]: 可审阅
+                    - button "查看 wafer_0001 的根因与图谱" [ref=f1e247] [cursor=pointer]: 根因与图谱
+          - generic [ref=f1e251]:
+            - article [ref=f1e252]:
+              - generic [ref=f1e253]:
+                - heading "根因列表 查看根因列表说明" [level=3] [ref=f1e255]:
+                  - generic [ref=f1e256]:
+                    - generic [ref=f1e257]: 根因列表
+                    - button "查看根因列表说明" [ref=f1e261]
+                - generic [ref=f1e265]:
+                  - generic [ref=f1e266]: MVTEC / bottle / scratch
+                  - generic [ref=f1e267]: 3 条
+              - generic [ref=f1e269]:
+                - button "#1 Mechanical contact 0.480 工件桥接 plausible_mechanism" [ref=f1e270] [cursor=pointer]:
+                  - generic [ref=f1e271]: "#1 Mechanical contact"
+                  - generic [ref=f1e272]: "0.480"
+                  - generic [ref=f1e273]: 工件桥接
+                  - generic [ref=f1e274]: plausible_mechanism
+                - button "#2 Handling damage 0.446 工件桥接 plausible_mechanism" [ref=f1e275] [cursor=pointer]:
+                  - generic [ref=f1e276]: "#2 Handling damage"
+                  - generic [ref=f1e277]: "0.446"
+                  - generic [ref=f1e278]: 工件桥接
+                  - generic [ref=f1e279]: plausible_mechanism
+                - button "#3 Surface wear 0.408 工件桥接 plausible_mechanism" [ref=f1e280] [cursor=pointer]:
+                  - generic [ref=f1e281]: "#3 Surface wear"
+                  - generic [ref=f1e282]: "0.408"
+                  - generic [ref=f1e283]: 工件桥接
+                  - generic [ref=f1e284]: plausible_mechanism
+            - article [ref=f1e285]:
+              - generic [ref=f1e286]:
+                - heading "Observation Drilldown 查看Observation Drilldown说明" [level=3] [ref=f1e288]:
+                  - generic [ref=f1e289]:
+                    - generic [ref=f1e290]: Observation Drilldown
+                    - button "查看Observation Drilldown说明" [ref=f1e294]
+                - generic [ref=f1e298]:
+                  - generic [ref=f1e299]: MVTEC / bottle / scratch
+                  - generic [ref=f1e300]: "1"
+              - generic [ref=f1e301]:
+                - generic [ref=f1e302]:
+                  - generic [ref=f1e303]:
+                    - generic [ref=f1e304]: 当前选择
+                    - strong [ref=f1e305]: obs_mvtec_fixture_clean_scratch_image_defect_01
+                  - generic [ref=f1e306]:
+                    - button "查看详情" [ref=f1e307] [cursor=pointer]
+                    - button "根因与图谱" [ref=f1e308] [cursor=pointer]
+                - generic [ref=f1e310]:
+                  - button "选择 Observation bottle / scratch" [pressed] [ref=f1e311] [cursor=pointer]:
+                    - generic [ref=f1e312]:
+                      - strong [ref=f1e313]: bottle / scratch
+                      - generic "置信度 0.860" [ref=f1e314]: "0.860"
+                    - generic [ref=f1e315]:
+                      - generic [ref=f1e316]: image
+                      - generic "2026-05-16T02:04:33Z" [ref=f1e317]
+                      - generic [ref=f1e318]: 4 linked
+                      - generic [ref=f1e319]: 4 refs
+                  - button "查看 bottle / scratch 的 Observation 详情" [ref=f1e320] [cursor=pointer]: 详情
+  - generic [ref=f1e324]:
+    - generic [ref=f1e325]:
+      - generic [ref=f1e326]: Observation 详情
+      - button "Close" [ref=f1e327] [cursor=pointer]
+    - generic [ref=f1e332]:
+      - generic [ref=f1e333]:
+        - generic [ref=f1e334]:
+          - generic [ref=f1e335]: Obs ID
+          - strong [ref=f1e342]: obs_mvtec_fixture_clean_scratch_image_defect_01
+        - generic [ref=f1e343]:
+          - generic [ref=f1e344]: Modality
+          - strong [ref=f1e348]: image
+        - generic [ref=f1e349]:
+          - generic [ref=f1e350]: Source
+          - strong [ref=f1e355]: image
+        - generic [ref=f1e356]:
+          - generic [ref=f1e357]: Confidence
+          - strong [ref=f1e361]: "0.860"
+      - generic [ref=f1e362]:
+        - generic [ref=f1e363]:
+          - generic [ref=f1e364]: Object
+          - strong [ref=f1e371]: bottle
+        - generic [ref=f1e372]:
+          - generic [ref=f1e373]: Anomaly
+          - strong [ref=f1e377]: scratch
+        - generic [ref=f1e378]:
+          - generic [ref=f1e379]: Location
+          - strong [ref=f1e384]: surface
+        - generic [ref=f1e385]:
+          - generic [ref=f1e386]: Severity
+          - strong [ref=f1e390]: "0.180"
+      - generic [ref=f1e391]:
+        - generic [ref=f1e392]:
+          - img "MVTec 观测预览" [ref=f1e393]
+          - generic [ref=f1e394]:
+            - strong [ref=f1e395]: MVTec 观测预览
+            - generic [ref=f1e396]: image
+        - generic [ref=f1e397]:
+          - img "MVTec 辅助可视化" [ref=f1e398]
+          - generic [ref=f1e399]:
+            - strong [ref=f1e400]: MVTec 辅助可视化
+            - generic [ref=f1e401]: heatmap
+      - generic [ref=f1e402]:
+        - generic [ref=f1e403]: Linked entity hints
+        - strong [ref=f1e407]: bottle, scratch, surface, linear
+      - generic [ref=f1e408]:
+        - generic [ref=f1e409]:
+          - strong [ref=f1e410]: None
+          - generic [ref=f1e411]: evidence
+          - generic [ref=f1e412]: "--"
+        - generic [ref=f1e413]:
+          - strong [ref=f1e414]: None
+          - generic [ref=f1e415]: evidence
+          - generic [ref=f1e416]: "--"
+        - generic [ref=f1e417]:
+          - strong [ref=f1e418]: None
+          - generic [ref=f1e419]: evidence
+          - generic [ref=f1e420]: "--"
+        - generic [ref=f1e421]:
+          - strong [ref=f1e422]: None
+          - generic [ref=f1e423]: evidence
+          - generic [ref=f1e424]: "--"
+      - generic [ref=f1e425]:
+        - button "根因与图谱" [ref=f1e426] [cursor=pointer]
+        - button "关闭" [ref=f1e427] [cursor=pointer]

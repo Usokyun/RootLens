@@ -2,6 +2,7 @@
 import { IconSync } from '@arco-design/web-vue/es/icon'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
+import { readable } from '@/services/presentation'
 import { loadD3 } from '@/services/d3-loader'
 import type {
   UnifiedGraphDataset,
@@ -448,7 +449,7 @@ function applyDecorations() {
       const isRelated = isSearchRelated || isSelected || isFocusMatched || isSelectedRelated || isFocusRelated
 
       if (!hasSearch && !hasFocus) {
-        return 0.24
+        return props.dataset.edges.length <= 120 ? 0.48 : 0.24
       }
 
       if (isSelected) {
@@ -475,7 +476,7 @@ function applyDecorations() {
         return 0.24
       }
 
-      return 0.16
+      return props.dataset.edges.length <= 120 ? 0.3 : 0.16
     })
     .attr('stroke', (edge: RenderEdge) => {
       const decision = readEdgeCurationDecision(edge)
@@ -508,6 +509,7 @@ function applyDecorations() {
     })
     .attr('stroke-dasharray', (edge: RenderEdge) => {
       const decision = readEdgeCurationDecision(edge)
+      if (edge.attributes.draft === true) return '6 4'
       if (selectedEdgesSet.has(edge.id) || focusedEdgesSet.has(edge.id)) {
         return null
       }
@@ -704,8 +706,9 @@ async function renderGraph() {
       .attr('viewBox', '0 0 10 10')
       .attr('refX', 11)
       .attr('refY', 5)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
+      .attr('markerUnits', 'userSpaceOnUse')
+      .attr('markerWidth', 10)
+      .attr('markerHeight', 10)
       .attr('orient', 'auto-start-reverse')
       .append('path')
       .attr('d', 'M 0 0 L 10 5 L 0 10 z')
@@ -749,6 +752,9 @@ async function renderGraph() {
       .selectAll('line')
       .data(edgeItems, (edge: RenderEdge) => edge.id)
       .join('line')
+      .attr('role','button').attr('tabindex',0)
+      .attr('aria-label',(edge: RenderEdge) => `编辑关系 ${readable(edge.relation)}`)
+      .on('keydown', function(this: SVGLineElement, event: KeyboardEvent) { if(event.key==='Enter'||event.key===' '){event.preventDefault();this.dispatchEvent(new MouseEvent('click',{bubbles:true}))} })
       .attr('stroke', 'rgba(0, 0, 0, 0)')
       .attr('stroke-width', 16)
       .attr('stroke-linecap', 'round')
@@ -787,6 +793,9 @@ async function renderGraph() {
       .selectAll('g')
       .data(nodeItems, (node: RenderNode) => node.id)
       .join('g')
+      .attr('role','button').attr('tabindex',0)
+      .attr('aria-label',(node: RenderNode) => `编辑节点 ${readable(node.name)}`)
+      .on('keydown', function(this: SVGGElement, event: KeyboardEvent) { if(event.key==='Enter'||event.key===' '){event.preventDefault();this.dispatchEvent(new MouseEvent('click',{bubbles:true}))} })
       .style('cursor', 'pointer')
       .on('click', (event: MouseEvent, node: RenderNode) => {
         event.stopPropagation()
@@ -829,7 +838,7 @@ async function renderGraph() {
       .style('stroke', 'rgba(255, 255, 255, 0.88)')
       .style('stroke-width', 3)
       .style('pointer-events', 'none')
-      .text((node: RenderNode) => node.name)
+      .text((node: RenderNode) => readable(node.name))
 
     await waitForRenderTurn()
 

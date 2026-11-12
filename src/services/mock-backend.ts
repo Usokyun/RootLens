@@ -71,11 +71,16 @@ import type {
   RootLensRuntimeFile,
   RankedPath,
 } from "@/types/rootlens";
-import heroImage from "@/assets/hero.png";
 
 const CLAIM_BOUNDARY =
   "candidate/plausible explanation only; not a verified root-cause label";
 const MOCK_STORAGE_KEY = "rootlens.mock-backend-state";
+function persistentStorageKey() {
+  const meta = getLocalSessionMeta();
+  return meta?.source === "import"
+    ? `${MOCK_STORAGE_KEY}.replay:${meta.updatedAt}`
+    : MOCK_STORAGE_KEY;
+}
 const PAPER_DEMO_RUN_ID = "paper-demo-curated";
 const IMPORTED_REPLAY_RUN_ID = "imported-runtime-replay";
 const PAPER_DEMO_CASE_IDS = [
@@ -161,6 +166,10 @@ interface SeedBundle {
   bootstrap: DashboardBootstrap;
   kgStudio: KGStudioPayload;
   constructionBuilds: MockConstructionBuild[];
+  materialBundle: {
+    materials: KGMaterialRecord[];
+    chunks: KGMaterialChunkRecord[];
+  };
 }
 
 let seedBundlePromise: Promise<SeedBundle> | null = null;
@@ -171,10 +180,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function compactList<T>(items: Array<T | null | undefined>): T[] {
-  return items.filter((item): item is T => item !== null && item !== undefined);
 }
 
 function normalizeNullableText(value: unknown): string | null {
@@ -232,7 +237,9 @@ function buildCaseReasoningMetadata(
   const caseRecord = caseItem as unknown as Record<string, unknown>;
   const caseLevel = readReasoningMetadata(caseRecord.reasoning_metadata);
   const analysisLevel = readReasoningMetadata(
-    isRecord(caseRecord.analysis) ? caseRecord.analysis.reasoning_metadata : null,
+    isRecord(caseRecord.analysis)
+      ? caseRecord.analysis.reasoning_metadata
+      : null,
   );
   const inferred = inferReasoningProfileForDataset(caseItem.dataset);
 
@@ -333,7 +340,7 @@ function readPersistentState(): MockPersistentState {
   }
 
   try {
-    const raw = window.localStorage.getItem(MOCK_STORAGE_KEY);
+    const raw = window.localStorage.getItem(persistentStorageKey());
     if (!raw) {
       return {
         uploaded_runs: [],
@@ -401,7 +408,7 @@ function writePersistentState(state: MockPersistentState) {
     return;
   }
 
-  window.localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  window.localStorage.setItem(persistentStorageKey(), JSON.stringify(state));
 }
 
 async function fetchPublicJson<T>(path: string): Promise<T> {
@@ -741,50 +748,37 @@ function reviewTargetsFromArtifacts(input: {
 function buildVisualEvidence(
   caseItem: RootLensRuntimeCase,
 ): VisualEvidenceItem[] {
-  if (caseItem.dataset === "tep") {
-    return [];
-  }
-
-  const titlePrefix = caseItem.dataset === "mvtec" ? "MVTec" : "晶圆";
-  const baseId = `${caseItem.case_id}-visual`;
-
+  // Only this controlled fixture has paired assets. No unrelated placeholder for other cases.
+  if (caseItem.case_id !== "mvtec_fixture_clean_scratch") return [];
+  const observationIds = caseItem.evidence.observations
+    .filter((o) => o.facet === "image_defect")
+    .map((o) => o.obs_id);
   return [
-    {
-      artifact_id: `${baseId}-image`,
-      case_id: caseItem.case_id,
-      dataset: caseItem.dataset,
-      kind: caseItem.dataset === "mvtec" ? "image" : "wafer_map",
-      title: `${titlePrefix} 观测预览`,
-      source_key: caseItem.case_id,
-      source_path: `/generated/evidence/${caseItem.case_id}.json`,
-      url: heroImage,
-      preview_path: heroImage,
-      available: true,
-      note: "用于前端演示的模拟预览素材。",
-      metadata: {
-        mode: "mock",
-      },
+    { kind: "image", title: "合成瓶体样本", filename: "bottle-scratch.png" },
+    { kind: "mask", title: "注入划痕区域", filename: "bottle-mask.png" },
+    { kind: "heatmap", title: "基准差分响应", filename: "bottle-response.png" },
+  ].map((item) => ({
+    artifact_id: `${caseItem.case_id}-${item.kind}`,
+    case_id: caseItem.case_id,
+    dataset: caseItem.dataset,
+    kind: item.kind,
+    title: item.title,
+    source_key: observationIds[0] ?? caseItem.case_id,
+    source_path: "/demo-evidence/manifest.json",
+    url: `/demo-evidence/${item.filename}`,
+    preview_path: null,
+    available: true,
+    note: "受控合成样本；响应图为与无缺陷基准的像素差分，不是 MVTec 原图或训练模型输出。",
+    metadata: {
+      mode: "mock",
+      fixture_type: "controlled_synthetic",
+      observation_ids: observationIds,
+      registered: true,
     },
-    {
-      artifact_id: `${baseId}-heatmap`,
-      case_id: caseItem.case_id,
-      dataset: caseItem.dataset,
-      kind: caseItem.dataset === "mvtec" ? "heatmap" : "wafer_map",
-      title: `${titlePrefix} 辅助可视化`,
-      source_key: `${caseItem.case_id}-support`,
-      source_path: null,
-      url: heroImage,
-      preview_path: heroImage,
-      available: true,
-      note: "用于前端演示的模拟辅助可视化。",
-      metadata: {
-        mode: "mock",
-      },
-    },
-  ];
+  }));
 }
 
-function buildCaseDetail(caseItem: RootLensRuntimeCase): RunCaseDetail {
+function buildCaseDetail(caseItem: RootLensRuntimeCase, demoAssets = false): RunCaseDetail {
   const linkedEntities = deepClone(
     (caseItem.analysis.route1?.linked_entities ?? []) as unknown as Array<
       Record<string, unknown>
@@ -806,8 +800,38 @@ function buildCaseDetail(caseItem: RootLensRuntimeCase): RunCaseDetail {
     sourceEdges: sourceEdgeProvenance,
     rankedRootCauses,
   });
-  const visualEvidence = buildVisualEvidence(caseItem);
+  const visualEvidence = demoAssets ? buildVisualEvidence(caseItem) : [];
   const reasoningMetadata = buildCaseReasoningMetadata(caseItem);
+  const displayEvidence = deepClone(
+    caseItem.evidence as unknown as Record<string, unknown>,
+  );
+  if (demoAssets && caseItem.case_id === "mvtec_fixture_clean_scratch") {
+    displayEvidence.fixture_type="controlled_synthetic";
+    displayEvidence.summary =
+      "受控合成瓶体划痕样本；仅演示证据检查，不是 MVTec 原始数据或训练模型输出。";
+    if (Array.isArray(displayEvidence.observations)) {
+      for (const observation of displayEvidence.observations) {
+        if (isRecord(observation) && observation.facet === "image_defect") {
+          observation.raw_evidence_refs = [
+            {
+              ref_id: "synthetic-fixture-image",
+              label: "合成划痕样本",
+              role: "image",
+              file_path: "/demo-evidence/bottle-scratch.png",
+              line: null,
+            },
+            {
+              ref_id: "synthetic-fixture-producer",
+              label: "生成方法与响应计算",
+              role: "manifest",
+              file_path: "/demo-evidence/manifest.json",
+              line: null,
+            },
+          ];
+        }
+      }
+    }
+  }
 
   return {
     case_id: caseItem.case_id,
@@ -815,10 +839,8 @@ function buildCaseDetail(caseItem: RootLensRuntimeCase): RunCaseDetail {
     label: caseItem.case_label,
     case_label: caseItem.case_label,
     source: caseItem.source,
-    generated_evidence: deepClone(
-      caseItem.evidence as unknown as Record<string, unknown>,
-    ),
-    generated_evidence_path: `/generated/evidence/${caseItem.case_id}.json`,
+    generated_evidence: displayEvidence,
+    generated_evidence_path: demoAssets ? `/generated/evidence/${caseItem.case_id}.json` : null,
     linked_entities: linkedEntities,
     consistency_score: caseItem.analysis.route1?.consistency_score ?? null,
     inconsistent_fields: caseItem.analysis.route1?.inconsistent_fields ?? [],
@@ -982,8 +1004,9 @@ function buildRunDetail(config: {
   cases: RootLensRuntimeCase[];
   modelPreset?: string | null;
   modelBackend?: string | null;
+  demoAssets?: boolean;
 }): RunDetail {
-  const caseDetails = config.cases.map((caseItem) => buildCaseDetail(caseItem));
+  const caseDetails = config.cases.map((caseItem) => buildCaseDetail(caseItem,config.demoAssets));
   const aggregate = aggregateCases(caseDetails);
   const runReasoningMetadata = buildRunReasoningMetadata(caseDetails);
   const run = buildRunSummary({
@@ -1091,6 +1114,7 @@ function buildSeedRuns(runtime: RootLensRuntimeFile): RunDetail[] {
       topK: 5,
       dataset: null,
       cases: curatedCases,
+      demoAssets:true,
       modelBackend: "bundled-runtime-snapshot",
     }),
   ];
@@ -1151,17 +1175,25 @@ async function buildSeedKgStudio(): Promise<{
   kgStudio: KGStudioPayload;
   build: MockConstructionBuild;
 }> {
-  const [nodesCsv, edgesCsv, validationReport, generationSummary] =
-    await Promise.all([
-      fetchPublicText("/generated/mvtec-candidate-kg/nodes_candidate.csv"),
-      fetchPublicText("/generated/mvtec-candidate-kg/edges_candidate.csv"),
-      fetchPublicJson<Record<string, unknown>>(
-        "/generated/mvtec-candidate-kg/validation_report.json",
-      ),
-      fetchPublicJson<Record<string, unknown>>(
-        "/generated/mvtec-candidate-kg/kg_generation_summary.json",
-      ),
-    ]);
+  const [
+    nodesCsv,
+    edgesCsv,
+    validationReport,
+    generationSummary,
+    sourceCatalog,
+  ] = await Promise.all([
+    fetchPublicText("/generated/mvtec-candidate-kg/nodes_candidate.csv"),
+    fetchPublicText("/generated/mvtec-candidate-kg/edges_candidate.csv"),
+    fetchPublicJson<Record<string, unknown>>(
+      "/generated/mvtec-candidate-kg/validation_report.json",
+    ),
+    fetchPublicJson<Record<string, unknown>>(
+      "/generated/mvtec-candidate-kg/kg_generation_summary.json",
+    ),
+    fetchPublicJson<
+      Record<string, import("@/api/contracts").KnowledgeSourceDetail>
+    >("/demo-evidence/knowledge-sources.json"),
+  ]);
 
   const nodeRows = parseCsvRecords(nodesCsv);
   const edgeRows = parseCsvRecords(edgesCsv);
@@ -1212,11 +1244,8 @@ async function buildSeedKgStudio(): Promise<{
     edges_path: "/generated/mvtec-candidate-kg/edges_candidate.csv",
     summary_path: "/generated/mvtec-candidate-kg/validation_report.json",
     manifest_path: "/generated/mvtec-candidate-kg/kg_generation_summary.json",
-    source_ids: [
-      "wm811k_low_confidence_investigation_rule",
-      "wafer_factory_sop_private_summary",
-    ],
-    source_count: 2,
+    source_ids: Object.keys(sourceCounts),
+    source_count: Object.keys(sourceCounts).length,
     node_count: nodeRows.length,
     edge_count: edgeRows.length,
     scenarios: scenarioCounts,
@@ -1274,24 +1303,14 @@ async function buildSeedKgStudio(): Promise<{
         (validationReport.summary as Record<string, unknown>) ??
         validationReport,
       construction_manifest: generationSummary,
-      sources: [
-        {
-          source_id: "wm811k_low_confidence_investigation_rule",
-          title: "WM811K 低置信度排查规则",
-          source_type: "manual_table",
-          path_or_url: "/generated/mvtec-candidate-kg/edges_candidate.csv",
-          used_for: "模拟候选图谱预览",
-          notes: "前端模拟来源登记条目。",
-        },
-        {
-          source_id: "wafer_factory_sop_private_summary",
-          title: "晶圆工厂 SOP 摘要",
-          source_type: "structured_records",
-          path_or_url: "/generated/mvtec-candidate-kg/validation_report.json",
-          used_for: "构建校验摘要",
-          notes: "由仓库内公开资产整理出的模拟来源登记条目。",
-        },
-      ],
+      sources: Object.keys(sourceCounts).map((id) => ({
+        source_id: id,
+        title: sourceCatalog[id]?.title ?? id,
+        source_type: sourceCatalog[id]?.source_type ?? "unregistered",
+        path_or_url: sourceCatalog[id]?.location ?? "",
+        used_for: "已保存候选图谱的关系依据",
+        notes: sourceCatalog[id]?.notes ?? "此演示未包含完整来源登记",
+      })),
       source_documents: [
         {
           path: "/generated/mvtec-candidate-kg/top_case_explanations.md",
@@ -1327,7 +1346,11 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
     seedBundlePromise = Promise.all([
       loadBundledRootLensRuntime(),
       buildSeedKgStudio(),
-    ]).then(([runtime, kgSeed]) => {
+      fetchPublicJson<{
+        materials: KGMaterialRecord[];
+        chunks: KGMaterialChunkRecord[];
+      }>("/demo-evidence/materials.json"),
+    ]).then(([runtime, kgSeed, materialBundle]) => {
       const runs = buildSeedRuns(runtime);
       const bootstrap: DashboardBootstrap = {
         status: "ok",
@@ -1383,6 +1406,7 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
         bootstrap,
         kgStudio: kgSeed.kgStudio,
         constructionBuilds: [kgSeed.build],
+        materialBundle,
       };
     });
   }
@@ -1392,10 +1416,18 @@ async function ensureSeedBundle(): Promise<SeedBundle> {
 
 async function loadCurrentState() {
   const seed = await ensureSeedBundle();
-  return {
-    seed,
-    persistentState: readPersistentState(),
-  };
+  const persistentState = readPersistentState();
+  if (getLocalSessionMeta()?.source !== "import") {
+    persistentState.material_records = uniqueByKey(
+      [...persistentState.material_records, ...seed.materialBundle.materials],
+      (item) => item.material_id,
+    );
+    persistentState.material_chunks = uniqueByKey(
+      [...persistentState.material_chunks, ...seed.materialBundle.chunks],
+      (item) => item.chunk_id,
+    );
+  }
+  return { seed, persistentState };
 }
 
 function mergedRuns(seed: SeedBundle): RunDetail[] {
@@ -1460,126 +1492,6 @@ function parseDraftLines(request: KGSourceDraftRequest): KGSourceDraftEdge[] {
   });
 }
 
-function parseConstructionSourceRows(
-  source: KGConstructionBuildRequest["sources"][number],
-): Array<Record<string, unknown>> {
-  const sourceText = source.source_text?.trim();
-  if (!sourceText) {
-    return [];
-  }
-
-  if (source.source_format === "csv") {
-    try {
-      return parseCsv(sourceText, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-      }) as Array<Record<string, unknown>>;
-    } catch {
-      return [];
-    }
-  }
-
-  if (source.source_format === "json") {
-    try {
-      const parsed = JSON.parse(sourceText) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed.filter(isRecord);
-      }
-      if (isRecord(parsed) && Array.isArray(parsed.records)) {
-        return parsed.records.filter(isRecord);
-      }
-    } catch {
-      return [];
-    }
-  }
-
-  if (source.source_format === "jsonl") {
-    return sourceText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        try {
-          return JSON.parse(line) as unknown;
-        } catch {
-          return null;
-        }
-      })
-      .filter(isRecord);
-  }
-
-  return [];
-}
-
-function parseConstructionSourceEdges(
-  source: KGConstructionBuildRequest["sources"][number],
-): KGConstructionReviewQueueEdge[] {
-  const rows = parseConstructionSourceRows(source);
-  if (rows.length) {
-    return compactList(
-      rows.map((row, index) => {
-        const head = normalizeText(row.head ?? row.subject ?? row.source_node);
-        const relation = normalizeText(
-          row.relation ?? row.predicate ?? row.edge_type,
-        );
-        const tail = normalizeText(row.tail ?? row.object ?? row.target_node);
-
-        if (!head || !relation || !tail) {
-          return null;
-        }
-
-        const scenario = normalizeText(row.scenario, source.scenario);
-        const sourceId = normalizeText(
-          row.source ?? row.source_id,
-          source.source_id,
-        );
-        return {
-          target_key: `${head}|${relation}|${tail}|${scenario}`,
-          head,
-          relation,
-          tail,
-          scenario,
-          source: sourceId,
-          evidence: normalizeText(row.evidence, `${sourceId}:${index + 1}`),
-          confidence: safeNumber(row.confidence, 0.62),
-          weight: safeNumber(row.weight, 0.56),
-          review_status: normalizeText(row.review_status, "auto"),
-          feedback_count: safeNumber(row.feedback_count, 0),
-          accepted_count: safeNumber(row.accepted_count, 0),
-          rejected_count: safeNumber(row.rejected_count, 0),
-        } satisfies KGConstructionReviewQueueEdge;
-      }),
-    );
-  }
-
-  if (!source.source_text) {
-    return [];
-  }
-
-  return parseDraftLines({
-    source_id: source.source_id,
-    source_text: source.source_text,
-    provider: "heuristic",
-    default_scenario: source.scenario,
-    confidence: 0.62,
-  }).map((edge) => ({
-    target_key: edge.edge_id,
-    head: edge.head,
-    relation: edge.relation,
-    tail: edge.tail,
-    scenario: edge.scenario,
-    source: edge.source,
-    evidence: edge.evidence,
-    confidence: edge.confidence,
-    weight: edge.weight,
-    review_status: edge.review_status,
-    feedback_count: 0,
-    accepted_count: 0,
-    rejected_count: 0,
-  }));
-}
-
 function buildConstructionReviewSummary(
   edges: KGConstructionReviewQueueEdge[],
 ): KGConstructionReviewQueueSummary {
@@ -1588,83 +1500,6 @@ function buildConstructionReviewSummary(
     relation_counts: countBy(edges.map((edge) => edge.relation)),
     scenario_counts: countBy(edges.map((edge) => edge.scenario)),
     source_counts: countBy(edges.map((edge) => edge.source)),
-  };
-}
-
-function buildConstructionBuildFromRequest(
-  request: KGConstructionBuildRequest,
-): MockConstructionBuild {
-  const createdAt = new Date().toISOString();
-  const runId = request.run_id || `mock-build-${Date.now()}`;
-  const sourceIds = request.sources.map((source) => source.source_id);
-  const edges: KGConstructionReviewQueueEdge[] = request.sources.flatMap(
-    (source, sourceIndex) => {
-      const parsedEdges = parseConstructionSourceEdges(source);
-
-      if (parsedEdges.length) {
-        return parsedEdges;
-      }
-
-      return [
-        {
-          target_key: `${source.source_id}|SUGGESTS_PLAUSIBLE_MECHANISM|Candidate_${sourceIndex + 1}|${source.scenario}`,
-          head: source.source_id,
-          relation: "SUGGESTS_PLAUSIBLE_MECHANISM",
-          tail: `Candidate_${sourceIndex + 1}`,
-          scenario: source.scenario,
-          source: source.source_id,
-          evidence:
-            source.path ?? source.source_text ?? "Mock construction source",
-          confidence: 0.58,
-          weight: 0.51,
-          review_status: "auto",
-          feedback_count: 0,
-          accepted_count: 0,
-          rejected_count: 0,
-        },
-      ];
-    },
-  );
-
-  const buildRecord: KGConstructionBuildRecord = {
-    run_id: runId,
-    status: "completed",
-    created_at: createdAt,
-    output_dir: `mock://construction/${request.output_name}`,
-    nodes_path: `mock://construction/${request.output_name}/nodes.csv`,
-    edges_path: `mock://construction/${request.output_name}/edges.csv`,
-    summary_path: `mock://construction/${request.output_name}/summary.json`,
-    manifest_path: `mock://construction/${request.output_name}/manifest.json`,
-    source_ids: sourceIds,
-    source_count: sourceIds.length,
-    node_count: Math.max(2, sourceIds.length * 2),
-    edge_count: edges.length,
-    scenarios: countBy(edges.map((edge) => edge.scenario)),
-    review_status_counts: countBy(edges.map((edge) => edge.review_status)),
-    claim_boundary: CLAIM_BOUNDARY,
-  };
-
-  return {
-    build: buildRecord,
-    summary: {
-      output_name: request.output_name,
-      overwrite: request.overwrite,
-      source_ids: sourceIds,
-      edge_count: edges.length,
-    },
-    manifest: {
-      generated_at: createdAt,
-      request,
-    },
-    qa_report: {
-      summary: {
-        passed: true,
-        issue_count: 0,
-        warning_count: edges.some((edge) => edge.confidence < 0.6) ? 1 : 0,
-      },
-      edges,
-    },
-    edges,
   };
 }
 
@@ -1875,7 +1710,9 @@ function replaceMockMaterialDerivedState(input: {
   const state = readPersistentState();
   if (input.chunks) {
     state.material_chunks = [
-      ...state.material_chunks.filter((item) => item.material_id !== input.materialId),
+      ...state.material_chunks.filter(
+        (item) => item.material_id !== input.materialId,
+      ),
       ...input.chunks,
     ];
   }
@@ -1889,7 +1726,9 @@ function replaceMockMaterialDerivedState(input: {
   }
   if (input.artifacts) {
     state.material_artifacts = [
-      ...state.material_artifacts.filter((item) => item.material_id !== input.materialId),
+      ...state.material_artifacts.filter(
+        (item) => item.material_id !== input.materialId,
+      ),
       ...input.artifacts,
     ];
   }
@@ -1954,7 +1793,11 @@ function buildMockMaterialRecord(config: {
     ...(config.notes ? { notes: config.notes } : {}),
   };
   return {
-    status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
+    status:
+      config.status ??
+      (String(extraction.status || "not_started") === "extracted"
+        ? "extracted"
+        : "registered"),
     material_id: config.materialId,
     title: config.title,
     scenario: config.scenario,
@@ -1982,7 +1825,11 @@ function buildMockMaterialRecord(config: {
     url: config.sourceKind === "url" ? config.sourceUri : null,
     uri: config.sourceUri,
     filename: config.filename ?? null,
-    processing_status: config.status ?? (String(extraction.status || "not_started") === "extracted" ? "extracted" : "registered"),
+    processing_status:
+      config.status ??
+      (String(extraction.status || "not_started") === "extracted"
+        ? "extracted"
+        : "registered"),
     extraction_status:
       typeof extraction.status === "string" ? extraction.status : "not_started",
     chunk_count:
@@ -2002,7 +1849,7 @@ function buildMockDraftRecord(draft: MockDraftRecord): KGDraftRecord {
   return {
     draft_id: draft.draft_id,
     created_at: draft.created_at,
-    target_type: "edge",
+    target_type: draft.request.target_type,
     target_id: draft.request.target_id,
     target_key: targetKey,
     draft_action: draft.request.draft_action,
@@ -2088,7 +1935,7 @@ export const mockBackend = {
     request: ReviewRequest,
   ): Promise<{ status: string; record: Record<string, unknown> }> {
     const feedbackRecord: MockFeedbackRecord = {
-      feedback_id: `feedback-${Date.now()}`,
+      feedback_id: `feedback-${crypto.randomUUID()}`,
       created_at: new Date().toISOString(),
       request,
     };
@@ -2291,7 +2138,8 @@ export const mockBackend = {
       scenario: base.scenario,
       sourceType: base.source_type,
       sourceKind: base.source_kind ?? (base.url ? "url" : "uploaded_file"),
-      sourceUri: base.uri ?? base.url ?? base.path ?? `mock://materials/${materialId}`,
+      sourceUri:
+        base.uri ?? base.url ?? base.path ?? `mock://materials/${materialId}`,
       filename: base.filename ?? null,
       contentType: base.content_type ?? null,
       sizeBytes: base.size_bytes ?? 0,
@@ -2343,7 +2191,9 @@ export const mockBackend = {
     });
     const sources = materials.map((material) => ({
       source_id: material.source_id ?? material.material_id,
-      source_type: (request.source_type ?? "structured_records") as "structured_records" | "manual_table",
+      source_type: (request.source_type ?? "structured_records") as
+        | "structured_records"
+        | "manual_table",
       scenario: material.scenario,
       path:
         typeof material.extraction?.structured_records_path === "string"
@@ -2434,6 +2284,19 @@ export const mockBackend = {
         "KG draft records are append-only candidate review adjustments; they do not mutate candidate CSV files or publish KG rows",
     };
   },
+  async getKnowledgeSource(sourceId: string) {
+    if (getLocalSessionMeta()?.source === "import")
+      throw new Error("此回放未打包可读来源原文；不以 Demo 原文替代。");
+    const response = await fetch("/demo-evidence/knowledge-sources.json");
+    if (!response.ok) throw new Error("演示来源资料读取失败。");
+    const catalog = (await response.json()) as Record<
+      string,
+      import("@/api/contracts").KnowledgeSourceDetail
+    >;
+    const source = catalog[sourceId];
+    if (!source) throw new Error("当前回放未包含此来源的可核验原文。");
+    return source;
+  },
   async kgStudio(): Promise<KGStudioPayload> {
     const { seed } = await loadCurrentState();
     return deepClone(seed.kgStudio);
@@ -2453,7 +2316,7 @@ export const mockBackend = {
     request: KGDraftRequest,
   ): Promise<{ status: string; record: Record<string, unknown> }> {
     const draftRecord: MockDraftRecord = {
-      draft_id: `draft-${Date.now()}`,
+      draft_id: `draft-${crypto.randomUUID()}`,
       created_at: new Date().toISOString(),
       request,
     };
@@ -2464,21 +2327,9 @@ export const mockBackend = {
     };
   },
   async buildKGConstruction(
-    request: KGConstructionBuildRequest,
+    _request: KGConstructionBuildRequest,
   ): Promise<KGConstructionBuildResponse> {
-    const build = buildConstructionBuildFromRequest(request);
-    persistConstructionBuild(build);
-    return {
-      status: build.build.status,
-      run_id: build.build.run_id,
-      output_dir: build.build.output_dir,
-      nodes_path: build.build.nodes_path,
-      edges_path: build.build.edges_path,
-      summary_path: build.build.summary_path,
-      manifest_path: build.build.manifest_path,
-      summary: build.summary,
-      claim_boundary: CLAIM_BOUNDARY,
-    };
+    throw new Error("Demo / Replay 仅浏览已生成快照；真实构图请使用 Backend。");
   },
   async listKGConstructionBuilds(): Promise<KGConstructionBuildListResponse> {
     const { seed, persistentState } = await loadCurrentState();

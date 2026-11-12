@@ -8,7 +8,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from kgtracevis.service.graph_workspace import GraphWorkspacePatch
 
 DEFAULT_KG_DRAFT_PATH = Path("runs/kg_drafts.jsonl")
 KGDraftAction = Literal["keep", "revise", "reject", "promote_later"]
@@ -30,6 +32,14 @@ class KGDraftRequest(BaseModel):
     reviewer: str | None = None
     source: str = "kgtracevis"
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_graph_workspace(self) -> KGDraftRequest:
+        if self.target_type == "graph_workspace":
+            patch = GraphWorkspacePatch.model_validate(self.metadata.get("editor_patch"))
+            if self.target_key != f"editor:{patch.scope}":
+                raise ValueError("draft target does not match graph-workspace scope")
+        return self
 
 
 class KGDraftRecord(BaseModel):
@@ -58,7 +68,7 @@ class KGDraftListRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    target_type: Literal["edge", "kg_edge"] | None = None
+    target_type: Literal["edge", "kg_edge", "node", "graph_workspace"] | None = None
     target_id: str | None = None
     target_key: str | None = None
     reviewer: str | None = None
@@ -77,9 +87,7 @@ class KGDraftListResponse(BaseModel):
     returned_count: int
     offset: int
     limit: int
-    claim_boundary: str = (
-        "draft feedback is advisory and does not mutate generated KG artifacts"
-    )
+    claim_boundary: str = "draft feedback is advisory and does not mutate generated KG artifacts"
 
 
 def record_kg_draft(
@@ -87,7 +95,11 @@ def record_kg_draft(
     *,
     output_path: Path | None = None,
 ) -> dict[str, object]:
-    """Append a draft feedback record."""
+    """Append an advisory draft version without changing runtime KG artifacts."""
+    if request.target_type == "graph_workspace" and output_path is None:
+        from kgtracevis.service.postgres_graph_drafts import PostgresGraphDraftStore
+
+        return PostgresGraphDraftStore.from_environment().append(request.model_dump(mode="json"))
     path = output_path or DEFAULT_KG_DRAFT_PATH
     proposed_payload = {
         "relation": request.proposed_relation,
@@ -107,9 +119,7 @@ def record_kg_draft(
         "recorded_at": datetime.now(UTC).isoformat(),
         **request.model_dump(mode="json"),
         "review_decision": review_decision,
-        "claim_boundary": (
-            "draft feedback is advisory and does not mutate generated KG artifacts"
-        ),
+        "claim_boundary": ("draft feedback is advisory and does not mutate generated KG artifacts"),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
@@ -124,9 +134,16 @@ def list_kg_drafts(
 ) -> KGDraftListResponse:
     """Return append-only KG draft feedback records."""
     active_request = request or KGDraftListRequest()
+    if active_request.target_type == "graph_workspace" and input_path is None:
+        from kgtracevis.service.postgres_graph_drafts import PostgresGraphDraftStore
+
+        result = PostgresGraphDraftStore.from_environment().list(active_request)
+        return KGDraftListResponse.model_validate(result)
     path = input_path or DEFAULT_KG_DRAFT_PATH
     records = [
-        KGDraftRecord.model_validate(record)
+        KGDraftRecord.model_validate(
+            {key: value for key, value in record.items() if key != "claim_boundary"}
+        )
         for record in _read_jsonl_records(path)
         if _draft_matches(record, active_request)
     ]

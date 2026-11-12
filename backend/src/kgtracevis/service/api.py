@@ -88,7 +88,11 @@ from kgtracevis.service.kg_source_drafts import (
     KGSourceDraftRequest,
     generate_source_kg_draft,
 )
-from kgtracevis.service.kg_studio import KGStudioRuntimeError, kg_studio_payload
+from kgtracevis.service.kg_studio import (
+    KGStudioRuntimeError,
+    construction_kg_studio_payload,
+    kg_studio_payload,
+)
 from kgtracevis.service.runs import (
     create_run_from_upload,
     download_model_assets,
@@ -99,6 +103,7 @@ from kgtracevis.service.runs import (
     parse_dataset_override,
     parse_upload_mode,
 )
+from kgtracevis.service.source_provenance import get_registered_source
 
 
 class ModelAssetDownloadRequest(BaseModel):
@@ -136,6 +141,10 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -199,16 +208,23 @@ def create_app() -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @app.get("/api/kg/studio")
-    def kg_studio() -> dict[str, object]:
+    @app.get("/api/kg/sources/{source_id}")
+    def registered_source(source_id: str) -> dict[str, object]:
         try:
-            return kg_studio_payload().model_dump(mode="json")
+            return get_registered_source(source_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/kg/studio")
+    def kg_studio(graph_edge_limit: int = Query(default=80, ge=1, le=2000)) -> dict[str, object]:
+        try:
+            return kg_studio_payload(graph_edge_limit=graph_edge_limit).model_dump(mode="json")
         except KGStudioRuntimeError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     @app.get("/api/kg/drafts")
     def kg_draft_history(
-        target_type: Literal["edge", "kg_edge"] | None = None,
+        target_type: Literal["edge", "kg_edge", "node", "graph_workspace"] | None = None,
         target_id: str | None = None,
         target_key: str | None = None,
         reviewer: str | None = None,
@@ -501,6 +517,18 @@ def create_app() -> FastAPI:
             return get_kg_construction_build(run_id).model_dump(mode="json")
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/kg/construction/builds/{run_id}/graph")
+    def kg_construction_build_graph(run_id: str) -> dict[str, object]:
+        try:
+            return construction_kg_studio_payload(run_id).model_dump(mode="json")
+        except FileNotFoundError as exc:
+            raise HTTPException(
+                status_code=404, detail="construction graph files not found"
+            ) from exc
+        except ValueError as exc:
+            status_code = 404 if "unknown construction build run_id" in str(exc) else 400
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
     @app.post("/api/kg/construction/builds/{run_id}/validate")
     def kg_construction_build_validate(run_id: str) -> dict[str, object]:

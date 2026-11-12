@@ -121,7 +121,12 @@ function writeStoredWorkbenchState(state: WorkbenchState) {
     return
   }
 
-  window.localStorage.setItem(WORKBENCH_STATE_STORAGE_KEY, JSON.stringify(state))
+  const serialized = JSON.stringify(state)
+  if (window.localStorage.getItem(WORKBENCH_STATE_STORAGE_KEY) === serialized) {
+    return
+  }
+
+  window.localStorage.setItem(WORKBENCH_STATE_STORAGE_KEY, serialized)
   window.dispatchEvent(new CustomEvent(WORKBENCH_STATE_UPDATED_EVENT))
 }
 
@@ -151,12 +156,19 @@ export function resetWorkbenchState() {
 export function useWorkbenchState(): WorkbenchStateApi {
   const state = ref<WorkbenchState>(readStoredWorkbenchState())
 
-  const syncState = () => {
-    state.value = readStoredWorkbenchState()
+  const applyState = (nextState: WorkbenchState) => {
+    if (JSON.stringify(state.value) !== JSON.stringify(nextState)) {
+      state.value = nextState
+    }
+  }
+  const syncState = () => applyState(readStoredWorkbenchState())
+  const handleStorage = (event: StorageEvent) => {
+    if (event.storageArea && event.storageArea !== window.localStorage) return
+    if (event.key === null || event.key === WORKBENCH_STATE_STORAGE_KEY) syncState()
   }
 
   onMounted(() => {
-    window.addEventListener('storage', syncState)
+    window.addEventListener('storage', handleStorage)
     window.addEventListener(WORKBENCH_STATE_UPDATED_EVENT, syncState as EventListener)
   })
 
@@ -165,17 +177,17 @@ export function useWorkbenchState(): WorkbenchStateApi {
       return
     }
 
-    window.removeEventListener('storage', syncState)
+    window.removeEventListener('storage', handleStorage)
     window.removeEventListener(WORKBENCH_STATE_UPDATED_EVENT, syncState as EventListener)
   })
 
   return {
     state,
     updateState(patch) {
-      state.value = updateWorkbenchState(patch)
+      applyState(updateWorkbenchState(patch))
     },
     resetState() {
-      state.value = resetWorkbenchState()
+      applyState(resetWorkbenchState())
     },
   }
 }

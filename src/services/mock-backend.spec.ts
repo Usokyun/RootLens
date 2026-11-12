@@ -24,7 +24,10 @@ function installGeneratedAssetFetchStub() {
       const relativePath = url.startsWith("/") ? url.slice(1) : url;
       const filePath = path.join(
         repoRoot,
-        relativePath.startsWith("generated/") ? "public" : "",
+        relativePath.startsWith("generated/") ||
+          relativePath.startsWith("demo-evidence/")
+          ? "public"
+          : "",
         relativePath,
       );
 
@@ -157,6 +160,64 @@ describe("mock backend paper demo mode", () => {
 
     const detail = await mockBackend.getRun(runs[0].run_id);
     expect(detail.cases).toHaveLength(1);
+    expect(detail.cases[0]?.visual_evidence).toEqual([]);
+    expect(detail.cases[0]?.generated_evidence?.fixture_type).toBeUndefined();
     expect(detail.run.label).toContain("导入回放测试");
+  });
+  it("isolates replay drafts and sources from the built-in demo", async () => {
+    const { mockBackend } = await import("@/services/mock-backend");
+    const {
+      loadBundledRootLensRuntime,
+      saveImportedSession,
+      clearImportedSession,
+    } = await import("@/services/rootlens-data");
+    const draft = {
+      target_type: "graph_workspace" as const,
+      target_id: "mvtec",
+      target_key: "editor:demo|mvtec",
+      draft_action: "revise" as const,
+      source: "rootlens-editor",
+      metadata: {
+        editor_patch: { version: 1, scope: "demo|mvtec", changes: [] },
+      },
+    };
+    await mockBackend.submitKGDraft(draft);
+    const runtime = await loadBundledRootLensRuntime();
+    saveImportedSession({ graphs: null, runtime, summary: "Replay isolation" });
+    expect((await mockBackend.listKGDrafts()).records).toEqual([]);
+    await mockBackend.submitKGDraft({
+      ...draft,
+      target_key: "editor:replay|mvtec",
+    });
+    expect((await mockBackend.listKGDrafts()).records).toHaveLength(1);
+    await expect(
+      mockBackend.getKnowledgeSource("manual_curation"),
+    ).rejects.toThrow("不以 Demo 原文替代");
+    clearImportedSession();
+    const demo = await mockBackend.listKGDrafts();
+    expect(demo.records).toHaveLength(1);
+    expect(demo.records[0]?.target_key).toBe("editor:demo|mvtec");
+  });
+
+  it("provides precomputed source notes but refuses browser construction", async () => {
+    const { mockBackend } = await import("@/services/mock-backend");
+    const result = await mockBackend.listKGMaterials();
+    expect(result.materials.map((m) => m.material_id)).toContain(
+      "demo-source-mvtec",
+    );
+    const chunks = await mockBackend.getKGMaterialChunks("demo-source-mvtec");
+    expect(chunks.chunks[0]?.source_locator).toContain(
+      "docs/sources/mvtec_sources.md",
+    );
+    expect(chunks.chunks[0]?.text_content).toContain(
+      "not native MVTec factory",
+    );
+    await expect(
+      mockBackend.buildKGConstruction({
+        sources: [],
+        output_name: "demo",
+        overwrite: false,
+      }),
+    ).rejects.toThrow("真实构图请使用 Backend");
   });
 });

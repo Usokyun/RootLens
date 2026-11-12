@@ -1,0 +1,12 @@
+{
+  "fixture_type": "controlled_synthetic",
+  "seed": 42,
+  "image": "bottle-scratch.png",
+  "clean_reference": "bottle-clean.png",
+  "mask": "bottle-mask.png",
+  "response": "bottle-response.png",
+  "response_method": "absolute RGB pixel difference from clean reference, mean channels, Gaussian sigma=6, max normalization",
+  "trained_model": false,
+  "dataset_sample": false,
+  "claim_boundary": "UI fixture only; not MVTec dataset imagery, not detector output, no factory RCA validation"
+}

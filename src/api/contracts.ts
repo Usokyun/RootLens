@@ -439,7 +439,8 @@ export type KGDraftAction = "keep" | "revise" | "reject" | "promote_later";
 export interface KGDraftRecord {
   draft_id: string;
   created_at: string;
-  target_type: "edge";
+  recorded_at?: string;
+  target_type: "edge" | "node" | "graph_workspace";
   target_id: string;
   target_key: string;
   draft_action: KGDraftAction;
@@ -454,7 +455,7 @@ export interface KGDraftRecord {
 }
 
 export interface KGDraftListRequest {
-  target_type?: "edge";
+  target_type?: "edge" | "node" | "graph_workspace";
   target_id?: string;
   target_key?: string;
   reviewer?: string;
@@ -473,7 +474,7 @@ export interface KGDraftListResponse {
 }
 
 export interface KGDraftRequest {
-  target_type: "edge";
+  target_type: "edge" | "node" | "graph_workspace";
   target_id: string;
   target_key?: string;
   draft_action: KGDraftAction;
@@ -556,6 +557,13 @@ export interface KGStudioPayload {
   graph_edges: KGStudioGraphEdge[];
   review_targets: KGStudioReviewTarget[];
   note: string;
+}
+
+export interface KGConstructionGraphPayload extends KGStudioPayload {
+  build_id: string;
+  title: string;
+  read_only: boolean;
+  truncated: boolean;
 }
 
 export interface KGSourceDraftRequest {
@@ -765,4 +773,16 @@ export interface KGConstructionReviewQueueResponse {
   edges: KGConstructionReviewQueueEdge[];
   summary: KGConstructionReviewQueueSummary;
   claim_boundary: string;
+}
+
+export interface KnowledgeSourceDetail {
+  source_id: string;
+  title: string;
+  source_type: string;
+  location: string;
+  notes: string;
+  available: boolean;
+  excerpt: string | null;
+  line_start: number | null;
+  line_end: number | null;
 }

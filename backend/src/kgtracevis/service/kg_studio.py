@@ -151,6 +151,77 @@ class KGStudioPayload(BaseModel):
     )
 
 
+class KGConstructionGraphPayload(KGStudioPayload):
+    """Explicit, read-only view of one registered build, independent of RCA runs."""
+
+    build_id: str
+    title: str
+    read_only: bool = True
+    truncated: bool = False
+
+
+def construction_kg_studio_payload(
+    run_id: str,
+    *,
+    build_root: Path | None = None,
+    graph_node_limit: int = 1000,
+    graph_edge_limit: int = 2000,
+) -> KGConstructionGraphPayload:
+    """Read exactly the requested build; never publish or fall back to Neo4j."""
+    from kgtracevis.service.kg_construction import get_kg_construction_build
+
+    detail = get_kg_construction_build(run_id, build_root=build_root)
+    build = detail.build
+    graph = KnowledgeGraph.from_csv(build.nodes_path, build.edges_path)
+    selected_nodes = list(graph.nodes.values())[:max(graph_node_limit, 0)]
+    selected_ids = {node.id for node in selected_nodes}
+    selected_edges = [
+        edge for edge in graph.edges
+        if edge.head in selected_ids and edge.tail in selected_ids
+    ][:max(graph_edge_limit, 0)]
+    edge_rows = [
+        {key: str(value) for key, value in edge.model_dump().items()}
+        for edge in graph.edges
+    ]
+    truncated = len(selected_nodes) < len(graph.nodes) or len(selected_edges) < len(graph.edges)
+    return KGConstructionGraphPayload(
+        status="ok" if graph.nodes else "empty",
+        graph_origin="candidate_artifacts",
+        build_id=build.run_id,
+        title=str(detail.summary.get("title") or build.run_id),
+        candidate_dir=build.output_dir,
+        nodes_path=build.nodes_path,
+        edges_path=build.edges_path,
+        summary_path=build.summary_path,
+        manifest_path=build.manifest_path,
+        source_registry_path="",
+        node_count=len(graph.nodes),
+        edge_count=len(graph.edges),
+        scenario_counts=_count_field(edge_rows, "scenario"),
+        review_status_counts=_count_field(edge_rows, "review_status"),
+        source_counts=_count_field(edge_rows, "source"),
+        confidence_summary=_confidence_summary(edge_rows),
+        construction_manifest=detail.manifest,
+        graph_nodes=[
+            KGStudioGraphNode(
+                node_id=node.id, label=node.name, node_type=node.label,
+                scenario=node.scenario, description=node.description,
+            )
+            for node in selected_nodes
+        ],
+        graph_edges=[
+            _graph_edge({key: str(value) for key, value in edge.model_dump().items()})
+            for edge in selected_edges
+        ],
+        truncated=truncated,
+        claim_boundary=(
+            "Read-only construction snapshot; candidate facts are not verified industrial "
+            "root causes. Viewing does not publish to Neo4j, run RCA, or rebind existing results."
+        ),
+        note=f"Construction snapshot {build.run_id}; read-only; no RCA results attached.",
+    )
+
+
 def kg_studio_payload(
     *,
     repository: KGStudioRepository | None = None,
@@ -194,6 +265,9 @@ def kg_studio_payload(
     ]
     preview_rows = [row for group in zip_longest(*scenario_rows) for row in group if row]
     graph_nodes, graph_edges = _graph_preview(node_rows, preview_rows, limit=graph_edge_limit)
+    if len(preview_rows) <= graph_edge_limit:
+        # A complete editable snapshot must retain isolated entities as well.
+        graph_nodes = [_graph_node(row) for row in sorted(node_rows, key=lambda row: row["id"])]
     return KGStudioPayload(
         status="ok" if graph.nodes or graph.edges else "empty",
         graph_origin="neo4j",

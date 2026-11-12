@@ -1,5 +1,6 @@
 import type {
   DashboardBootstrap,
+  KnowledgeSourceDetail,
   KGDraftListRequest,
   KGDraftListResponse,
   KGDraftRequest,
@@ -17,6 +18,7 @@ import type {
   KGSourceDraftRequest,
   KGSourceDraftResponse,
   KGStudioPayload,
+  KGConstructionGraphPayload,
   KGConstructionBuildDetail,
   KGConstructionBuildListResponse,
   KGConstructionBuildRequest,
@@ -145,6 +147,7 @@ function jsonInit(method: string, body: unknown): RequestInit {
 export interface ApiClient {
   bootstrap: () => Promise<DashboardBootstrap>;
   kgStudio: () => Promise<KGStudioPayload>;
+  getKnowledgeSource: (sourceId: string) => Promise<KnowledgeSourceDetail>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
@@ -199,6 +202,7 @@ export interface ApiClient {
   ) => Promise<KGConstructionBuildResponse>;
   listKGConstructionBuilds: () => Promise<KGConstructionBuildListResponse>;
   getKGConstructionBuild: (runId: string) => Promise<KGConstructionBuildDetail>;
+  getKGConstructionGraph: (runId: string) => Promise<KGConstructionGraphPayload>;
   validateKGConstructionBuild: (
     runId: string,
   ) => Promise<KGConstructionBuildValidationResponse>;
@@ -229,7 +233,8 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
   return {
     bootstrap: () =>
       requestJson<DashboardBootstrap>(baseUrl, "/api/dashboard/bootstrap"),
-    kgStudio: () => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio"),
+    getKnowledgeSource: (sourceId) => requestJson<KnowledgeSourceDetail>(baseUrl, `/api/kg/sources/${encodeURIComponent(sourceId)}`),
+    kgStudio: () => requestJson<KGStudioPayload>(baseUrl, "/api/kg/studio?graph_edge_limit=2000"),
     listRuns: () => requestJson<RunSummary[]>(baseUrl, "/api/runs"),
     getRun: (runId) => requestJson<RunDetail>(baseUrl, `/api/runs/${runId}`),
     uploadRun: (request) => {
@@ -378,6 +383,11 @@ export function createApiClient(baseUrl = DEFAULT_API_BASE_URL): ApiClient {
       requestJson<KGConstructionBuildDetail>(
         baseUrl,
         `/api/kg/construction/builds/${runId}`,
+      ),
+    getKGConstructionGraph: (runId) =>
+      requestJson<KGConstructionGraphPayload>(
+        baseUrl,
+        `/api/kg/construction/builds/${encodeURIComponent(runId)}/graph`,
       ),
     validateKGConstructionBuild: (runId) =>
       requestJson<KGConstructionBuildValidationResponse>(

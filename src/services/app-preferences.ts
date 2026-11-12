@@ -111,13 +111,15 @@ function writeStoredAppPreferences(preferences: AppPreferences) {
     return
   }
 
-  window.localStorage.setItem(
-    APP_PREFERENCES_STORAGE_KEY,
-    JSON.stringify({
-      ...preferences,
-      schemaVersion: APP_PREFERENCES_STORAGE_VERSION,
-    } satisfies StoredAppPreferences),
-  )
+  const serialized = JSON.stringify({
+    ...preferences,
+    schemaVersion: APP_PREFERENCES_STORAGE_VERSION,
+  } satisfies StoredAppPreferences)
+  if (window.localStorage.getItem(APP_PREFERENCES_STORAGE_KEY) === serialized) {
+    return
+  }
+
+  window.localStorage.setItem(APP_PREFERENCES_STORAGE_KEY, serialized)
   window.dispatchEvent(new CustomEvent(APP_PREFERENCES_UPDATED_EVENT))
 }
 
@@ -148,12 +150,20 @@ export function resetAppPreferences() {
 export function useAppPreferences(): AppPreferencesApi {
   const preferences = ref<AppPreferences>(readStoredAppPreferences())
 
-  const syncPreferences = () => {
-    preferences.value = readStoredAppPreferences()
+  const applyPreferences = (nextPreferences: AppPreferences) => {
+    if (JSON.stringify(preferences.value) !== JSON.stringify(nextPreferences)) {
+      preferences.value = nextPreferences
+    }
+  }
+  const syncPreferences = () => applyPreferences(readStoredAppPreferences())
+  const handleStorage = (event: StorageEvent) => {
+    // Other tabs also persist selections and imported sessions. Those are not settings changes.
+    if (event.storageArea && event.storageArea !== window.localStorage) return
+    if (event.key === null || event.key === APP_PREFERENCES_STORAGE_KEY) syncPreferences()
   }
 
   onMounted(() => {
-    window.addEventListener('storage', syncPreferences)
+    window.addEventListener('storage', handleStorage)
     window.addEventListener(APP_PREFERENCES_UPDATED_EVENT, syncPreferences as EventListener)
   })
 
@@ -162,17 +172,17 @@ export function useAppPreferences(): AppPreferencesApi {
       return
     }
 
-    window.removeEventListener('storage', syncPreferences)
+    window.removeEventListener('storage', handleStorage)
     window.removeEventListener(APP_PREFERENCES_UPDATED_EVENT, syncPreferences as EventListener)
   })
 
   return {
     preferences,
     updatePreferences(patch) {
-      preferences.value = updateAppPreferences(patch)
+      applyPreferences(updateAppPreferences(patch))
     },
     resetPreferences() {
-      preferences.value = resetAppPreferences()
+      applyPreferences(resetAppPreferences())
     },
   }
 }

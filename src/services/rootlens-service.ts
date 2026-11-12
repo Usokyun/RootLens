@@ -1,6 +1,7 @@
 import { createApiClient, type ApiClient } from "@/api/client";
 import type {
   DashboardBootstrap,
+  KnowledgeSourceDetail,
   KGDraftListRequest,
   KGDraftListResponse,
   KGDraftRequest,
@@ -18,6 +19,7 @@ import type {
   KGSourceDraftRequest,
   KGSourceDraftResponse,
   KGStudioPayload,
+  KGConstructionGraphPayload,
   KGConstructionBuildDetail,
   KGConstructionBuildListResponse,
   KGConstructionBuildRequest,
@@ -44,6 +46,7 @@ import { canSubmitReviewTarget, mockBackend } from "@/services/mock-backend";
 export interface RootLensService {
   bootstrap: () => Promise<DashboardBootstrap>;
   kgStudio: () => Promise<KGStudioPayload>;
+  getKnowledgeSource: (sourceId: string) => Promise<KnowledgeSourceDetail>;
   listRuns: () => Promise<RunSummary[]>;
   getRun: (runId: string) => Promise<RunDetail>;
   uploadRun: (request: UploadRequest) => Promise<RunDetail>;
@@ -56,9 +59,7 @@ export interface RootLensService {
   submitKGDraft: (
     request: KGDraftRequest,
   ) => Promise<{ status: string; record: Record<string, unknown> }>;
-  listKGDrafts: (
-    request?: KGDraftListRequest,
-  ) => Promise<KGDraftListResponse>;
+  listKGDrafts: (request?: KGDraftListRequest) => Promise<KGDraftListResponse>;
   generateKGSourceDraft: (
     request: KGSourceDraftRequest,
   ) => Promise<KGSourceDraftResponse>;
@@ -98,6 +99,9 @@ export interface RootLensService {
   ) => Promise<KGConstructionBuildResponse>;
   listKGConstructionBuilds: () => Promise<KGConstructionBuildListResponse>;
   getKGConstructionBuild: (runId: string) => Promise<KGConstructionBuildDetail>;
+  getKGConstructionGraph: (
+    runId: string,
+  ) => Promise<KGConstructionGraphPayload>;
   validateKGConstructionBuild: (
     runId: string,
   ) => Promise<KGConstructionBuildValidationResponse>;
@@ -136,6 +140,11 @@ function isImportedReplayActive() {
 function buildMockService(): RootLensService {
   return {
     ...mockBackend,
+    getKGConstructionGraph: async () => {
+      throw new Error(
+        "构图快照预览需要 Backend 模式；Demo 不读取本机构图资产。",
+      );
+    },
     artifactUrl: (_runId: string, artifactName: string) => artifactName,
   };
 }
@@ -147,15 +156,8 @@ function withImportedReplayOverrides(
     return baseService;
   }
 
-  const replayService = buildMockService();
-  return {
-    ...baseService,
-    bootstrap: replayService.bootstrap,
-    listRuns: replayService.listRuns,
-    getRun: replayService.getRun,
-    submitReview: replayService.submitReview,
-    listReviewLedger: replayService.listReviewLedger,
-  };
+  // Imported replay is entirely browser-scoped; never route maintenance writes to Backend.
+  return buildMockService();
 }
 
 function getCurrentService(): RootLensService {

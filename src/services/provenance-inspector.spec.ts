@@ -40,10 +40,10 @@ const graphCase: RunCaseDetail = {
         linked_entity_hints: ["process", "process_fault", "reactor"],
         raw_evidence_refs: [
           {
-            ref_id: "None",
-            label: "None",
+            ref_id: "ref-reactor",
+            label: "reactor.csv",
             role: "evidence",
-            file_path: "",
+            file_path: "/evidence/reactor.csv",
             line: null,
           },
         ],

@@ -1,0 +1,211 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "根因与图谱" [level=1] [ref=e10]
+    - generic [ref=e15]:
+      - generic "数据源模式" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - radio "Demo" [checked]
+          - generic [ref=e18]: Demo
+        - generic [ref=e24] [cursor=pointer]:
+          - radio "Backend"
+          - generic [ref=e25]: Backend
+      - generic [ref=e28]: 内置资产
+    - generic "当前上下文" [ref=e32]: paper-demo-curated / mvtec_fixture_clean_scratch
+  - generic [ref=e33]:
+    - generic [ref=e35]:
+      - generic [ref=e37]:
+        - generic [ref=e38] [cursor=pointer]: 运行与证据
+        - generic [ref=e44] [cursor=pointer]: 根因与图谱
+        - generic [ref=e50] [cursor=pointer]: 素材与构图
+      - button "收起侧边栏" [ref=e55] [cursor=pointer]
+    - main [ref=e58]:
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - article [ref=e62]:
+            - generic [ref=e63]:
+              - heading "总图谱 查看总图谱说明" [level=3] [ref=e65]:
+                - generic [ref=e66]:
+                  - generic [ref=e67]: 总图谱
+                  - button "查看总图谱说明" [ref=e72]
+              - generic [ref=e76]:
+                - generic [ref=e77]:
+                  - generic [ref=e78]: 36 节点
+                  - generic [ref=e79]: 29 边
+                - button "刷新视图" [ref=e80] [cursor=pointer]
+                - button "浏览已生成图谱" [ref=e84] [cursor=pointer]
+                - button "返回运行与证据" [ref=e85] [cursor=pointer]
+            - img [ref=e251]:
+              - generic [ref=e252]:
+                - generic [ref=e254]:
+                  - generic [ref=e255] [cursor=pointer]
+                  - generic [ref=e256] [cursor=pointer]
+                  - generic [ref=e257] [cursor=pointer]
+                  - generic [ref=e258] [cursor=pointer]
+                  - generic [ref=e259] [cursor=pointer]
+                  - generic [ref=e260] [cursor=pointer]
+                  - generic [ref=e261] [cursor=pointer]
+                  - generic [ref=e262] [cursor=pointer]
+                  - generic [ref=e263] [cursor=pointer]
+                  - generic [ref=e264] [cursor=pointer]
+                  - generic [ref=e265] [cursor=pointer]
+                  - generic [ref=e266] [cursor=pointer]
+                  - generic [ref=e267] [cursor=pointer]
+                  - generic [ref=e268] [cursor=pointer]
+                  - generic [ref=e269] [cursor=pointer]
+                  - generic [ref=e270] [cursor=pointer]
+                  - generic [ref=e271] [cursor=pointer]
+                  - generic [ref=e272] [cursor=pointer]
+                  - generic [ref=e273] [cursor=pointer]
+                  - generic [ref=e274] [cursor=pointer]
+                  - generic [ref=e275] [cursor=pointer]
+                  - generic [ref=e276] [cursor=pointer]
+                  - generic [ref=e277] [cursor=pointer]
+                  - generic [ref=e278] [cursor=pointer]
+                  - generic [ref=e279] [cursor=pointer]
+                  - generic [ref=e280] [cursor=pointer]
+                  - generic [ref=e281] [cursor=pointer]
+                  - generic [ref=e282] [cursor=pointer]
+                  - generic [ref=e283] [cursor=pointer]
+                - generic [ref=e284]:
+                  - generic [ref=e285] [cursor=pointer]
+                  - generic [ref=e287] [cursor=pointer]
+                  - generic [ref=e289] [cursor=pointer]
+                  - generic [ref=e291] [cursor=pointer]
+                  - generic [ref=e293] [cursor=pointer]
+                  - generic [ref=e295] [cursor=pointer]
+                  - generic [ref=e297] [cursor=pointer]
+                  - generic [ref=e299] [cursor=pointer]
+                  - generic [ref=e301] [cursor=pointer]
+                  - generic [ref=e303] [cursor=pointer]
+                  - generic [ref=e305] [cursor=pointer]
+                  - generic [ref=e307] [cursor=pointer]
+                  - generic [ref=e309] [cursor=pointer]
+                  - generic [ref=e311] [cursor=pointer]
+                  - generic [ref=e313] [cursor=pointer]
+                  - generic [ref=e315] [cursor=pointer]
+                  - generic [ref=e317] [cursor=pointer]
+                  - generic [ref=e319] [cursor=pointer]
+                  - generic [ref=e321] [cursor=pointer]
+                  - generic [ref=e323] [cursor=pointer]
+                  - generic [ref=e325] [cursor=pointer]
+                  - generic [ref=e327] [cursor=pointer]
+                  - generic [ref=e329] [cursor=pointer]
+                  - generic [ref=e331] [cursor=pointer]
+                  - generic [ref=e333] [cursor=pointer]
+                  - generic [ref=e335] [cursor=pointer]
+                  - generic [ref=e337] [cursor=pointer]
+                  - generic [ref=e339] [cursor=pointer]
+                  - generic [ref=e341] [cursor=pointer]
+                  - generic [ref=e343] [cursor=pointer]
+                  - generic [ref=e345] [cursor=pointer]
+                  - generic [ref=e347] [cursor=pointer]
+                  - generic [ref=e349] [cursor=pointer]
+                  - generic [ref=e351] [cursor=pointer]
+                  - generic [ref=e353] [cursor=pointer]
+                  - generic [ref=e355] [cursor=pointer]
+            - generic [ref=e92]: 布局已稳定
+          - generic [ref=e94]:
+            - article [ref=e95]:
+              - heading "局部子图 查看局部子图说明" [level=3] [ref=e98]:
+                - generic [ref=e99]:
+                  - generic [ref=e100]: 局部子图
+                  - button "查看局部子图说明" [ref=e105]
+              - img [ref=e360]:
+                - generic [ref=e361]:
+                  - generic [ref=e363]:
+                    - generic [ref=e364] [cursor=pointer]
+                    - generic [ref=e365] [cursor=pointer]
+                    - generic [ref=e366] [cursor=pointer]
+                  - generic [ref=e367]:
+                    - generic [ref=e368] [cursor=pointer]: Scratch defect
+                    - generic [ref=e370] [cursor=pointer]: Mechanical contact
+                    - generic [ref=e372] [cursor=pointer]: Handling damage
+                    - generic [ref=e374] [cursor=pointer]: Surface wear
+              - generic [ref=e116]: 布局已稳定
+            - article [ref=e118]:
+              - generic [ref=e119]:
+                - heading "审阅与策展卡 查看审阅与策展卡说明" [level=3] [ref=e120]:
+                  - generic [ref=e121]:
+                    - generic [ref=e122]: 审阅与策展卡
+                    - button "查看审阅与策展卡说明" [ref=e126]
+                - generic [ref=e130]: 本地 Draft Overlay
+              - generic "审阅与策展" [ref=e132]:
+                - generic [ref=e135]:
+                  - generic [ref=e136] [cursor=pointer]: RCA
+                  - generic [active] [ref=e138] [cursor=pointer]: 策展
+                  - generic [ref=e140] [cursor=pointer]: 链路
+                  - generic [ref=e142] [cursor=pointer]: 记录
+                - generic [ref=e402]:
+                  - generic [ref=e403]:
+                    - generic [ref=e404]:
+                      - strong [ref=e405]: 图谱策展
+                      - generic [ref=e406]: 待选
+                    - generic [ref=e407]:
+                      - paragraph [ref=e408]: 先在左侧局部子图中点击节点或边，再进入对应的本地策展表单。
+                      - generic [ref=e409]:
+                        - button "边 · SUGGESTS_PLAUSIBLE_CAUSE revise · 建议把候选解释语气从 HAS 调整为 SUGGESTS，以匹配论文中的 claim boundary。" [ref=e410] [cursor=pointer]:
+                          - strong [ref=e411]: 边 · SUGGESTS_PLAUSIBLE_CAUSE
+                          - generic [ref=e412]: revise · 建议把候选解释语气从 HAS 调整为 SUGGESTS，以匹配论文中的 claim boundary。
+                        - button "节点 · Mechanical contact 适合作为论文里的“专家将候选解释修正为更保守表述”的示例。" [ref=e413] [cursor=pointer]:
+                          - strong [ref=e414]: 节点 · Mechanical contact
+                          - generic [ref=e415]: 适合作为论文里的“专家将候选解释修正为更保守表述”的示例。
+                  - generic [ref=e416]:
+                    - button "保存草稿" [ref=e417] [cursor=pointer]
+                    - button "撤销修改" [disabled] [ref=e421]
+                    - button "重置草稿" [ref=e422] [cursor=pointer]
+                  - generic [ref=e423]:
+                    - strong [ref=e425]: 当前 case 没有未保存改动。
+                    - generic [ref=e426]:
+                      - generic [ref=e427]: 未保存修改：无
+                      - generic [ref=e428]: 节点草稿：1
+                      - generic [ref=e429]: 边草稿：1
+        - complementary [ref=e194]:
+          - article [ref=e195]:
+            - generic [ref=e196]:
+              - heading "根因列表 查看根因列表说明" [level=3] [ref=e198]:
+                - generic [ref=e199]:
+                  - generic [ref=e200]: 根因列表
+                  - button "查看根因列表说明" [ref=e204]
+              - generic [ref=e208]: "3"
+            - generic [ref=e209]:
+              - generic [ref=e210]:
+                - generic [ref=e211]:
+                  - generic [ref=e212]: 运行
+                  - generic "运行" [ref=e218] [cursor=pointer]:
+                    - textbox "运行"
+                    - generic [ref=e377]: 论文演示预设案例
+                - generic [ref=e224]:
+                  - generic [ref=e225]: 案例
+                  - generic "案例" [ref=e231] [cursor=pointer]:
+                    - textbox "案例"
+                    - generic [ref=e378]: MVTEC / bottle / scratch
+              - generic [ref=e237]:
+                - generic [ref=e238]:
+                  - strong [ref=e239]: 候选根因
+                  - generic [ref=e240]: 已选中 1 项
+                - generic [ref=e241]:
+                  - button "#1 Mechanical contact 0.480 工件桥接 plausible_mechanism" [ref=e379] [cursor=pointer]:
+                    - generic [ref=e380]:
+                      - strong [ref=e381]: "#1 Mechanical contact"
+                      - generic [ref=e382]: "0.480"
+                    - generic [ref=e383]:
+                      - generic [ref=e384]: 工件桥接
+                      - generic [ref=e385]: plausible_mechanism
+                  - button "#2 Handling damage 0.446 工件桥接 plausible_mechanism" [ref=e386] [cursor=pointer]:
+                    - generic [ref=e387]:
+                      - strong [ref=e388]: "#2 Handling damage"
+                      - generic [ref=e389]: "0.446"
+                    - generic [ref=e390]:
+                      - generic [ref=e391]: 工件桥接
+                      - generic [ref=e392]: plausible_mechanism
+                  - button "#3 Surface wear 0.408 工件桥接 plausible_mechanism" [ref=e393] [cursor=pointer]:
+                    - generic [ref=e394]:
+                      - strong [ref=e395]: "#3 Surface wear"
+                      - generic [ref=e396]: "0.408"
+                    - generic [ref=e397]:
+                      - generic [ref=e398]: 工件桥接
+                      - generic [ref=e399]: plausible_mechanism

@@ -1,0 +1,149 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: RL
+        - generic [ref=e8]: RootLens
+      - heading "运行与证据" [level=1] [ref=e10]
+    - generic [ref=e15]:
+      - generic "数据源模式" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - radio "Demo"
+          - generic [ref=e18]: Demo
+        - generic [ref=e24] [cursor=pointer]:
+          - radio "Backend" [checked]
+          - generic [ref=e25]: Backend
+      - button "修改后端地址" [ref=e28] [cursor=pointer]: 127.0.0.1:8000
+    - generic "当前上下文" [ref=e32]: acce5279-c6a0-46c0-a3ee-8dcdd6ba2fc7 / mvtec_noisy_0001
+  - generic [ref=e33]:
+    - generic [ref=e35]:
+      - generic [ref=e37]:
+        - generic [ref=e38] [cursor=pointer]: 运行与证据
+        - generic [ref=e44] [cursor=pointer]: 根因与图谱
+        - generic [ref=e50] [cursor=pointer]: 素材与构图
+      - button "收起侧边栏" [ref=e55] [cursor=pointer]
+    - main [ref=e58]:
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - article [ref=e63]:
+            - generic [ref=e64]:
+              - heading "上传与运行状态 查看上传与运行状态说明" [level=3] [ref=e66]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]: 上传与运行状态
+                  - button "查看上传与运行状态说明" [ref=e72]
+              - generic [ref=e76]:
+                - generic [ref=e77]: 批量记录
+                - button "刷新视图" [ref=e78]
+            - generic [ref=e82]:
+              - generic [ref=e83]:
+                - generic "切换 Evidence 会话来源" [ref=e84]:
+                  - button "实时上传" [pressed] [ref=e85] [cursor=pointer]
+                  - button "回放资产" [ref=e86] [cursor=pointer]
+                - generic [ref=e87]:
+                  - generic [ref=e88]:
+                    - generic [ref=e89]:
+                      - generic [ref=e90]: 模式
+                      - generic "模式" [ref=e96] [cursor=pointer]:
+                        - textbox "模式"
+                        - generic [ref=e97]: records
+                    - generic [ref=e102]:
+                      - generic [ref=e103]: 数据集
+                      - generic "数据集" [ref=e109] [cursor=pointer]:
+                        - textbox "数据集"
+                        - generic [ref=e110]: 自动
+                    - generic [ref=e115]:
+                      - generic [ref=e116]: 候选数
+                      - generic "候选数" [ref=e121]:
+                        - spinbutton "候选数" [ref=e122]: "5"
+                        - generic [ref=e124]:
+                          - button [ref=e125] [cursor=pointer]
+                          - button [ref=e128] [cursor=pointer]
+                  - generic [ref=e131]:
+                    - generic [ref=e132]: 推理配置
+                    - generic "推理配置" [ref=e141]:
+                      - textbox "推理配置" [disabled]
+                      - generic [ref=e142]: 自动（按数据集默认）
+                  - generic [ref=e147]:
+                    - generic [ref=e148]: 文件
+                    - generic [ref=e154]:
+                      - generic [ref=e155]:
+                        - strong [ref=e156]: 拖动文件到这里，或点击按钮选择文件
+                        - generic [ref=e157]: 支持 JSON / JSONL / CSV / 图像输入
+                      - button "选择运行文件" [ref=e158] [cursor=pointer]: 选择文件
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - strong [ref=e161]:
+                    - generic [ref=e167]: Run 列表
+                  - generic [ref=e168]: "0"
+                - button "上传并生成 Run" [ref=e170] [cursor=pointer]
+          - article [ref=e174]:
+            - generic [ref=e175]:
+              - heading "Case / Evidence 列表 查看Case / Evidence 列表说明" [level=3] [ref=e177]:
+                - generic [ref=e178]:
+                  - generic [ref=e179]: Case / Evidence 列表
+                  - button "查看Case / Evidence 列表说明" [ref=e184]
+              - generic [ref=e188]: "0"
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - generic [ref=e191]:
+                  - generic [ref=e192]: 图谱
+                  - generic "图谱" [ref=e198] [cursor=pointer]:
+                    - textbox "图谱"
+                    - generic [ref=e199]: 全部图谱
+                - generic [ref=e204]:
+                  - generic [ref=e205]: 模态
+                  - generic "模态" [ref=e211] [cursor=pointer]:
+                    - textbox "模态"
+                    - generic [ref=e212]: 全部
+                - generic [ref=e217]:
+                  - generic [ref=e218]: 来源
+                  - generic "来源" [ref=e224] [cursor=pointer]:
+                    - textbox "来源"
+                    - generic [ref=e225]: 全部来源
+                - generic [ref=e230]:
+                  - generic [ref=e231]: 置信度
+                  - generic "置信度" [ref=e237] [cursor=pointer]:
+                    - textbox "置信度"
+                    - generic [ref=e238]: 全部
+                - generic [ref=e243]:
+                  - generic [ref=e244]: 时间范围
+                  - generic [ref=e249]:
+                    - generic "开始时间" [ref=e250]:
+                      - textbox "开始时间" [ref=e251]
+                    - generic "结束时间" [ref=e252]:
+                      - textbox "结束时间" [ref=e253]
+                - generic [ref=e254]:
+                  - generic [ref=e255]: 关键字
+                  - generic "关键字" [ref=e260]:
+                    - textbox "关键字" [ref=e261]:
+                      - /placeholder: 搜索 obs / source / hint / ref / variable / event
+              - generic [ref=e262]: 没有匹配的 Case / Evidence 条目
+        - generic [ref=e268]:
+          - article [ref=e269]:
+            - generic [ref=e270]:
+              - heading "根因列表 查看根因列表说明" [level=3] [ref=e272]:
+                - generic [ref=e273]:
+                  - generic [ref=e274]: 根因列表
+                  - button "查看根因列表说明" [ref=e278]
+              - generic [ref=e282]:
+                - generic [ref=e283]: "--"
+                - generic [ref=e284]: 0 条
+            - generic [ref=e285]: 当前 Case 没有候选根因
+          - article [ref=e292]:
+            - generic [ref=e293]:
+              - heading "Observation Drilldown 查看Observation Drilldown说明" [level=3] [ref=e295]:
+                - generic [ref=e296]:
+                  - generic [ref=e297]: Observation Drilldown
+                  - button "查看Observation Drilldown说明" [ref=e301]
+              - generic [ref=e305]:
+                - generic [ref=e306]: "--"
+                - generic [ref=e307]: "0"
+            - generic [ref=e308]:
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - generic [ref=e311]: 当前选择
+                  - strong [ref=e312]: 未选择
+                - generic [ref=e313]:
+                  - button "查看详情" [disabled] [ref=e314]
+                  - button "根因与图谱" [disabled] [ref=e315]
+              - generic [ref=e316]: 当前 Case 没有匹配的 observation
